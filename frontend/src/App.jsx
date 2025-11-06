@@ -26,6 +26,7 @@ import Profil from './pages/Profil';
 import Siparislerim from './pages/Siparislerim';
 import SiparisDetay from './pages/SiparisDetay';
 import Favorilerim from './pages/Favorilerim';
+import Kampanyalar from './pages/Kampanyalar';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -34,6 +35,7 @@ import Dashboard from './pages/admin/Dashboard';
 import Produkte from './pages/admin/Produkte';
 import Orders from './pages/admin/Orders';
 import Categories from './pages/admin/Categories';
+import Campaigns from './pages/admin/Campaigns';
 import Users from './pages/admin/Users';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
@@ -72,6 +74,7 @@ function AppContent() {
           <Route path="/siparislerim" element={<Siparislerim />} />
           <Route path="/siparis/:id" element={<SiparisDetay />} />
           <Route path="/favorilerim" element={<Favorilerim />} />
+          <Route path="/kampanyalar" element={<Kampanyalar />} />
         </Route>
 
         {/* Admin Routes */}
@@ -82,6 +85,7 @@ function AppContent() {
           <Route path="products" element={<Produkte />} />
           <Route path="orders" element={<Orders />} />
           <Route path="categories" element={<Categories />} />
+          <Route path="campaigns" element={<Campaigns />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
           <Route path="homepage-settings" element={<HomePageSettings />} />
@@ -110,6 +114,7 @@ function App() {
         draggable
         pauseOnHover
         theme="light"
+        limit={2}
       />
 
         {/* PWA Install Prompt */}

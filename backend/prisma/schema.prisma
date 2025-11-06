@@ -41,6 +41,15 @@ enum PaymentType {
   @@map("payment_type")
 }
 
+enum CampaignType {
+  PERCENTAGE      // %20 indirim
+  FIXED_AMOUNT    // 10€ indirim
+  BUY_X_GET_Y     // 2 al 1 öde
+  FREE_SHIPPING   // Ücretsiz kargo
+
+  @@map("campaign_type")
+}
+
 // ===================================
 // MODELS
 // ===================================
@@ -135,10 +144,12 @@ model Product {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  favorites  Favorite[]
+  category          Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  favorites         Favorite[]
+  variantOptions    ProductVariantOption[]
+  variants          ProductVariant[]
 
   @@index([slug])
   @@index([name])
@@ -157,17 +168,20 @@ model CartItem {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   productId String   @map("product_id") @db.Uuid
+  variantId String?  @map("variant_id") @db.Uuid
   quantity  Int
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+  @@index([variantId])
+  @@index([userId, productId, variantId])
   @@map("cart_items")
 }
 
@@ -202,24 +216,32 @@ model Order {
 }
 
 model OrderItem {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId     String   @map("order_id") @db.Uuid
-  productId   String   @map("product_id") @db.Uuid
-  productName String   @map("product_name")
-  price       Decimal  @db.Decimal(12, 2)
-  quantity    Int
-  unit        String?
-  brand       String?
-  imageUrl    String?  @map("image_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId       String   @map("order_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  variantId     String?  @map("variant_id") @db.Uuid
+  productName   String   @map("product_name")
+  variantName   String?  @map("variant_name")
+  price         Decimal  @db.Decimal(12, 2)  // İndirimli fiyat
+  originalPrice Decimal? @db.Decimal(12, 2) @map("original_price")  // Orijinal fiyat (kampanya varsa)
+  campaignId    String?  @map("campaign_id") @db.Uuid  // Uygulanan kampanya
+  campaignName  String?  @map("campaign_name")  // Kampanya adı (snapshot)
+  quantity      Int
+  unit          String?
+  brand         String?
+  imageUrl      String?  @map("image_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
+  @@index([campaignId])
   @@map("order_items")
 }
 
@@ -289,4 +311,117 @@ model Settings {
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+model Campaign {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  slug             String       @unique
+  description      String?
+  imageUrl         String?      @map("image_url")
+
+  // Kampanya tipi
+  type             CampaignType
+
+  // İndirim değerleri
+  discountPercent  Decimal?     @db.Decimal(5, 2) @map("discount_percent")  // %50.00 gibi
+  discountAmount   Decimal?     @db.Decimal(12, 2) @map("discount_amount") // 10.00€ gibi
+
+  // X Al Y Öde için
+  buyQuantity      Int?         @map("buy_quantity")   // Örn: 3 (3 al)
+  getQuantity      Int?         @map("get_quantity")   // Örn: 2 (2 öde)
+
+  // Tarih aralığı
+  startDate        DateTime     @map("start_date")
+  endDate          DateTime     @map("end_date")
+
+  // Uygulama kuralları
+  minPurchase      Decimal?     @db.Decimal(12, 2) @map("min_purchase")   // Min sepet tutarı
+  maxDiscount      Decimal?     @db.Decimal(12, 2) @map("max_discount")   // Max indirim tutarı
+  usageLimit       Int?         @map("usage_limit")     // Toplam kullanım limiti
+  usageCount       Int          @default(0) @map("usage_count")           // Kullanım sayısı
+
+  // Hedefleme
+  applyToAll       Boolean      @default(false) @map("apply_to_all")  // Tüm mağaza
+  categoryIds      Json?        @map("category_ids")  // ["uuid1", "uuid2"]
+  productIds       Json?        @map("product_ids")   // ["uuid1", "uuid2"]
+
+  // Durumlar
+  isActive         Boolean      @default(true) @map("is_active")
+  priority         Int          @default(0)  // Yüksek öncelik önce uygulanır
+
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([type])
+  @@index([startDate, endDate])
+  @@index([isActive, priority])
+  @@index([applyToAll, isActive])
+  @@map("campaigns")
+}
+
+// ===================================
+// PRODUCT VARIANTS
+// ===================================
+
+model ProductVariantOption {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  name        String   // Örn: "Renk", "Beden", "Boyut"
+  displayOrder Int     @default(0) @map("display_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values  ProductVariantValue[]
+
+  @@index([productId])
+  @@index([productId, displayOrder])
+  @@map("product_variant_options")
+}
+
+model ProductVariant {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  name          String   // Örn: "Kırmızı - S", "Mavi - M"
+  price         Decimal  @db.Decimal(12, 2)
+  stock         Int      @default(0)
+  sku           String?  @unique
+  imageUrls     Json     @default("[]") @map("image_urls")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values      ProductVariantValue[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+
+  @@index([productId])
+  @@index([productId, isActive])
+  @@index([sku])
+  @@index([stock])
+  @@map("product_variants")
+}
+
+model ProductVariantValue {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  optionId   String   @map("option_id") @db.Uuid
+  value      String   // Örn: "Kırmızı", "S", "M"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  variant ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  option  ProductVariantOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, optionId])
+  @@index([variantId])
+  @@index([optionId])
+  @@map("product_variant_values")
 }

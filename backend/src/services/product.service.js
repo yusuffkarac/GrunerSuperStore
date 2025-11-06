@@ -51,6 +51,14 @@ class ProductService {
               slug: true,
             },
           },
+          variantOptions: {
+            orderBy: { displayOrder: 'asc' },
+          },
+          variants: {
+            where: { isActive: true },
+            take: 1, // İlk varyantı göster (varsayılan)
+            orderBy: { createdAt: 'asc' },
+          },
         },
         orderBy,
         skip,
@@ -82,6 +90,31 @@ class ProductService {
             slug: true,
           },
         },
+        variantOptions: {
+          orderBy: { displayOrder: 'asc' },
+        },
+        variants: {
+          where: { isActive: true },
+          include: {
+            values: {
+              include: {
+                option: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayOrder: true,
+                  },
+                },
+              },
+              orderBy: {
+                option: {
+                  displayOrder: 'asc',
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -107,6 +140,31 @@ class ProductService {
             name: true,
             slug: true,
           },
+        },
+        variantOptions: {
+          orderBy: { displayOrder: 'asc' },
+        },
+        variants: {
+          where: { isActive: true },
+          include: {
+            values: {
+              include: {
+                option: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayOrder: true,
+                  },
+                },
+              },
+              orderBy: {
+                option: {
+                  displayOrder: 'asc',
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -160,6 +218,11 @@ class ProductService {
             name: true,
             slug: true,
           },
+        },
+        variants: {
+          where: { isActive: true },
+          take: 1, // İlk varyantı göster (varsayılan)
+          orderBy: { createdAt: 'asc' },
         },
       },
       orderBy: { createdAt: 'desc' },

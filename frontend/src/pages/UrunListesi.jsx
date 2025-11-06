@@ -4,6 +4,7 @@ import { FiSearch, FiGrid, FiList, FiFilter, FiX } from 'react-icons/fi';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import settingsService from '../services/settingsService';
+import campaignService from '../services/campaignService';
 import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
@@ -17,6 +18,7 @@ function UrunListesi() {
 
   // State
   const [products, setProducts] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,20 +56,24 @@ function UrunListesi() {
     checkSettings();
   }, [isAuthenticated]);
 
-  // Kategorileri yükle
+  // Kategorileri ve kampanyaları yükle
   useEffect(() => {
     if (!canViewProducts) return;
 
-    const fetchCategories = async () => {
+    const fetchCategoriesAndCampaigns = async () => {
       try {
-        const response = await categoryService.getCategories();
-        setCategories(response.data.categories || []);
+        const [categoriesRes, campaignsRes] = await Promise.all([
+          categoryService.getCategories(),
+          campaignService.getActiveCampaigns(),
+        ]);
+        setCategories(categoriesRes.data.categories || []);
+        setCampaigns(campaignsRes.data.campaigns || []);
       } catch (err) {
-        console.error('Kategori yükleme hatası:', err);
+        console.error('Kategori/Kampanya yükleme hatası:', err);
       }
     };
 
-    fetchCategories();
+    fetchCategoriesAndCampaigns();
   }, [canViewProducts]);
 
   // Ürünleri yükle
@@ -117,6 +123,41 @@ function UrunListesi() {
 
     return () => clearTimeout(timer);
   }, [searchQuery, setSearchParams]);
+
+  // Ürün için geçerli kampanyayı bul
+  const getCampaignForProduct = (product) => {
+    if (!campaigns || campaigns.length === 0) return null;
+
+    // Ürüne uygulanabilir kampanyaları filtrele
+    const applicableCampaigns = campaigns.filter((campaign) => {
+      // FREE_SHIPPING kampanyaları ürün kartında gösterilmez
+      if (campaign.type === 'FREE_SHIPPING') return false;
+
+      // Tüm mağazaya uygulanan kampanyalar
+      if (campaign.applyToAll) return true;
+
+      // Kategoriye özgü kampanyalar
+      if (product.categoryId && campaign.categoryIds) {
+        const categoryIds = Array.isArray(campaign.categoryIds)
+          ? campaign.categoryIds
+          : [];
+        if (categoryIds.includes(product.categoryId)) return true;
+      }
+
+      // Ürüne özgü kampanyalar
+      if (campaign.productIds) {
+        const productIds = Array.isArray(campaign.productIds)
+          ? campaign.productIds
+          : [];
+        if (productIds.includes(product.id)) return true;
+      }
+
+      return false;
+    });
+
+    // En yüksek öncelikli kampanyayı döndür
+    return applicableCampaigns.length > 0 ? applicableCampaigns[0] : null;
+  };
 
   // Kategori değişikliği
   const handleCategoryChange = (categoryId) => {
@@ -323,8 +364,13 @@ function UrunListesi() {
                 : 'flex flex-col gap-4'
             }
           >
-            {products.map((product) => (
-              <UrunKarti key={product.id} product={product} />
+            {products.map((product, index) => (
+              <UrunKarti
+                key={product.id}
+                product={product}
+                campaign={getCampaignForProduct(product)}
+                priority={index < 8} // İlk 8 ürün için eager loading
+              />
             ))}
           </div>
 

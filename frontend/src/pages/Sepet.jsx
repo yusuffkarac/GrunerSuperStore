@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
+import campaignService from '../services/campaignService';
 import { useAlert } from '../contexts/AlertContext';
 
 // Sepet Item Component
@@ -21,7 +22,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
     },
     onSwiped: (eventData) => {
       if (eventData.deltaX < -50) {
-        onRemove(item.productId);
+        onRemove(item.productId, item.variantId);
       }
       setSwipeOffset(0);
     },
@@ -59,6 +60,11 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
         {/* Ürün bilgileri */}
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+          {item.variantName && (
+            <p className="text-xs text-purple-600 font-medium mt-0.5">
+              {item.variantName}
+            </p>
+          )}
           <p className="text-sm text-gray-500 mt-1">
             {parseFloat(item.price).toFixed(2)} € {item.unit && `/ ${item.unit}`}
           </p>
@@ -66,7 +72,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
           {/* Miktar kontrolü */}
           <div className="flex items-center gap-3 mt-3">
             <button
-              onClick={() => onUpdateQuantity(item.productId, item.quantity - 1)}
+              onClick={() => onUpdateQuantity(item.productId, item.quantity - 1, item.variantId)}
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
               aria-label="Menge verringern"
             >
@@ -76,7 +82,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
             <span className="w-12 text-center font-medium">{item.quantity}</span>
 
             <button
-              onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+              onClick={() => onUpdateQuantity(item.productId, item.quantity + 1, item.variantId)}
               disabled={item.quantity >= item.stock}
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Menge erhöhen"
@@ -96,7 +102,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
             {(parseFloat(item.price) * item.quantity).toFixed(2)} €
           </p>
           <button
-            onClick={() => onRemove(item.productId)}
+            onClick={() => onRemove(item.productId, item.variantId)}
             className="text-red-500 text-sm mt-2 hover:text-red-700"
           >
             Entfernen
@@ -114,23 +120,154 @@ function Sepet() {
   const { isAuthenticated } = useAuthStore();
   const { showConfirm } = useAlert();
   const [isClearing, setIsClearing] = useState(false);
+  const [campaigns, setCampaigns] = useState([]);
 
   const total = getTotal();
   const itemCount = getItemCount();
 
+  // Kampanya bilgisini çek
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (total > 0) {
+        try {
+          const response = await campaignService.getActiveCampaigns();
+          const activeCampaigns = response.data.campaigns || [];
+          // Minimum tutar kontrolü
+          const applicableCampaigns = activeCampaigns.filter(c => {
+            if (c.minPurchase && parseFloat(c.minPurchase) > total) return false;
+            return true;
+          });
+          setCampaigns(applicableCampaigns);
+        } catch (error) {
+          console.error('Kampanya yükleme hatası:', error);
+        }
+      }
+    };
+    fetchCampaigns();
+  }, [total]);
+
+  // Ürün için geçerli kampanyaları filtrele
+  const getApplicableCampaignsForItem = (item) => {
+    return campaigns.filter((campaign) => {
+      // FREE_SHIPPING kampanyaları ürün bazında değil
+      if (campaign.type === 'FREE_SHIPPING') return false;
+
+      // Tüm mağazaya uygulanan kampanyalar
+      if (campaign.applyToAll) return true;
+
+      // Kategoriye özgü kampanyalar
+      if (item.categoryId && campaign.categoryIds) {
+        const categoryIds = Array.isArray(campaign.categoryIds) ? campaign.categoryIds : [];
+        if (categoryIds.includes(item.categoryId)) return true;
+      }
+
+      // Ürüne özgü kampanyalar
+      if (campaign.productIds) {
+        const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+        if (productIds.includes(item.productId)) return true;
+      }
+
+      return false;
+    });
+  };
+
+  // Tek kampanya için indirim hesapla
+  const calculateSingleCampaignDiscount = (price, quantity, campaign) => {
+    const { type, discountPercent, discountAmount, buyQuantity, getQuantity, maxDiscount } = campaign;
+    let discount = 0;
+
+    switch (type) {
+      case 'PERCENTAGE':
+        discount = price * (parseFloat(discountPercent) / 100);
+        break;
+
+      case 'FIXED_AMOUNT':
+        discount = parseFloat(discountAmount);
+        discount = Math.min(discount, price);
+        break;
+
+      case 'BUY_X_GET_Y':
+        // X Al Y Öde kampanyası
+        if (quantity >= buyQuantity) {
+          const sets = Math.floor(quantity / buyQuantity);
+          const freeItems = buyQuantity - getQuantity;
+          const totalFreeItems = sets * freeItems;
+          discount = totalFreeItems * price;
+        }
+        break;
+
+      default:
+        discount = 0;
+    }
+
+    // Max indirim kontrolü
+    if (maxDiscount && discount > parseFloat(maxDiscount)) {
+      discount = parseFloat(maxDiscount);
+    }
+
+    return discount;
+  };
+
+  // Kampanya indirimi hesapla
+  const calculateDiscount = () => {
+    if (campaigns.length === 0 || items.length === 0) return { discount: 0, details: [] };
+
+    let totalDiscount = 0;
+    const discountDetails = [];
+
+    // Her ürün için ayrı ayrı indirim hesapla
+    items.forEach((item) => {
+      const itemPrice = parseFloat(item.price);
+      const quantity = parseInt(item.quantity);
+
+      // Bu ürün için geçerli kampanyaları bul
+      const applicableCampaigns = getApplicableCampaignsForItem(item);
+
+      if (applicableCampaigns.length === 0) return;
+
+      // En yüksek indirimi veren kampanyayı bul
+      let bestDiscount = 0;
+      let bestCampaign = null;
+
+      applicableCampaigns.forEach((campaign) => {
+        const discount = calculateSingleCampaignDiscount(itemPrice, quantity, campaign);
+        if (discount > bestDiscount) {
+          bestDiscount = discount;
+          bestCampaign = campaign;
+        }
+      });
+
+      if (bestDiscount > 0 && bestCampaign) {
+        totalDiscount += bestDiscount;
+        discountDetails.push({
+          productName: item.name,
+          campaignName: bestCampaign.name,
+          discount: bestDiscount,
+        });
+      }
+    });
+
+    return { discount: totalDiscount, details: discountDetails };
+  };
+
+  const discountResult = calculateDiscount();
+  const discount = discountResult.discount;
+  const discountDetails = discountResult.details;
+  const finalTotal = total - discount;
+
   // Miktar güncelleme
-  const handleUpdateQuantity = async (productId, newQuantity) => {
+  const handleUpdateQuantity = async (productId, newQuantity, variantId = null) => {
     try {
-      await updateItemQuantity(productId, newQuantity);
+      await updateItemQuantity(productId, newQuantity, variantId);
     } catch (error) {
       toast.error('Fehler beim Aktualisieren der Menge');
     }
   };
 
   // Ürün silme
-  const handleRemoveItem = async (productId) => {
+  const handleRemoveItem = async (productId, variantId = null) => {
     try {
-      await removeItem(productId);
+      await removeItem(productId, variantId);
       toast.success('Produkt entfernt');
     } catch (error) {
       toast.error('Fehler beim Entfernen des Produkts');
@@ -227,7 +364,7 @@ function Sepet() {
       <AnimatePresence>
         {items.map((item) => (
           <CartItem
-            key={item.productId}
+            key={`${item.productId}-${item.variantId || 'no-variant'}`}
             item={item}
             onRemove={handleRemoveItem}
             onUpdateQuantity={handleUpdateQuantity}
@@ -242,13 +379,36 @@ function Sepet() {
         className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg max-w-[600px] mx-auto"
       >
       {/* Toplam */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="space-y-2 mb-3">
+        <div className="flex items-center justify-between">
           <span className="text-gray-600">Zwischensumme</span>
+          <span className="text-gray-900 font-semibold">{total.toFixed(2)} €</span>
+        </div>
+
+        {/* Kampanya indirimi */}
+        {discount > 0 && discountDetails.length > 0 && (
+          <div className="space-y-1">
+            {discountDetails.map((detail, index) => (
+              <div key={index} className="flex items-center justify-between text-red-600">
+                <div className="flex items-center gap-1">
+                  <FiTag className="w-4 h-4" />
+                  <span className="text-sm">{detail.campaignName}</span>
+                </div>
+                <span className="font-semibold">-{detail.discount.toFixed(2)} €</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Final toplam */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+          <span className="text-gray-900 font-bold">Gesamt</span>
           <div className="text-right">
-            <span className="text-2xl font-bold text-gray-900 block">{total.toFixed(2)} €</span>
+            <span className="text-2xl font-bold text-gray-900 block">{finalTotal.toFixed(2)} €</span>
             <span className="text-xs text-gray-500">Versandkosten an der Kasse</span>
           </div>
         </div>
+      </div>
 
         {/* Checkout butonu */}
       <button

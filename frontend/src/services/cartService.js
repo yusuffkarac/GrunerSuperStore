@@ -7,8 +7,8 @@ const cartService = {
   },
 
   // Sepete ürün ekle
-  addToCart: async (productId, quantity = 1) => {
-    return await api.post('/cart', { productId, quantity });
+  addToCart: async (productId, quantity = 1, variantId = null) => {
+    return await api.post('/cart', { productId, variantId, quantity });
   },
 
   // Sepetteki ürün miktarını güncelle

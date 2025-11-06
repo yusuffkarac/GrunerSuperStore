@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -18,6 +18,26 @@ function Produkte() {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showVariantModal, setShowVariantModal] = useState(false);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState(null);
+  const [variantOptions, setVariantOptions] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [loadingVariants, setLoadingVariants] = useState(false);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [showOptionForm, setShowOptionForm] = useState(false);
+  const [editingVariant, setEditingVariant] = useState(null);
+  const [globalVariantOptions, setGlobalVariantOptions] = useState([]);
+  const [loadingGlobalOptions, setLoadingGlobalOptions] = useState(false);
+  const [optionFormMode, setOptionFormMode] = useState('select'); // 'select' veya 'create'
+  const [variantOptionValues, setVariantOptionValues] = useState({}); // { optionName: [values] }
+  const [variantFormData, setVariantFormData] = useState({
+    name: '',
+    price: '',
+    stock: '',
+    sku: '',
+    imageUrls: [],
+    values: {},
+  });
   
   // View mode: 'list' or 'card', stored in localStorage
   const [viewMode, setViewMode] = useState(() => {
@@ -189,6 +209,222 @@ function Produkte() {
       } catch (error) {
         toast.error(error.response?.data?.message || 'Fehler beim Löschen');
       }
+    }
+  };
+
+  // Varyant modal aç
+  const openVariantModal = async (product) => {
+    setSelectedProductForVariants(product);
+    setShowVariantModal(true);
+    setLoadingVariants(true);
+    try {
+      const [optionsRes, variantsRes] = await Promise.all([
+        adminService.getVariantOptions(product.id),
+        adminService.getProductVariants(product.id),
+      ]);
+      setVariantOptions(optionsRes.data.options || []);
+      setVariants(variantsRes.data.variants || []);
+    } catch (error) {
+      toast.error('Varianten konnten nicht geladen werden');
+      console.error('Varyant yükleme hatası:', error);
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const closeVariantModal = () => {
+    setShowVariantModal(false);
+    setSelectedProductForVariants(null);
+    setVariantOptions([]);
+    setVariants([]);
+    setShowVariantForm(false);
+    setShowOptionForm(false);
+    setEditingVariant(null);
+    setVariantFormData({
+      name: '',
+      price: '',
+      stock: '',
+      sku: '',
+      imageUrls: [],
+      values: {},
+    });
+  };
+
+  // Varyant seçeneği form aç
+  const openOptionForm = async () => {
+    setShowOptionForm(true);
+    setOptionFormMode('select');
+    setLoadingGlobalOptions(true);
+    try {
+      const response = await adminService.getAllVariantOptionNames();
+      setGlobalVariantOptions(response.data?.options || []);
+    } catch (error) {
+      console.error('Global varyant seçenekleri yüklenemedi:', error);
+      setGlobalVariantOptions([]);
+    } finally {
+      setLoadingGlobalOptions(false);
+    }
+  };
+
+  const closeOptionForm = () => {
+    setShowOptionForm(false);
+    setOptionFormMode('select');
+    setGlobalVariantOptions([]);
+  };
+
+  // Varyant form aç
+  const openVariantForm = async (variant = null) => {
+    // Her varyant seçeneği için daha önce kullanılmış değerleri yükle
+    const valuesMap = {};
+    for (const option of variantOptions) {
+      try {
+        const response = await adminService.getVariantOptionValues(option.name);
+        valuesMap[option.name] = response.data?.values || [];
+      } catch (error) {
+        console.error(`Varyant seçeneği değerleri yüklenemedi (${option.name}):`, error);
+        valuesMap[option.name] = [];
+      }
+    }
+    setVariantOptionValues(valuesMap);
+
+    if (variant) {
+      // Düzenleme modu
+      const valuesObj = {};
+      if (variant.values && variant.values.length > 0) {
+        variant.values.forEach((v) => {
+          valuesObj[v.optionId] = v.value;
+        });
+      }
+      setVariantFormData({
+        name: variant.name || '',
+        price: parseFloat(variant.price) || '',
+        stock: variant.stock || '',
+        sku: variant.sku || '',
+        imageUrls: Array.isArray(variant.imageUrls) ? variant.imageUrls : [],
+        values: valuesObj,
+      });
+      setEditingVariant(variant);
+    } else {
+      // Yeni varyant
+      const valuesObj = {};
+      variantOptions.forEach((opt) => {
+        valuesObj[opt.id] = '';
+      });
+      setVariantFormData({
+        name: '',
+        price: '',
+        stock: '',
+        sku: '',
+        imageUrls: [],
+        values: valuesObj,
+      });
+      setEditingVariant(null);
+    }
+    setShowVariantForm(true);
+  };
+
+  const closeVariantForm = () => {
+    setShowVariantForm(false);
+    setEditingVariant(null);
+    setVariantFormData({
+      name: '',
+      price: '',
+      stock: '',
+      sku: '',
+      imageUrls: [],
+      values: {},
+    });
+  };
+
+  // Mevcut bir varyant seçeneğini ürüne ekle
+  const handleSelectExistingOption = async (optionName) => {
+    try {
+      await adminService.createVariantOption(selectedProductForVariants.id, {
+        name: optionName,
+        displayOrder: 0,
+      });
+      toast.success('Varyant seçeneği eklendi');
+      closeOptionForm();
+      openVariantModal(selectedProductForVariants);
+    } catch (error) {
+      toast.error('Hata: ' + (error.response?.data?.message || 'Bilinmeyen hata'));
+    }
+  };
+
+  // Varyant seçeneği kaydet
+  const handleSaveOption = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const name = formData.get('optionName');
+    const displayOrder = parseInt(formData.get('displayOrder')) || 0;
+
+    try {
+      await adminService.createVariantOption(selectedProductForVariants.id, {
+        name,
+        displayOrder,
+      });
+      toast.success('Varyant seçeneği eklendi');
+      closeOptionForm();
+      openVariantModal(selectedProductForVariants);
+    } catch (error) {
+      toast.error('Hata: ' + (error.response?.data?.message || 'Bilinmeyen hata'));
+    }
+  };
+
+  // Varyant kaydet
+  const handleSaveVariant = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const price = parseFloat(formData.get('price'));
+    const stock = parseInt(formData.get('stock'));
+    const sku = formData.get('sku') || null;
+
+    // Her seçenek için değer al
+    const values = [];
+    const valueParts = []; // Varyant adını oluşturmak için
+    for (const option of variantOptions) {
+      const value = formData.get(`value_${option.id}`);
+      if (!value) {
+        toast.error(`"${option.name}" için değer girmelisiniz`);
+        return;
+      }
+      values.push({
+        optionId: option.id,
+        value: value,
+      });
+      valueParts.push(value);
+    }
+
+    // Varyant adını otomatik oluştur (örn: "Kırmızı - S" veya "Mavi - M")
+    const name = valueParts.join(' - ');
+
+    try {
+      if (editingVariant) {
+        await adminService.updateVariant(editingVariant.id, {
+          name,
+          price,
+          stock,
+          sku,
+          imageUrls: variantFormData.imageUrls,
+          values,
+        });
+        toast.success('Varyant güncellendi');
+      } else {
+        await adminService.createVariant(selectedProductForVariants.id, {
+          name,
+          price,
+          stock,
+          sku,
+          imageUrls: variantFormData.imageUrls,
+          values,
+        });
+        toast.success('Varyant eklendi');
+      }
+      closeVariantForm();
+      openVariantModal(selectedProductForVariants);
+    } catch (error) {
+      toast.error('Hata: ' + (error.response?.data?.message || 'Bilinmeyen hata'));
     }
   };
 
@@ -523,6 +759,13 @@ function Produkte() {
                       <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => openVariantModal(product)}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Varianten verwalten"
+                          >
+                            <FiLayers size={18} />
+                          </button>
+                          <button
                             onClick={() => openModal(product)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Bearbeiten"
@@ -608,6 +851,13 @@ function Produkte() {
                     </div>
                     <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                       <button
+                        onClick={() => openVariantModal(product)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
+                      >
+                        <FiLayers size={16} />
+                        Varianten
+                      </button>
+                      <button
                         onClick={() => openModal(product)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
                       >
@@ -689,6 +939,13 @@ function Produkte() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openVariantModal(product)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
+                    >
+                      <FiLayers size={16} />
+                      Varianten
+                    </button>
                     <button
                       onClick={() => openModal(product)}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
@@ -1090,6 +1347,536 @@ function Produkte() {
                   </div>
                 </form>
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Varyant Yönetimi Modal */}
+      <AnimatePresence>
+        {showVariantModal && selectedProductForVariants && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeVariantModal}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Varianten verwalten
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedProductForVariants.name}
+                    </p>
+    </div>
+                  <button
+                    onClick={closeVariantModal}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={24} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {loadingVariants ? (
+                    <Loading />
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Varyant Seçenekleri */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Varyant Seçenekleri
+                          </h3>
+                          <button
+                            onClick={openOptionForm}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                          >
+                            <FiPlus size={16} />
+                            Seçenek Ekle
+                          </button>
+                        </div>
+                        {variantOptions.length === 0 ? (
+                          <p className="text-gray-500 text-sm">Henüz varyant seçeneği yok</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {variantOptions.map((option) => (
+                              <div key={option.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <span className="font-medium">{option.name}</span>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Bu seçeneği silmek istediğinize emin misiniz?')) {
+                                      adminService.deleteVariantOption(option.id)
+                                        .then(() => {
+                                          toast.success('Seçenek silindi');
+                                          openVariantModal(selectedProductForVariants);
+                                        })
+                                        .catch((error) => {
+                                          toast.error('Hata: ' + (error.response?.data?.message || 'Bilinmeyen hata'));
+                                        });
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <FiTrash2 size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Varyantlar */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Varyantlar ({variants.length})
+                          </h3>
+                          <button
+                            onClick={() => {
+                              if (variantOptions.length === 0) {
+                                toast.error('Önce varyant seçeneği eklemelisiniz');
+                                return;
+                              }
+                              openVariantForm();
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                          >
+                            <FiPlus size={16} />
+                            Varyant Ekle
+                          </button>
+                        </div>
+                        {variants.length === 0 ? (
+                          <p className="text-gray-500 text-sm">Henüz varyant yok</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {variants.map((variant) => (
+                              <div key={variant.id} className="p-4 border border-gray-200 rounded-lg">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900 mb-2">{variant.name}</div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div>
+                                        <span className="text-gray-600">Fiyat: </span>
+                                        <span className="font-medium">{parseFloat(variant.price).toFixed(2)} €</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Stok: </span>
+                                        <span className={`font-medium ${variant.stock <= 0 ? 'text-red-600' : ''}`}>
+                                          {variant.stock}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {variant.values && variant.values.length > 0 ? (
+                                      <div className="mt-2 text-xs text-gray-500">
+                                        {variant.values.map((v, idx) => (
+                                          <span key={idx}>
+                                            {v.option.name}: {v.value}
+                                            {idx < variant.values.length - 1 && ', '}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="mt-2 text-xs text-amber-600 font-medium">
+                                        ⚠️ Varyant değerleri eksik - Ürün detayda görünmeyecek
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="ml-4 flex items-center gap-2">
+                                    <button
+                                      onClick={() => openVariantForm(variant)}
+                                      className="text-blue-600 hover:text-blue-700 p-2"
+                                      title="Varyant düzenle"
+                                    >
+                                      <FiEdit2 size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('Bu varyantı silmek istediğinize emin misiniz?')) {
+                                          adminService.deleteVariant(variant.id)
+                                            .then(() => {
+                                              toast.success('Varyant silindi');
+                                              openVariantModal(selectedProductForVariants);
+                                            })
+                                            .catch((error) => {
+                                              toast.error('Hata: ' + (error.response?.data?.message || 'Bilinmeyen hata'));
+                                            });
+                                        }
+                                      }}
+                                      className="text-red-600 hover:text-red-700 p-2"
+                                    >
+                                      <FiTrash2 size={18} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-gray-200">
+                  <button
+                    onClick={closeVariantModal}
+                    className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Schließen
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Varyant Seçeneği Form Modal */}
+      <AnimatePresence>
+        {showOptionForm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeOptionForm}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-lg shadow-xl max-w-md w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Varyant Seçeneği Ekle</h3>
+                    <button
+                      onClick={closeOptionForm}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FiX size={24} />
+                    </button>
+                  </div>
+
+                  {optionFormMode === 'select' ? (
+                    <div className="space-y-4">
+                      {/* Mevcut seçenekler */}
+                      {loadingGlobalOptions ? (
+                        <div className="text-center py-4">
+                          <Loading />
+                        </div>
+                      ) : globalVariantOptions.length > 0 ? (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-3">
+                            Mevcut varyant seçeneklerinden birini seçin:
+                          </p>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {globalVariantOptions.map((option, index) => {
+                              // Bu üründe zaten bu seçenek var mı kontrol et
+                              const alreadyExists = variantOptions.some(
+                                (opt) => opt.name === option.name
+                              );
+                              return (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => handleSelectExistingOption(option.name)}
+                                  disabled={alreadyExists}
+                                  className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                                    alreadyExists
+                                      ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                                      : 'bg-white border-gray-300 hover:border-green-500 hover:bg-green-50 text-gray-900'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{option.name}</span>
+                                    {alreadyExists && (
+                                      <span className="text-xs text-gray-500">(Zaten ekli)</span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          Henüz mevcut varyant seçeneği yok
+                        </p>
+                      )}
+
+                      <div className="pt-4 border-t border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => setOptionFormMode('create')}
+                          className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-700 hover:border-green-500 hover:bg-green-50 transition-colors"
+                        >
+                          + Yeni Seçenek Oluştur
+                        </button>
+                      </div>
+
+                      <div className="flex gap-3 mt-4">
+                        <button
+                          type="button"
+                          onClick={closeOptionForm}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          İptal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSaveOption}>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Seçenek Adı *
+                          </label>
+                          <input
+                            type="text"
+                            name="optionName"
+                            required
+                            placeholder="örn: Renk, Beden, Boyut"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            autoComplete="off"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Sıralama
+                          </label>
+                          <input
+                            type="number"
+                            name="displayOrder"
+                            defaultValue="0"
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            autoComplete="off"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => setOptionFormMode('select')}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Geri
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeOptionForm}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          İptal
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Kaydet
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Varyant Form Modal */}
+      <AnimatePresence>
+        {showVariantForm && variantOptions.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeVariantForm}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {editingVariant ? 'Varyant Düzenle' : 'Yeni Varyant Ekle'}
+                    </h3>
+                    <button
+                      onClick={closeVariantForm}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FiX size={24} />
+                    </button>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveVariant} className="flex-1 overflow-y-auto p-6">
+                  <div className="space-y-4">
+                    {/* Varyant Seçenekleri - Her seçenek için değer */}
+                    {variantOptions.map((option) => {
+                      const suggestedValues = variantOptionValues[option.name] || [];
+                      const currentValue = variantFormData.values[option.id] || '';
+                      const inputId = `value_${option.id}`;
+                      
+                      return (
+                        <div key={option.id}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {option.name} *
+                          </label>
+                          
+                          {/* Mevcut değerler - Tıklanabilir butonlar */}
+                          {suggestedValues.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-xs text-gray-500 mb-2">Önceki değerlerden seçin:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {suggestedValues.map((value, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      const input = document.getElementById(inputId);
+                                      if (input) {
+                                        input.value = value;
+                                        // Form state'i güncelle
+                                        setVariantFormData(prev => ({
+                                          ...prev,
+                                          values: {
+                                            ...prev.values,
+                                            [option.id]: value
+                                          }
+                                        }));
+                                      }
+                                    }}
+                                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                                      currentValue === value
+                                        ? 'bg-green-600 text-white border-green-600'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
+                                    }`}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Input alanı */}
+                          <input
+                            type="text"
+                            id={inputId}
+                            name={`value_${option.id}`}
+                            required
+                            defaultValue={currentValue}
+                            placeholder={suggestedValues.length > 0 ? 'Veya yeni değer girin' : `örn: ${option.name === 'Renk' ? 'Kırmızı' : option.name === 'Beden' ? 'S' : 'Değer'}`}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            autoComplete="off"
+                            onChange={(e) => {
+                              setVariantFormData(prev => ({
+                                ...prev,
+                                values: {
+                                  ...prev.values,
+                                  [option.id]: e.target.value
+                                }
+                              }));
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+
+                    {/* Fiyat ve Stok */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fiyat (€) *
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          required
+                          step="0.01"
+                          min="0"
+                          defaultValue={variantFormData.price}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          autoComplete="off"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stok *
+                        </label>
+                        <input
+                          type="number"
+                          name="stock"
+                          required
+                          min="0"
+                          defaultValue={variantFormData.stock}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+
+                    {/* SKU */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        SKU (Stok Kodu)
+                      </label>
+                      <input
+                        type="text"
+                        name="sku"
+                        defaultValue={variantFormData.sku}
+                        placeholder="Opsiyonel"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={closeVariantForm}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      {editingVariant ? 'Güncelle' : 'Kaydet'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
           </>
         )}

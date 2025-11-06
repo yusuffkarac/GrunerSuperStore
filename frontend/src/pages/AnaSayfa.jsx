@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
+import { FiChevronRight, FiChevronLeft, FiTag } from 'react-icons/fi';
 import { MdLocalShipping, MdCheckCircle, MdCreditCard, MdInventory } from 'react-icons/md';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import settingsService from '../services/settingsService';
+import campaignService from '../services/campaignService';
 import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
 import useAuthStore from '../store/authStore';
@@ -16,6 +17,7 @@ function AnaSayfa() {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [homepageSettings, setHomepageSettings] = useState(null);
@@ -111,15 +113,17 @@ function AnaSayfa() {
         setCanViewProducts(true);
 
         // Paralel olarak tüm verileri çek
-        const [categoriesRes, featuredRes, bestSellersRes] = await Promise.all([
+        const [categoriesRes, featuredRes, bestSellersRes, campaignsRes] = await Promise.all([
           categoryService.getCategories(),
           productService.getFeaturedProducts(10),
           productService.getProducts({ limit: 8}),
+          campaignService.getActiveCampaigns(),
         ]);
 
         setCategories(categoriesRes.data.categories || []);
         setFeaturedProducts(featuredRes.data.products || []);
         setBestSellers(bestSellersRes.data.products || []);
+        setCampaigns(campaignsRes.data.campaigns || []);
       } catch (error) {
         console.error('Veri yükleme hatası:', error);
       } finally {
@@ -144,6 +148,41 @@ function AnaSayfa() {
       left: newScrollLeft,
       behavior: 'smooth',
     });
+  };
+
+  // Ürün için geçerli kampanyayı bul
+  const getCampaignForProduct = (product) => {
+    if (!campaigns || campaigns.length === 0) return null;
+
+    // Ürüne uygulanabilir kampanyaları filtrele
+    const applicableCampaigns = campaigns.filter((campaign) => {
+      // FREE_SHIPPING kampanyaları ürün kartında gösterilmez
+      if (campaign.type === 'FREE_SHIPPING') return false;
+
+      // Tüm mağazaya uygulanan kampanyalar
+      if (campaign.applyToAll) return true;
+
+      // Kategoriye özgü kampanyalar
+      if (product.categoryId && campaign.categoryIds) {
+        const categoryIds = Array.isArray(campaign.categoryIds)
+          ? campaign.categoryIds
+          : [];
+        if (categoryIds.includes(product.categoryId)) return true;
+      }
+
+      // Ürüne özgü kampanyalar
+      if (campaign.productIds) {
+        const productIds = Array.isArray(campaign.productIds)
+          ? campaign.productIds
+          : [];
+        if (productIds.includes(product.id)) return true;
+      }
+
+      return false;
+    });
+
+    // En yüksek öncelikli kampanyayı döndür
+    return applicableCampaigns.length > 0 ? applicableCampaigns[0] : null;
   };
 
   if (loading) {
@@ -306,7 +345,7 @@ function AnaSayfa() {
 
           {/* Kategori kartları */}
           <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-            {categories.slice(0, 8).map((category) => (
+            {categories.slice(0, 8).map((category, index) => (
               <Link
                 key={category.id}
                 to={`/urunler?category=${category.id}`}
@@ -318,7 +357,7 @@ function AnaSayfa() {
                       src={category.imageUrl}
                       alt={category.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
+                      loading={index < 8 ? "eager" : "lazy"}
                     />
                   ) : (
                     <MdInventory className="text-3xl text-white/80" />
@@ -347,6 +386,74 @@ function AnaSayfa() {
       </section>
 
       <div className="container-mobile">
+        {/* Kampanyalar Bölümü */}
+        {campaigns.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Aktuelle Kampagnen</h2>
+                <p className="text-gray-600 text-sm mt-1">Entdecken Sie unsere aktuellen Angebote</p>
+              </div>
+              <Link
+                to="/kampanyalar"
+                className="text-primary-700 hover:text-primary-800 text-sm md:text-base font-medium flex items-center gap-1 group"
+              >
+                Alle anzeigen
+                <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {campaigns.slice(0, 3).map((campaign, index) => (
+                <Link
+                  key={campaign.id}
+                  to="/kampanyalar"
+                  className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+                >
+                  {campaign.imageUrl ? (
+                    <div className="relative h-40 bg-gray-200 overflow-hidden">
+                      <img
+                        src={campaign.imageUrl}
+                        alt={campaign.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading={index < 3 ? "eager" : "lazy"}
+                      />
+                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1">
+                        <FiTag className="w-3 h-3" />
+                        <span>
+                          {campaign.type === 'PERCENTAGE' && `%${campaign.discountPercent} Rabatt`}
+                          {campaign.type === 'FIXED_AMOUNT' && `€${campaign.discountAmount} Rabatt`}
+                          {campaign.type === 'BUY_X_GET_Y' && `${campaign.buyQuantity} Al ${campaign.getQuantity} Öde`}
+                          {campaign.type === 'FREE_SHIPPING' && 'Kostenloser Versand'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative h-40 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                      <FiTag className="w-12 h-12 text-white opacity-50" />
+                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1">
+                        <FiTag className="w-3 h-3" />
+                        <span>
+                          {campaign.type === 'PERCENTAGE' && `%${campaign.discountPercent} Rabatt`}
+                          {campaign.type === 'FIXED_AMOUNT' && `€${campaign.discountAmount} Rabatt`}
+                          {campaign.type === 'BUY_X_GET_Y' && `${campaign.buyQuantity} Al ${campaign.getQuantity} Öde`}
+                          {campaign.type === 'FREE_SHIPPING' && 'Kostenloser Versand'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="font-bold text-lg text-gray-900 mb-1">{campaign.name}</h3>
+                    {campaign.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Öne Çıkan Ürünler - Horizontal Slider */}
         {featuredProducts.length > 0 && (
           <section className="mb-10">
@@ -378,12 +485,16 @@ function AnaSayfa() {
               className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {featuredProducts.map((product) => (
+              {featuredProducts.map((product, index) => (
                 <div
                   key={product.id}
                   className="flex-none w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] snap-start"
                 >
-                  <UrunKarti product={product} />
+                  <UrunKarti 
+                    product={product} 
+                    campaign={getCampaignForProduct(product)}
+                    priority={index < 4} // İlk 4 ürün için eager loading
+                  />
                 </div>
               ))}
             </div>
@@ -408,8 +519,13 @@ function AnaSayfa() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {bestSellers.map((product) => (
-                <UrunKarti key={product.id} product={product} />
+              {bestSellers.map((product, index) => (
+                <UrunKarti 
+                  key={product.id} 
+                  product={product} 
+                  campaign={getCampaignForProduct(product)}
+                  priority={index < 8} // İlk 8 ürün için eager loading
+                />
               ))}
             </div>
           </section>

@@ -165,6 +165,11 @@ function SiparisDetay() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 text-sm mb-1">{item.productName}</p>
+                {item.variantName && (
+                  <p className="text-xs text-purple-600 font-medium mt-0.5 mb-1">
+                    {item.variantName}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500">
                   {parseFloat(item.price).toFixed(2)} € × {item.quantity}
                 </p>

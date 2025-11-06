@@ -14,10 +14,11 @@ class CartController {
 
   // POST /api/cart
   addToCart = asyncHandler(async (req, res) => {
-    const { productId, quantity } = req.body;
+    const { productId, variantId, quantity } = req.body;
 
     const cartItem = await cartService.addToCart(req.user.id, {
       productId,
+      variantId,
       quantity,
     });
 

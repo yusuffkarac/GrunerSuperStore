@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -14,6 +14,7 @@ function Orders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [openStatusDropdown, setOpenStatusDropdown] = useState(null); // orderId
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,10 +80,21 @@ function Orders() {
     try {
       await adminService.updateOrderStatus(orderId, newStatus);
       toast.success('Bestellstatus erfolgreich aktualisiert');
+      setOpenStatusDropdown(null); // Dropdown'u kapat
       loadOrders();
+      // Eğer açık olan sipariş güncellendiyse, onu da güncelle
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Fehler beim Aktualisieren');
     }
+  };
+
+  // Status dropdown aç/kapa
+  const toggleStatusDropdown = (orderId, e) => {
+    e.stopPropagation();
+    setOpenStatusDropdown(openStatusDropdown === orderId ? null : orderId);
   };
 
   // Sipariş detayını aç
@@ -356,10 +368,36 @@ function Orders() {
                           {parseFloat(order.total).toFixed(2)} €
                         </td>
                         <td className="px-4 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
-                            <StatusIcon size={12} />
-                            {getStatusLabel(order.status)}
-                          </span>
+                          <div className="relative status-dropdown-container">
+                            <button
+                              onClick={(e) => toggleStatusDropdown(order.id, e)}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(order.status)}`}
+                            >
+                              <StatusIcon size={12} />
+                              {getStatusLabel(order.status)}
+                              <FiChevronDown size={10} className="ml-0.5" />
+                            </button>
+                            {openStatusDropdown === order.id && (
+                              <div className="absolute left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
+                                {statusOptions.filter(opt => opt.value && opt.value !== order.status).map((option) => {
+                                  const OptionIcon = getStatusIcon(option.value);
+                                  return (
+                                    <button
+                                      key={option.value}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusUpdate(order.id, option.value);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                    >
+                                      <OptionIcon size={14} />
+                                      {option.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString('de-DE', {
@@ -404,10 +442,36 @@ function Orders() {
                         </div>
                         <div className="text-xs text-gray-500">{order.user?.email}</div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)} flex-shrink-0`}>
-                        <StatusIcon size={12} />
-                        {getStatusLabel(order.status)}
-                      </span>
+                      <div className="relative status-dropdown-container">
+                        <button
+                          onClick={(e) => toggleStatusDropdown(order.id, e)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(order.status)} flex-shrink-0`}
+                        >
+                          <StatusIcon size={12} />
+                          {getStatusLabel(order.status)}
+                          <FiChevronDown size={10} className="ml-0.5" />
+                        </button>
+                        {openStatusDropdown === order.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
+                            {statusOptions.filter(opt => opt.value && opt.value !== order.status).map((option) => {
+                              const OptionIcon = getStatusIcon(option.value);
+                              return (
+                                <button
+                                  key={option.value}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(order.id, option.value);
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                >
+                                  <OptionIcon size={14} />
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between mb-3">
@@ -484,7 +548,10 @@ function Orders() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={closeModal}
+              onClick={() => {
+                closeModal();
+                setOpenStatusDropdown(null);
+              }}
               className="fixed inset-0 bg-black bg-opacity-50 z-50"
             />
             <motion.div
@@ -550,6 +617,23 @@ function Orders() {
                             {selectedOrder.type === 'delivery' ? 'Lieferung' : 'Abholung'}
                           </span>
                         </div>
+                        {selectedOrder.paymentType && (
+                          <div className="mt-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${
+                              selectedOrder.paymentType === 'cash'
+                                ? 'bg-green-100 text-green-800'
+                                : selectedOrder.paymentType === 'card_on_delivery'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedOrder.paymentType === 'cash' 
+                                ? 'Barzahlung' 
+                                : selectedOrder.paymentType === 'card_on_delivery'
+                                ? 'Kartenzahlung bei Lieferung'
+                                : 'Keine Zahlung'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -572,19 +656,43 @@ function Orders() {
                     </div>
                   )}
 
+                  {/* Order Note */}
+                  {selectedOrder.note && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 mb-2">Bestellnotiz</h3>
+                      <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
+                        <p className="whitespace-pre-wrap">{selectedOrder.note}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Order Items */}
                   <div>
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Bestellte Artikel</h3>
                     <div className="space-y-2">
                       {selectedOrder.orderItems?.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
+                        <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          {item.imageUrl && (
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                              <img 
+                                src={item.imageUrl} 
+                                alt={item.productName} 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900">{item.productName}</p>
+                            {item.variantName && (
+                              <p className="text-xs text-purple-600 font-medium mt-0.5">
+                                {item.variantName}
+                              </p>
+                            )}
                             <p className="text-sm text-gray-600">
                               {item.quantity}x {parseFloat(item.price).toFixed(2)} €
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0">
                             <p className="font-medium text-gray-900">
                               {(parseFloat(item.price) * item.quantity).toFixed(2)} €
                             </p>

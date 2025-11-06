@@ -11,6 +11,7 @@ import {
   FiMenu,
   FiX,
   FiEdit3,
+  FiTag,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -36,6 +37,7 @@ function AdminLayout() {
     { path: '/admin/products', label: 'Produkte', icon: FiPackage },
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag },
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid },
+    { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },

@@ -29,29 +29,63 @@ const useCartStore = create(
         set({ loading: true, error: null });
         try {
           const response = await cartService.getCart();
-          set({ items: response.data.cart || [], loading: false });
+          const cartItems = response.data?.items || response.data?.cart || [];
+          // Server'dan gelen item'ları formatla
+          const formattedItems = cartItems.map((item) => ({
+            id: item.id,
+            productId: item.product?.id || item.productId,
+            variantId: item.variant?.id || item.variantId || null,
+            name: item.product?.name || item.name,
+            variantName: item.variant?.name || item.variantName || null,
+            price: item.variant ? parseFloat(item.variant.price) : parseFloat(item.product?.price || item.price),
+            quantity: item.quantity,
+            imageUrl: item.variant?.imageUrls?.[0] || item.product?.imageUrls?.[0] || item.imageUrl || null,
+            stock: item.variant ? item.variant.stock : (item.product?.stock || item.stock),
+            unit: item.product?.unit || item.unit,
+          }));
+          set({ items: formattedItems, loading: false });
         } catch (error) {
           set({ error: error.message, loading: false });
         }
       },
 
       // Sepete ürün ekle
-      addItem: async (product, quantity = 1) => {
+      addItem: async (product, quantity = 1, variantId = null) => {
         const items = get().items;
-        const existingItem = items.find((item) => item.productId === product.id);
+        // Varyant ID'sine göre de kontrol et
+        const existingItem = items.find(
+          (item) => item.productId === product.id && item.variantId === variantId
+        );
 
         if (existingItem) {
           // Ürün zaten sepette varsa miktarını artır
-          await get().updateItemQuantity(product.id, existingItem.quantity + quantity);
+          await get().updateItemQuantity(product.id, existingItem.quantity + quantity, variantId);
         } else {
+          // Varyant bilgilerini al
+          const variant = variantId && product.variants 
+            ? product.variants.find(v => v.id === variantId)
+            : null;
+
+          // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
+          const price = variant ? parseFloat(variant.price) : parseFloat(product.price);
+          // Stok: varyant varsa varyant stokunu, yoksa ürün stokunu kullan
+          const stock = variant ? variant.stock : product.stock;
+          // Görsel: varyant varsa varyant görselini, yoksa ürün görselini kullan
+          const imageUrls = variant 
+            ? (Array.isArray(variant.imageUrls) ? variant.imageUrls : [])
+            : (Array.isArray(product.imageUrls) ? product.imageUrls : []);
+          const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
+
           // Yeni ürün ekle
           const newItem = {
             productId: product.id,
+            variantId: variantId || null,
             name: product.name,
-            price: product.price,
+            variantName: variant ? variant.name : null,
+            price: price,
             quantity,
-            imageUrl: Array.isArray(product.imageUrls) ? product.imageUrls[0] : null,
-            stock: product.stock,
+            imageUrl: imageUrl,
+            stock: stock,
             unit: product.unit,
           };
 
@@ -59,7 +93,7 @@ const useCartStore = create(
 
           // Server'a da ekle (authenticated ise)
           try {
-            await cartService.addToCart(product.id, quantity);
+            await cartService.addToCart(product.id, quantity, variantId);
           } catch (error) {
             // Server hatası olursa sadece local'de kalır
             console.error('Cart sync error:', error);
@@ -68,36 +102,51 @@ const useCartStore = create(
       },
 
       // Ürün miktarını güncelle
-      updateItemQuantity: async (productId, quantity) => {
+      updateItemQuantity: async (productId, quantity, variantId = null) => {
         if (quantity <= 0) {
-          await get().removeItem(productId);
+          await get().removeItem(productId, variantId);
           return;
         }
 
         const items = get().items;
         const updatedItems = items.map((item) =>
-          item.productId === productId ? { ...item, quantity } : item
+          item.productId === productId && item.variantId === variantId
+            ? { ...item, quantity }
+            : item
         );
 
         set({ items: updatedItems });
 
         // Server'ı güncelle (authenticated ise)
         try {
-          await cartService.updateCartItem(productId, quantity);
+          // CartItem ID'sini bul (eğer varsa)
+          const item = items.find(
+            (i) => i.productId === productId && i.variantId === variantId
+          );
+          if (item && item.id) {
+            await cartService.updateCartItem(item.id, quantity);
+          }
         } catch (error) {
           console.error('Cart sync error:', error);
         }
       },
 
       // Sepetten ürün sil
-      removeItem: async (productId) => {
+      removeItem: async (productId, variantId = null) => {
         const items = get().items;
-        const updatedItems = items.filter((item) => item.productId !== productId);
+        const item = items.find(
+          (i) => i.productId === productId && i.variantId === variantId
+        );
+        const updatedItems = items.filter(
+          (i) => !(i.productId === productId && i.variantId === variantId)
+        );
         set({ items: updatedItems });
 
         // Server'dan sil (authenticated ise)
         try {
-          await cartService.removeFromCart(productId);
+          if (item && item.id) {
+            await cartService.removeFromCart(item.id);
+          }
         } catch (error) {
           console.error('Cart sync error:', error);
         }

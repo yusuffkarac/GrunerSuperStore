@@ -19,6 +19,7 @@ import orderRoutes from './routes/order.routes.js';
 import favoriteRoutes from './routes/favorite.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import campaignRoutes, { adminCampaignRouter } from './routes/campaign.routes.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -99,7 +100,9 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/campaigns', campaignRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/campaigns', adminCampaignRouter);
 app.use('/api/settings', settingsRoutes);
 
 // Test route

@@ -90,6 +90,7 @@ function SiparisVer() {
       // Sepetteki ürünleri items formatına çevir
       const orderItems = items.map((item) => ({
         productId: item.productId,
+        variantId: item.variantId || null,
         quantity: item.quantity,
       }));
 
@@ -307,10 +308,17 @@ function SiparisVer() {
 
         <div className="space-y-2 mb-3">
           {items.map((item) => (
-            <div key={item.productId} className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                {item.quantity}x {item.name}
-              </span>
+            <div key={`${item.productId}-${item.variantId || 'no-variant'}`} className="flex justify-between text-sm">
+              <div className="flex-1">
+                <span className="text-gray-600">
+                  {item.quantity}x {item.name}
+                </span>
+                {item.variantName && (
+                  <div className="text-xs text-purple-600 font-medium mt-0.5">
+                    {item.variantName}
+                  </div>
+                )}
+              </div>
               <span className="text-gray-900 font-medium">
                 {(parseFloat(item.price) * item.quantity).toFixed(2)} €
               </span>

@@ -390,6 +390,145 @@ class AdminController {
       data: { user },
     });
   });
+
+  // ===============================
+  // PRODUCT VARIANT MANAGEMENT
+  // ===============================
+
+  // GET /api/admin/products/:productId/variant-options - Varyant seçeneklerini getir
+  getVariantOptions = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const options = await adminService.getVariantOptions(productId);
+
+    res.status(200).json({
+      success: true,
+      data: { options },
+    });
+  });
+
+  // GET /api/admin/variant-options/all - Tüm global varyant seçeneklerini getir
+  getAllVariantOptionNames = asyncHandler(async (req, res) => {
+    const options = await adminService.getAllVariantOptionNames();
+
+    res.status(200).json({
+      success: true,
+      data: { options },
+    });
+  });
+
+  // GET /api/admin/variant-options/:optionName/values - Belirli bir varyant seçeneği için kullanılmış değerleri getir
+  getVariantOptionValues = asyncHandler(async (req, res) => {
+    const { optionName } = req.params;
+
+    const values = await adminService.getVariantOptionValues(optionName);
+
+    res.status(200).json({
+      success: true,
+      data: { values },
+    });
+  });
+
+  // POST /api/admin/products/:productId/variant-options - Varyant seçeneği oluştur
+  createVariantOption = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const option = await adminService.createVariantOption(productId, req.body);
+
+    res.status(201).json({
+      success: true,
+      message: 'Variant-Option erfolgreich erstellt',
+      data: { option },
+    });
+  });
+
+  // PUT /api/admin/variant-options/:id - Varyant seçeneği güncelle
+  updateVariantOption = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const option = await adminService.updateVariantOption(id, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: 'Variant-Option erfolgreich aktualisiert',
+      data: { option },
+    });
+  });
+
+  // DELETE /api/admin/variant-options/:id - Varyant seçeneği sil
+  deleteVariantOption = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const result = await adminService.deleteVariantOption(id);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
+
+  // GET /api/admin/products/:productId/variants - Ürünün varyantlarını getir
+  getProductVariants = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const variants = await adminService.getProductVariants(productId);
+
+    res.status(200).json({
+      success: true,
+      data: { variants },
+    });
+  });
+
+  // POST /api/admin/products/:productId/variants - Varyant oluştur
+  createVariant = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const variant = await adminService.createVariant(productId, req.body);
+
+    res.status(201).json({
+      success: true,
+      message: 'Variant erfolgreich erstellt',
+      data: { variant },
+    });
+  });
+
+  // PUT /api/admin/variants/:id - Varyant güncelle
+  updateVariant = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const variant = await adminService.updateVariant(id, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: 'Variant erfolgreich aktualisiert',
+      data: { variant },
+    });
+  });
+
+  // DELETE /api/admin/variants/:id - Varyant sil
+  deleteVariant = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const result = await adminService.deleteVariant(id);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
+
+  // POST /api/admin/products/:productId/variants/bulk - Toplu varyant oluştur
+  createVariantsBulk = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const variants = await adminService.createVariantsBulk(productId, req.body);
+
+    res.status(201).json({
+      success: true,
+      message: `${variants.length} Varianten erfolgreich erstellt`,
+      data: { variants },
+    });
+  });
 }
 
 export default new AdminController();

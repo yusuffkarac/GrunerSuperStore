@@ -27,6 +27,16 @@ class CartService {
             },
           },
         },
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            stock: true,
+            imageUrls: true,
+            isActive: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -34,13 +44,16 @@ class CartService {
     // Toplam hesaplama
     let subtotal = 0;
     const items = cartItems.map((item) => {
-      const itemTotal = parseFloat(item.product.price) * item.quantity;
+      // Varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
+      const price = item.variant ? parseFloat(item.variant.price) : parseFloat(item.product.price);
+      const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
       return {
         id: item.id,
         quantity: item.quantity,
         product: item.product,
+        variant: item.variant,
         itemTotal: itemTotal.toFixed(2),
       };
     });
@@ -53,7 +66,7 @@ class CartService {
   }
 
   // Sepete ürün ekle
-  async addToCart(userId, { productId, quantity }) {
+  async addToCart(userId, { productId, variantId, quantity }) {
     // Ürün kontrolü
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -67,25 +80,47 @@ class CartService {
       throw new ValidationError('Produkt ist nicht verfügbar');
     }
 
-    if (product.stock < quantity) {
-      throw new ValidationError('Nicht genügend Lagerbestand');
+    // Varyant kontrolü
+    let variant = null;
+    if (variantId) {
+      variant = await prisma.productVariant.findFirst({
+        where: {
+          id: variantId,
+          productId: productId,
+          isActive: true,
+        },
+      });
+
+      if (!variant) {
+        throw new NotFoundError('Variant nicht gefunden');
+      }
+
+      // Varyant stok kontrolü
+      if (variant.stock < quantity) {
+        throw new ValidationError('Nicht genügend Lagerbestand für diese Variante');
+      }
+    } else {
+      // Varyant yoksa ürün stok kontrolü
+      if (product.stock < quantity) {
+        throw new ValidationError('Nicht genügend Lagerbestand');
+      }
     }
 
-    // Sepette zaten var mı kontrol et
-    const existingCartItem = await prisma.cartItem.findUnique({
+    // Sepette zaten var mı kontrol et (variantId ile birlikte)
+    const existingCartItem = await prisma.cartItem.findFirst({
       where: {
-        userId_productId: {
-          userId,
-          productId,
-        },
+        userId,
+        productId,
+        variantId: variantId || null,
       },
     });
 
     if (existingCartItem) {
       // Mevcut miktarı artır
       const newQuantity = existingCartItem.quantity + quantity;
+      const availableStock = variant ? variant.stock : product.stock;
 
-      if (product.stock < newQuantity) {
+      if (availableStock < newQuantity) {
         throw new ValidationError('Nicht genügend Lagerbestand');
       }
 
@@ -103,6 +138,15 @@ class CartService {
               imageUrls: true,
             },
           },
+          variant: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              stock: true,
+              imageUrls: true,
+            },
+          },
         },
       });
 
@@ -114,6 +158,7 @@ class CartService {
       data: {
         userId,
         productId,
+        variantId: variantId || null,
         quantity,
       },
       include: {
@@ -124,6 +169,15 @@ class CartService {
             price: true,
             stock: true,
             unit: true,
+            imageUrls: true,
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            stock: true,
             imageUrls: true,
           },
         },
@@ -143,6 +197,7 @@ class CartService {
       },
       include: {
         product: true,
+        variant: true,
       },
     });
 
@@ -150,8 +205,9 @@ class CartService {
       throw new NotFoundError('Warenkorb-Artikel nicht gefunden');
     }
 
-    // Stok kontrolü
-    if (cartItem.product.stock < quantity) {
+    // Stok kontrolü (varyant varsa varyant stokunu, yoksa ürün stokunu kontrol et)
+    const availableStock = cartItem.variant ? cartItem.variant.stock : cartItem.product.stock;
+    if (availableStock < quantity) {
       throw new ValidationError('Nicht genügend Lagerbestand');
     }
 
@@ -167,6 +223,15 @@ class CartService {
             price: true,
             stock: true,
             unit: true,
+            imageUrls: true,
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            stock: true,
             imageUrls: true,
           },
         },

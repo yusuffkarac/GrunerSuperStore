@@ -87,6 +87,43 @@ router.put('/products/:id', adminController.updateProduct);
 router.delete('/products/:id', adminController.deleteProduct);
 
 // ===============================
+// PRODUCT VARIANT MANAGEMENT
+// ===============================
+
+// GET /api/admin/variant-options/all - Tüm global varyant seçeneklerini getir
+router.get('/variant-options/all', adminController.getAllVariantOptionNames);
+
+// GET /api/admin/variant-options/:optionName/values - Belirli bir varyant seçeneği için kullanılmış değerleri getir
+router.get('/variant-options/:optionName/values', adminController.getVariantOptionValues);
+
+// GET /api/admin/products/:productId/variant-options - Varyant seçeneklerini getir
+router.get('/products/:productId/variant-options', adminController.getVariantOptions);
+
+// POST /api/admin/products/:productId/variant-options - Varyant seçeneği oluştur
+router.post('/products/:productId/variant-options', adminController.createVariantOption);
+
+// PUT /api/admin/variant-options/:id - Varyant seçeneği güncelle
+router.put('/variant-options/:id', adminController.updateVariantOption);
+
+// DELETE /api/admin/variant-options/:id - Varyant seçeneği sil
+router.delete('/variant-options/:id', adminController.deleteVariantOption);
+
+// GET /api/admin/products/:productId/variants - Ürünün varyantlarını getir
+router.get('/products/:productId/variants', adminController.getProductVariants);
+
+// POST /api/admin/products/:productId/variants - Varyant oluştur
+router.post('/products/:productId/variants', adminController.createVariant);
+
+// POST /api/admin/products/:productId/variants/bulk - Toplu varyant oluştur
+router.post('/products/:productId/variants/bulk', adminController.createVariantsBulk);
+
+// PUT /api/admin/variants/:id - Varyant güncelle
+router.put('/variants/:id', adminController.updateVariant);
+
+// DELETE /api/admin/variants/:id - Varyant sil
+router.delete('/variants/:id', adminController.deleteVariant);
+
+// ===============================
 // CATEGORY MANAGEMENT
 // ===============================
 

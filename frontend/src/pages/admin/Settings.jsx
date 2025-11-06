@@ -44,6 +44,7 @@ function Settings() {
   });
   const [storeSettings, setStoreSettings] = useState({
     bakimModu: false,
+    bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
   });
 
   // Ayarları yükle
@@ -93,7 +94,10 @@ function Settings() {
           maxSepetKalemi: '',
         }
       );
-      setStoreSettings(s.storeSettings ?? { bakimModu: false });
+      setStoreSettings(s.storeSettings ?? { 
+        bakimModu: false, 
+        bakimModuMesaji: 'Mağazamız şu anda bakım modunda. Yakında tekrar hizmetinizde olacağız.' 
+      });
     } catch (err) {
       setError(err.message || 'Fehler beim Laden der Einstellungen');
       toast.error(err.message || 'Fehler beim Laden der Einstellungen');
@@ -236,7 +240,7 @@ function Settings() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Einstellungen</h1>
@@ -245,8 +249,12 @@ function Settings() {
           </p>
         </div>
 
-        {/* Settings Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* 2 Kolonlu Grid Yapısı */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sol Kolon */}
+          <div className="space-y-6">
+            {/* Settings Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Produktansicht für Gäste
@@ -315,12 +323,12 @@ function Settings() {
           </div>
         </div>
 
-        {/* Sipariş ID Format Ayarları */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Bestellungs-ID Format
-            </h2>
+            {/* Sipariş ID Format Ayarları */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Bestellungs-ID Format
+                </h2>
 
             {/* Önizleme */}
             <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg">
@@ -539,22 +547,25 @@ function Settings() {
             </div>
           </div>
 
-          {/* Save Button */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
-            </button>
+              {/* Save Button */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* İş Kuralları: Min/Ücretsiz Kargo ve Kargo Kuralları */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Kargo ve Limitler</h2>
+          {/* Sağ Kolon */}
+          <div className="space-y-6">
+            {/* İş Kuralları: Min/Ücretsiz Kargo ve Kargo Kuralları */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Kargo ve Limitler</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -645,8 +656,8 @@ function Settings() {
           </div>
         </div>
 
-        {/* Teslimat ve Ödeme */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+            {/* Teslimat ve Ödeme */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Teslimat ve Ödeme</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -654,14 +665,32 @@ function Settings() {
                 <h3 className="text-sm font-medium text-gray-900">Teslimat</h3>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700">Teslimat Açık</span>
-                  <button onClick={()=>setDeliverySettings({ ...deliverySettings, teslimatAcik: !deliverySettings.teslimatAcik })} className={`relative inline-flex h-6 w-11 rounded-full ${deliverySettings.teslimatAcik?'bg-primary-600':'bg-gray-200'}`}>
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${deliverySettings.teslimatAcik?'translate-x-5':'translate-x-0'}`} />
+                  <button 
+                    onClick={()=>setDeliverySettings({ ...deliverySettings, teslimatAcik: !deliverySettings.teslimatAcik })} 
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      deliverySettings.teslimatAcik ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={deliverySettings.teslimatAcik}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      deliverySettings.teslimatAcik ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700">Mağazadan Teslim Açık</span>
-                  <button onClick={()=>setDeliverySettings({ ...deliverySettings, magazadanTeslimAcik: !deliverySettings.magazadanTeslimAcik })} className={`relative inline-flex h-6 w-11 rounded-full ${deliverySettings.magazadanTeslimAcik?'bg-primary-600':'bg-gray-200'}`}>
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${deliverySettings.magazadanTeslimAcik?'translate-x-5':'translate-x-0'}`} />
+                  <button 
+                    onClick={()=>setDeliverySettings({ ...deliverySettings, magazadanTeslimAcik: !deliverySettings.magazadanTeslimAcik })} 
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      deliverySettings.magazadanTeslimAcik ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={deliverySettings.magazadanTeslimAcik}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      deliverySettings.magazadanTeslimAcik ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
                   </button>
                 </div>
                 <div>
@@ -674,20 +703,47 @@ function Settings() {
                 <h3 className="text-sm font-medium text-gray-900">Ödeme</h3>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700">Kart Kapıda</span>
-                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.kartKapida?'bg-primary-600':'bg-gray-200'}`}>
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.kartKapida?'translate-x-5':'translate-x-0'}`} />
+                  <button 
+                    onClick={()=>setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} 
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      paymentOptions.kartKapida ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={paymentOptions.kartKapida}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      paymentOptions.kartKapida ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700">Nakit</span>
-                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.nakit?'bg-primary-600':'bg-gray-200'}`}>
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.nakit?'translate-x-5':'translate-x-0'}`} />
+                  <button 
+                    onClick={()=>setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} 
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      paymentOptions.nakit ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={paymentOptions.nakit}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      paymentOptions.nakit ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-gray-700">Online (devre dışı bırakılabilir)</span>
-                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.online?'bg-primary-600':'bg-gray-200'}`}>
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.online?'translate-x-5':'translate-x-0'}`} />
+                  <button 
+                    onClick={()=>setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} 
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      paymentOptions.online ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={paymentOptions.online}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      paymentOptions.online ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -713,8 +769,8 @@ function Settings() {
           </div>
         </div>
 
-        {/* Limitler ve Mağaza */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+            {/* Limitler ve Mağaza */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Limitler ve Mağaza</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -736,16 +792,44 @@ function Settings() {
               <h3 className="text-sm font-medium text-gray-900 mb-2">Mağaza</h3>
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-gray-700">Bakım Modu</span>
-                <button onClick={()=>setStoreSettings({ ...storeSettings, bakimModu: !storeSettings.bakimModu })} className={`relative inline-flex h-6 w-11 rounded-full ${storeSettings.bakimModu?'bg-primary-600':'bg-gray-200'}`}>
-                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${storeSettings.bakimModu?'translate-x-5':'translate-x-0'}`} />
+                <button 
+                  onClick={()=>setStoreSettings({ ...storeSettings, bakimModu: !storeSettings.bakimModu })} 
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    storeSettings.bakimModu ? 'bg-primary-600' : 'bg-gray-200'
+                  }`}
+                  role="switch"
+                  aria-checked={storeSettings.bakimModu}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    storeSettings.bakimModu ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
                 </button>
               </div>
+              {storeSettings.bakimModu && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bakım Modu Mesajı
+                  </label>
+                  <textarea
+                    value={storeSettings.bakimModuMesaji || ''}
+                    onChange={(e) => setStoreSettings({ ...storeSettings, bakimModuMesaji: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    rows={3}
+                    placeholder="Bakım modu mesajınızı buraya yazın..."
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Bu mesaj bakım modu açıkken müşterilere gösterilecektir.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
             <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
               {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
             </button>
+          </div>
+        </div>
           </div>
         </div>
 

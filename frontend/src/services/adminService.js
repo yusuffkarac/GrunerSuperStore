@@ -172,6 +172,62 @@ const adminService = {
     });
     return response.data;
   },
+
+  // Varyant yönetimi
+  getAllVariantOptionNames: async () => {
+    const response = await adminApi.get('/admin/variant-options/all');
+    return response.data;
+  },
+
+  getVariantOptionValues: async (optionName) => {
+    const response = await adminApi.get(`/admin/variant-options/${encodeURIComponent(optionName)}/values`);
+    return response.data;
+  },
+
+  getVariantOptions: async (productId) => {
+    const response = await adminApi.get(`/admin/products/${productId}/variant-options`);
+    return response.data;
+  },
+
+  createVariantOption: async (productId, data) => {
+    const response = await adminApi.post(`/admin/products/${productId}/variant-options`, data);
+    return response.data;
+  },
+
+  updateVariantOption: async (optionId, data) => {
+    const response = await adminApi.put(`/admin/variant-options/${optionId}`, data);
+    return response.data;
+  },
+
+  deleteVariantOption: async (optionId) => {
+    const response = await adminApi.delete(`/admin/variant-options/${optionId}`);
+    return response.data;
+  },
+
+  getProductVariants: async (productId) => {
+    const response = await adminApi.get(`/admin/products/${productId}/variants`);
+    return response.data;
+  },
+
+  createVariant: async (productId, data) => {
+    const response = await adminApi.post(`/admin/products/${productId}/variants`, data);
+    return response.data;
+  },
+
+  updateVariant: async (variantId, data) => {
+    const response = await adminApi.put(`/admin/variants/${variantId}`, data);
+    return response.data;
+  },
+
+  deleteVariant: async (variantId) => {
+    const response = await adminApi.delete(`/admin/variants/${variantId}`);
+    return response.data;
+  },
+
+  createVariantsBulk: async (productId, data) => {
+    const response = await adminApi.post(`/admin/products/${productId}/variants/bulk`, data);
+    return response.data;
+  },
 };
 
 export default adminService;

@@ -39,6 +39,10 @@ class OrderService {
       const settings = await tx.settings.findFirst();
       // Ürün bilgilerini ve stok kontrolü
       const productIds = items.map((item) => item.productId);
+      const variantIds = items
+        .map((item) => item.variantId)
+        .filter((id) => id != null);
+
       const products = await tx.product.findMany({
         where: {
           id: { in: productIds },
@@ -49,6 +53,16 @@ class OrderService {
       if (products.length !== productIds.length) {
         throw new ValidationError('Einige Produkte wurden nicht gefunden');
       }
+
+      // Varyantları getir
+      const variants = variantIds.length > 0
+        ? await tx.productVariant.findMany({
+            where: {
+              id: { in: variantIds },
+              isActive: true,
+            },
+          })
+        : [];
 
       // Stok kontrolü ve fiyat hesaplama
       let subtotal = 0;
@@ -62,26 +76,58 @@ class OrderService {
           throw new NotFoundError(`Produkt ${item.productId} nicht gefunden`);
         }
 
-        if (product.stock < item.quantity) {
-          throw new ValidationError(
-            `${product.name} ist nicht auf Lager. Verfügbar: ${product.stock}`
-          );
+        // Varyant kontrolü
+        let variant = null;
+        if (item.variantId) {
+          variant = variants.find((v) => v.id === item.variantId && v.productId === product.id);
+
+          if (!variant) {
+            throw new NotFoundError(`Variant ${item.variantId} nicht gefunden`);
+          }
+
+          // Varyant stok kontrolü
+          if (variant.stock < item.quantity) {
+            throw new ValidationError(
+              `${product.name} - ${variant.name} ist nicht auf Lager. Verfügbar: ${variant.stock}`
+            );
+          }
+        } else {
+          // Varyant yoksa ürün stok kontrolü
+          if (product.stock < item.quantity) {
+            throw new ValidationError(
+              `${product.name} ist nicht auf Lager. Verfügbar: ${product.stock}`
+            );
+          }
         }
 
-        const itemTotal = parseFloat(product.price) * item.quantity;
+        // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
+        const originalPrice = variant ? variant.price : product.price;
+
+        // Kampanya fiyatı varsa kullan, yoksa orijinal fiyatı kullan
+        const price = item.campaignPrice || originalPrice;
+        const itemTotal = parseFloat(price) * item.quantity;
         subtotal += itemTotal;
         totalQuantity += item.quantity;
 
+        // Görsel: varyant varsa varyant görselini, yoksa ürün görselini kullan
+        const imageUrls = variant
+          ? (Array.isArray(variant.imageUrls) ? variant.imageUrls : [])
+          : (Array.isArray(product.imageUrls) ? product.imageUrls : []);
+        const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
+
         orderItems.push({
           productId: product.id,
+          variantId: variant ? variant.id : null,
           productName: product.name,
-          price: product.price,
+          variantName: variant ? variant.name : null,
+          price: price,
+          originalPrice: item.campaignPrice ? originalPrice : null,
+          campaignId: item.campaignId || null,
+          campaignName: item.campaignName || null,
           quantity: item.quantity,
           unit: product.unit,
           brand: product.brand,
-          imageUrl: Array.isArray(product.imageUrls)
-            ? product.imageUrls[0]
-            : null,
+          imageUrl: imageUrl,
         });
       }
 
@@ -185,16 +231,27 @@ class OrderService {
         },
       });
 
-      // Stokları güncelle
+      // Stokları güncelle (varyant varsa varyant stokunu, yoksa ürün stokunu güncelle)
       for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
             },
-          },
-        });
+          });
+        } else {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
       }
 
       // Cart'ı temizle (varsa)
@@ -340,8 +397,10 @@ class OrderService {
             select: {
               id: true,
               productName: true,
+              variantName: true,
               quantity: true,
               price: true,
+              imageUrl: true,
             },
           },
           address: true,
@@ -391,14 +450,25 @@ class OrderService {
     if (status === 'cancelled' && order.status !== 'cancelled') {
       await prisma.$transaction(async (tx) => {
         for (const item of order.orderItems) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                increment: item.quantity,
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
               },
-            },
-          });
+            });
+          } else {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
+              },
+            });
+          }
         }
 
         await tx.order.update({
@@ -459,14 +529,25 @@ class OrderService {
     // Stokları geri ekle ve sipariş durumunu güncelle
     return await prisma.$transaction(async (tx) => {
       for (const item of order.orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              increment: item.quantity,
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stock: {
+                increment: item.quantity,
+              },
             },
-          },
-        });
+          });
+        } else {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                increment: item.quantity,
+              },
+            },
+          });
+        }
       }
 
       return await tx.order.update({

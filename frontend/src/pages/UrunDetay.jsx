@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiHeart, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiHeart, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiArrowLeft, FiChevronLeft, FiChevronRight, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import productService from '../services/productService';
+import campaignService from '../services/campaignService';
 import useFavoriteStore from '../store/favoriteStore';
 import useCartStore from '../store/cartStore';
 import Loading from '../components/common/Loading';
@@ -13,12 +14,15 @@ import { normalizeImageUrls } from '../utils/imageUtils';
 function UrunDetay() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [selectedVariantOptions, setSelectedVariantOptions] = useState({});
+  const [selectedVariant, setSelectedVariant] = useState(null);
 
   // Store'lar
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
@@ -35,7 +39,24 @@ function UrunDetay() {
 
       try {
         const response = await productService.getProductById(id);
-        setProduct(response.data.product);
+        const productData = response.data.product;
+        setProduct(productData);
+
+        // Kampanya bilgisini çek
+        try {
+          const campaignResponse = await campaignService.getApplicableCampaigns({
+            productId: id,
+            categoryId: productData.categoryId,
+          });
+          const campaigns = campaignResponse.data.campaigns || [];
+          // En yüksek öncelikli kampanyayı seç
+          if (campaigns.length > 0) {
+            setCampaign(campaigns[0]);
+          }
+        } catch (campaignErr) {
+          console.error('Kampanya yükleme hatası:', campaignErr);
+          // Kampanya hatası ürün görünümünü etkilemesin
+        }
       } catch (err) {
         setError(err.message || 'Ürün yüklenirken hata oluştu');
       } finally {
@@ -60,12 +81,48 @@ function UrunDetay() {
     loadFavoriteIds();
   }, []);
 
+  // Seçili varyantı bul
+  useEffect(() => {
+    if (!product?.variants || !product?.variantOptions) return;
+
+    // Tüm varyant seçenekleri seçilmiş mi kontrol et
+    const allOptionsSelected = product.variantOptions.every(
+      (option) => selectedVariantOptions[option.id] !== undefined && selectedVariantOptions[option.id] !== null && selectedVariantOptions[option.id] !== ''
+    );
+
+    if (allOptionsSelected && product.variantOptions.length > 0) {
+      // Seçilen varyantı bul
+      const matchingVariant = product.variants.find((variant) => {
+        if (!variant.values || variant.values.length === 0) return false;
+        
+        return product.variantOptions.every((option) => {
+          const selectedValue = selectedVariantOptions[option.id];
+          if (!selectedValue) return false;
+          const variantValue = variant.values.find((v) => v.optionId === option.id);
+          return variantValue && variantValue.value === selectedValue;
+        });
+      });
+
+      setSelectedVariant(matchingVariant || null);
+    } else {
+      setSelectedVariant(null);
+    }
+  }, [product, selectedVariantOptions]);
+
+  // Varyant seçeneği değiştiğinde görseli güncelle
+  useEffect(() => {
+    if (selectedVariant && selectedVariant.imageUrls && Array.isArray(selectedVariant.imageUrls) && selectedVariant.imageUrls.length > 0) {
+      setSelectedImageIndex(0);
+    }
+  }, [selectedVariant]);
+
   // Miktar artır
   const increaseQuantity = useCallback(() => {
-    if (product && quantity < product.stock) {
+    const availableStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
+    if (product && quantity < availableStock) {
       setQuantity((prev) => prev + 1);
     }
-  }, [product, quantity]);
+  }, [product, quantity, selectedVariant]);
 
   // Miktar azalt
   const decreaseQuantity = useCallback(() => {
@@ -84,14 +141,46 @@ function UrunDetay() {
     }
   }, [id, toggleFavorite]);
 
+  // Varyant seçeneği değiştir
+  const handleVariantOptionChange = useCallback((optionId, value) => {
+    setSelectedVariantOptions((prev) => ({
+      ...prev,
+      [optionId]: value,
+    }));
+    setQuantity(1); // Varyant değiştiğinde miktarı sıfırla
+  }, []);
+
   // Sepete ekle
   const handleAddToCart = useCallback(async () => {
-    if (!product || product.stock <= 0) return;
+    const availableStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
+    if (!product || availableStock <= 0) return;
+
+    // Varyantlı ürünlerde tüm seçenekler seçilmeli
+    if (product.variantOptions && product.variantOptions.length > 0) {
+      const allSelected = product.variantOptions.every(
+        (option) => selectedVariantOptions[option.id] !== undefined && selectedVariantOptions[option.id] !== null && selectedVariantOptions[option.id] !== ''
+      );
+      if (!allSelected) {
+        toast.error('Bitte wählen Sie alle Varianten aus', {
+          position: 'bottom-center',
+          autoClose: 2000,
+        });
+        return;
+      }
+      if (!selectedVariant) {
+        toast.error('Bitte wählen Sie alle Varianten aus', {
+          position: 'bottom-center',
+          autoClose: 2000,
+        });
+        return;
+      }
+    }
 
     setAddingToCart(true);
 
     try {
-      await addItem(product, quantity);
+      const variantId = selectedVariant ? selectedVariant.id : null;
+      await addItem(product, quantity, variantId);
       setJustAdded(true);
       setTimeout(() => setJustAdded(false), 2000);
     } catch (err) {
@@ -102,12 +191,52 @@ function UrunDetay() {
     } finally {
       setAddingToCart(false);
     }
-  }, [product, quantity, addItem]);
+  }, [product, quantity, selectedVariant, selectedVariantOptions, addItem]);
 
-  // Görselleri hazırla ve normalize et
-  const images = product?.imageUrls 
-    ? normalizeImageUrls(product.imageUrls)
-    : [];
+  // Görselleri hazırla ve normalize et (varyant varsa varyant görsellerini kullan)
+  const images = selectedVariant && selectedVariant.imageUrls && Array.isArray(selectedVariant.imageUrls) && selectedVariant.imageUrls.length > 0
+    ? normalizeImageUrls(selectedVariant.imageUrls)
+    : (product?.imageUrls ? normalizeImageUrls(product.imageUrls) : []);
+
+  // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
+  const displayPrice = selectedVariant ? parseFloat(selectedVariant.price) : parseFloat(product?.price || 0);
+
+  // Kampanya fiyatı hesaplama
+  const calculateDiscountedPrice = () => {
+    if (!campaign) return null;
+
+    let discountPerUnit = 0;
+
+    switch (campaign.type) {
+      case 'PERCENTAGE':
+        discountPerUnit = displayPrice * (parseFloat(campaign.discountPercent) / 100);
+        break;
+      case 'FIXED_AMOUNT':
+        discountPerUnit = parseFloat(campaign.discountAmount);
+        break;
+      case 'BUY_X_GET_Y':
+        // X Al Y Öde kampanyası için ortalama indirim
+        if (quantity >= campaign.buyQuantity) {
+          const sets = Math.floor(quantity / campaign.buyQuantity);
+          const freeItems = campaign.buyQuantity - campaign.getQuantity;
+          const totalFreeItems = sets * freeItems;
+          const totalDiscount = totalFreeItems * displayPrice;
+          discountPerUnit = totalDiscount / quantity; // Ortalama indirim per ürün
+        }
+        break;
+      default:
+        discountPerUnit = 0;
+    }
+
+    const discountedPrice = displayPrice - discountPerUnit;
+    return Math.max(0, discountedPrice);
+  };
+
+  const discountedPrice = campaign ? calculateDiscountedPrice() : null;
+  const finalPrice = discountedPrice !== null ? discountedPrice : displayPrice;
+
+  // Stok: varyant varsa varyant stokunu, yoksa ürün stokunu kullan
+  const availableStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
 
   // Görsel değiştir
   const changeImage = useCallback((index) => {
@@ -260,21 +389,120 @@ function UrunDetay() {
             <p className="text-xs lg:text-sm text-gray-600 mb-3 lg:mb-4">{product.brand}</p>
           )}
 
+          {/* Varyant Seçenekleri */}
+          {product.variantOptions && product.variantOptions.length > 0 && (
+            <div className="mb-4 lg:mb-5 space-y-3">
+              {product.variantOptions.map((option) => {
+                // Bu seçenek için mevcut değerleri bul
+                const availableValues = product.variants
+                  ?.flatMap((v) => v.values || [])
+                  .filter((v) => v.optionId === option.id)
+                  .map((v) => v.value)
+                  .filter((v, i, arr) => arr.indexOf(v) === i) || [];
+
+                return (
+                  <div key={option.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {option.name}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableValues.map((value) => {
+                        const isSelected = selectedVariantOptions[option.id] === value;
+                        // Bu değerin mevcut olup olmadığını kontrol et
+                        const isAvailable = product.variants?.some((variant) => {
+                          if (!variant.isActive || variant.stock <= 0) return false;
+                          const hasThisValue = variant.values?.some(
+                            (v) => v.optionId === option.id && v.value === value
+                          );
+                          if (!hasThisValue) return false;
+                          // Diğer seçilen seçeneklerle uyumlu mu kontrol et
+                          return product.variantOptions.every((opt) => {
+                            if (opt.id === option.id) return true;
+                            const selectedValue = selectedVariantOptions[opt.id];
+                            if (!selectedValue) return true; // Henüz seçilmemiş
+                            return variant.values?.some(
+                              (v) => v.optionId === opt.id && v.value === selectedValue
+                            );
+                          });
+                        });
+
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleVariantOptionChange(option.id, value)}
+                            disabled={!isAvailable}
+                            className={`px-4 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                              isSelected
+                                ? 'border-green-600 bg-green-50 text-green-700'
+                                : isAvailable
+                                ? 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Fiyat */}
           <div className="mb-4 lg:mb-5">
-            <span className="text-2xl lg:text-4xl font-bold text-primary-700">
-              €{parseFloat(product.price).toFixed(2)}
-            </span>
-            {product.unit && (
-              <span className="text-sm lg:text-base text-gray-600 ml-2">/ {product.unit}</span>
+            {campaign && discountedPrice !== null ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl lg:text-4xl font-bold text-red-600">
+                    €{discountedPrice.toFixed(2)}
+                  </span>
+                  <span className="text-lg lg:text-xl text-gray-500 line-through">
+                    €{displayPrice.toFixed(2)}
+                  </span>
+                </div>
+                {product.unit && (
+                  <span className="text-sm lg:text-base text-gray-600">/ {product.unit}</span>
+                )}
+              </div>
+            ) : (
+              <>
+                <span className="text-2xl lg:text-4xl font-bold text-primary-700">
+                  €{displayPrice.toFixed(2)}
+                </span>
+                {product.unit && (
+                  <span className="text-sm lg:text-base text-gray-600 ml-2">/ {product.unit}</span>
+                )}
+              </>
             )}
           </div>
 
+          {/* Kampanya bilgisi */}
+          {campaign && (
+            <div className="mb-4 lg:mb-5 bg-red-50 border border-red-200 rounded-lg p-3 lg:p-4">
+              <div className="flex items-start gap-2">
+                <FiTag className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-900 mb-1">{campaign.name}</p>
+                  {campaign.description && (
+                    <p className="text-sm text-red-800">{campaign.description}</p>
+                  )}
+                  {campaign.endDate && (
+                    <p className="text-xs text-red-700 mt-2">
+                      Gültig bis: {new Date(campaign.endDate).toLocaleDateString('de-DE')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stok durumu */}
           <div className="mb-4 lg:mb-6">
-            {product.stock > 0 ? (
+            {availableStock > 0 ? (
               <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-green-100 text-green-700 rounded-full text-xs lg:text-sm font-medium">
-                Auf Lager{product.showStock ? ` (${product.stock} verfügbar)` : ''}
+                Auf Lager{product.showStock ? ` (${availableStock} verfügbar)` : ''}
               </span>
             ) : (
               <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-red-100 text-red-700 rounded-full text-xs lg:text-sm font-medium">
@@ -284,7 +512,7 @@ function UrunDetay() {
           </div>
 
           {/* Desktop: Sepete ekle kartı */}
-          {product.stock > 0 && (
+          {availableStock > 0 && (
             <div className="hidden lg:block bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
               <div className="flex items-center gap-4 mb-4">
                 {/* Miktar kontrolü */}
@@ -304,7 +532,7 @@ function UrunDetay() {
 
                   <button
                     onClick={increaseQuantity}
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= availableStock}
                     className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Menge erhöhen"
                   >
@@ -316,7 +544,7 @@ function UrunDetay() {
                 <div className="flex-1 text-right">
                   <span className="text-sm text-gray-600">Gesamt: </span>
                   <span className="text-xl font-bold text-gray-900">
-                    €{(parseFloat(product.price) * quantity).toFixed(2)}
+                    €{(finalPrice * quantity).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -363,7 +591,7 @@ function UrunDetay() {
       </div>
 
       {/* Mobile: Miktar ve sepete ekle (fixed bottom) */}
-      {product.stock > 0 && (
+      {availableStock > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-10 lg:hidden">
           <div className="container-mobile">
             <div className="flex items-center gap-2">
@@ -384,7 +612,7 @@ function UrunDetay() {
 
                 <button
                   onClick={increaseQuantity}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= availableStock}
                   className="p-1.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Menge erhöhen"
                 >
@@ -422,7 +650,7 @@ function UrunDetay() {
             <div className="mt-2 text-center">
               <span className="text-xs text-gray-600">Gesamt: </span>
               <span className="text-base font-bold text-gray-900">
-                €{(parseFloat(product.price) * quantity).toFixed(2)}
+                €{(finalPrice * quantity).toFixed(2)}
               </span>
             </div>
           </div>
@@ -430,7 +658,7 @@ function UrunDetay() {
       )}
 
       {/* Stok yoksa mesaj */}
-      {product.stock <= 0 && (
+      {availableStock <= 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 lg:p-4 text-center">
           <p className="text-red-800 text-sm lg:text-base font-medium">
             Dieses Produkt ist derzeit nicht verfügbar
