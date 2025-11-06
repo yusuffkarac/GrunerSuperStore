@@ -87,3 +87,34 @@ export const resetPasswordValidation = [
     .matches(/[0-9]/)
     .withMessage('Passwort muss mindestens eine Zahl enthalten'),
 ];
+
+// Email verification validasyonu
+export const verifyEmailValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('E-Mail ist erforderlich')
+    .isEmail()
+    .withMessage('Ungültige E-Mail-Adresse')
+    .normalizeEmail(),
+
+  body('code')
+    .trim()
+    .notEmpty()
+    .withMessage('Bestätigungscode ist erforderlich')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('Bestätigungscode muss 6 Zeichen lang sein')
+    .matches(/^\d{6}$/)
+    .withMessage('Bestätigungscode muss 6 Ziffern sein'),
+];
+
+// Resend verification validasyonu
+export const resendVerificationValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('E-Mail ist erforderlich')
+    .isEmail()
+    .withMessage('Ungültige E-Mail-Adresse')
+    .normalizeEmail(),
+];

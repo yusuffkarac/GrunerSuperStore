@@ -16,10 +16,9 @@ class AuthController {
 
     res.status(201).json({
       success: true,
-      message: 'Registrierung erfolgreich',
+      message: result.message,
       data: {
         user: result.user,
-        token: result.token,
       },
     });
   });
@@ -67,6 +66,34 @@ class AuthController {
     const { token, password } = req.body;
 
     const result = await authService.resetPassword(token, password);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
+
+  // POST /api/auth/verify-email
+  verifyEmail = asyncHandler(async (req, res) => {
+    const { email, code } = req.body;
+
+    const result = await authService.verifyEmail({ email, code });
+
+    res.status(200).json({
+      success: true,
+      message: 'E-Mail erfolgreich bestätigt',
+      data: {
+        user: result.user,
+        token: result.token,
+      },
+    });
+  });
+
+  // POST /api/auth/resend-verification
+  resendVerification = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    const result = await authService.resendVerificationCode(email);
 
     res.status(200).json({
       success: true,

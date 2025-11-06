@@ -5,10 +5,17 @@ import {
   ConflictError,
   UnauthorizedError,
   NotFoundError,
+  BadRequestError,
 } from '../utils/errors.js';
 import queueService from './queue.service.js';
+import crypto from 'crypto';
 
 class AuthService {
+  // 6 haneli doğrulama kodu oluştur
+  generateVerificationCode() {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
   // Kullanıcı kaydı
   async register({ firstName, lastName, email, password, phone }) {
     // Email kontrolü
@@ -23,7 +30,11 @@ class AuthService {
     // Şifreyi hash'le
     const passwordHash = await hashPassword(password);
 
-    // Kullanıcıyı oluştur
+    // Doğrulama kodu oluştur
+    const verificationCode = this.generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 dakika
+
+    // Kullanıcıyı oluştur (isActive: false - mail doğrulanana kadar)
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -31,6 +42,10 @@ class AuthService {
         email,
         passwordHash,
         phone: phone || null,
+        isActive: false, // E-posta doğrulanana kadar pasif
+        isEmailVerified: false,
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpiry: verificationCodeExpiry,
       },
       select: {
         id: true,
@@ -39,22 +54,151 @@ class AuthService {
         email: true,
         phone: true,
         isActive: true,
+        isEmailVerified: true,
+        createdAt: true,
+      },
+    });
+
+    // Doğrulama maili gönder (asenkron, hata almayı engelle)
+    this.sendVerificationEmail(user, verificationCode).catch((err) => {
+      console.error('Verification mail hatası:', err);
+    });
+
+    // NOT: Token döndürmüyoruz, kullanıcı önce email'ini doğrulamalı
+    return {
+      user,
+      message: 'Registrierung erfolgreich. Bitte überprüfen Sie Ihre E-Mail für den Bestätigungscode.'
+    };
+  }
+
+  // E-posta doğrulama maili gönder
+  async sendVerificationEmail(user, verificationCode) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, doğrulama maili gönderilmedi.');
+        console.log(`📧 Doğrulama kodu (Development): ${verificationCode}`);
+        return;
+      }
+
+      await queueService.addEmailJob({
+        to: user.email,
+        subject: 'E-Mail-Adresse bestätigen',
+        template: 'email-verification',
+        data: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          verificationCode: verificationCode,
+          storeName: 'Gruner SuperStore',
+        },
+        metadata: { userId: user.id, type: 'email-verification' },
+        priority: 1, // Yüksek öncelik
+      });
+
+      console.log(`✅ Doğrulama maili kuyruğa eklendi: ${user.email}`);
+    } catch (error) {
+      console.error('Verification mail hatası:', error);
+    }
+  }
+
+  // E-posta doğrulama
+  async verifyEmail({ email, code }) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Benutzer nicht gefunden');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestError('E-Mail bereits bestätigt');
+    }
+
+    if (!user.emailVerificationCode || !user.emailVerificationCodeExpiry) {
+      throw new BadRequestError('Kein Bestätigungscode gefunden');
+    }
+
+    // Kod süre kontrolü
+    if (new Date() > user.emailVerificationCodeExpiry) {
+      throw new BadRequestError('Bestätigungscode ist abgelaufen');
+    }
+
+    // Kod kontrolü
+    if (user.emailVerificationCode !== code) {
+      throw new BadRequestError('Ungültiger Bestätigungscode');
+    }
+
+    // Kullanıcıyı aktif et ve email'i doğrula
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        isActive: true,
+        emailVerificationCode: null,
+        emailVerificationCodeExpiry: null,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isEmailVerified: true,
         createdAt: true,
       },
     });
 
     // Token oluştur
-    const token = generateToken({ userId: user.id });
+    const token = generateToken({ userId: updatedUser.id });
 
-    // Hoş geldin maili gönder (asenkron, hata almayı engelle)
-    this.sendWelcomeEmail(user).catch((err) => {
+    // Hoş geldin maili gönder
+    this.sendWelcomeEmail(updatedUser).catch((err) => {
       console.error('Welcome mail hatası:', err);
     });
 
-    return { user, token };
+    return { user: updatedUser, token };
   }
 
-  // Hoş geldin maili gönder
+  // Doğrulama kodunu yeniden gönder
+  async resendVerificationCode(email) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Benutzer nicht gefunden');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestError('E-Mail bereits bestätigt');
+    }
+
+    // Yeni doğrulama kodu oluştur
+    const verificationCode = this.generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 dakika
+
+    // Kodu güncelle
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpiry: verificationCodeExpiry,
+      },
+    });
+
+    // Doğrulama maili gönder
+    this.sendVerificationEmail(user, verificationCode).catch((err) => {
+      console.error('Verification mail hatası:', err);
+    });
+
+    return { message: 'Bestätigungscode wurde erneut gesendet' };
+  }
+
+  // Hoş geldin maili gönder (email doğrulandıktan sonra)
   async sendWelcomeEmail(user) {
     try {
       const settings = await prisma.settings.findFirst();
@@ -102,6 +246,11 @@ class AuthService {
       throw new UnauthorizedError('Ungültige Anmeldedaten');
     }
 
+    // E-posta doğrulama kontrolü
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedError('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse');
+    }
+
     // Aktif kullanıcı kontrolü
     if (!user.isActive) {
       throw new UnauthorizedError('Konto ist nicht aktiv');
@@ -111,7 +260,7 @@ class AuthService {
     const token = generateToken({ userId: user.id });
 
     // Kullanıcı bilgilerini döndür (passwordHash olmadan)
-    const { passwordHash, ...userWithoutPassword } = user;
+    const { passwordHash, emailVerificationCode, emailVerificationCodeExpiry, ...userWithoutPassword } = user;
 
     return { user: userWithoutPassword, token };
   }
