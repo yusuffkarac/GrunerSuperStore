@@ -66,9 +66,9 @@ export function OrderStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${config.bgColor} ${config.textColor}`}
     >
-      <Icon className={`text-sm ${config.iconColor}`} />
+      <Icon className={`text-xs ${config.iconColor}`} />
       {config.label}
     </span>
   );
@@ -84,13 +84,13 @@ function OrderCard({ order }) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.01 }}
       onClick={() => navigate(`/siparis/${order.id}`)}
-      className="bg-white rounded-lg shadow-sm p-4 mb-3 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-white rounded-lg shadow-sm p-2.5 mb-2 cursor-pointer hover:shadow-md transition-shadow"
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <p className="font-semibold text-gray-900">Bestellung #{order.orderNo}</p>
-          <p className="text-xs text-gray-500 mt-1">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm text-gray-900 truncate">Bestellung #{order.orderNo}</p>
+          <p className="text-[10px] text-gray-500 mt-0.5">
             {format(new Date(order.createdAt), 'dd. MMMM yyyy, HH:mm', { locale: de })}
           </p>
         </div>
@@ -98,33 +98,33 @@ function OrderCard({ order }) {
       </div>
 
       {/* Ürün sayısı ve tutar */}
-      <div className="flex items-center justify-between py-3 border-t border-gray-100">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <FiShoppingBag className="text-gray-400" />
+      <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+          <FiShoppingBag className="text-gray-400 w-3 h-3" />
           <span>
             {order.orderItems?.length || 0}{' '}
             {order.orderItems?.length === 1 ? 'Artikel' : 'Artikel'}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-gray-900">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base font-bold text-gray-900">
             {parseFloat(order.total).toFixed(2)} €
           </span>
-          <FiChevronRight className="text-gray-400" />
+          <FiChevronRight className="text-gray-400 w-4 h-4" />
         </div>
       </div>
 
       {/* Teslimat türü */}
-      <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+      <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5">
         {order.type === 'delivery' ? (
           <>
-            <FiTruck className="text-gray-400" />
+            <FiTruck className="text-gray-400 w-3 h-3" />
             <span>Lieferung</span>
           </>
         ) : (
           <>
-            <FiPackage className="text-gray-400" />
+            <FiPackage className="text-gray-400 w-3 h-3" />
             <span>Abholung</span>
           </>
         )}
@@ -169,12 +169,12 @@ function Siparislerim() {
   // Loading state
   if (loading) {
     return (
-      <div className="container-mobile py-6">
+      <div className="container-mobile py-3">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-40 mb-6"></div>
-          <div className="h-10 bg-gray-200 rounded mb-4"></div>
+          <div className="h-6 bg-gray-200 rounded w-40 mb-3"></div>
+          <div className="h-8 bg-gray-200 rounded mb-3"></div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-gray-200 rounded-lg h-32 mb-3"></div>
+            <div key={i} className="bg-gray-200 rounded-lg h-24 mb-2"></div>
           ))}
         </div>
       </div>
@@ -182,14 +182,14 @@ function Siparislerim() {
   }
 
   return (
-    <div className="container-mobile py-6 pb-20">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Meine Bestellungen</h1>
+    <div className="container-mobile py-3 pb-20">
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Meine Bestellungen</h1>
 
       {/* Filtre butonları */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-2">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             filter === 'all'
               ? 'bg-green-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -199,7 +199,7 @@ function Siparislerim() {
         </button>
         <button
           onClick={() => setFilter('active')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             filter === 'active'
               ? 'bg-green-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -213,7 +213,7 @@ function Siparislerim() {
         </button>
         <button
           onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             filter === 'completed'
               ? 'bg-green-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -229,13 +229,13 @@ function Siparislerim() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-12"
+          className="text-center py-8"
         >
-          <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-            <FiPackage className="text-gray-400 text-4xl" />
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <FiPackage className="text-gray-400 text-2xl" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Keine Bestellungen</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-1.5">Keine Bestellungen</h2>
+          <p className="text-xs text-gray-600 mb-4">
             {filter === 'all'
               ? 'Sie haben noch keine Bestellungen aufgegeben'
               : `Keine ${

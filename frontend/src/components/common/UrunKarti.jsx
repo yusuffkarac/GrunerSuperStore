@@ -1,6 +1,6 @@
 import { useState, memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FiHeart, FiShoppingCart, FiCheck, FiTag } from 'react-icons/fi';
+import { FiHeart, FiPlus, FiCheck, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import useFavoriteStore from '../../store/favoriteStore';
 import useCartStore from '../../store/cartStore';
@@ -111,9 +111,9 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   }, [product, addItem]);
 
   return (
-    <div className="card">
+    <div className="bg-white rounded-lg shadow-sm p-3 relative">
       {/* Ürün resmi */}
-      <Link to={`/urun/${product.id}`} className="block relative mb-3">
+      <Link to={`/urun/${product.id}`} className="block relative mb-2">
         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
           {normalizedImageUrls && normalizedImageUrls[0] ? (
             <>
@@ -131,18 +131,6 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
                 className={`w-full h-full object-cover transition-opacity duration-300 ${
                   imageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
-                style={{
-                  transform: 'scale(1)',
-                  transition: 'transform 0.2s ease-out',
-                }}
-                onMouseEnter={(e) => {
-                  if (window.matchMedia('(hover: hover)').matches) {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
                 onLoad={() => {
                   setImageLoaded(true);
                   setImageError(false);
@@ -174,120 +162,72 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
 
         {/* Kampanya badge */}
         {campaign && (
-          <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1">
+          <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1 z-10">
             <FiTag className="w-3 h-3" />
             <span>{getCampaignBadge()}</span>
           </div>
         )}
 
-        {/* Favori butonu */}
+        {/* Sepete ekle butonu - Sağ üstte, yuvarlak, yeşil */}
+        {product.stock > 0 && (
+          <button
+            className={`absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all ${
+              justAdded
+                ? 'bg-green-600 text-white'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
+            }`}
+            onClick={handleAddToCart}
+            disabled={addingToCart || justAdded}
+            aria-label="Zum Warenkorb hinzufügen"
+          >
+            {justAdded ? (
+              <FiCheck className="w-5 h-5" />
+            ) : (
+              <FiPlus className="w-5 h-5" />
+            )}
+          </button>
+        )}
+
+        {/* Favori butonu - Sol altta, yuvarlak, beyaz */}
         <button
-          className={`absolute top-2 right-2 p-2 bg-white rounded-full shadow-md flex items-center justify-center ${
+          className={`absolute bottom-2 left-2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all ${
             isProductFavorite ? 'text-red-500' : 'text-gray-600'
           }`}
-          style={{
-            transition: 'background-color 0.15s ease-out, transform 0.15s ease-out',
-          }}
-          onMouseEnter={(e) => {
-            if (window.matchMedia('(hover: hover)').matches) {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-          }}
           onClick={handleToggleFavorite}
           aria-label={isProductFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
         >
           <FiHeart
-            className={`w-4 h-4 ${isProductFavorite ? 'fill-current' : ''}`}
+            className={`w-5 h-5 ${isProductFavorite ? 'fill-current' : ''}`}
           />
         </button>
       </Link>
 
       {/* Ürün bilgileri */}
       <Link to={`/urun/${product.id}`}>
-        <h3
-          className="font-semibold text-gray-900 mb-1 line-clamp-2"
-          style={{
-            transition: 'color 0.15s ease-out',
-          }}
-          onMouseEnter={(e) => {
-            if (window.matchMedia('(hover: hover)').matches) {
-              e.currentTarget.style.color = '#1e40af';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#111827';
-          }}
-        >
-          {product.name}
-        </h3>
-
-        {/* Fiyat - Kampanya varsa indirimli fiyat göster */}
-        <div className="mb-2">
+        {/* Fiyat - Yeşil renkte */}
+        <div className="mb-1">
           {campaign && discountedPrice !== null ? (
             <div className="flex items-center gap-2">
-              <p className="text-lg font-bold text-red-600">
+              <p className="text-lg font-bold text-primary-600">
                 €{discountedPrice.toFixed(2)}
-                {product.unit && <span className="text-sm text-gray-600"> / {product.unit}</span>}
               </p>
               <p className="text-sm text-gray-500 line-through">
                 €{parseFloat(product.price).toFixed(2)}
               </p>
             </div>
           ) : (
-            <p className="text-lg font-bold text-primary-700">
+            <p className="text-lg font-bold text-primary-600">
               €{parseFloat(product.price).toFixed(2)}
-              {product.unit && <span className="text-sm text-gray-600"> / {product.unit}</span>}
+              {product.unit && <span className="text-sm text-gray-500 font-normal"> / {product.unit}</span>}
             </p>
           )}
         </div>
-      </Link>
 
-      {/* Stok durumu ve sepete ekle */}
-      <div className="flex items-center justify-between mt-3">
-        {product.stock > 0 ? (
-          <>
-            <span className="text-sm text-green-600 font-medium">
-              Auf Lager{product.showStock ? ` (${product.stock})` : ''}
-            </span>
-            <button
-              className={`p-2 rounded-lg ${
-                justAdded
-                  ? 'bg-green-600 text-white'
-                  : 'bg-primary-700 text-white'
-              }`}
-              style={{
-                transition: 'background-color 0.15s ease-out, transform 0.1s ease-out',
-              }}
-              onMouseEnter={(e) => {
-                if (!justAdded && !addingToCart && window.matchMedia('(hover: hover)').matches) {
-                  e.currentTarget.style.backgroundColor = '#1e3a8a';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!justAdded) {
-                  e.currentTarget.style.backgroundColor = '#1e40af';
-                }
-              }}
-              onClick={handleAddToCart}
-              disabled={addingToCart || justAdded}
-              aria-label="Zum Warenkorb hinzufügen"
-            >
-              {justAdded ? (
-                <FiCheck className="w-5 h-5" />
-              ) : (
-                <FiShoppingCart className="w-5 h-5" />
-              )}
-            </button>
-          </>
-        ) : (
-          <span className="text-sm text-red-600 font-medium w-full text-center">
-            Nicht verfügbar
-          </span>
-        )}
-      </div>
+        {/* Ürün adı */}
+        <h3 className="text-sm text-gray-900 mb-1 line-clamp-2">
+          {product.name}
+        </h3>
+      </Link>
     </div>
   );
 }, (prevProps, nextProps) => {

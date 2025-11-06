@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { FiSearch, FiGrid, FiList, FiFilter, FiX } from 'react-icons/fi';
+import { FiFilter, FiX } from 'react-icons/fi';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import settingsService from '../services/settingsService';
@@ -27,8 +27,8 @@ function UrunListesi() {
   // Filters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
-  const [viewMode, setViewMode] = useState('grid'); // grid veya list
   const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -220,206 +220,253 @@ function UrunListesi() {
     );
   }
 
+  // Seçili kategorideki ürün sayısını hesapla
+  const getCategoryProductCount = (categoryId) => {
+    if (!categoryId) return products.length;
+    return products.filter(p => p.categoryId === categoryId).length;
+  };
+
   return (
-    <div className="container-mobile py-4 pb-20">
-      {/* Header - Arama ve görünüm toggle */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">Produkte</h1>
-
-        {/* Arama çubuğu */}
-        <div className="relative mb-4">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Produkte suchen..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        {/* Filtre ve görünüm butonları */}
-        <div className="flex items-center justify-between gap-3">
-          {/* Filtre butonu */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-              showFilters || activeFilterCount > 0
-                ? 'bg-primary-700 text-white border-primary-700'
-                : 'bg-white text-gray-700 border-gray-300'
-            }`}
-          >
-            <FiFilter className="w-5 h-5" />
-            <span>Filter</span>
-            {activeFilterCount > 0 && (
-              <span className="bg-white text-primary-700 px-2 py-0.5 rounded-full text-xs font-bold">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Görünüm toggle */}
-          <div className="flex gap-2">
+    <div className="pb-20 bg-white">
+      {/* Filtreleme/Sıralama Bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
+        <div className="container-mobile">
+          <div className="flex items-center">
+            {/* Filtrele butonu */}
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-primary-700 text-white border-primary-700'
-                  : 'bg-white text-gray-700 border-gray-300'
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 transition-colors ${
+                showFilters || activeFilterCount > 0
+                  ? 'text-primary-600 font-medium'
+                  : 'text-gray-600'
               }`}
-              aria-label="Grid-Ansicht"
             >
-              <FiGrid className="w-5 h-5" />
+              <FiFilter className="w-5 h-5" />
+              <span>Filtrele</span>
             </button>
+
+            {/* Ayırıcı çizgi */}
+            <div className="w-px h-6 bg-gray-300"></div>
+
+            {/* Sırala butonu */}
             <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-primary-700 text-white border-primary-700'
-                  : 'bg-white text-gray-700 border-gray-300'
+              onClick={() => setShowSort(!showSort)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 transition-colors ${
+                showSort
+                  ? 'text-primary-600 font-medium'
+                  : 'text-gray-600'
               }`}
-              aria-label="Listen-Ansicht"
             >
-              <FiList className="w-5 h-5" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              <span>Sırala</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Filtre paneli */}
-      {showFilters && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Filter</h3>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="text-sm text-primary-700 hover:underline flex items-center gap-1"
-              >
-                <FiX className="w-4 h-4" />
-                Alle löschen
-              </button>
-            )}
-          </div>
-
-          {/* Kategori filtresi */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kategorie
-            </label>
-            <div className="flex flex-wrap gap-2">
+      {/* Kategori Pill'leri */}
+      {categories.length > 0 && (
+        <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
+          <div className="container-mobile">
+            <div className="flex gap-2 py-3">
               <button
                 onClick={() => handleCategoryChange('')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                   selectedCategory === ''
-                    ? 'bg-primary-700 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >
-                Alle
+                Tümü ({products.length})
               </button>
-              {categories.map((category) => (
+              {categories.map((category) => {
+                const count = getCategoryProductCount(category.id);
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id.toString())}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                      selectedCategory === category.id.toString()
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200'
+                    }`}
+                  >
+                    {category.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filtre paneli */}
+      {showFilters && (
+        <div className="container-mobile py-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Filtreler</h3>
+              {activeFilterCount > 0 && (
                 <button
-                  key={category.id}
-                  onClick={() => handleCategoryChange(category.id.toString())}
+                  onClick={clearFilters}
+                  className="text-sm text-primary-600 hover:underline flex items-center gap-1"
+                >
+                  <FiX className="w-4 h-4" />
+                  Temizle
+                </button>
+              )}
+            </div>
+
+            {/* Kategori filtresi */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kategori
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleCategoryChange('')}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedCategory === category.id.toString()
-                      ? 'bg-primary-700 text-white'
+                    selectedCategory === ''
+                      ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {category.name}
+                  Tümü
                 </button>
-              ))}
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id.toString())}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      selectedCategory === category.id.toString()
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sıralama paneli */}
+      {showSort && (
+        <div className="container-mobile py-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Sırala</h3>
+            <div className="space-y-2">
+              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                Fiyat: Düşükten Yükseğe
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                Fiyat: Yüksekten Düşüğe
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                İsim: A-Z
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+                İsim: Z-A
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Loading state */}
-      {loading && <Loading />}
+      {loading && (
+        <div className="container-mobile py-8">
+          <Loading />
+        </div>
+      )}
 
       {/* Error state */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">{error}</p>
+        <div className="container-mobile py-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{error}</p>
+          </div>
         </div>
       )}
 
       {/* Empty state */}
       {!loading && !error && products.length === 0 && (
-        <EmptyState
-          title="Keine Produkte gefunden"
-          message="Versuchen Sie, andere Filter zu verwenden"
-        />
+        <div className="container-mobile py-8">
+          <EmptyState
+            title="Ürün bulunamadı"
+            message="Farklı filtreler deneyin"
+          />
+        </div>
       )}
 
       {/* Ürün listesi */}
       {!loading && !error && products.length > 0 && (
         <>
-          <div
-            className={
-              viewMode === 'grid'
-                ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
-                : 'flex flex-col gap-4'
-            }
-          >
-            {products.map((product, index) => (
-              <UrunKarti
-                key={product.id}
-                product={product}
-                campaign={getCampaignForProduct(product)}
-                priority={index < 8} // İlk 8 ürün için eager loading
-              />
-            ))}
+          <div className="container-mobile py-4">
+            <div className="grid grid-cols-2 gap-3">
+              {products.map((product, index) => (
+                <UrunKarti
+                  key={product.id}
+                  product={product}
+                  campaign={getCampaignForProduct(product)}
+                  priority={index < 8} // İlk 8 ürün için eager loading
+                />
+              ))}
+            </div>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Zurück
-              </button>
+            <div className="container-mobile py-4">
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Geri
+                </button>
 
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  // Sadece geçerli sayfa etrafındaki sayfaları göster
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-10 h-10 rounded-lg ${
-                          currentPage === page
-                            ? 'bg-primary-700 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  } else if (page === currentPage - 2 || page === currentPage + 2) {
-                    return <span key={page}>...</span>;
-                  }
-                  return null;
-                })}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Sadece geçerli sayfa etrafındaki sayfaları göster
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-10 h-10 rounded-lg ${
+                            currentPage === page
+                              ? 'bg-primary-600 text-white'
+                              : 'border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return <span key={page}>...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  İleri
+                </button>
               </div>
-
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Weiter
-              </button>
             </div>
           )}
         </>

@@ -33,7 +33,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
     <motion.div
       {...handlers}
       style={{ x: swipeOffset }}
-      className="relative bg-white rounded-lg shadow-sm mb-3 overflow-hidden"
+      className="relative bg-white rounded-lg shadow-sm mb-2 overflow-hidden"
     >
       {/* Sil butonu arka plan */}
       <div className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 flex items-center justify-center">
@@ -41,9 +41,9 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
       </div>
 
       {/* Ana içerik */}
-      <div className="relative bg-white p-4 flex gap-4">
+      <div className="relative bg-white p-3 flex gap-3">
         {/* Ürün görseli */}
-        <div className="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+        <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
           {item.imageUrl ? (
             <img
               src={item.imageUrl}
@@ -52,58 +52,58 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <FiShoppingBag className="text-gray-400 text-2xl" />
+              <FiShoppingBag className="text-gray-400 text-xl" />
             </div>
           )}
         </div>
 
         {/* Ürün bilgileri */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+          <h3 className="font-medium text-sm text-gray-900 truncate">{item.name}</h3>
           {item.variantName && (
             <p className="text-xs text-purple-600 font-medium mt-0.5">
               {item.variantName}
             </p>
           )}
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-0.5">
             {parseFloat(item.price).toFixed(2)} € {item.unit && `/ ${item.unit}`}
           </p>
 
           {/* Miktar kontrolü */}
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center gap-2 mt-2">
             <button
               onClick={() => onUpdateQuantity(item.productId, item.quantity - 1, item.variantId)}
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
               aria-label="Menge verringern"
             >
-              <FiMinus className="text-gray-700" />
+              <FiMinus className="text-gray-700 text-xs" />
             </button>
 
-            <span className="w-12 text-center font-medium">{item.quantity}</span>
+            <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
 
             <button
               onClick={() => onUpdateQuantity(item.productId, item.quantity + 1, item.variantId)}
               disabled={item.quantity >= item.stock}
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Menge erhöhen"
             >
-              <FiPlus className="text-gray-700" />
+              <FiPlus className="text-gray-700 text-xs" />
             </button>
           </div>
 
           {item.quantity >= item.stock && (
-            <p className="text-xs text-amber-600 mt-1">Maximaler Bestand erreicht</p>
+            <p className="text-xs text-amber-600 mt-0.5">Maximaler Bestand erreicht</p>
           )}
         </div>
 
         {/* Toplam fiyat */}
         <div className="text-right flex-shrink-0">
-          <p className="font-bold text-lg text-gray-900">
+          <p className="font-bold text-base text-gray-900">
             {(parseFloat(item.price) * item.quantity).toFixed(2)} €
           </p>
           <button
             onClick={() => onRemove(item.productId, item.variantId)}
-            className="text-red-500 text-sm mt-2 hover:text-red-700"
+            className="text-red-500 text-xs mt-1 hover:text-red-700"
           >
             Entfernen
           </button>
@@ -326,13 +326,13 @@ function Sepet() {
           <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
             <FiShoppingBag className="text-gray-400 text-4xl" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Ihr Warenkorb ist leer</h2>
-          <p className="text-gray-600 mb-6">Fügen Sie Produkte hinzu, um zu beginnen</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sepetiniz Boş</h2>
+          <p className="text-gray-600 mb-6">Sepetinize ürün ekleyerek başlayın</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
           >
-            Produkte durchsuchen
+            Ürünlere Göz At
           </button>
         </motion.div>
       </div>
@@ -340,95 +340,96 @@ function Sepet() {
   }
 
   return (
-    <div className="container-mobile py-6 pb-32">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warenkorb</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            {itemCount} {itemCount === 1 ? 'Artikel' : 'Artikel'}
-          </p>
-        </div>
-        {items.length > 0 && (
-          <button
-            onClick={handleClearCart}
-            disabled={isClearing}
-            className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50"
-          >
-            Alle löschen
-          </button>
-        )}
-      </div>
-
-      {/* Sepet item'ları */}
-      <AnimatePresence>
-        {items.map((item) => (
-          <CartItem
-            key={`${item.productId}-${item.variantId || 'no-variant'}`}
-            item={item}
-            onRemove={handleRemoveItem}
-            onUpdateQuantity={handleUpdateQuantity}
-          />
-        ))}
-      </AnimatePresence>
-
-      {/* Özet kartı - Fixed bottom */}
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg max-w-[600px] mx-auto"
-      >
-      {/* Toplam */}
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Zwischensumme</span>
-          <span className="text-gray-900 font-semibold">{total.toFixed(2)} €</span>
+    <div className="pb-20 bg-white">
+      <div className="container-mobile py-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Sepetim</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              {itemCount} {itemCount === 1 ? 'ürün' : 'ürün'}
+            </p>
+          </div>
+          {items.length > 0 && (
+            <button
+              onClick={handleClearCart}
+              disabled={isClearing}
+              className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50"
+            >
+              Temizle
+            </button>
+          )}
         </div>
 
-        {/* Kampanya indirimi */}
-        {discount > 0 && discountDetails.length > 0 && (
-          <div className="space-y-1">
-            {discountDetails.map((detail, index) => (
-              <div key={index} className="flex items-center justify-between text-red-600">
-                <div className="flex items-center gap-1">
-                  <FiTag className="w-4 h-4" />
-                  <span className="text-sm">{detail.campaignName}</span>
+        {/* Sepet item'ları */}
+        <AnimatePresence>
+          {items.map((item) => (
+            <CartItem
+              key={`${item.productId}-${item.variantId || 'no-variant'}`}
+              item={item}
+              onRemove={handleRemoveItem}
+              onUpdateQuantity={handleUpdateQuantity}
+            />
+          ))}
+        </AnimatePresence>
+
+        {/* Özet kartı - Normal flow, en alta */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-gray-200 rounded-lg p-2 shadow-md mt-2 mb-4"
+        >
+        {/* Toplam */}
+        <div className="space-y-1.5 mb-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">Ara Toplam</span>
+            <span className="text-sm text-gray-900 font-semibold">{total.toFixed(2)} €</span>
+          </div>
+
+          {/* Kampanya indirimi */}
+          {discount > 0 && discountDetails.length > 0 && (
+            <div className="space-y-0.5">
+              {discountDetails.map((detail, index) => (
+                <div key={index} className="flex items-center justify-between text-red-600">
+                  <div className="flex items-center gap-1">
+                    <FiTag className="w-3 h-3" />
+                    <span className="text-xs">{detail.campaignName}</span>
+                  </div>
+                  <span className="text-xs font-semibold">-{detail.discount.toFixed(2)} €</span>
                 </div>
-                <span className="font-semibold">-{detail.discount.toFixed(2)} €</span>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {/* Final toplam */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-          <span className="text-gray-900 font-bold">Gesamt</span>
-          <div className="text-right">
-            <span className="text-2xl font-bold text-gray-900 block">{finalTotal.toFixed(2)} €</span>
-            <span className="text-xs text-gray-500">Versandkosten an der Kasse</span>
+          {/* Final toplam */}
+          <div className="flex items-center justify-between pt-1.5 border-t border-gray-200">
+            <span className="text-sm text-gray-900 font-bold">Toplam</span>
+            <div className="text-right">
+              <span className="text-lg font-bold text-primary-600 block">{finalTotal.toFixed(2)} €</span>
+              <span className="text-[10px] text-gray-500">Kargo ücreti kasadan hesaplanır</span>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Checkout butonu */}
-      <button
-        onClick={handleCheckout}
-        className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
-      >
-        <span>Zur Kasse gehen</span>
-        <FiArrowRight />
-      </button>
+        <button
+          onClick={handleCheckout}
+          className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-xs"
+        >
+          <span>Sipariş Ver</span>
+          <FiArrowRight className="w-3 h-3" />
+        </button>
 
-      {/* Siparişlerim butonu */}
-      <button
-        onClick={() => navigate('/siparislerim')}
-        className="w-full mt-2 border border-gray-300 text-gray-800 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
-      >
-        <FiPackage />
-        Siparişlerim
-      </button>
-      
+        {/* Siparişlerim butonu */}
+        <button
+          onClick={() => navigate('/siparislerim')}
+          className="w-full mt-1.5 border border-gray-300 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-xs"
+        >
+          <FiPackage className="w-3 h-3" />
+          Siparişlerim
+        </button>
       </motion.div>
+      </div>
     </div>
   );
 }

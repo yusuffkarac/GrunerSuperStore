@@ -468,7 +468,7 @@ function UrunDetay() {
               </div>
             ) : (
               <>
-                <span className="text-2xl lg:text-4xl font-bold text-primary-700">
+                <span className="text-2xl lg:text-4xl font-bold text-primary-600">
                   €{displayPrice.toFixed(2)}
                 </span>
                 {product.unit && (
@@ -479,14 +479,19 @@ function UrunDetay() {
           </div>
 
           {/* Kampanya bilgisi */}
-          {campaign && (
+          {campaign && 
+           campaign.name && 
+           campaign.name.toLowerCase() !== 'test' && 
+           campaign.name.trim() !== '' && (
             <div className="mb-4 lg:mb-5 bg-red-50 border border-red-200 rounded-lg p-3 lg:p-4">
               <div className="flex items-start gap-2">
                 <FiTag className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-red-900 mb-1">{campaign.name}</p>
-                  {campaign.description && (
-                    <p className="text-sm text-red-800">{campaign.description}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-red-900 mb-1 truncate">{campaign.name}</p>
+                  {campaign.description && 
+                   campaign.description.toLowerCase() !== 'asdasdsa' && 
+                   campaign.description.trim() !== '' && (
+                    <p className="text-sm text-red-800 break-words">{campaign.description}</p>
                   )}
                   {campaign.endDate && (
                     <p className="text-xs text-red-700 mt-2">
@@ -556,7 +561,7 @@ function UrunDetay() {
                 className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-base font-medium transition-colors ${
                   justAdded
                     ? 'bg-green-600 text-white'
-                    : 'bg-primary-700 text-white hover:bg-primary-800'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {justAdded ? (
@@ -624,22 +629,22 @@ function UrunDetay() {
               <button
                 onClick={handleAddToCart}
                 disabled={addingToCart || justAdded}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-medium transition-colors min-w-0 ${
                   justAdded
                     ? 'bg-green-600 text-white'
-                    : 'bg-primary-700 text-white hover:bg-primary-800'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {justAdded ? (
                   <>
-                    <FiCheck className="w-4 h-4" />
-                    <span>Hinzugefügt</span>
+                    <FiCheck className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Hinzugefügt</span>
                   </>
                 ) : (
                   <>
-                    <FiShoppingCart className="w-4 h-4" />
-                    <span>
-                      {addingToCart ? 'Wird hinzugefügt...' : 'Zum Warenkorb hinzufügen'}
+                    <FiShoppingCart className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">
+                      {addingToCart ? 'Wird hinzugefügt...' : 'Zum Warenkorb'}
                     </span>
                   </>
                 )}

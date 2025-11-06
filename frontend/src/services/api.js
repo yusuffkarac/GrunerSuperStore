@@ -1,7 +1,24 @@
 import axios from 'axios';
 
-// API base URL
-const API_BASE_URL =  'http://localhost:5001/api';
+// API base URL - dinamik olarak hostname'i kullan
+// Development'ta: window.location.hostname kullan (PC'nin IP'si veya localhost)
+// Production'da: environment variable veya sabit URL kullan
+const getApiBaseUrl = () => {
+  // Eğer environment variable varsa onu kullan
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Development'ta dinamik olarak hostname'i kullan
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const port = '5001';
+  
+  // localhost ise localhost kullan, değilse hostname'i kullan (PC'nin IP'si)
+  return `${protocol}//${hostname}:${port}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Axios instance oluştur
 const api = axios.create({

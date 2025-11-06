@@ -8,16 +8,28 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
+          50: 'var(--color-primary-50)',
+          100: 'var(--color-primary-100)',
+          200: 'var(--color-primary-200)',
+          300: 'var(--color-primary-300)',
+          400: 'var(--color-primary-400)',
+          500: 'var(--color-primary-500)',
+          600: 'var(--color-primary-600)',
+          700: 'var(--color-primary-700)',
+          800: 'var(--color-primary-800)',
+          900: 'var(--color-primary-900)',
+        },
+        theme: {
+          'header-bg': 'var(--color-header-bg)',
+          'header-text': 'var(--color-header-text)',
+          'button-cart': 'var(--color-button-cart)',
+          'button-favorite': 'var(--color-button-favorite)',
+          'button-favorite-active': 'var(--color-button-favorite-active)',
+          'text-price': 'var(--color-text-price)',
+          'text-primary': 'var(--color-text-primary)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'bg-card': 'var(--color-bg-card)',
+          'bg-page': 'var(--color-bg-page)',
         }
       },
       fontFamily: {

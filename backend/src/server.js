@@ -53,10 +53,28 @@ app.use(helmet({
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+// CORS yapılandırması - development'ta tüm origin'leri kabul et
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Development modunda veya origin yoksa (Postman gibi) tüm origin'leri kabul et
+    if (process.env.NODE_ENV !== 'production' || !origin) {
+      callback(null, true);
+    } else {
+      // Production'da belirli origin'leri kontrol et
+      const allowedOrigins = process.env.CORS_ORIGIN 
+        ? process.env.CORS_ORIGIN.split(',')
+        : ['http://localhost:5173'];
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS policy violation'));
+      }
+    }
+  },
   credentials: true
-}));
+};
+app.use(cors(corsOptions));
 app.use(compression()); // Response sıkıştırma
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -67,9 +85,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // __dirname = backend/src, uploads klasörü = backend/uploads
 app.use('/uploads', express.static(join(__dirname, '../uploads'), {
-  setHeaders: (res, path) => {
-    // CORS header'larını statik dosyalar için de ekle
-    res.set('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:5173');
+  setHeaders: (res, path, stat) => {
+    // CORS header'larını statik dosyalar için de ekle - development'ta tüm origin'leri kabul et
+    if (process.env.NODE_ENV !== 'production') {
+      res.set('Access-Control-Allow-Origin', '*');
+    } else {
+      res.set('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:5173');
+    }
     res.set('Access-Control-Allow-Credentials', 'true');
   }
 }));
@@ -131,11 +153,12 @@ app.use(notFoundHandler);
 // Global Error Handler
 app.use(errorHandler);
 
-// Server başlatma
-app.listen(PORT, () => {
+// Server başlatma - 0.0.0.0 ile tüm network interface'lerine bind et
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 URL: http://localhost:${PORT}`);
+  console.log(`🔗 Local URL: http://localhost:${PORT}`);
+  console.log(`🌐 Network URL: http://0.0.0.0:${PORT}`);
 });
 
 export default app;

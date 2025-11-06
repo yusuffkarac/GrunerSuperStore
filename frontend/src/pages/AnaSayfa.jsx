@@ -324,9 +324,9 @@ function AnaSayfa() {
   }
 
   return (
-    <div className="pb-20 bg-gray-50">
+    <div className="pb-20 bg-white">
       {/* Hero Banner / Kategoriler */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-10 md:py-12 px-4 mb-8 overflow-hidden">
+      <section className="relative bg-primary-600 text-white py-6 px-4 mb-0 overflow-hidden">
         {/* Dekoratif arka plan */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
@@ -334,74 +334,50 @@ function AnaSayfa() {
         </div>
         
         <div className="container-mobile relative z-10">
-          <div className="mb-6">
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
-              Willkommen bei Grüner
-            </h1>
-            <p className="text-primary-100 text-lg">
-              Ihr vertrauenswürdiger Online-Supermarkt
-            </p>
-          </div>
-
           {/* Kategori kartları */}
-          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-            {categories.slice(0, 8).map((category, index) => (
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {categories.slice(0, 6).map((category, index) => (
               <Link
                 key={category.id}
                 to={`/urunler?category=${category.id}`}
-                className="group bg-white/10 backdrop-blur-md rounded-xl p-3 hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40"
+                className="group text-center"
               >
-                <div className="aspect-square bg-white/20 rounded-lg mb-2 flex items-center justify-center overflow-hidden group-hover:shadow-lg transition-shadow">
+                <div className="aspect-square bg-white/20 rounded-xl mb-2 flex items-center justify-center overflow-hidden group-hover:bg-white/30 transition-all">
                   {category.imageUrl ? (
                     <img
                       src={category.imageUrl}
                       alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading={index < 8 ? "eager" : "lazy"}
+                      className="w-full h-full object-cover"
+                      loading={index < 6 ? "eager" : "lazy"}
                     />
                   ) : (
-                    <MdInventory className="text-3xl text-white/80" />
+                    <MdInventory className="text-2xl text-white/80" />
                   )}
                 </div>
-                <h3 className="font-semibold text-center text-xs md:text-sm">
+                <h3 className="font-medium text-center text-xs text-white">
                   {category.name}
                 </h3>
               </Link>
             ))}
           </div>
-
-          {/* Tüm kategorileri gör */}
-          {categories.length > 8 && (
-            <div className="mt-6 text-center">
-              <Link
-                to="/urunler"
-                className="inline-flex items-center gap-2 text-white/90 hover:text-white font-medium text-sm md:text-base transition-colors group"
-              >
-                Alle Kategorien anzeigen
-                <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          )}
         </div>
       </section>
 
-      <div className="container-mobile">
-        {/* Kampanyalar Bölümü */}
-        {campaigns.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Aktuelle Kampagnen</h2>
-                <p className="text-gray-600 text-sm mt-1">Entdecken Sie unsere aktuellen Angebote</p>
+      <div className="bg-white">
+        <div className="container-mobile py-4">
+          {/* Kampanyalar Bölümü */}
+          {campaigns.length > 0 && (
+            <section className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Kampanyalar</h2>
+                <Link
+                  to="/kampanyalar"
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
+                >
+                  Tümünü gör
+                  <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
-              <Link
-                to="/kampanyalar"
-                className="text-primary-700 hover:text-primary-800 text-sm md:text-base font-medium flex items-center gap-1 group"
-              >
-                Alle anzeigen
-                <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {campaigns.slice(0, 3).map((campaign, index) => (
@@ -454,121 +430,61 @@ function AnaSayfa() {
           </section>
         )}
 
-        {/* Öne Çıkan Ürünler - Horizontal Slider */}
-        {featuredProducts.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Empfohlene Produkte</h2>
-                <p className="text-gray-600 text-sm mt-1">Unsere Empfehlungen für Sie</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => scrollSlider('left')}
-                  className="p-2.5 rounded-full bg-white hover:bg-gray-100 transition-colors shadow-md hover:shadow-lg"
-                  aria-label="Nach links scrollen"
+          {/* Öne Çıkan Ürünler */}
+          {featuredProducts.length > 0 && (
+            <section className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Öne Çıkan Ürünler</h2>
+                <Link
+                  to="/urunler"
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
                 >
-                  <FiChevronLeft className="w-5 h-5 text-gray-700" />
-                </button>
-                <button
-                  onClick={() => scrollSlider('right')}
-                  className="p-2.5 rounded-full bg-white hover:bg-gray-100 transition-colors shadow-md hover:shadow-lg"
-                  aria-label="Nach rechts scrollen"
-                >
-                  <FiChevronRight className="w-5 h-5 text-gray-700" />
-                </button>
+                  Tümünü gör
+                  <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
-            </div>
 
-            <div
-              ref={sliderRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {featuredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="flex-none w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)] snap-start"
-                >
+              <div className="grid grid-cols-2 gap-3">
+                {featuredProducts.slice(0, 6).map((product, index) => (
                   <UrunKarti 
+                    key={product.id} 
                     product={product} 
                     campaign={getCampaignForProduct(product)}
-                    priority={index < 4} // İlk 4 ürün için eager loading
+                    priority={index < 6} // İlk 6 ürün için eager loading
                   />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Çok Satanlar - Grid */}
-        {bestSellers.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Bestseller</h2>
-                <p className="text-gray-600 text-sm mt-1">Die beliebtesten Produkte</p>
+                ))}
               </div>
-              <Link
-                to="/urunler"
-                className="text-primary-700 hover:text-primary-800 text-sm md:text-base font-medium flex items-center gap-1 group"
-              >
-                Alle anzeigen
-                <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
+            </section>
+          )}
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {bestSellers.map((product, index) => (
-                <UrunKarti 
-                  key={product.id} 
-                  product={product} 
-                  campaign={getCampaignForProduct(product)}
-                  priority={index < 8} // İlk 8 ürün için eager loading
-                />
-              ))}
-            </div>
-          </section>
-        )}
+          {/* Çok Satanlar */}
+          {bestSellers.length > 0 && (
+            <section className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Çok Satanlar</h2>
+                <Link
+                  to="/urunler"
+                  className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
+                >
+                  Tümünü gör
+                  <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
 
-        {/* Bilgilendirme Kartları */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-12">
-          <div className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 md:p-8 text-center border border-blue-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="mb-4 group-hover:scale-110 transition-transform duration-300 flex justify-center">
-              <MdLocalShipping className="text-5xl text-blue-600" />
-            </div>
-            <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-2">
-              Schnelle Lieferung
-            </h3>
-            <p className="text-sm md:text-base text-gray-700">
-              Lieferung am selben Tag verfügbar
-            </p>
-          </div>
+              <div className="grid grid-cols-2 gap-3">
+                {bestSellers.slice(0, 6).map((product, index) => (
+                  <UrunKarti 
+                    key={product.id} 
+                    product={product} 
+                    campaign={getCampaignForProduct(product)}
+                    priority={index < 6} // İlk 6 ürün için eager loading
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-          <div className="group bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 md:p-8 text-center border border-green-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="mb-4 group-hover:scale-110 transition-transform duration-300 flex justify-center">
-              <MdCheckCircle className="text-5xl text-green-600" />
-            </div>
-            <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-2">
-              Frische Garantie
-            </h3>
-            <p className="text-sm md:text-base text-gray-700">
-              100% frische Produkte garantiert
-            </p>
-          </div>
-
-          <div className="group bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 md:p-8 text-center border border-purple-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="mb-4 group-hover:scale-110 transition-transform duration-300 flex justify-center">
-              <MdCreditCard className="text-5xl text-purple-600" />
-            </div>
-            <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-2">
-              Sichere Zahlung
-            </h3>
-            <p className="text-sm md:text-base text-gray-700">
-              Alle gängigen Zahlungsmethoden akzeptiert
-            </p>
-          </div>
-        </section>
+        </div>
       </div>
     </div>
   );

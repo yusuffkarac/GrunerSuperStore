@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Context
 import { AlertProvider } from './contexts/AlertContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -27,6 +28,7 @@ import Siparislerim from './pages/Siparislerim';
 import SiparisDetay from './pages/SiparisDetay';
 import Favorilerim from './pages/Favorilerim';
 import Kampanyalar from './pages/Kampanyalar';
+import Karsilastir from './pages/Karsilastir';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -111,6 +113,7 @@ function AppContent() {
           <Route path="/siparis/:id" element={<SiparisDetay />} />
           <Route path="/favorilerim" element={<Favorilerim />} />
           <Route path="/kampanyalar" element={<Kampanyalar />} />
+          <Route path="/karsilastir" element={<Karsilastir />} />
         </Route>
 
         {/* Admin Routes */}
@@ -137,27 +140,29 @@ function AppContent() {
 
 function App() {
   return (
-    <AlertProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AppContent />
-        <ToastContainer
-        position="bottom-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        limit={2}
-      />
+    <ThemeProvider>
+      <AlertProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AppContent />
+          <ToastContainer
+          position="bottom-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          limit={2}
+        />
 
-        {/* PWA Install Prompt */}
-        <InstallPrompt />
-      </Router>
-    </AlertProvider>
+          {/* PWA Install Prompt */}
+          <InstallPrompt />
+        </Router>
+      </AlertProvider>
+    </ThemeProvider>
   );
 }
 

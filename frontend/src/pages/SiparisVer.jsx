@@ -192,91 +192,91 @@ function SiparisVer() {
   }
 
   return (
-    <div className="container-mobile py-4">
-      <h1 className="text-xl font-bold text-gray-900 mb-4">Bestellung aufgeben</h1>
+    <div className="container-mobile py-3 pb-20">
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Bestellung aufgeben</h1>
 
       {/* Teslimat Türü */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-        <h2 className="font-semibold text-gray-900 text-base mb-2 flex items-center gap-2">
-          <FiTruck />
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm mb-1.5 flex items-center gap-1.5">
+          <FiTruck className="w-4 h-4" />
           <span>Lieferart</span>
         </h2>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setOrderType('delivery')}
-            className={`p-3 rounded-lg border-2 transition-all ${
+            className={`p-2 rounded-lg border transition-all ${
               orderType === 'delivery'
                 ? 'border-green-600 bg-green-50'
                 : 'border-gray-200 bg-white'
             }`}
           >
             <FiTruck
-              className={`mx-auto mb-2 text-xl ${
+              className={`mx-auto mb-1 text-lg ${
                 orderType === 'delivery' ? 'text-green-600' : 'text-gray-400'
               }`}
             />
-            <p className="font-medium text-sm">Lieferung</p>
-            <p className="text-xs text-gray-500 mt-1">{deliveryFee.toFixed(2)} €</p>
+            <p className="font-medium text-xs">Lieferung</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">{deliveryFee.toFixed(2)} €</p>
           </button>
 
           <button
             onClick={() => setOrderType('pickup')}
-            className={`p-3 rounded-lg border-2 transition-all ${
+            className={`p-2 rounded-lg border transition-all ${
               orderType === 'pickup'
                 ? 'border-green-600 bg-green-50'
                 : 'border-gray-200 bg-white'
             }`}
           >
             <FiShoppingBag
-              className={`mx-auto mb-2 text-xl ${
+              className={`mx-auto mb-1 text-lg ${
                 orderType === 'pickup' ? 'text-green-600' : 'text-gray-400'
               }`}
             />
-            <p className="font-medium text-sm">Abholung</p>
-            <p className="text-xs text-gray-500 mt-1">Kostenlos</p>
+            <p className="font-medium text-xs">Abholung</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">Kostenlos</p>
           </button>
         </div>
       </div>
 
       {/* Teslimat Adresi (sadece delivery için) */}
       {orderType === 'delivery' && (
-        <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-gray-900 text-base flex items-center gap-2">
-              <FiMapPin />
+        <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+              <FiMapPin className="w-4 h-4" />
               <span>Lieferadresse</span>
             </h2>
             <button
               onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/siparis-ver' } })}
-              className="text-green-600 text-sm flex items-center gap-1"
+              className="text-green-600 text-xs flex items-center gap-1"
             >
-              <FiPlus />
+              <FiPlus className="w-3 h-3" />
               <span>Neu</span>
             </button>
           </div>
 
           {loadingAddresses ? (
             <div className="animate-pulse">
-              <div className="h-16 bg-gray-200 rounded-lg"></div>
+              <div className="h-12 bg-gray-200 rounded-lg"></div>
             </div>
           ) : addresses.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-gray-600 text-sm mb-3">Keine Adresse gefunden</p>
+            <div className="text-center py-4">
+              <p className="text-gray-600 text-xs mb-2">Keine Adresse gefunden</p>
               <button
                 onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/siparis-ver' } })}
-                className="text-green-600 text-sm"
+                className="text-green-600 text-xs"
               >
                 Neue Adresse hinzufügen
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {addresses.map((address) => (
                 <button
                   key={address.id}
                   onClick={() => setSelectedAddressId(address.id)}
-                  className={`w-full text-left p-2.5 rounded-lg border-2 transition-all ${
+                  className={`w-full text-left p-2 rounded-lg border transition-all ${
                     selectedAddressId === address.id
                       ? 'border-green-600 bg-green-50'
                       : 'border-gray-200 bg-white'
@@ -284,17 +284,17 @@ function SiparisVer() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{address.title}</p>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className="font-medium text-sm text-gray-900">{address.title}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">
                         {address.street} {address.houseNumber}
                         {address.addressLine2 && `, ${address.addressLine2}`}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs text-gray-600">
                         {address.postalCode} {address.city}, {address.state}
                       </p>
                     </div>
                     {selectedAddressId === address.id && (
-                      <FiCheck className="text-green-600 text-xl flex-shrink-0" />
+                      <FiCheck className="text-green-600 text-base flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -305,53 +305,53 @@ function SiparisVer() {
       )}
 
       {/* Ödeme Yöntemi */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-        <h2 className="font-semibold text-gray-900 text-base mb-2 flex items-center gap-2">
-          <FiCreditCard />
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm mb-1.5 flex items-center gap-1.5">
+          <FiCreditCard className="w-4 h-4" />
           <span>Zahlungsart</span>
         </h2>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <button
             onClick={() => setPaymentType('cash')}
-            className={`w-full text-left p-2.5 rounded-lg border-2 transition-all flex items-center justify-between ${
+            className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between ${
               paymentType === 'cash'
                 ? 'border-green-600 bg-green-50'
                 : 'border-gray-200 bg-white'
             }`}
           >
-            <span className="font-medium">Barzahlung</span>
-            {paymentType === 'cash' && <FiCheck className="text-green-600 text-xl" />}
+            <span className="font-medium text-sm">Barzahlung</span>
+            {paymentType === 'cash' && <FiCheck className="text-green-600 text-base" />}
           </button>
 
           <button
             onClick={() => setPaymentType('card_on_delivery')}
-            className={`w-full text-left p-2.5 rounded-lg border-2 transition-all flex items-center justify-between ${
+            className={`w-full text-left p-2 rounded-lg border transition-all flex items-center justify-between ${
               paymentType === 'card_on_delivery'
                 ? 'border-green-600 bg-green-50'
                 : 'border-gray-200 bg-white'
             }`}
           >
-            <span className="font-medium">Kartenzahlung bei Lieferung</span>
+            <span className="font-medium text-sm">Kartenzahlung bei Lieferung</span>
             {paymentType === 'card_on_delivery' && (
-              <FiCheck className="text-green-600 text-xl" />
+              <FiCheck className="text-green-600 text-base" />
             )}
           </button>
         </div>
       </div>
 
       {/* Kupon Kodu */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-        <h2 className="font-semibold text-gray-900 text-base mb-2 flex items-center gap-2">
-          <FiTag />
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm mb-1.5 flex items-center gap-1.5">
+          <FiTag className="w-4 h-4" />
           <span>Gutscheincode</span>
         </h2>
         {appliedCoupon ? (
-          <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <FiCheck className="text-green-600" />
-              <span className="font-medium text-green-800">{appliedCoupon.code}</span>
-              <span className="text-sm text-green-600">
+          <div className="flex items-center justify-between p-1.5 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-1.5">
+              <FiCheck className="text-green-600 w-4 h-4" />
+              <span className="font-medium text-sm text-green-800">{appliedCoupon.code}</span>
+              <span className="text-xs text-green-600">
                 -{couponDiscount.toFixed(2)} €
               </span>
             </div>
@@ -359,17 +359,17 @@ function SiparisVer() {
               onClick={handleRemoveCoupon}
               className="text-red-600 hover:text-red-700"
             >
-              <FiX className="w-5 h-5" />
+              <FiX className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <input
               type="text"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
               placeholder="Gutscheincode eingeben"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -380,7 +380,7 @@ function SiparisVer() {
             <button
               onClick={handleValidateCoupon}
               disabled={validatingCoupon || !couponCode.trim()}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {validatingCoupon ? '...' : 'Anwenden'}
             </button>
@@ -389,30 +389,30 @@ function SiparisVer() {
       </div>
 
       {/* Sipariş Notu */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-        <h2 className="font-semibold text-gray-900 text-base mb-2">Bestellnotiz (optional)</h2>
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm mb-1.5">Bestellnotiz (optional)</h2>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="z.B. Klingel defekt, bitte anrufen"
-          className="w-full border border-gray-300 rounded-lg p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-600"
+          className="w-full border border-gray-300 rounded-lg p-2 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-green-600"
           rows="2"
         />
       </div>
 
       {/* Sipariş Özeti */}
-      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-        <h2 className="font-semibold text-gray-900 text-base mb-2">Bestellübersicht</h2>
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm mb-1.5">Bestellübersicht</h2>
 
-        <div className="space-y-2 mb-3">
+        <div className="space-y-1.5 mb-2">
           {items.map((item) => (
-            <div key={`${item.productId}-${item.variantId || 'no-variant'}`} className="flex justify-between text-sm">
+            <div key={`${item.productId}-${item.variantId || 'no-variant'}`} className="flex justify-between text-xs">
               <div className="flex-1">
                 <span className="text-gray-600">
                   {item.quantity}x {item.name}
                 </span>
                 {item.variantName && (
-                  <div className="text-xs text-purple-600 font-medium mt-0.5">
+                  <div className="text-[10px] text-purple-600 font-medium mt-0.5">
                     {item.variantName}
                   </div>
                 )}
@@ -424,22 +424,22 @@ function SiparisVer() {
           ))}
         </div>
 
-        <div className="border-t border-gray-200 pt-2 space-y-1.5">
-          <div className="flex justify-between text-sm">
+        <div className="border-t border-gray-200 pt-1.5 space-y-1">
+          <div className="flex justify-between text-xs">
             <span className="text-gray-600">Zwischensumme</span>
             <span className="text-gray-900">{subtotal.toFixed(2)} €</span>
           </div>
           {discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-xs text-green-600">
               <span>Gutscheinrabatt</span>
               <span>-{discount.toFixed(2)} €</span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs">
             <span className="text-gray-600">Liefergebühr</span>
             <span className="text-gray-900">{deliveryFee.toFixed(2)} €</span>
           </div>
-          <div className="flex justify-between text-base font-bold border-t border-gray-200 pt-2">
+          <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-1.5">
             <span>Gesamt</span>
             <span className="text-green-600">{total.toFixed(2)} €</span>
           </div>
@@ -450,12 +450,12 @@ function SiparisVer() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg max-w-[600px] mx-auto"
+        className="fixed bottom-14 left-0 right-0 bg-white border-t border-gray-200 p-2 shadow-lg max-w-[600px] mx-auto"
       >
         <button
           onClick={handlePlaceOrder}
           disabled={loading || (orderType === 'delivery' && !selectedAddressId)}
-          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs"
         >
           {loading ? 'Wird verarbeitet...' : `Jetzt bestellen • ${total.toFixed(2)} €`}
         </button>
