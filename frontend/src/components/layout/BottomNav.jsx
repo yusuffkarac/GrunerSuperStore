@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiCompass, FiRepeat, FiShoppingCart, FiFileText, FiGift, FiHeart } from 'react-icons/fi';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useCartStore from '../../store/cartStore';
 import campaignService from '../../services/campaignService';
 
@@ -9,6 +9,8 @@ function BottomNav() {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
   const [campaignCount, setCampaignCount] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const navRef = useRef(null);
 
   // Aktif kampanya sayısını yükle
   useEffect(() => {
@@ -40,9 +42,25 @@ function BottomNav() {
     { path: '/kampanyalar', icon: FiGift, label: 'Aktionen', badge: campaignCount },
   ];
 
+  // Update active index when location changes
+  useEffect(() => {
+    const currentIndex = navItems.findIndex(item => isActive(item.path));
+    if (currentIndex !== -1) {
+      setActiveIndex(currentIndex);
+    }
+  }, [location.pathname]);
+
   return (
-    <nav className="md:hidden bottom-nav">
-      {navItems.map((item) => {
+    <nav className="md:hidden bottom-nav-modern" ref={navRef}>
+      {/* Animated active indicator */}
+      <div
+        className="bottom-nav-indicator"
+        style={{
+          transform: `translateX(${activeIndex * 100}%)`,
+        }}
+      />
+
+      {navItems.map((item, index) => {
         const Icon = item.icon;
         const active = isActive(item.path);
 
@@ -50,20 +68,27 @@ function BottomNav() {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center justify-center flex-1 py-1.5 px-0.5 relative min-w-0 ${
-              active ? 'text-primary-600' : 'text-gray-600'
-            }`}
+            className="bottom-nav-item group"
           >
-            <div className="relative mb-0.5">
-              <Icon className={`w-5 h-5 ${active ? 'stroke-2' : ''}`} />
-              {/* Badge */}
-              {item.badge > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
-              )}
+            {/* Ripple container */}
+            <div className={`bottom-nav-item-content ${active ? 'active' : ''}`}>
+              {/* Icon container with animation */}
+              <div className="bottom-nav-icon-wrapper">
+                <Icon className={`bottom-nav-icon ${active ? 'active' : ''}`} />
+
+                {/* Badge with pulse animation */}
+                {item.badge > 0 && (
+                  <span className="bottom-nav-badge">
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Label */}
+              <span className={`bottom-nav-label ${active ? 'active' : ''}`}>
+                {item.label}
+              </span>
             </div>
-            <span className={`text-[10px] leading-tight truncate w-full text-center ${active ? 'font-medium' : ''}`}>{item.label}</span>
           </Link>
         );
       })}
