@@ -38,6 +38,7 @@ function AdminLayout() {
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag },
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
+    { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
@@ -69,8 +70,8 @@ function AdminLayout() {
       <div className="flex">
         {/* Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${
+            sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           }`}
         >
           <div className="p-6 border-b">

@@ -50,6 +50,13 @@ enum CampaignType {
   @@map("campaign_type")
 }
 
+enum CouponType {
+  PERCENTAGE   // %20 indirim
+  FIXED_AMOUNT // 10€ indirim
+
+  @@map("coupon_type")
+}
+
 // ===================================
 // MODELS
 // ===================================
@@ -66,10 +73,11 @@ model User {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  addresses Address[]
-  cartItems CartItem[]
-  orders    Order[]
-  favorites Favorite[]
+  addresses    Address[]
+  cartItems    CartItem[]
+  orders       Order[]
+  favorites    Favorite[]
+  couponUsages CouponUsage[]
 
   @@index([email])
   @@index([isActive])
@@ -194,8 +202,11 @@ model Order {
   addressId   String?     @map("address_id") @db.Uuid
   deliveryFee Decimal     @default(0) @map("delivery_fee") @db.Decimal(12, 2)
   subtotal    Decimal     @map("subtotal") @db.Decimal(12, 2)
+  discount    Decimal     @default(0) @db.Decimal(12, 2)  // Kupon indirimi
   total       Decimal     @db.Decimal(12, 2)
   paymentType PaymentType @default(none) @map("payment_type")
+  couponId    String?     @map("coupon_id") @db.Uuid
+  couponCode  String?     @map("coupon_code")  // Snapshot
   note        String?
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
@@ -203,6 +214,7 @@ model Order {
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   address    Address?    @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  coupon     Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
 
   @@index([orderNo])
@@ -211,6 +223,7 @@ model Order {
   @@index([type])
   @@index([createdAt(sort: Desc)])
   @@index([addressId])
+  @@index([couponId])
   @@index([userId, status, createdAt(sort: Desc)])
   @@map("orders")
 }
@@ -261,6 +274,69 @@ model Favorite {
   @@index([productId])
   @@index([createdAt(sort: Desc)])
   @@map("favorites")
+}
+
+model Coupon {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String      @unique  // Kupon kodu
+  name            String?     // Kupon adı/açıklaması
+  type            CouponType  // PERCENTAGE veya FIXED_AMOUNT
+  discountPercent Decimal?    @db.Decimal(5, 2) @map("discount_percent")  // %50.00 gibi
+  discountAmount  Decimal?    @db.Decimal(12, 2) @map("discount_amount")  // 10.00€ gibi
+
+  // Tarih aralığı
+  startDate       DateTime    @map("start_date")
+  endDate         DateTime    @map("end_date")
+
+  // Uygulama kuralları
+  minPurchase     Decimal?    @db.Decimal(12, 2) @map("min_purchase")   // Min sepet tutarı
+  maxDiscount     Decimal?    @db.Decimal(12, 2) @map("max_discount")   // Max indirim tutarı
+  usageLimit      Int?        @map("usage_limit")     // Toplam kullanım limiti
+  usageCount      Int         @default(0) @map("usage_count")           // Kullanım sayısı
+  userUsageLimit  Int?        @default(1) @map("user_usage_limit")      // Kullanıcı başına kullanım limiti
+
+  // Hedefleme
+  applyToAll      Boolean     @default(true) @map("apply_to_all")  // Tüm mağaza
+  userIds         Json?       @map("user_ids")  // ["uuid1", "uuid2"] - Kişiye özel
+  categoryIds     Json?       @map("category_ids")  // ["uuid1", "uuid2"]
+  productIds       Json?       @map("product_ids")   // ["uuid1", "uuid2"]
+
+  // Durumlar
+  isActive        Boolean     @default(true) @map("is_active")
+
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  orders          Order[]
+  usages          CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([type])
+  @@index([startDate, endDate])
+  @@index([isActive, startDate, endDate])
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  couponId String   @map("coupon_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  orderId  String?  @map("order_id") @db.Uuid
+  discount Decimal  @db.Decimal(12, 2)  // Uygulanan indirim tutarı
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([couponId, userId])
+  @@index([createdAt(sort: Desc)])
+  @@map("coupon_usages")
 }
 
 model DeliveryZone {

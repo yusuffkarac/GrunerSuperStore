@@ -9,11 +9,14 @@ import {
   FiCreditCard,
   FiPlus,
   FiCheck,
+  FiTag,
+  FiX,
 } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import orderService from '../services/orderService';
+import couponService from '../services/couponService';
 
 function SiparisVer() {
   const navigate = useNavigate();
@@ -28,10 +31,15 @@ function SiparisVer() {
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   const subtotal = getTotal();
   const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
-  const total = subtotal + deliveryFee;
+  const discount = couponDiscount;
+  const total = Math.max(0, subtotal + deliveryFee - discount);
 
   // Adresleri yükle
   useEffect(() => {
@@ -71,6 +79,47 @@ function SiparisVer() {
     }
   };
 
+  // Kupon doğrula
+  const handleValidateCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('Bitte geben Sie einen Gutscheincode ein');
+      return;
+    }
+
+    setValidatingCoupon(true);
+    try {
+      const cartItems = items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId || null,
+        quantity: item.quantity,
+      }));
+
+      const response = await couponService.validateCoupon(couponCode, cartItems, subtotal);
+      
+      // Response format: { success: true, data: { coupon: {...}, discount: 4.11 } }
+      if (response && response.success && response.data) {
+        setAppliedCoupon(response.data.coupon);
+        setCouponDiscount(response.data.discount);
+        toast.success('Gutscheincode erfolgreich angewendet!');
+      } else {
+        throw new Error('Ungültige Antwort vom Server');
+      }
+    } catch (error) {
+      toast.error(error.message || error.data?.message || 'Gutscheincode ungültig');
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  // Kupon kaldır
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+  };
+
   // Sipariş ver
   const handlePlaceOrder = async () => {
     // Validasyon
@@ -97,9 +146,10 @@ function SiparisVer() {
       const orderData = {
         type: orderType,
         paymentType,
-        note: note || undefined,
         items: orderItems,
         ...(orderType === 'delivery' && { addressId: selectedAddressId }),
+        ...(appliedCoupon && { couponCode: appliedCoupon.code }),
+        ...(note && note.trim() && { note: note.trim() }),
       };
 
       console.log('Sipariş data:', orderData);
@@ -290,6 +340,54 @@ function SiparisVer() {
         </div>
       </div>
 
+      {/* Kupon Kodu */}
+      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
+        <h2 className="font-semibold text-gray-900 text-base mb-2 flex items-center gap-2">
+          <FiTag />
+          <span>Gutscheincode</span>
+        </h2>
+        {appliedCoupon ? (
+          <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <FiCheck className="text-green-600" />
+              <span className="font-medium text-green-800">{appliedCoupon.code}</span>
+              <span className="text-sm text-green-600">
+                -{couponDiscount.toFixed(2)} €
+              </span>
+            </div>
+            <button
+              onClick={handleRemoveCoupon}
+              className="text-red-600 hover:text-red-700"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Gutscheincode eingeben"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleValidateCoupon();
+                }
+              }}
+            />
+            <button
+              onClick={handleValidateCoupon}
+              disabled={validatingCoupon || !couponCode.trim()}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {validatingCoupon ? '...' : 'Anwenden'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Sipariş Notu */}
       <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
         <h2 className="font-semibold text-gray-900 text-base mb-2">Bestellnotiz (optional)</h2>
@@ -331,6 +429,12 @@ function SiparisVer() {
             <span className="text-gray-600">Zwischensumme</span>
             <span className="text-gray-900">{subtotal.toFixed(2)} €</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Gutscheinrabatt</span>
+              <span>-{discount.toFixed(2)} €</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Liefergebühr</span>
             <span className="text-gray-900">{deliveryFee.toFixed(2)} €</span>

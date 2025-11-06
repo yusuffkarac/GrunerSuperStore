@@ -8,6 +8,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
+import { cleanRequestData } from '../../utils/requestUtils';
 
 function Campaigns() {
   const { showConfirm } = useAlert();
@@ -151,23 +152,42 @@ function Campaigns() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Type'a göre sadece gerekli discount alanını ekle
       const submitData = {
-        ...formData,
-        discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : null,
-        discountAmount: formData.discountAmount ? parseFloat(formData.discountAmount) : null,
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description || null,
+        imageUrl: formData.imageUrl || null,
+        type: formData.type,
         buyQuantity: formData.buyQuantity ? parseInt(formData.buyQuantity) : null,
         getQuantity: formData.getQuantity ? parseInt(formData.getQuantity) : null,
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
         minPurchase: formData.minPurchase ? parseFloat(formData.minPurchase) : null,
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : null,
         usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
         priority: parseInt(formData.priority) || 0,
+        applyToAll: formData.applyToAll,
+        categoryIds: formData.categoryIds.length > 0 ? formData.categoryIds : null,
+        productIds: formData.productIds.length > 0 ? formData.productIds : null,
+        isActive: formData.isActive,
       };
 
+      // Type'a göre sadece ilgili discount alanını ekle
+      if (formData.type === 'PERCENTAGE') {
+        submitData.discountPercent = formData.discountPercent ? parseFloat(formData.discountPercent) : null;
+      } else if (formData.type === 'FIXED_AMOUNT') {
+        submitData.discountAmount = formData.discountAmount ? parseFloat(formData.discountAmount) : null;
+      }
+
+      // Boş string'leri, null ve undefined değerleri temizle
+      const cleanedData = cleanRequestData(submitData);
+
       if (editingCampaign) {
-        await campaignService.updateCampaign(editingCampaign.id, submitData);
+        await campaignService.updateCampaign(editingCampaign.id, cleanedData);
         toast.success('Kampagne erfolgreich aktualisiert');
       } else {
-        await campaignService.createCampaign(submitData);
+        await campaignService.createCampaign(cleanedData);
         toast.success('Kampagne erfolgreich erstellt');
       }
 

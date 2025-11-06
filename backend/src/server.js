@@ -20,6 +20,7 @@ import favoriteRoutes from './routes/favorite.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import campaignRoutes, { adminCampaignRouter } from './routes/campaign.routes.js';
+import couponRoutes from './routes/coupon.routes.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -104,6 +105,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/campaigns', adminCampaignRouter);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Test route
 app.get('/api', (req, res) => {

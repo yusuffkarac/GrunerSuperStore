@@ -6,6 +6,7 @@ import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import { cleanRequestData } from '../../utils/requestUtils';
 
 function Users() {
   const { showConfirm } = useAlert();
@@ -202,11 +203,14 @@ function Users() {
         submitData.password = formData.password;
       }
 
+      // Boş string'leri, null ve undefined değerleri temizle
+      const cleanedData = cleanRequestData(submitData);
+
       if (editingUser) {
-        await adminService.updateUser(editingUser.id, submitData);
+        await adminService.updateUser(editingUser.id, cleanedData);
         toast.success('Benutzer erfolgreich aktualisiert');
       } else {
-        await adminService.createUser(submitData);
+        await adminService.createUser(cleanedData);
         toast.success('Benutzer erfolgreich erstellt');
       }
 

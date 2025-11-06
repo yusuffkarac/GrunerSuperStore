@@ -4,11 +4,12 @@ import {
   ValidationError,
   ForbiddenError,
 } from '../utils/errors.js';
+import couponService from './coupon.service.js';
 
 class OrderService {
   // Sipariş oluştur
   async createOrder(userId, orderData) {
-    const { type, addressId, paymentType, note, items } = orderData;
+    const { type, addressId, paymentType, note, items, couponCode } = orderData;
 
     // Validation: items kontrolü
     if (!items || items.length === 0) {
@@ -185,7 +186,58 @@ class OrderService {
         }
       }
 
-      const total = subtotal + deliveryFee;
+      // Kupon doğrulama ve indirim hesaplama
+      let discount = 0;
+      let couponId = null;
+      let couponCodeSnapshot = null;
+
+      if (couponCode) {
+        try {
+          // Cart items'dan categoryId'leri almak için product bilgilerini çek
+          const cartItemsWithCategory = items.map((item) => {
+            const product = products.find((p) => p.id === item.productId);
+            return {
+              ...item,
+              categoryId: product?.categoryId || null,
+            };
+          });
+
+          const couponResult = await couponService.validateCoupon(
+            couponCode,
+            userId,
+            cartItemsWithCategory,
+            subtotal
+          );
+
+          discount = couponResult.discount;
+          couponId = couponResult.coupon.id;
+          couponCodeSnapshot = couponResult.coupon.code;
+
+          // Kupon kullanım sayısını artır
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: {
+              usageCount: {
+                increment: 1,
+              },
+            },
+          });
+
+          // Kupon kullanım kaydı oluştur
+          await tx.couponUsage.create({
+            data: {
+              couponId: couponId,
+              userId: userId,
+              discount: discount,
+            },
+          });
+        } catch (error) {
+          // Kupon hatası varsa siparişi iptal et
+          throw new ValidationError(error.message || 'Kupon kodu geçersiz');
+        }
+      }
+
+      const total = subtotal + deliveryFee - discount;
 
       // Sipariş numarası oluştur
       const orderNo = await this.generateOrderNumber();
@@ -200,8 +252,11 @@ class OrderService {
           addressId: addressId || null,
           deliveryFee,
           subtotal,
+          discount,
           total,
           paymentType: paymentType || 'none',
+          couponId: couponId || null,
+          couponCode: couponCodeSnapshot || null,
           note: note || null,
           orderItems: {
             create: orderItems,
@@ -261,6 +316,20 @@ class OrderService {
           productId: { in: productIds },
         },
       });
+
+      // Kupon kullanım kaydına orderId ekle (eğer kupon kullanıldıysa)
+      if (couponId) {
+        await tx.couponUsage.updateMany({
+          where: {
+            couponId: couponId,
+            userId: userId,
+            orderId: null,
+          },
+          data: {
+            orderId: order.id,
+          },
+        });
+      }
 
       return order;
     });

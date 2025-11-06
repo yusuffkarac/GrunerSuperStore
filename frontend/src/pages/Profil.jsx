@@ -6,6 +6,7 @@ import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, Fi
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import { useAlert } from '../contexts/AlertContext';
+import { cleanRequestData } from '../utils/requestUtils';
 
 function Profil() {
   const navigate = useNavigate();
@@ -187,14 +188,17 @@ function Profil() {
     setSaving(true);
 
     try {
+      // Boş string'leri, null ve undefined değerleri temizle
+      const cleanedData = cleanRequestData(formData);
+
       if (editingAddress) {
         // Güncelle
-        const response = await userService.updateAddress(editingAddress.id, formData);
+        const response = await userService.updateAddress(editingAddress.id, cleanedData);
         console.log('Adres güncellendi:', response);
         toast.success('Adresse aktualisiert');
       } else {
         // Yeni ekle
-        const response = await userService.createAddress(formData);
+        const response = await userService.createAddress(cleanedData);
         console.log('Adres eklendi:', response);
         toast.success('Adresse hinzugefügt');
       }

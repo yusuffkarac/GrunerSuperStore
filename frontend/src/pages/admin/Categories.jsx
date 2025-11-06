@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiGrid, FiCheck, FiXCircle, FiImage } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiGrid, FiList, FiCheck, FiXCircle, FiImage, FiPackage, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
+import { cleanRequestData } from '../../utils/requestUtils';
 
 function Categories() {
   const { showConfirm } = useAlert();
@@ -15,6 +16,11 @@ function Categories() {
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    // localStorage'dan görünüm modunu oku
+    const savedViewMode = localStorage.getItem('categoriesViewMode');
+    return savedViewMode || 'grid';
+  });
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +41,11 @@ function Categories() {
   useEffect(() => {
     loadCategories();
   }, [searchQuery, isActiveFilter, sortBy, sortOrder]);
+
+  // Görünüm modunu localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('categoriesViewMode', viewMode);
+  }, [viewMode]);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -91,15 +102,21 @@ function Categories() {
     e.preventDefault();
     try {
       const submitData = {
-        ...formData,
+        name: formData.name,
+        slug: formData.slug,
+        imageUrl: formData.imageUrl || null,
         sortOrder: formData.sortOrder ? parseInt(formData.sortOrder) : null,
+        isActive: formData.isActive,
       };
 
+      // Boş string'leri, null ve undefined değerleri temizle
+      const cleanedData = cleanRequestData(submitData);
+
       if (editingCategory) {
-        await adminService.updateCategory(editingCategory.id, submitData);
+        await adminService.updateCategory(editingCategory.id, cleanedData);
         toast.success('Kategorie erfolgreich aktualisiert');
       } else {
-        await adminService.createCategory(submitData);
+        await adminService.createCategory(cleanedData);
         toast.success('Kategorie erfolgreich erstellt');
       }
 
@@ -169,13 +186,40 @@ function Categories() {
             {categories.length} {categories.length === 1 ? 'Kategorie' : 'Kategorien'} insgesamt
           </p>
         </div>
-        <button
-          onClick={() => openModal()}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <FiPlus size={20} />
-          Neue Kategorie
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Kartenansicht"
+            >
+              <FiGrid size={18} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Listenansicht"
+            >
+              <FiList size={18} />
+            </button>
+          </div>
+          <button
+            onClick={() => openModal()}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FiPlus size={20} />
+            Neue Kategorie
+          </button>
+        </div>
       </div>
 
       {/* Search & Filters */}
@@ -267,92 +311,316 @@ function Categories() {
         </AnimatePresence>
       </div>
 
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading ? (
-          <div className="col-span-full p-8 text-center">
-            <div className="animate-pulse">Lädt...</div>
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="col-span-full">
-            <EmptyState
-              icon={FiGrid}
-              title="Keine Kategorien gefunden"
-              message="Erstellen Sie Ihre erste Kategorie oder passen Sie die Filter an."
-            />
-          </div>
-        ) : (
-          categories.map((category) => (
-            <motion.div
-              key={category.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-            >
-              {/* Category Image */}
-              <div className="h-32 bg-gray-100 relative overflow-hidden">
-                {category.imageUrl ? (
-                  <img
-                    src={category.imageUrl}
-                    alt={category.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <FiGrid className="text-gray-400 text-4xl" />
+      {/* Categories View */}
+      {loading && categories.length === 0 ? (
+        <div className="p-8 text-center">
+          <div className="animate-pulse">Lädt...</div>
+        </div>
+      ) : categories.length === 0 ? (
+        <EmptyState
+          icon={FiGrid}
+          title="Keine Kategorien gefunden"
+          message="Erstellen Sie Ihre erste Kategorie oder passen Sie die Filter an."
+        />
+      ) : (
+        <>
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((category) => (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  {/* Category Image */}
+                  <div className="h-32 bg-gray-100 relative overflow-hidden">
+                    {category.imageUrl ? (
+                      <img
+                        src={category.imageUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiGrid className="text-gray-400 text-4xl" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      {category.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                          <FiCheck size={12} />
+                          Aktiv
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                          <FiXCircle size={12} />
+                          Inaktiv
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="absolute top-2 right-2">
-                  {category.isActive ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                      <FiCheck size={12} />
-                      Aktiv
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                      <FiXCircle size={12} />
-                      Inaktiv
-                    </span>
-                  )}
-                </div>
+
+                  {/* Category Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
+                    <p className="text-sm text-gray-500 mb-2">/{category.slug}</p>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                      <span>
+                        {category._count?.products || 0} {category._count?.products === 1 ? 'Produkt' : 'Produkte'}
+                      </span>
+                      {category.sortOrder !== null && (
+                        <span>Sortierung: {category.sortOrder}</span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openModal(category)}
+                        className="flex-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <FiEdit2 className="inline mr-1" size={16} />
+                        Bearbeiten
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category)}
+                        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Löschen"
+                      >
+                        <FiTrash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden overflow-x-hidden">
+              {/* Desktop Table Header */}
+              <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-700 uppercase">
+                <div className="col-span-2">Bild</div>
+                <div className="col-span-2">Name</div>
+                <div className="col-span-2">Details</div>
+                <div className="col-span-2">Statistik</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Aktionen</div>
               </div>
 
-              {/* Category Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                <p className="text-sm text-gray-500 mb-2">/{category.slug}</p>
-                
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                  <span>
-                    {category._count?.products || 0} {category._count?.products === 1 ? 'Produkt' : 'Produkte'}
-                  </span>
-                  {category.sortOrder !== null && (
-                    <span>Sortierung: {category.sortOrder}</span>
-                  )}
-                </div>
+              {/* List Items */}
+              <div className="divide-y divide-gray-200">
+                <AnimatePresence mode="popLayout">
+                  {categories.map((category) => (
+                    <motion.div
+                      key={category.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      {/* Mobile View */}
+                      <div className="md:hidden p-4 space-y-3">
+                        <div className="flex items-start gap-3">
+                          {/* Image */}
+                          <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                            {category.imageUrl ? (
+                              <img
+                                src={category.imageUrl}
+                                alt={category.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <FiGrid className="text-gray-400 text-2xl" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-lg text-gray-900 truncate">{category.name}</h3>
+                                <p className="text-sm text-gray-500 mt-1 truncate">/{category.slug}</p>
+                              </div>
+                              <div className="flex-shrink-0">
+                                {category.isActive ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                    <FiCheck size={12} />
+                                    Aktiv
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                                    <FiXCircle size={12} />
+                                    Inaktiv
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openModal(category)}
-                    className="flex-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    <FiEdit2 className="inline mr-1" size={16} />
-                    Bearbeiten
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen"
-                  >
-                    <FiTrash2 size={18} />
-                  </button>
-                </div>
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <FiPackage className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <span className="text-gray-500">Produkte:</span>
+                              <span className="ml-2 font-semibold text-gray-900">
+                                {category._count?.products || 0}
+                              </span>
+                            </div>
+                          </div>
+                          {category.sortOrder !== null && (
+                            <div className="flex items-center gap-2">
+                              <FiGrid className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <span className="text-gray-500">Sortierung:</span>
+                                <span className="ml-2 font-semibold text-gray-900">
+                                  {category.sortOrder}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {category.createdAt && (
+                            <div className="col-span-2 flex items-center gap-2">
+                              <FiCalendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-500">Erstellt:</span>
+                              <span className="ml-2 text-gray-700">
+                                {new Date(category.createdAt).toLocaleDateString('de-DE')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => openModal(category)}
+                            className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                            <span>Bearbeiten</span>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(category)}
+                            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Desktop View */}
+                      <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-4 items-center">
+                        {/* Image */}
+                        <div className="col-span-2">
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                            {category.imageUrl ? (
+                              <img
+                                src={category.imageUrl}
+                                alt={category.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <FiGrid className="text-gray-400 text-xl" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Name & Slug */}
+                        <div className="col-span-2">
+                          <div className="font-semibold text-gray-900">{category.name}</div>
+                          <div className="text-sm text-gray-500 mt-1">/{category.slug}</div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="col-span-2">
+                          <div className="text-sm space-y-1">
+                            {category.sortOrder !== null && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <FiGrid className="w-3 h-3" />
+                                <span>Sortierung: {category.sortOrder}</span>
+                              </div>
+                            )}
+                            {category.createdAt && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <FiCalendar className="w-3 h-3" />
+                                <span>
+                                  {new Date(category.createdAt).toLocaleDateString('de-DE')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Statistics */}
+                        <div className="col-span-2">
+                          <div className="flex items-center gap-2">
+                            <FiPackage className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <div className="font-semibold text-gray-900">
+                                {category._count?.products || 0}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {category._count?.products === 1 ? 'Produkt' : 'Produkte'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status */}
+                        <div className="col-span-2">
+                          <div className="flex items-center gap-2">
+                            {category.isActive ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                <FiCheck className="w-3 h-3" />
+                                Aktiv
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+                                <FiXCircle className="w-3 h-3" />
+                                Inaktiv
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="col-span-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openModal(category)}
+                              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 transition-colors"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                              <span className="hidden lg:inline">Bearbeiten</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(category)}
+                              className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
-            </motion.div>
-          ))
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Category Modal */}
       <AnimatePresence>

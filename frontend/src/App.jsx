@@ -36,6 +36,7 @@ import Produkte from './pages/admin/Produkte';
 import Orders from './pages/admin/Orders';
 import Categories from './pages/admin/Categories';
 import Campaigns from './pages/admin/Campaigns';
+import Coupons from './pages/admin/Coupons';
 import Users from './pages/admin/Users';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
@@ -56,6 +57,41 @@ function AppContent() {
 
     return () => clearTimeout(timer);
   }, [location.pathname]);
+
+  // Number inputlarda mouse wheel ile değer değişimini engelle
+  useEffect(() => {
+    const handleWheel = (e) => {
+      // Eğer event target bir number input ise wheel event'ini engelle
+      const target = e.target;
+      if (target && target.type === 'number') {
+        e.preventDefault();
+      }
+    };
+
+    // Wheel event'ini dinle (passive: false ile preventDefault çalışsın)
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    // Eski tarayıcılar için mousewheel event'i
+    document.addEventListener('mousewheel', handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('mousewheel', handleWheel);
+    };
+  }, []);
+
+  // Sağ tıklamayı (context menu) engelle
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+
+    // Context menu event'ini dinle
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
 
   return (
     <>
@@ -86,6 +122,7 @@ function AppContent() {
           <Route path="orders" element={<Orders />} />
           <Route path="categories" element={<Categories />} />
           <Route path="campaigns" element={<Campaigns />} />
+          <Route path="coupons" element={<Coupons />} />
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
           <Route path="homepage-settings" element={<HomePageSettings />} />

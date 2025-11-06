@@ -9,6 +9,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { normalizeImageUrl } from '../../utils/imageUtils';
+import { cleanRequestData } from '../../utils/requestUtils';
 
 function Produkte() {
   const { showConfirm } = useAlert();
@@ -172,17 +173,29 @@ function Produkte() {
     e.preventDefault();
     try {
       const submitData = {
-        ...formData,
+        name: formData.name,
+        description: formData.description || null,
+        categoryId: formData.categoryId || null,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock) || 0,
         lowStockLevel: formData.lowStockLevel ? parseInt(formData.lowStockLevel) : null,
+        unit: formData.unit || null,
+        barcode: formData.barcode || null,
+        brand: formData.brand || null,
+        imageUrls: formData.imageUrls.length > 0 ? formData.imageUrls : null,
+        isActive: formData.isActive,
+        isFeatured: formData.isFeatured,
+        showStock: formData.showStock,
       };
 
+      // Boş string'leri, null ve undefined değerleri temizle
+      const cleanedData = cleanRequestData(submitData);
+
       if (editingProduct) {
-        await adminService.updateProduct(editingProduct.id, submitData);
+        await adminService.updateProduct(editingProduct.id, cleanedData);
         toast.success('Produkt erfolgreich aktualisiert');
       } else {
-        await adminService.createProduct(submitData);
+        await adminService.createProduct(cleanedData);
         toast.success('Produkt erfolgreich erstellt');
       }
 
