@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiCompass, FiRepeat, FiShoppingCart, FiFileText, FiGift, FiHeart } from 'react-icons/fi';
-import { useState, useEffect, useRef, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import useCartStore from '../../store/cartStore';
 import campaignService from '../../services/campaignService';
 

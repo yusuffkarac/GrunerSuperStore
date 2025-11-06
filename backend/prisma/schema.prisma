@@ -42,16 +42,16 @@ enum PaymentType {
 }
 
 enum CampaignType {
-  PERCENTAGE      // %20 indirim
-  FIXED_AMOUNT    // 10€ indirim
-  BUY_X_GET_Y     // 2 al 1 öde
-  FREE_SHIPPING   // Ücretsiz kargo
+  PERCENTAGE // %20 indirim
+  FIXED_AMOUNT // 10€ indirim
+  BUY_X_GET_Y // 2 al 1 öde
+  FREE_SHIPPING // Ücretsiz kargo
 
   @@map("campaign_type")
 }
 
 enum CouponType {
-  PERCENTAGE   // %20 indirim
+  PERCENTAGE // %20 indirim
   FIXED_AMOUNT // 10€ indirim
 
   @@map("coupon_type")
@@ -70,15 +70,15 @@ enum EmailStatus {
 // ===================================
 
 model User {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  firstName     String   @map("first_name")
-  lastName      String   @map("last_name")
-  email         String   @unique
-  passwordHash  String   @map("password_hash")
-  phone         String?
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  phone        String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
   addresses    Address[]
@@ -160,12 +160,12 @@ model Product {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  category          Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  cartItems         CartItem[]
-  orderItems        OrderItem[]
-  favorites         Favorite[]
-  variantOptions    ProductVariantOption[]
-  variants          ProductVariant[]
+  category       Category               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  favorites      Favorite[]
+  variantOptions ProductVariantOption[]
+  variants       ProductVariant[]
 
   @@index([slug])
   @@index([name])
@@ -190,8 +190,8 @@ model CartItem {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -210,11 +210,11 @@ model Order {
   addressId   String?     @map("address_id") @db.Uuid
   deliveryFee Decimal     @default(0) @map("delivery_fee") @db.Decimal(12, 2)
   subtotal    Decimal     @map("subtotal") @db.Decimal(12, 2)
-  discount    Decimal     @default(0) @db.Decimal(12, 2)  // Kupon indirimi
+  discount    Decimal     @default(0) @db.Decimal(12, 2) // Kupon indirimi
   total       Decimal     @db.Decimal(12, 2)
   paymentType PaymentType @default(none) @map("payment_type")
   couponId    String?     @map("coupon_id") @db.Uuid
-  couponCode  String?     @map("coupon_code")  // Snapshot
+  couponCode  String?     @map("coupon_code") // Snapshot
   note        String?
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
@@ -243,10 +243,10 @@ model OrderItem {
   variantId     String?  @map("variant_id") @db.Uuid
   productName   String   @map("product_name")
   variantName   String?  @map("variant_name")
-  price         Decimal  @db.Decimal(12, 2)  // İndirimli fiyat
-  originalPrice Decimal? @db.Decimal(12, 2) @map("original_price")  // Orijinal fiyat (kampanya varsa)
-  campaignId    String?  @map("campaign_id") @db.Uuid  // Uygulanan kampanya
-  campaignName  String?  @map("campaign_name")  // Kampanya adı (snapshot)
+  price         Decimal  @db.Decimal(12, 2) // İndirimli fiyat
+  originalPrice Decimal? @map("original_price") @db.Decimal(12, 2) // Orijinal fiyat (kampanya varsa)
+  campaignId    String?  @map("campaign_id") @db.Uuid // Uygulanan kampanya
+  campaignName  String?  @map("campaign_name") // Kampanya adı (snapshot)
   quantity      Int
   unit          String?
   brand         String?
@@ -255,8 +255,8 @@ model OrderItem {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
@@ -285,39 +285,39 @@ model Favorite {
 }
 
 model Coupon {
-  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code            String      @unique  // Kupon kodu
-  name            String?     // Kupon adı/açıklaması
-  type            CouponType  // PERCENTAGE veya FIXED_AMOUNT
-  discountPercent Decimal?    @db.Decimal(5, 2) @map("discount_percent")  // %50.00 gibi
-  discountAmount  Decimal?    @db.Decimal(12, 2) @map("discount_amount")  // 10.00€ gibi
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String     @unique // Kupon kodu
+  name            String? // Kupon adı/açıklaması
+  type            CouponType // PERCENTAGE veya FIXED_AMOUNT
+  discountPercent Decimal?   @map("discount_percent") @db.Decimal(5, 2) // %50.00 gibi
+  discountAmount  Decimal?   @map("discount_amount") @db.Decimal(12, 2) // 10.00€ gibi
 
   // Tarih aralığı
-  startDate       DateTime    @map("start_date")
-  endDate         DateTime    @map("end_date")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
 
   // Uygulama kuralları
-  minPurchase     Decimal?    @db.Decimal(12, 2) @map("min_purchase")   // Min sepet tutarı
-  maxDiscount     Decimal?    @db.Decimal(12, 2) @map("max_discount")   // Max indirim tutarı
-  usageLimit      Int?        @map("usage_limit")     // Toplam kullanım limiti
-  usageCount      Int         @default(0) @map("usage_count")           // Kullanım sayısı
-  userUsageLimit  Int?        @default(1) @map("user_usage_limit")      // Kullanıcı başına kullanım limiti
+  minPurchase    Decimal? @map("min_purchase") @db.Decimal(12, 2) // Min sepet tutarı
+  maxDiscount    Decimal? @map("max_discount") @db.Decimal(12, 2) // Max indirim tutarı
+  usageLimit     Int?     @map("usage_limit") // Toplam kullanım limiti
+  usageCount     Int      @default(0) @map("usage_count") // Kullanım sayısı
+  userUsageLimit Int?     @default(1) @map("user_usage_limit") // Kullanıcı başına kullanım limiti
 
   // Hedefleme
-  applyToAll      Boolean     @default(true) @map("apply_to_all")  // Tüm mağaza
-  userIds         Json?       @map("user_ids")  // ["uuid1", "uuid2"] - Kişiye özel
-  categoryIds     Json?       @map("category_ids")  // ["uuid1", "uuid2"]
-  productIds       Json?       @map("product_ids")   // ["uuid1", "uuid2"]
+  applyToAll  Boolean @default(true) @map("apply_to_all") // Tüm mağaza
+  userIds     Json?   @map("user_ids") // ["uuid1", "uuid2"] - Kişiye özel
+  categoryIds Json?   @map("category_ids") // ["uuid1", "uuid2"]
+  productIds  Json?   @map("product_ids") // ["uuid1", "uuid2"]
 
   // Durumlar
-  isActive        Boolean     @default(true) @map("is_active")
+  isActive Boolean @default(true) @map("is_active")
 
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  orders          Order[]
-  usages          CouponUsage[]
+  orders Order[]
+  usages CouponUsage[]
 
   @@index([code])
   @@index([isActive])
@@ -329,10 +329,10 @@ model Coupon {
 
 model CouponUsage {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  couponId String   @map("coupon_id") @db.Uuid
-  userId   String   @map("user_id") @db.Uuid
-  orderId  String?  @map("order_id") @db.Uuid
-  discount Decimal  @db.Decimal(12, 2)  // Uygulanan indirim tutarı
+  couponId  String   @map("coupon_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  orderId   String?  @map("order_id") @db.Uuid
+  discount  Decimal  @db.Decimal(12, 2) // Uygulanan indirim tutarı
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -385,8 +385,8 @@ model Settings {
   orderIdFormat             Json?    @map("order_id_format")
   themeColors               Json?    @map("theme_colors")
   // Business ayarları
-  minOrderAmount            Decimal? @db.Decimal(12, 2) @map("min_order_amount")
-  freeShippingThreshold     Decimal? @db.Decimal(12, 2) @map("free_shipping_threshold")
+  minOrderAmount            Decimal? @map("min_order_amount") @db.Decimal(12, 2)
+  freeShippingThreshold     Decimal? @map("free_shipping_threshold") @db.Decimal(12, 2)
   shippingRules             Json?    @map("shipping_rules")
   deliverySettings          Json?    @map("delivery_settings")
   paymentOptions            Json?    @map("payment_options")
@@ -402,44 +402,44 @@ model Settings {
 }
 
 model Campaign {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  slug             String       @unique
-  description      String?
-  imageUrl         String?      @map("image_url")
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String  @unique
+  description String?
+  imageUrl    String? @map("image_url")
 
   // Kampanya tipi
-  type             CampaignType
+  type CampaignType
 
   // İndirim değerleri
-  discountPercent  Decimal?     @db.Decimal(5, 2) @map("discount_percent")  // %50.00 gibi
-  discountAmount   Decimal?     @db.Decimal(12, 2) @map("discount_amount") // 10.00€ gibi
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2) // %50.00 gibi
+  discountAmount  Decimal? @map("discount_amount") @db.Decimal(12, 2) // 10.00€ gibi
 
   // X Al Y Öde için
-  buyQuantity      Int?         @map("buy_quantity")   // Örn: 3 (3 al)
-  getQuantity      Int?         @map("get_quantity")   // Örn: 2 (2 öde)
+  buyQuantity Int? @map("buy_quantity") // Örn: 3 (3 al)
+  getQuantity Int? @map("get_quantity") // Örn: 2 (2 öde)
 
   // Tarih aralığı
-  startDate        DateTime     @map("start_date")
-  endDate          DateTime     @map("end_date")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
 
   // Uygulama kuralları
-  minPurchase      Decimal?     @db.Decimal(12, 2) @map("min_purchase")   // Min sepet tutarı
-  maxDiscount      Decimal?     @db.Decimal(12, 2) @map("max_discount")   // Max indirim tutarı
-  usageLimit       Int?         @map("usage_limit")     // Toplam kullanım limiti
-  usageCount       Int          @default(0) @map("usage_count")           // Kullanım sayısı
+  minPurchase Decimal? @map("min_purchase") @db.Decimal(12, 2) // Min sepet tutarı
+  maxDiscount Decimal? @map("max_discount") @db.Decimal(12, 2) // Max indirim tutarı
+  usageLimit  Int?     @map("usage_limit") // Toplam kullanım limiti
+  usageCount  Int      @default(0) @map("usage_count") // Kullanım sayısı
 
   // Hedefleme
-  applyToAll       Boolean      @default(false) @map("apply_to_all")  // Tüm mağaza
-  categoryIds      Json?        @map("category_ids")  // ["uuid1", "uuid2"]
-  productIds       Json?        @map("product_ids")   // ["uuid1", "uuid2"]
+  applyToAll  Boolean @default(false) @map("apply_to_all") // Tüm mağaza
+  categoryIds Json?   @map("category_ids") // ["uuid1", "uuid2"]
+  productIds  Json?   @map("product_ids") // ["uuid1", "uuid2"]
 
   // Durumlar
-  isActive         Boolean      @default(true) @map("is_active")
-  priority         Int          @default(0)  // Yüksek öncelik önce uygulanır
+  isActive Boolean @default(true) @map("is_active")
+  priority Int     @default(0) // Yüksek öncelik önce uygulanır
 
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([slug])
   @@index([isActive])
@@ -455,15 +455,15 @@ model Campaign {
 // ===================================
 
 model ProductVariantOption {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId  String   @map("product_id") @db.Uuid
-  name        String   // Örn: "Renk", "Beden", "Boyut"
-  displayOrder Int     @default(0) @map("display_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  name         String // Örn: "Renk", "Beden", "Boyut"
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  product Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   values  ProductVariantValue[]
 
   @@index([productId])
@@ -472,22 +472,22 @@ model ProductVariantOption {
 }
 
 model ProductVariant {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId     String   @map("product_id") @db.Uuid
-  name          String   // Örn: "Kırmızı - S", "Mavi - M"
-  price         Decimal  @db.Decimal(12, 2)
-  stock         Int      @default(0)
-  sku           String?  @unique
-  imageUrls     Json     @default("[]") @map("image_urls")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  name      String // Örn: "Kırmızı - S", "Mavi - M"
+  price     Decimal  @db.Decimal(12, 2)
+  stock     Int      @default(0)
+  sku       String?  @unique
+  imageUrls Json     @default("[]") @map("image_urls")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  values      ProductVariantValue[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values     ProductVariantValue[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
   @@index([productId])
   @@index([productId, isActive])
@@ -499,13 +499,13 @@ model ProductVariant {
 model ProductVariantValue {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   variantId String   @map("variant_id") @db.Uuid
-  optionId   String   @map("option_id") @db.Uuid
-  value      String   // Örn: "Kırmızı", "S", "M"
+  optionId  String   @map("option_id") @db.Uuid
+  value     String // Örn: "Kırmızı", "S", "M"
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  variant ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variant ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
   option  ProductVariantOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@unique([variantId, optionId])
@@ -522,11 +522,11 @@ model EmailLog {
   id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   to        String
   subject   String
-  template  String      // welcome, order-received, vb.
+  template  String // welcome, order-received, vb.
   status    EmailStatus @default(pending)
   error     String?
   sentAt    DateTime?   @map("sent_at")
-  metadata  Json?       // orderId, userId vb.
+  metadata  Json? // orderId, userId vb.
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
 

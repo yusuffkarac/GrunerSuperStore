@@ -6,13 +6,11 @@ let prisma;
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient();
 } else {
-  // Development'ta hot-reload için global kullan
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      log: ['query', 'error', 'warn'],
-    });
-  }
-  prisma = global.prisma;
+  // Development'ta her zaman yeni client oluştur
+  // (Prisma client güncellendiğinde cache sorunlarını önlemek için)
+  prisma = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+  });
 }
 
 // Graceful shutdown

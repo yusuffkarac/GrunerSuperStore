@@ -1,11 +1,11 @@
 import express from 'express';
 import emailController from '../controllers/email.controller.js';
-import { adminAuth } from '../middleware/auth.js';
+import { authenticateAdmin } from '../middleware/admin.js';
 
 const router = express.Router();
 
 // Tüm email route'ları admin auth gerektiriyor
-router.use(adminAuth);
+router.use(authenticateAdmin);
 
 // Test mail gönder
 router.post('/test', emailController.sendTestEmail);

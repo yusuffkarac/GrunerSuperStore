@@ -26,6 +26,8 @@ class SettingsController {
       paymentOptions,
       orderLimits,
       storeSettings,
+      smtpSettings,
+      emailNotificationSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -40,6 +42,8 @@ class SettingsController {
       paymentOptions,
       orderLimits,
       storeSettings,
+      smtpSettings,
+      emailNotificationSettings,
     });
 
     res.status(200).json({
