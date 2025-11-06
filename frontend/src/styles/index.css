@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply m-0 p-0 font-sans antialiased;
+    @apply text-gray-900 bg-gray-50;
+  }
+
+  /* PWA için safe area desteği */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobil için scroll davranışı */
+  html {
+    @apply scroll-smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Touch-friendly minimum boyutlar */
+  button, a {
+    @apply min-h-touch min-w-touch;
+  }
+}
+
+@layer components {
+  /* Container - mobil uygulama için, desktop'ta daha geniş */
+  .container-mobile {
+    @apply max-w-mobile md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4;
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200;
+    @apply flex items-center justify-around;
+    @apply h-16 px-2;
+    @apply safe-area-bottom;
+  }
+
+  /* Bottom Sheet temel stil */
+  .bottom-sheet {
+    @apply fixed inset-x-0 bottom-0 bg-white;
+    @apply rounded-t-3xl shadow-2xl;
+    @apply max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-lg shadow-sm p-4;
+    /* Desktop performans optimizasyonu */
+    @apply will-change-transform;
+  }
+
+  /* Desktop için optimize edilmiş hover efektleri */
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      @apply shadow-md;
+      transform: translateY(-1px);
+      transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply bg-primary-700 text-white px-6 py-3 rounded-lg;
+    @apply font-medium transition-colors;
+    @apply active:bg-primary-800;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 px-6 py-3 rounded-lg;
+    @apply font-medium transition-colors;
+    @apply active:bg-gray-300;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-700 text-primary-700 px-6 py-3 rounded-lg;
+    @apply font-medium transition-colors;
+    @apply active:bg-primary-50;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Scrollbar gizleme */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Fade in animasyonu - performans için optimize edilmiş */
+  .animate-fade-in {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Blur fade in animasyonu - sayfa loading için */
+  .animate-blur-fade-in {
+    animation: blurFadeIn 0.4s ease-out;
+  }
+
+  @keyframes blurFadeIn {
+    from {
+      opacity: 0;
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+    }
+    to {
+      opacity: 1;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  }
+
+  /* Loading spinner scale animasyonu */
+  .animate-spin-scale {
+    animation: spinScale 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  }
+
+  @keyframes spinScale {
+    0% {
+      transform: rotate(0deg) scale(0.8);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.1);
+    }
+    100% {
+      transform: rotate(360deg) scale(0.8);
+    }
+  }
+}

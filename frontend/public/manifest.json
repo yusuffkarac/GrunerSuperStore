@@ -1,0 +1,33 @@
+{
+  "name": "Gruner SuperStore",
+  "short_name": "Gruner",
+  "description": "Online Supermarkt - Bestellung und Lieferung",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#047857",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "food", "lifestyle"],
+  "lang": "de-DE",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Produkte",
+      "short_name": "Produkte",
+      "description": "Produkte durchsuchen",
+      "url": "/urunler",
+      "icons": []
+    },
+    {
+      "name": "Warenkorb",
+      "short_name": "Warenkorb",
+      "description": "Warenkorb anzeigen",
+      "url": "/sepet",
+      "icons": []
+    }
+  ]
+}

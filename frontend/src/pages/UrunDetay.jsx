@@ -1,0 +1,444 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { FiHeart, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiArrowLeft, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import productService from '../services/productService';
+import useFavoriteStore from '../store/favoriteStore';
+import useCartStore from '../store/cartStore';
+import Loading from '../components/common/Loading';
+import ErrorMessage from '../components/common/ErrorMessage';
+import { normalizeImageUrls } from '../utils/imageUtils';
+
+// Ürün Detay Sayfası
+function UrunDetay() {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+
+  // Store'lar
+  const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
+  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
+  const addItem = useCartStore((state) => state.addItem);
+
+  const isProductFavorite = favoriteIds.includes(id);
+
+  // Ürün verilerini yükle
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await productService.getProductById(id);
+        setProduct(response.data.product);
+      } catch (err) {
+        setError(err.message || 'Ürün yüklenirken hata oluştu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  // Favori ID'lerini yükle
+  useEffect(() => {
+    const loadFavoriteIds = async () => {
+      try {
+        await useFavoriteStore.getState().loadFavoriteIds();
+      } catch (err) {
+        console.error('Favori ID yükleme hatası:', err);
+      }
+    };
+    loadFavoriteIds();
+  }, []);
+
+  // Miktar artır
+  const increaseQuantity = useCallback(() => {
+    if (product && quantity < product.stock) {
+      setQuantity((prev) => prev + 1);
+    }
+  }, [product, quantity]);
+
+  // Miktar azalt
+  const decreaseQuantity = useCallback(() => {
+    setQuantity((prev) => Math.max(1, prev - 1));
+  }, []);
+
+  // Favori toggle
+  const handleToggleFavorite = useCallback(async () => {
+    try {
+      await toggleFavorite(id);
+    } catch (err) {
+      toast.error('Fehler bei Favoriten', {
+        position: 'bottom-center',
+        autoClose: 2000,
+      });
+    }
+  }, [id, toggleFavorite]);
+
+  // Sepete ekle
+  const handleAddToCart = useCallback(async () => {
+    if (!product || product.stock <= 0) return;
+
+    setAddingToCart(true);
+
+    try {
+      await addItem(product, quantity);
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+    } catch (err) {
+      toast.error('Fehler beim Hinzufügen', {
+        position: 'bottom-center',
+        autoClose: 2000,
+      });
+    } finally {
+      setAddingToCart(false);
+    }
+  }, [product, quantity, addItem]);
+
+  // Görselleri hazırla ve normalize et
+  const images = product?.imageUrls 
+    ? normalizeImageUrls(product.imageUrls)
+    : [];
+
+  // Görsel değiştir
+  const changeImage = useCallback((index) => {
+    setSelectedImageIndex(index);
+  }, []);
+
+  // Önceki görsel
+  const prevImage = useCallback(() => {
+    setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  }, [images.length]);
+
+  // Sonraki görsel
+  const nextImage = useCallback(() => {
+    setSelectedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  }, [images.length]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container-mobile py-6">
+        <Loading text="Produkt wird geladen..." />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !product) {
+    return (
+      <div className="container-mobile py-6">
+        <ErrorMessage
+          message={error || 'Produkt nicht gefunden'}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container-mobile py-3 pb-20 lg:pb-6">
+      {/* Geri butonu */}
+      <Link
+        to="/urunler"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 mb-4 lg:mb-6"
+      >
+        <FiArrowLeft className="w-4 h-4" />
+        <span>Zurück zu Produkten</span>
+      </Link>
+
+      {/* Desktop: İki sütunlu grid, Mobile: Tek sütun */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
+        {/* Ürün görselleri */}
+        <div className="mb-6 lg:mb-0 flex flex-col items-center lg:items-start">
+          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-3 w-full max-w-[200px] max-h-[200px] aspect-square lg:max-w-none lg:max-h-none lg:w-full">
+            {images.length > 0 ? (
+              <>
+                <img
+                  src={images[selectedImageIndex]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+                
+                {/* Görsel navigasyon butonları (birden fazla görsel varsa) */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 p-2 lg:p-3 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+                      aria-label="Vorheriges Bild"
+                    >
+                      <FiChevronLeft className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 p-2 lg:p-3 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+                      aria-label="Nächstes Bild"
+                    >
+                      <FiChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
+                    </button>
+                  </>
+                )}
+
+                {/* Favori butonu */}
+                <button
+                  onClick={handleToggleFavorite}
+                  className={`absolute top-2 lg:top-4 right-2 lg:right-4 p-2 lg:p-3 rounded-full shadow-md transition-colors ${
+                    isProductFavorite
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white text-gray-600'
+                  }`}
+                  aria-label={
+                    isProductFavorite
+                      ? 'Aus Favoriten entfernen'
+                      : 'Zu Favoriten hinzufügen'
+                  }
+                >
+                  <FiHeart
+                    className={`w-4 h-4 lg:w-5 lg:h-5 ${isProductFavorite ? 'fill-current' : ''}`}
+                  />
+                </button>
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 min-h-[200px] lg:min-h-[400px]">
+                <span className="text-sm lg:text-base">Kein Bild</span>
+              </div>
+            )}
+          </div>
+
+          {/* Thumbnail görselleri (birden fazla görsel varsa) */}
+          {images.length > 1 && (
+            <div className="flex gap-2 lg:gap-3 overflow-x-auto pb-1 justify-center lg:justify-start w-full">
+              {images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => changeImage(index)}
+                  className={`flex-shrink-0 w-12 h-12 lg:w-16 lg:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                    selectedImageIndex === index
+                      ? 'border-primary-700'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`${product.name} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Ürün bilgileri */}
+        <div className="mb-6 lg:mb-0">
+          {/* Kategori */}
+          {product.category && (
+            <Link
+              to={`/urunler?category=${product.category.id}`}
+              className="inline-block text-xs lg:text-sm text-primary-700 hover:text-primary-800 mb-2 lg:mb-3"
+            >
+              {product.category.name}
+            </Link>
+          )}
+
+          {/* Ürün adı */}
+          <h1 className="text-xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">{product.name}</h1>
+
+          {/* Marka */}
+          {product.brand && (
+            <p className="text-xs lg:text-sm text-gray-600 mb-3 lg:mb-4">{product.brand}</p>
+          )}
+
+          {/* Fiyat */}
+          <div className="mb-4 lg:mb-5">
+            <span className="text-2xl lg:text-4xl font-bold text-primary-700">
+              €{parseFloat(product.price).toFixed(2)}
+            </span>
+            {product.unit && (
+              <span className="text-sm lg:text-base text-gray-600 ml-2">/ {product.unit}</span>
+            )}
+          </div>
+
+          {/* Stok durumu */}
+          <div className="mb-4 lg:mb-6">
+            {product.stock > 0 ? (
+              <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-green-100 text-green-700 rounded-full text-xs lg:text-sm font-medium">
+                Auf Lager{product.showStock ? ` (${product.stock} verfügbar)` : ''}
+              </span>
+            ) : (
+              <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-red-100 text-red-700 rounded-full text-xs lg:text-sm font-medium">
+                Nicht verfügbar
+              </span>
+            )}
+          </div>
+
+          {/* Desktop: Sepete ekle kartı */}
+          {product.stock > 0 && (
+            <div className="hidden lg:block bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+              <div className="flex items-center gap-4 mb-4">
+                {/* Miktar kontrolü */}
+                <div className="flex items-center gap-2 border border-gray-300 rounded-lg bg-white">
+                  <button
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                    className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Menge verringern"
+                  >
+                    <FiMinus className="w-5 h-5 text-gray-700" />
+                  </button>
+
+                  <span className="w-12 text-center font-medium text-lg">
+                    {quantity}
+                  </span>
+
+                  <button
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product.stock}
+                    className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Menge erhöhen"
+                  >
+                    <FiPlus className="w-5 h-5 text-gray-700" />
+                  </button>
+                </div>
+
+                {/* Toplam fiyat */}
+                <div className="flex-1 text-right">
+                  <span className="text-sm text-gray-600">Gesamt: </span>
+                  <span className="text-xl font-bold text-gray-900">
+                    €{(parseFloat(product.price) * quantity).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Sepete ekle butonu */}
+              <button
+                onClick={handleAddToCart}
+                disabled={addingToCart || justAdded}
+                className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-base font-medium transition-colors ${
+                  justAdded
+                    ? 'bg-green-600 text-white'
+                    : 'bg-primary-700 text-white hover:bg-primary-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {justAdded ? (
+                  <>
+                    <FiCheck className="w-5 h-5" />
+                    <span>Hinzugefügt</span>
+                  </>
+                ) : (
+                  <>
+                    <FiShoppingCart className="w-5 h-5" />
+                    <span>
+                      {addingToCart ? 'Wird hinzugefügt...' : 'Zum Warenkorb hinzufügen'}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Açıklama */}
+          {product.description && (
+            <div className="mb-4 lg:mb-0">
+              <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-2 lg:mb-3">
+                Beschreibung
+              </h2>
+              <p className="text-sm lg:text-base text-gray-600 leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile: Miktar ve sepete ekle (fixed bottom) */}
+      {product.stock > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-10 lg:hidden">
+          <div className="container-mobile">
+            <div className="flex items-center gap-2">
+              {/* Miktar kontrolü */}
+              <div className="flex items-center gap-1.5 border border-gray-300 rounded-lg">
+                <button
+                  onClick={decreaseQuantity}
+                  disabled={quantity <= 1}
+                  className="p-1.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Menge verringern"
+                >
+                  <FiMinus className="w-4 h-4 text-gray-700" />
+                </button>
+
+                <span className="w-10 text-center font-medium text-base">
+                  {quantity}
+                </span>
+
+                <button
+                  onClick={increaseQuantity}
+                  disabled={quantity >= product.stock}
+                  className="p-1.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Menge erhöhen"
+                >
+                  <FiPlus className="w-4 h-4 text-gray-700" />
+                </button>
+              </div>
+
+              {/* Sepete ekle butonu */}
+              <button
+                onClick={handleAddToCart}
+                disabled={addingToCart || justAdded}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  justAdded
+                    ? 'bg-green-600 text-white'
+                    : 'bg-primary-700 text-white hover:bg-primary-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {justAdded ? (
+                  <>
+                    <FiCheck className="w-4 h-4" />
+                    <span>Hinzugefügt</span>
+                  </>
+                ) : (
+                  <>
+                    <FiShoppingCart className="w-4 h-4" />
+                    <span>
+                      {addingToCart ? 'Wird hinzugefügt...' : 'Zum Warenkorb hinzufügen'}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Toplam fiyat */}
+            <div className="mt-2 text-center">
+              <span className="text-xs text-gray-600">Gesamt: </span>
+              <span className="text-base font-bold text-gray-900">
+                €{(parseFloat(product.price) * quantity).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stok yoksa mesaj */}
+      {product.stock <= 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 lg:p-4 text-center">
+          <p className="text-red-800 text-sm lg:text-base font-medium">
+            Dieses Produkt ist derzeit nicht verfügbar
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default UrunDetay;
