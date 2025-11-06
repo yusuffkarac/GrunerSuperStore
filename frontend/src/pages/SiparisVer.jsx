@@ -35,6 +35,7 @@ function SiparisVer() {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
   const subtotal = getTotal();
   const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
@@ -159,10 +160,14 @@ function SiparisVer() {
       // Sepeti temizle
       await clearCart();
 
+      // Success animasyonu
+      setOrderSuccess(true);
       toast.success('Bestellung erfolgreich aufgegeben!');
 
-      // Sipariş detay sayfasına yönlendir
-      navigate(`/siparis/${response.data.order.id}`);
+      // Kısa bir süre sonra yönlendir (animasyon için)
+      setTimeout(() => {
+        navigate(`/siparis/${response.data.order.id}`);
+      }, 500);
     } catch (error) {
       console.error('Sipariş hatası:', error);
       // Axios interceptor hata objesini { message, status, data } olarak döndürüyor
@@ -406,7 +411,11 @@ function SiparisVer() {
 
         <div className="space-y-1.5 mb-2">
           {items.map((item) => (
-            <div key={`${item.productId}-${item.variantId || 'no-variant'}`} className="flex justify-between text-xs">
+            <div 
+              key={`${item.productId}-${item.variantId || 'no-variant'}`} 
+              className="flex justify-between text-xs cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1 rounded transition-colors"
+              onClick={() => navigate(`/urun/${item.productId}`)}
+            >
               <div className="flex-1">
                 <span className="text-gray-600">
                   {item.quantity}x {item.name}
@@ -454,10 +463,21 @@ function SiparisVer() {
       >
         <button
           onClick={handlePlaceOrder}
-          disabled={loading || (orderType === 'delivery' && !selectedAddressId)}
-          className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+          disabled={loading || orderSuccess || (orderType === 'delivery' && !selectedAddressId)}
+          className={`w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs btn-press ${
+            loading ? 'animate-pulse' : ''
+          } ${orderSuccess ? 'animate-success-pulse' : ''}`}
         >
-          {loading ? 'Wird verarbeitet...' : `Jetzt bestellen • ${total.toFixed(2)} €`}
+          {orderSuccess ? (
+            <span className="flex items-center justify-center gap-2">
+              <FiCheck className="w-4 h-4 animate-success-check" />
+              <span>Erfolgreich!</span>
+            </span>
+          ) : loading ? (
+            'Wird verarbeitet...'
+          ) : (
+            `Jetzt bestellen • ${total.toFixed(2)} €`
+          )}
         </button>
       </motion.div>
     </div>

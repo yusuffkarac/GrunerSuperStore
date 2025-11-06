@@ -23,6 +23,8 @@ function UrunDetay() {
   const [justAdded, setJustAdded] = useState(false);
   const [selectedVariantOptions, setSelectedVariantOptions] = useState({});
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [isRippleActive, setIsRippleActive] = useState(false);
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
 
   // Store'lar
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
@@ -131,6 +133,10 @@ function UrunDetay() {
 
   // Favori toggle
   const handleToggleFavorite = useCallback(async () => {
+    // Heart beat animasyonu
+    setIsHeartAnimating(true);
+    setTimeout(() => setIsHeartAnimating(false), 600);
+
     try {
       await toggleFavorite(id);
     } catch (err) {
@@ -176,6 +182,9 @@ function UrunDetay() {
       }
     }
 
+    // Ripple efekti
+    setIsRippleActive(true);
+    setTimeout(() => setIsRippleActive(false), 600);
     setAddingToCart(true);
 
     try {
@@ -275,7 +284,7 @@ function UrunDetay() {
   }
 
   return (
-    <div className="container-mobile py-3 pb-20 lg:pb-6">
+    <div className="container-mobile py-4 pb-24 lg:pb-6">
       {/* Geri butonu */}
       <Link
         to="/urunler"
@@ -289,7 +298,7 @@ function UrunDetay() {
       <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
         {/* Ürün görselleri */}
         <div className="mb-6 lg:mb-0 flex flex-col items-center lg:items-start">
-          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-3 w-full max-w-[200px] max-h-[200px] aspect-square lg:max-w-none lg:max-h-none lg:w-full">
+          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-3 w-full max-w-[350px] aspect-square lg:max-w-none lg:max-h-none lg:w-full">
             {images.length > 0 ? (
               <>
                 <img
@@ -322,7 +331,7 @@ function UrunDetay() {
                 {/* Favori butonu */}
                 <button
                   onClick={handleToggleFavorite}
-                  className={`absolute top-2 lg:top-4 right-2 lg:right-4 p-2 lg:p-3 rounded-full shadow-md transition-colors ${
+                  className={`absolute top-2 lg:top-4 right-2 lg:right-4 p-2 lg:p-3 rounded-full shadow-md transition-colors btn-press ${
                     isProductFavorite
                       ? 'bg-red-500 text-white'
                       : 'bg-white text-gray-600'
@@ -334,12 +343,14 @@ function UrunDetay() {
                   }
                 >
                   <FiHeart
-                    className={`w-4 h-4 lg:w-5 lg:h-5 ${isProductFavorite ? 'fill-current' : ''}`}
+                    className={`w-4 h-4 lg:w-5 lg:h-5 transition-all duration-300 ${
+                      isProductFavorite ? 'fill-current animate-heart-fill' : ''
+                    } ${isHeartAnimating ? 'animate-heart-beat' : ''}`}
                   />
                 </button>
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 min-h-[200px] lg:min-h-[400px]">
+              <div className="w-full h-full flex items-center justify-center text-gray-400 min-h-[350px] lg:min-h-[400px]">
                 <span className="text-sm lg:text-base">Kein Bild</span>
               </div>
             )}
@@ -382,11 +393,11 @@ function UrunDetay() {
           )}
 
           {/* Ürün adı */}
-          <h1 className="text-xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">{product.name}</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3 leading-tight">{product.name}</h1>
 
           {/* Marka */}
           {product.brand && (
-            <p className="text-xs lg:text-sm text-gray-600 mb-3 lg:mb-4">{product.brand}</p>
+            <p className="text-sm lg:text-sm text-gray-600 mb-3 lg:mb-4">{product.brand}</p>
           )}
 
           {/* Varyant Seçenekleri */}
@@ -454,27 +465,27 @@ function UrunDetay() {
           <div className="mb-4 lg:mb-5">
             {campaign && discountedPrice !== null ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl lg:text-4xl font-bold text-red-600">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-3xl lg:text-4xl font-bold text-red-600">
                     €{discountedPrice.toFixed(2)}
                   </span>
-                  <span className="text-lg lg:text-xl text-gray-500 line-through">
+                  <span className="text-xl lg:text-xl text-gray-500 line-through">
                     €{displayPrice.toFixed(2)}
                   </span>
                 </div>
                 {product.unit && (
-                  <span className="text-sm lg:text-base text-gray-600">/ {product.unit}</span>
+                  <span className="text-base lg:text-base text-gray-600">/ {product.unit}</span>
                 )}
               </div>
             ) : (
-              <>
-                <span className="text-2xl lg:text-4xl font-bold text-primary-600">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-3xl lg:text-4xl font-bold text-primary-600">
                   €{displayPrice.toFixed(2)}
                 </span>
                 {product.unit && (
-                  <span className="text-sm lg:text-base text-gray-600 ml-2">/ {product.unit}</span>
+                  <span className="text-base lg:text-base text-gray-600">/ {product.unit}</span>
                 )}
-              </>
+              </div>
             )}
           </div>
 
@@ -506,11 +517,11 @@ function UrunDetay() {
           {/* Stok durumu */}
           <div className="mb-4 lg:mb-6">
             {availableStock > 0 ? (
-              <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-green-100 text-green-700 rounded-full text-xs lg:text-sm font-medium">
+              <span className="inline-block px-4 py-1.5 lg:px-4 lg:py-1.5 bg-green-100 text-green-700 rounded-full text-sm lg:text-sm font-medium">
                 Auf Lager{product.showStock ? ` (${availableStock} verfügbar)` : ''}
               </span>
             ) : (
-              <span className="inline-block px-3 py-1 lg:px-4 lg:py-1.5 bg-red-100 text-red-700 rounded-full text-xs lg:text-sm font-medium">
+              <span className="inline-block px-4 py-1.5 lg:px-4 lg:py-1.5 bg-red-100 text-red-700 rounded-full text-sm lg:text-sm font-medium">
                 Nicht verfügbar
               </span>
             )}
@@ -583,11 +594,11 @@ function UrunDetay() {
 
           {/* Açıklama */}
           {product.description && (
-            <div className="mb-4 lg:mb-0">
-              <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-2 lg:mb-3">
+            <div className="mb-6 lg:mb-0">
+              <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
                 Beschreibung
               </h2>
-              <p className="text-sm lg:text-base text-gray-600 leading-relaxed whitespace-pre-line">
+              <p className="text-base lg:text-base text-gray-600 leading-relaxed whitespace-pre-line">
                 {product.description}
               </p>
             </div>
@@ -597,31 +608,31 @@ function UrunDetay() {
 
       {/* Mobile: Miktar ve sepete ekle (fixed bottom) */}
       {availableStock > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-10 lg:hidden">
+        <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg lg:hidden" style={{ zIndex: 999998 }}>
           <div className="container-mobile">
             <div className="flex items-center gap-2">
               {/* Miktar kontrolü */}
-              <div className="flex items-center gap-1.5 border border-gray-300 rounded-lg">
+              <div className="flex items-center gap-1.5 border border-gray-300 rounded-lg bg-white">
                 <button
                   onClick={decreaseQuantity}
                   disabled={quantity <= 1}
-                  className="p-1.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Menge verringern"
                 >
-                  <FiMinus className="w-4 h-4 text-gray-700" />
+                  <FiMinus className="w-5 h-5 text-gray-700" />
                 </button>
 
-                <span className="w-10 text-center font-medium text-base">
+                <span className="w-12 text-center font-medium text-lg">
                   {quantity}
                 </span>
 
                 <button
                   onClick={increaseQuantity}
                   disabled={quantity >= availableStock}
-                  className="p-1.5 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Menge erhöhen"
                 >
-                  <FiPlus className="w-4 h-4 text-gray-700" />
+                  <FiPlus className="w-5 h-5 text-gray-700" />
                 </button>
               </div>
 
@@ -629,20 +640,20 @@ function UrunDetay() {
               <button
                 onClick={handleAddToCart}
                 disabled={addingToCart || justAdded}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-medium transition-colors min-w-0 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all min-w-0 btn-press ripple-effect ${
                   justAdded
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-green-600 text-white animate-cart-add-success'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                } ${isRippleActive ? 'active' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {justAdded ? (
                   <>
-                    <FiCheck className="w-4 h-4 flex-shrink-0" />
+                    <FiCheck className="w-5 h-5 flex-shrink-0 animate-success-check" />
                     <span className="truncate">Hinzugefügt</span>
                   </>
                 ) : (
                   <>
-                    <FiShoppingCart className="w-4 h-4 flex-shrink-0" />
+                    <FiShoppingCart className={`w-5 h-5 flex-shrink-0 transition-transform ${isRippleActive ? 'animate-cart-bounce' : ''}`} />
                     <span className="truncate">
                       {addingToCart ? 'Wird hinzugefügt...' : 'Zum Warenkorb'}
                     </span>
@@ -653,8 +664,8 @@ function UrunDetay() {
 
             {/* Toplam fiyat */}
             <div className="mt-2 text-center">
-              <span className="text-xs text-gray-600">Gesamt: </span>
-              <span className="text-base font-bold text-gray-900">
+              <span className="text-sm text-gray-600">Gesamt: </span>
+              <span className="text-lg font-bold text-gray-900">
                 €{(finalPrice * quantity).toFixed(2)}
               </span>
             </div>

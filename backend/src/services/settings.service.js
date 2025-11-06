@@ -52,6 +52,18 @@ class SettingsService {
             bannerlar: [],
             seoAyarları: null,
           },
+          // Email defaults
+          smtpSettings: null,
+          emailNotificationSettings: {
+            adminEmail: null,
+            notifyOnOrderStatus: {
+              accepted: true,
+              preparing: false,
+              shipped: true,
+              delivered: true,
+              cancelled: true,
+            },
+          },
         },
       });
     }
@@ -93,6 +105,12 @@ class SettingsService {
     }
     if (data.storeSettings !== undefined) {
       updateData.storeSettings = data.storeSettings;
+    }
+    if (data.smtpSettings !== undefined) {
+      updateData.smtpSettings = data.smtpSettings;
+    }
+    if (data.emailNotificationSettings !== undefined) {
+      updateData.emailNotificationSettings = data.emailNotificationSettings;
     }
 
     // Eğer ayarlar yoksa önce oluştur
@@ -141,6 +159,17 @@ class SettingsService {
             faturaBilgileri: null,
             bannerlar: [],
             seoAyarları: null,
+          },
+          smtpSettings: data.smtpSettings ?? null,
+          emailNotificationSettings: data.emailNotificationSettings ?? {
+            adminEmail: null,
+            notifyOnOrderStatus: {
+              accepted: true,
+              preparing: false,
+              shipped: true,
+              delivered: true,
+              cancelled: true,
+            },
           },
         },
       });

@@ -69,6 +69,173 @@
     z-index: 999999;
   }
 
+  /* Enhanced Bottom Navigation - Animasyonlu ve şık tasarım */
+  .bottom-nav-enhanced {
+    @apply fixed bottom-0 left-0 right-0 bg-white;
+    @apply flex items-center justify-around;
+    @apply h-16 px-2;
+    @apply safe-area-bottom;
+    @apply shadow-[0_-2px_20px_rgba(0,0,0,0.08)];
+    @apply border-t border-gray-100;
+    z-index: 999999;
+    overflow: hidden;
+    /* Fixed positioning için gerekli */
+    position: fixed !important;
+    /* iOS Safari için güvenli alan desteği */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Aktif item için animasyonlu arka plan */
+  .nav-active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 20%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
+    border-radius: 3px 3px 0 0;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -2px 8px rgba(22, 163, 74, 0.3);
+  }
+
+  /* Nav item container */
+  .nav-item {
+    @apply flex-1 relative min-w-0;
+    @apply flex items-center justify-center;
+    @apply transition-all duration-300;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Ripple efekti container */
+  .nav-item-ripple {
+    @apply w-full h-full;
+    @apply flex items-center justify-center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Nav item içeriği */
+  .nav-item-content {
+    @apply flex flex-col items-center justify-center;
+    @apply w-full py-2;
+    @apply transition-all duration-300;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Icon stilleri */
+  .nav-icon {
+    @apply w-6 h-6;
+    @apply text-gray-500;
+    @apply transition-all duration-300;
+    stroke-width: 1.5;
+  }
+
+  .nav-icon-active {
+    @apply text-primary-600;
+    @apply scale-110;
+    stroke-width: 2;
+    filter: drop-shadow(0 2px 4px rgba(22, 163, 74, 0.2));
+    animation: iconBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Badge stilleri */
+  .nav-badge {
+    @apply absolute -top-1 -right-1;
+    @apply bg-primary-600 text-white;
+    @apply text-[10px] min-w-[16px] h-4 px-1;
+    @apply rounded-full;
+    @apply flex items-center justify-center;
+    @apply font-bold leading-none;
+    @apply transition-all duration-300;
+    transform: scale(0.9);
+  }
+
+  .nav-badge-active {
+    @apply bg-primary-500;
+    @apply scale-110;
+    animation: badgePulse 2s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
+  }
+
+  /* Label stilleri */
+  .nav-label {
+    @apply text-[10px] leading-tight;
+    @apply truncate w-full text-center;
+    @apply text-gray-500;
+    @apply transition-all duration-300;
+    @apply mt-0.5;
+    font-weight: 400;
+  }
+
+  .nav-label-active {
+    @apply text-primary-600;
+    @apply font-semibold;
+    @apply scale-105;
+  }
+
+  /* Aktif item için arka plan efekti */
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 56px;
+    height: 56px;
+    background: radial-gradient(circle, rgba(22, 163, 74, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  /* Hover efekti (desktop için) */
+  @media (hover: hover) and (pointer: fine) {
+    .nav-item:hover:not(.nav-item-active) .nav-icon {
+      @apply text-gray-700;
+      @apply scale-105;
+    }
+
+    .nav-item:hover:not(.nav-item-active) .nav-label {
+      @apply text-gray-700;
+    }
+  }
+
+  /* Tıklama efekti */
+  .nav-item:active .nav-item-content {
+    transform: scale(0.95);
+  }
+
+  .nav-item-active:active .nav-item-content {
+    transform: scale(0.92);
+  }
+
+  /* Icon bounce animasyonu */
+  @keyframes iconBounce {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Badge pulse animasyonu */
+  @keyframes badgePulse {
+    0%, 100% {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
+    }
+    50% {
+      transform: scale(1.15);
+      box-shadow: 0 2px 12px rgba(22, 163, 74, 0.6);
+    }
+  }
+
   /* Bottom Sheet temel stil */
   .bottom-sheet {
     @apply fixed inset-x-0 bottom-0 bg-white;
@@ -190,6 +357,209 @@
     }
     100% {
       transform: rotate(360deg) scale(0.8);
+    }
+  }
+
+  /* Buton Animasyonları */
+  
+  /* Button Bounce - Tıklama animasyonu */
+  .animate-button-bounce {
+    animation: buttonBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes buttonBounce {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Ripple Effect - Dalga efekti */
+  .ripple-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-effect::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .ripple-effect.active::after {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+  }
+
+  /* Heart Beat - Kalp atışı - Daha yumuşak ve şık */
+  .animate-heart-beat {
+    animation: heartBeat 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes heartBeat {
+    0% {
+      transform: scale(1);
+    }
+    25% {
+      transform: scale(1.3);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    75% {
+      transform: scale(1.25);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Heart Fill - Kalp dolma animasyonu */
+  .animate-heart-fill {
+    animation: heartFill 0.4s ease-out;
+  }
+
+  @keyframes heartFill {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Cart Bounce - Sepet zıplaması - Daha belirgin */
+  .animate-cart-bounce {
+    animation: cartBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes cartBounce {
+    0% {
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-12px) scale(1.15) rotate(-5deg);
+    }
+    50% {
+      transform: translateY(0) scale(1.1) rotate(0deg);
+    }
+    75% {
+      transform: translateY(-6px) scale(1.12) rotate(3deg);
+    }
+    100% {
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+  }
+
+  /* Cart Add Success - Sepete ekleme başarı animasyonu */
+  .animate-cart-add-success {
+    animation: cartAddSuccess 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes cartAddSuccess {
+    0% {
+      transform: scale(1);
+      background-color: var(--color-primary-600);
+    }
+    50% {
+      transform: scale(1.1);
+      background-color: #22c55e;
+    }
+    100% {
+      transform: scale(1);
+      background-color: #16a34a;
+    }
+  }
+
+  /* Shake - Sallama animasyonu */
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(5px);
+    }
+  }
+
+  /* Success Check - Başarı animasyonu */
+  .animate-success-check {
+    animation: successCheck 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes successCheck {
+    0% {
+      transform: scale(0) rotate(-45deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  /* Button Press - Basılı tutma efekti */
+  .btn-press:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Success Pulse - Başarı nabzı */
+  .animate-success-pulse {
+    animation: successPulse 0.6s ease-in-out;
+  }
+
+  @keyframes successPulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    }
+  }
+
+  /* Icon Rotate - Icon dönme */
+  .animate-icon-rotate {
+    animation: iconRotate 0.5s ease-in-out;
+  }
+
+  @keyframes iconRotate {
+    0% {
+      transform: rotate(0deg) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.1);
+    }
+    100% {
+      transform: rotate(360deg) scale(1);
     }
   }
 }

@@ -47,6 +47,28 @@ function Settings() {
     bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
   });
 
+  // Mail ayarları
+  const [smtpSettings, setSmtpSettings] = useState({
+    host: '',
+    port: 587,
+    secure: false,
+    user: '',
+    pass: '',
+    fromEmail: '',
+    fromName: 'Gruner SuperStore',
+  });
+  const [emailNotificationSettings, setEmailNotificationSettings] = useState({
+    adminEmail: '',
+    notifyOnOrderStatus: {
+      accepted: true,
+      preparing: false,
+      shipped: true,
+      delivered: true,
+      cancelled: true,
+    },
+  });
+  const [testingEmail, setTestingEmail] = useState(false);
+
   // Ayarları yükle
   useEffect(() => {
     fetchSettings();
@@ -94,10 +116,18 @@ function Settings() {
           maxSepetKalemi: '',
         }
       );
-      setStoreSettings(s.storeSettings ?? { 
-        bakimModu: false, 
-        bakimModuMesaji: 'Mağazamız şu anda bakım modunda. Yakında tekrar hizmetinizde olacağız.' 
+      setStoreSettings(s.storeSettings ?? {
+        bakimModu: false,
+        bakimModuMesaji: 'Mağazamız şu anda bakım modunda. Yakında tekrar hizmetinizde olacağız.'
       });
+
+      // Mail ayarları
+      if (s.smtpSettings) {
+        setSmtpSettings(s.smtpSettings);
+      }
+      if (s.emailNotificationSettings) {
+        setEmailNotificationSettings(s.emailNotificationSettings);
+      }
     } catch (err) {
       setError(err.message || 'Fehler beim Laden der Einstellungen');
       toast.error(err.message || 'Fehler beim Laden der Einstellungen');
@@ -136,6 +166,8 @@ function Settings() {
               : parseInt(orderLimits.maxSepetKalemi),
         },
         storeSettings,
+        smtpSettings,
+        emailNotificationSettings,
       });
       setSettings(response.data.settings);
       if (response.data.settings.orderIdFormat) {
@@ -150,11 +182,56 @@ function Settings() {
       setPaymentOptions(s2.paymentOptions ?? paymentOptions);
       setOrderLimits(s2.orderLimits ?? orderLimits);
       setStoreSettings(s2.storeSettings ?? storeSettings);
+      // Mail ayarları da geri oku
+      if (s2.smtpSettings) setSmtpSettings(s2.smtpSettings);
+      if (s2.emailNotificationSettings) setEmailNotificationSettings(s2.emailNotificationSettings);
       toast.success('Einstellungen erfolgreich gespeichert');
     } catch (err) {
       toast.error(err.message || 'Fehler beim Speichern der Einstellungen');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Test mail gönder
+  const handleTestEmail = async () => {
+    // Validasyon
+    if (!smtpSettings.host || !smtpSettings.user || !smtpSettings.pass || !smtpSettings.fromEmail) {
+      toast.error('Bitte füllen Sie alle SMTP-Felder aus');
+      return;
+    }
+
+    if (!emailNotificationSettings.adminEmail) {
+      toast.error('Bitte geben Sie eine Admin-E-Mail-Adresse ein');
+      return;
+    }
+
+    try {
+      setTestingEmail(true);
+      const response = await fetch('/api/admin/email/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+        },
+        body: JSON.stringify({
+          to: emailNotificationSettings.adminEmail,
+          smtpSettings,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Test-E-Mail erfolgreich gesendet! Überprüfen Sie Ihren Posteingang.');
+      } else {
+        toast.error(data.message || 'Fehler beim Senden der Test-E-Mail');
+      }
+    } catch (error) {
+      console.error('Test mail hatası:', error);
+      toast.error('Fehler beim Senden der Test-E-Mail');
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -830,6 +907,185 @@ function Settings() {
             </button>
           </div>
         </div>
+          </div>
+        </div>
+
+        {/* E-Mail Ayarları */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-900">📧 E-Mail Einstellungen</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              SMTP-Einstellungen und E-Mail-Benachrichtigungen
+            </p>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* SMTP Ayarları */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900">SMTP-Konfiguration</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SMTP Host *
+                  </label>
+                  <input
+                    type="text"
+                    value={smtpSettings.host}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, host: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Port *
+                  </label>
+                  <input
+                    type="number"
+                    value={smtpSettings.port}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, port: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Benutzername (E-Mail) *
+                  </label>
+                  <input
+                    type="email"
+                    value={smtpSettings.user}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, user: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="your-email@gmail.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Passwort / App-Passwort *
+                  </label>
+                  <input
+                    type="password"
+                    value={smtpSettings.pass}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, pass: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Absender E-Mail *
+                  </label>
+                  <input
+                    type="email"
+                    value={smtpSettings.fromEmail}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, fromEmail: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="noreply@grunersuperstore.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Absender Name
+                  </label>
+                  <input
+                    type="text"
+                    value={smtpSettings.fromName}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, fromName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="Gruner SuperStore"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smtpSettings.secure}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, secure: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">SSL/TLS verwenden (Port 465)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* E-Mail Bildirimleri */}
+            <div className="space-y-4 pt-6 border-t border-gray-200">
+              <h4 className="font-medium text-gray-900">E-Mail-Benachrichtigungen</h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Admin-E-Mail-Adresse
+                </label>
+                <input
+                  type="email"
+                  value={emailNotificationSettings.adminEmail}
+                  onChange={(e) => setEmailNotificationSettings({ ...emailNotificationSettings, adminEmail: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="admin@grunersuperstore.com"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  An diese Adresse werden neue Bestellungen gesendet
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Kunden-Benachrichtigungen bei Statusänderung
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'accepted', label: 'Bestellung akzeptiert' },
+                    { key: 'preparing', label: 'In Vorbereitung' },
+                    { key: 'shipped', label: 'Versandt' },
+                    { key: 'delivered', label: 'Zugestellt' },
+                    { key: 'cancelled', label: 'Storniert' },
+                  ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={emailNotificationSettings.notifyOnOrderStatus[key]}
+                        onChange={(e) =>
+                          setEmailNotificationSettings({
+                            ...emailNotificationSettings,
+                            notifyOnOrderStatus: {
+                              ...emailNotificationSettings.notifyOnOrderStatus,
+                              [key]: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Wählen Sie, bei welchen Statusänderungen Kunden eine E-Mail erhalten sollen
+                </p>
+              </div>
+            </div>
+
+            {/* Test Mail Button */}
+            <div className="pt-4 flex items-center space-x-3">
+              <button
+                onClick={handleTestEmail}
+                disabled={testingEmail}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {testingEmail ? 'Wird gesendet...' : '📧 Test-E-Mail senden'}
+              </button>
+              <p className="text-sm text-gray-500">
+                Sendet eine Test-E-Mail an die Admin-Adresse
+              </p>
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+            </button>
           </div>
         </div>
 

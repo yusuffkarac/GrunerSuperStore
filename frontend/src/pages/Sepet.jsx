@@ -3,45 +3,215 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag, FiHeart } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
+import useFavoriteStore from '../store/favoriteStore';
 import campaignService from '../services/campaignService';
 import { useAlert } from '../contexts/AlertContext';
 
 // Sepet Item Component
 function CartItem({ item, onRemove, onUpdateQuantity }) {
+  const navigate = useNavigate();
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  
+  // Favorite store
+  const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
+  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
+  const isProductFavorite = favoriteIds.includes(item.productId);
+
+  // İlk kaydırmada ipucu göster
+  useEffect(() => {
+    if (Math.abs(swipeOffset) > 5 && !showHint) {
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 2000);
+    }
+  }, [swipeOffset, showHint]);
 
   const handlers = useSwipeable({
     onSwiping: (eventData) => {
-      // Sol swipe için
-      if (eventData.deltaX < 0) {
-        setSwipeOffset(Math.max(eventData.deltaX, -100));
+      // Sol swipe için (silme)
+      if (eventData.deltaX < 0 && swipeOffset <= 0) {
+        const newOffset = Math.max(eventData.deltaX, -100);
+        setSwipeOffset(newOffset);
+      }
+      // Sağ swipe için (favorilere ekleme)
+      else if (eventData.deltaX > 0 && swipeOffset >= 0) {
+        const newOffset = Math.min(eventData.deltaX, 100);
+        setSwipeOffset(newOffset);
+      }
+      // Geri getirme - zaten kaydırılmışsa
+      else if (eventData.deltaX > 0 && swipeOffset < 0) {
+        const newOffset = Math.min(0, swipeOffset + eventData.deltaX * 0.5);
+        setSwipeOffset(newOffset);
+      }
+      else if (eventData.deltaX < 0 && swipeOffset > 0) {
+        const newOffset = Math.max(0, swipeOffset + eventData.deltaX * 0.5);
+        setSwipeOffset(newOffset);
       }
     },
-    onSwiped: (eventData) => {
-      if (eventData.deltaX < -50) {
-        onRemove(item.productId, item.variantId);
+    onSwiped: async (eventData) => {
+      // Sol swipe - Silme eşiği: -70px
+      if (eventData.deltaX < -70) {
+        try {
+          await onRemove(item.productId, item.variantId);
+          setHasError(false);
+        } catch (error) {
+          setHasError(true);
+          setTimeout(() => setHasError(false), 500);
+          setSwipeOffset(0);
+        }
       }
-      setSwipeOffset(0);
+      // Sağ swipe - Favorilere ekleme eşiği: +70px
+      else if (eventData.deltaX > 70) {
+        try {
+          setIsHeartAnimating(true);
+          setTimeout(() => setIsHeartAnimating(false), 600);
+          const wasFavorite = isProductFavorite;
+          await toggleFavorite(item.productId);
+          toast.success(wasFavorite ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt', {
+            position: 'bottom-center',
+            autoClose: 2000,
+          });
+          setSwipeOffset(0);
+        } catch (error) {
+          toast.error('Fehler bei Favoriten', {
+            position: 'bottom-center',
+            autoClose: 2000,
+          });
+          setSwipeOffset(0);
+        }
+      } else {
+        // Eşik altındaysa geri getir
+        setSwipeOffset(0);
+      }
     },
     trackMouse: false,
+    preventDefaultTouchmoveEvent: false,
+    delta: 5,
   });
 
+  // Silme butonuna tıklama
+  const handleDeleteClick = async () => {
+    try {
+      await onRemove(item.productId, item.variantId);
+      setHasError(false);
+      setSwipeOffset(0);
+    } catch (error) {
+      setHasError(true);
+      setTimeout(() => setHasError(false), 500);
+    }
+  };
+
+  // Favori butonuna tıklama
+  const handleFavoriteClick = async () => {
+    try {
+      setIsHeartAnimating(true);
+      setTimeout(() => setIsHeartAnimating(false), 600);
+      const wasFavorite = isProductFavorite;
+      await toggleFavorite(item.productId);
+      toast.success(wasFavorite ? 'Aus Favoriten entfernt' : 'Zu Favoriten hinzugefügt', {
+        position: 'bottom-center',
+        autoClose: 2000,
+      });
+      setSwipeOffset(0);
+    } catch (error) {
+      toast.error('Fehler bei Favoriten', {
+        position: 'bottom-center',
+        autoClose: 2000,
+      });
+      setSwipeOffset(0);
+    }
+  };
+
+  // Ürün detay sayfasına git
+  const handleProductClick = (e) => {
+    // Swipe işlemi varsa veya butonlara tıklanmışsa navigate etme
+    if (Math.abs(swipeOffset) > 5) {
+      return;
+    }
+    // Butonlara tıklanmışsa navigate etme
+    if (e.target.closest('button') || e.target.closest('.btn-press')) {
+      return;
+    }
+    navigate(`/urun/${item.productId}`);
+  };
+
   return (
-    <motion.div
-      {...handlers}
-      style={{ x: swipeOffset }}
-      className="relative bg-white rounded-lg shadow-sm mb-2 overflow-hidden"
+    <div
+      className={`relative bg-white rounded-lg shadow-sm mb-2 overflow-hidden ${
+        hasError ? 'animate-shake' : ''
+      }`}
     >
-      {/* Sil butonu arka plan */}
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-red-500 flex items-center justify-center">
-        <FiTrash2 className="text-white text-xl" />
+      {/* Favori butonu arka plan - Sol tarafta, sağa kaydırınca görünür */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-pink-500 to-red-500 flex flex-col items-center justify-center gap-1.5 shadow-xl transition-all duration-300"
+        style={{
+          opacity: swipeOffset > 5 ? Math.min(swipeOffset / 100, 1) : 0,
+          transform: `translateX(${swipeOffset <= 0 ? -100 : -100 + swipeOffset}px)`,
+          pointerEvents: swipeOffset > 5 ? 'auto' : 'none',
+          zIndex: 10
+        }}
+        onClick={handleFavoriteClick}
+      >
+        <div className={`flex flex-col items-center justify-center gap-1 ${swipeOffset > 70 ? 'scale-110' : ''} transition-transform duration-200`}>
+          <FiHeart className={`text-white text-2xl ${swipeOffset > 70 ? 'animate-pulse' : ''} ${isProductFavorite ? 'fill-current' : ''} ${isHeartAnimating ? 'animate-heart-beat' : ''}`} />
+          <span className="text-white text-xs font-bold">
+            {isProductFavorite ? 'Entfernen' : 'Favorit'}
+          </span>
+          {swipeOffset > 70 && (
+            <span className="text-white text-[10px] font-medium animate-pulse">Loslassen</span>
+          )}
+        </div>
       </div>
 
-      {/* Ana içerik */}
-      <div className="relative bg-white p-3 flex gap-3">
+      {/* Sil butonu arka plan - Sağ tarafta, sola kaydırınca görünür */}
+      <div 
+        className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-r from-red-500 to-red-600 flex flex-col items-center justify-center gap-1.5 shadow-xl transition-all duration-300"
+        style={{
+          opacity: Math.abs(swipeOffset) > 5 && swipeOffset < 0 ? Math.min(Math.abs(swipeOffset) / 100, 1) : 0,
+          transform: `translateX(${swipeOffset >= 0 ? 100 : 100 + swipeOffset}px)`,
+          pointerEvents: Math.abs(swipeOffset) > 5 && swipeOffset < 0 ? 'auto' : 'none',
+          zIndex: 10
+        }}
+        onClick={handleDeleteClick}
+      >
+        <div className={`flex flex-col items-center justify-center gap-1 ${Math.abs(swipeOffset) > 70 && swipeOffset < 0 ? 'scale-110' : ''} transition-transform duration-200`}>
+          <FiTrash2 className={`text-white text-2xl ${Math.abs(swipeOffset) > 70 && swipeOffset < 0 ? 'animate-pulse' : ''}`} />
+          <span className="text-white text-xs font-bold">Löschen</span>
+          {Math.abs(swipeOffset) > 70 && swipeOffset < 0 && (
+            <span className="text-white text-[10px] font-medium animate-pulse">Loslassen</span>
+          )}
+        </div>
+      </div>
+      
+      {/* Swipe ipucu - İlk kaydırmada göster */}
+      {/* {showHint && Math.abs(swipeOffset) > 5 && Math.abs(swipeOffset) < 70 && (
+        <div className="absolute right-32 top-1/2 transform -translate-y-1/2 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg z-50 animate-pulse flex items-center gap-1.5 whitespace-nowrap">
+          <FiTrash2 className="w-3.5 h-3.5" />
+          <span>← Zum Löschen ziehen</span>
+        </div>
+      )} */}
+      
+      {/* Silme eşiği göstergesi
+      {Math.abs(swipeOffset) > 50 && Math.abs(swipeOffset) < 70 && (
+        <div className="absolute left-1/2 top-2 transform -translate-x-1/2 bg-red-500 text-white px-2 py-0.5 rounded text-[10px] font-medium shadow-md z-40">
+          Weiter ziehen...
+        </div>
+      )} */}
+
+      {/* Ana içerik - Swipe ile hareket eder */}
+      <motion.div
+        {...handlers}
+        className="relative bg-white p-3 flex gap-3 cursor-pointer"
+        animate={{ x: swipeOffset }}
+        transition={{ type: "spring", stiffness: 400, damping: 40 }}
+        onClick={handleProductClick}
+      >
         {/* Ürün görseli */}
         <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
           {item.imageUrl ? (
@@ -70,10 +240,16 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
           </p>
 
           {/* Miktar kontrolü */}
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
             <button
-              onClick={() => onUpdateQuantity(item.productId, item.quantity - 1, item.variantId)}
-              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              onClick={() => {
+                setIsAnimating(true);
+                onUpdateQuantity(item.productId, item.quantity - 1, item.variantId);
+                setTimeout(() => setIsAnimating(false), 400);
+              }}
+              className={`w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors btn-press ${
+                isAnimating ? 'animate-button-bounce' : ''
+              }`}
               aria-label="Menge verringern"
             >
               <FiMinus className="text-gray-700 text-xs" />
@@ -82,9 +258,15 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
             <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
 
             <button
-              onClick={() => onUpdateQuantity(item.productId, item.quantity + 1, item.variantId)}
+              onClick={() => {
+                setIsAnimating(true);
+                onUpdateQuantity(item.productId, item.quantity + 1, item.variantId);
+                setTimeout(() => setIsAnimating(false), 400);
+              }}
               disabled={item.quantity >= item.stock}
-              className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-press ${
+                isAnimating ? 'animate-button-bounce' : ''
+              }`}
               aria-label="Menge erhöhen"
             >
               <FiPlus className="text-gray-700 text-xs" />
@@ -97,7 +279,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
         </div>
 
         {/* Toplam fiyat */}
-        <div className="text-right flex-shrink-0">
+        <div className="text-right flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <p className="font-bold text-base text-gray-900">
             {(parseFloat(item.price) * item.quantity).toFixed(2)} €
           </p>
@@ -108,8 +290,8 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
             Entfernen
           </button>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -120,6 +302,7 @@ function Sepet() {
   const { isAuthenticated } = useAuthStore();
   const { showConfirm } = useAlert();
   const [isClearing, setIsClearing] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
 
   const total = getTotal();
@@ -269,7 +452,10 @@ function Sepet() {
     try {
       await removeItem(productId, variantId);
       toast.success('Produkt entfernt');
+      setHasError(false);
     } catch (error) {
+      setHasError(true);
+      setTimeout(() => setHasError(false), 500);
       toast.error('Fehler beim Entfernen des Produkts');
     }
   };
@@ -282,7 +468,10 @@ function Sepet() {
       try {
         await clearCart();
         toast.success('Warenkorb geleert');
+        setHasError(false);
       } catch (error) {
+        setHasError(true);
+        setTimeout(() => setHasError(false), 500);
         toast.error('Fehler beim Leeren des Warenkorbs');
       } finally {
         setIsClearing(false);
@@ -354,7 +543,9 @@ function Sepet() {
             <button
               onClick={handleClearCart}
               disabled={isClearing}
-              className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50"
+              className={`text-red-500 text-sm hover:text-red-700 disabled:opacity-50 btn-press ${
+                hasError ? 'animate-shake' : ''
+              }`}
             >
               Temizle
             </button>

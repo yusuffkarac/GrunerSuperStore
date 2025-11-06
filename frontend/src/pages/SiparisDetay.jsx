@@ -153,7 +153,11 @@ function SiparisDetay() {
         <h2 className="font-semibold text-gray-900 mb-4 text-base">Bestellte Artikel</h2>
         <div className="space-y-4">
           {order.orderItems?.map((item) => (
-            <div key={item.id} className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+            <div 
+              key={item.id} 
+              className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors"
+              onClick={() => navigate(`/urun/${item.productId}`)}
+            >
               <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />

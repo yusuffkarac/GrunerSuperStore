@@ -6,6 +6,7 @@ import {
   UnauthorizedError,
   NotFoundError,
 } from '../utils/errors.js';
+import queueService from './queue.service.js';
 
 class AuthService {
   // Kullanıcı kaydı
@@ -45,7 +46,42 @@ class AuthService {
     // Token oluştur
     const token = generateToken({ userId: user.id });
 
+    // Hoş geldin maili gönder (asenkron, hata almayı engelle)
+    this.sendWelcomeEmail(user).catch((err) => {
+      console.error('Welcome mail hatası:', err);
+    });
+
     return { user, token };
+  }
+
+  // Hoş geldin maili gönder
+  async sendWelcomeEmail(user) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, hoş geldin maili gönderilmedi.');
+        return;
+      }
+
+      await queueService.addEmailJob({
+        to: user.email,
+        subject: 'Willkommen bei Gruner SuperStore!',
+        template: 'welcome',
+        data: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          shopUrl: process.env.SHOP_URL || 'http://localhost:5173',
+        },
+        metadata: { userId: user.id, type: 'welcome' },
+        priority: 3,
+      });
+
+      console.log(`✅ Hoş geldin maili kuyruğa eklendi: ${user.email}`);
+    } catch (error) {
+      console.error('Welcome mail hatası:', error);
+    }
   }
 
   // Kullanıcı girişi
@@ -117,13 +153,37 @@ class AuthService {
       };
     }
 
-    // Reset token oluştur (30 dakika geçerli)
-    const resetToken = generateToken({ userId: user.id, type: 'reset' });
+    // Reset token oluştur (24 saat geçerli)
+    const resetToken = generateToken({ userId: user.id, type: 'reset' }, '24h');
 
-    // TODO: Email gönderme servisi buraya eklenecek
-    // await emailService.sendPasswordResetEmail(user.email, resetToken);
+    // Şifre sıfırlama maili gönder
+    try {
+      const settings = await prisma.settings.findFirst();
 
-    console.log('Password reset token:', resetToken); // Development için
+      if (settings?.smtpSettings) {
+        const resetUrl = `${process.env.SHOP_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+        await queueService.addEmailJob({
+          to: user.email,
+          subject: 'Passwort zurücksetzen',
+          template: 'password-reset',
+          data: {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            resetUrl,
+          },
+          metadata: { userId: user.id, type: 'password-reset' },
+          priority: 1, // Yüksek öncelik
+        });
+
+        console.log(`✅ Şifre sıfırlama maili kuyruğa eklendi: ${user.email}`);
+      } else {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, şifre sıfırlama maili gönderilmedi.');
+        console.log('Password reset token:', resetToken); // Development için
+      }
+    } catch (error) {
+      console.error('Password reset mail hatası:', error);
+    }
 
     return {
       message:

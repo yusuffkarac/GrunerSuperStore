@@ -15,6 +15,8 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   const [justAdded, setJustAdded] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isHeartAnimating, setIsHeartAnimating] = useState(false);
 
   // Store'dan sadece gerekli değerleri oku - selector pattern
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
@@ -72,6 +74,10 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
     e.preventDefault();
     e.stopPropagation();
 
+    // Heart beat animasyonu
+    setIsHeartAnimating(true);
+    setTimeout(() => setIsHeartAnimating(false), 600);
+
     try {
       await toggleFavorite(product.id);
       // Görsel geri bildirim yeterli (kalp rengi değişiyor), toaster sadece hata durumlarında
@@ -91,6 +97,8 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
 
     if (product.stock <= 0) return;
 
+    // Tıklama animasyonu
+    setIsAnimating(true);
     setAddingToCart(true);
 
     try {
@@ -99,8 +107,12 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
       // Görsel geri bildirim yeterli (check işareti ve buton rengi değişiyor), toaster sadece hata durumlarında
 
       // 2 saniye sonra check işaretini kaldır
-      setTimeout(() => setJustAdded(false), 2000);
+      setTimeout(() => {
+        setJustAdded(false);
+        setIsAnimating(false);
+      }, 2000);
     } catch (error) {
+      setIsAnimating(false);
       toast.error('Fehler beim Hinzufügen', {
         position: 'bottom-center',
         autoClose: 2000
@@ -171,33 +183,35 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
         {/* Sepete ekle butonu - Sağ üstte, yuvarlak, yeşil */}
         {product.stock > 0 && (
           <button
-            className={`absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all ${
+            className={`absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all btn-press ${
               justAdded
-                ? 'bg-green-600 text-white'
+                ? 'bg-green-600 text-white animate-cart-add-success'
                 : 'bg-primary-600 text-white hover:bg-primary-700'
-            }`}
+            } ${isAnimating && !justAdded ? 'animate-cart-bounce' : ''}`}
             onClick={handleAddToCart}
             disabled={addingToCart || justAdded}
             aria-label="Zum Warenkorb hinzufügen"
           >
             {justAdded ? (
-              <FiCheck className="w-5 h-5" />
+              <FiCheck className="w-5 h-5 animate-success-check" />
             ) : (
-              <FiPlus className="w-5 h-5" />
+              <FiPlus className={`w-5 h-5 transition-transform ${isAnimating ? 'animate-cart-bounce' : ''}`} />
             )}
           </button>
         )}
 
         {/* Favori butonu - Sol altta, yuvarlak, beyaz */}
         <button
-          className={`absolute bottom-2 left-2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all ${
+          className={`absolute bottom-2 left-2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all btn-press ${
             isProductFavorite ? 'text-red-500' : 'text-gray-600'
           }`}
           onClick={handleToggleFavorite}
           aria-label={isProductFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
         >
           <FiHeart
-            className={`w-5 h-5 ${isProductFavorite ? 'fill-current' : ''}`}
+            className={`w-5 h-5 transition-all duration-300 ${
+              isProductFavorite ? 'fill-current animate-heart-fill' : ''
+            } ${isHeartAnimating ? 'animate-heart-beat' : ''}`}
           />
         </button>
       </Link>

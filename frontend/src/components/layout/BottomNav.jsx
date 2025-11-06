@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiCompass, FiRepeat, FiShoppingCart, FiFileText, FiGift, FiHeart } from 'react-icons/fi';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import useCartStore from '../../store/cartStore';
 import campaignService from '../../services/campaignService';
 
@@ -9,6 +9,7 @@ function BottomNav() {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
   const [campaignCount, setCampaignCount] = useState(0);
+  const navRef = useRef(null);
 
   // Aktif kampanya sayısını yükle
   useEffect(() => {
@@ -25,6 +26,26 @@ function BottomNav() {
     loadCampaignCount();
   }, []);
 
+  const navItems = useMemo(() => [
+    { path: '/', icon: FiCompass, label: 'Entdecken' },
+    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
+    { path: '/sepet', icon: FiShoppingCart, label: 'Warenkorb', badge: itemCount },
+    { path: '/siparislerim', icon: FiFileText, label: 'Bestellungen'},
+    { path: '/kampanyalar', icon: FiGift, label: 'Aktionen', badge: campaignCount },
+  ], [itemCount, campaignCount]);
+
+  // Aktif index'i hesapla
+  const activeIndex = useMemo(() => {
+    const currentPath = location.pathname;
+    const currentIndex = navItems.findIndex(item => {
+      if (item.path === '/') {
+        return currentPath === '/';
+      }
+      return currentPath.startsWith(item.path);
+    });
+    return currentIndex !== -1 ? currentIndex : 0;
+  }, [location.pathname, navItems]);
+
   const isActive = (path) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -32,17 +53,17 @@ function BottomNav() {
     return location.pathname.startsWith(path);
   };
 
-  const navItems = [
-    { path: '/', icon: FiCompass, label: 'Entdecken' },
-    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
-    { path: '/sepet', icon: FiShoppingCart, label: 'Warenkorb', badge: itemCount },
-    { path: '/siparislerim', icon: FiFileText, label: 'Bestellungen'},
-    { path: '/kampanyalar', icon: FiGift, label: 'Aktionen', badge: campaignCount },
-  ];
-
   return (
-    <nav className="md:hidden bottom-nav">
-      {navItems.map((item) => {
+    <nav ref={navRef} className="md:hidden bottom-nav-enhanced">
+      {/* Aktif item için animasyonlu arka plan */}
+      <div 
+        className="nav-active-indicator"
+        style={{
+          transform: `translateX(${activeIndex * 100}%)`,
+        }}
+      />
+      
+      {navItems.map((item, index) => {
         const Icon = item.icon;
         const active = isActive(item.path);
 
@@ -50,20 +71,27 @@ function BottomNav() {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center justify-center flex-1 py-1.5 px-0.5 relative min-w-0 ${
-              active ? 'text-primary-600' : 'text-gray-600'
-            }`}
+            className={`nav-item ${active ? 'nav-item-active' : ''}`}
           >
-            <div className="relative mb-0.5">
-              <Icon className={`w-5 h-5 ${active ? 'stroke-2' : ''}`} />
-              {/* Badge */}
-              {item.badge > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none">
-                  {item.badge > 9 ? '9+' : item.badge}
+            {/* Ripple efekti için container */}
+            <div className="nav-item-ripple">
+              <div className="nav-item-content">
+                <div className="relative mb-0.5">
+                  <Icon 
+                    className={`nav-icon ${active ? 'nav-icon-active' : ''}`}
+                  />
+                  {/* Badge */}
+                  {item.badge > 0 && (
+                    <span className={`nav-badge ${active ? 'nav-badge-active' : ''}`}>
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
+                </div>
+                <span className={`nav-label ${active ? 'nav-label-active' : ''}`}>
+                  {item.label}
                 </span>
-              )}
+              </div>
             </div>
-            <span className={`text-[10px] leading-tight truncate w-full text-center ${active ? 'font-medium' : ''}`}>{item.label}</span>
           </Link>
         );
       })}

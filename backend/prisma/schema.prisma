@@ -57,6 +57,14 @@ enum CouponType {
   @@map("coupon_type")
 }
 
+enum EmailStatus {
+  pending
+  sent
+  failed
+
+  @@map("email_status")
+}
+
 // ===================================
 // MODELS
 // ===================================
@@ -383,6 +391,9 @@ model Settings {
   paymentOptions            Json?    @map("payment_options")
   orderLimits               Json?    @map("order_limits")
   storeSettings             Json?    @map("store_settings")
+  // Mail ayarları
+  smtpSettings              Json?    @map("smtp_settings")
+  emailNotificationSettings Json?    @map("email_notification_settings")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
@@ -500,4 +511,27 @@ model ProductVariantValue {
   @@index([variantId])
   @@index([optionId])
   @@map("product_variant_values")
+}
+
+// ===================================
+// EMAIL SYSTEM
+// ===================================
+
+model EmailLog {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  to        String
+  subject   String
+  template  String      // welcome, order-received, vb.
+  status    EmailStatus @default(pending)
+  error     String?
+  sentAt    DateTime?   @map("sent_at")
+  metadata  Json?       // orderId, userId vb.
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@index([to])
+  @@index([status])
+  @@index([template])
+  @@index([createdAt(sort: Desc)])
+  @@map("email_logs")
 }

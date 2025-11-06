@@ -155,7 +155,7 @@ function MainLayout() {
     <div className="flex flex-col min-h-screen">
       <Header />
 
-      <main className="flex-1 pb-4">
+      <main className="flex-1 pb-20 md:pb-4">
         <Outlet />
       </main>
 

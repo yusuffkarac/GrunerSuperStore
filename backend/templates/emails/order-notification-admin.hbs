@@ -1,0 +1,93 @@
+<h2 style="color: #111827; margin-bottom: 20px;">Neue Bestellung erhalten!</h2>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    Eine neue Bestellung ist eingegangen und wartet auf Ihre Bearbeitung.
+</p>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Bestelldetails</h3>
+
+    <div class="info-row">
+        <span class="info-label">Bestellnummer:</span>
+        <span class="info-value">{{orderNo}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Bestelldatum:</span>
+        <span class="info-value">{{orderDate}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Kunde:</span>
+        <span class="info-value">{{customerName}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">E-Mail:</span>
+        <span class="info-value">{{customerEmail}}</span>
+    </div>
+
+    {{#if customerPhone}}
+    <div class="info-row">
+        <span class="info-label">Telefon:</span>
+        <span class="info-value">{{customerPhone}}</span>
+    </div>
+    {{/if}}
+
+    <div class="info-row">
+        <span class="info-label">Lieferart:</span>
+        <span class="info-value">{{deliveryType}}</span>
+    </div>
+
+    {{#if address}}
+    <div class="info-row">
+        <span class="info-label">Lieferadresse:</span>
+        <span class="info-value">{{address}}</span>
+    </div>
+    {{/if}}
+
+    <div class="info-row" style="font-size: 16px;">
+        <span class="info-label">Gesamtsumme:</span>
+        <span class="info-value" style="color: #111827; font-weight: 700;">{{total}}€</span>
+    </div>
+</div>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Bestellte Artikel ({{itemCount}})</h3>
+
+    {{#each items}}
+    <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="color: #374151; font-weight: 500;">{{this.productName}}</span>
+            <span style="color: #6b7280;">{{this.quantity}}x {{this.price}}€</span>
+        </div>
+        {{#if this.variantName}}
+        <div style="color: #6b7280; font-size: 14px;">Variante: {{this.variantName}}</div>
+        {{/if}}
+    </div>
+    {{/each}}
+</div>
+
+{{#if paymentType}}
+<div style="background-color: #eff6ff; padding: 15px; border-radius: 6px; margin: 20px 0;">
+    <p style="color: #1e40af; margin: 0;">
+        <strong>Zahlungsart:</strong> {{paymentType}}
+    </p>
+</div>
+{{/if}}
+
+{{#if note}}
+<div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0;">
+    <p style="color: #92400e; margin: 0;">
+        <strong>Kundennotiz:</strong> {{note}}
+    </p>
+</div>
+{{/if}}
+
+<div style="text-align: center;">
+    <a href="{{adminOrderUrl}}" class="button">Bestellung im Admin-Panel anzeigen</a>
+</div>
+
+<p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+    Bitte bearbeiten Sie diese Bestellung so schnell wie möglich.
+</p>

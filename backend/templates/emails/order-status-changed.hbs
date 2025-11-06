@@ -1,0 +1,68 @@
+<h2 style="color: #111827; margin-bottom: 20px;">Ihre Bestellung wurde aktualisiert</h2>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    Hallo {{firstName}} {{lastName}},
+</p>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    der Status Ihrer Bestellung hat sich geändert.
+</p>
+
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 6px; margin: 20px 0; text-align: center;">
+    <p style="color: #ffffff; margin: 0 0 10px 0; font-size: 14px;">Neuer Status</p>
+    <p style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">{{newStatusText}}</p>
+</div>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Bestelldetails</h3>
+
+    <div class="info-row">
+        <span class="info-label">Bestellnummer:</span>
+        <span class="info-value">{{orderNo}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Bestelldatum:</span>
+        <span class="info-value">{{orderDate}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Vorheriger Status:</span>
+        <span class="info-value">{{oldStatusText}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Gesamtsumme:</span>
+        <span class="info-value">{{total}}€</span>
+    </div>
+</div>
+
+{{#if statusMessage}}
+<div style="background-color: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #0284c7;">
+    <p style="color: #0c4a6e; margin: 0;">
+        {{statusMessage}}
+    </p>
+</div>
+{{/if}}
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Artikel ({{itemCount}})</h3>
+
+    {{#each items}}
+    <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between;">
+            <span style="color: #374151;">{{this.productName}}</span>
+            <span style="color: #6b7280;">{{this.quantity}}x</span>
+        </div>
+    </div>
+    {{/each}}
+</div>
+
+<p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+    Bei Fragen zu Ihrer Bestellung stehen wir Ihnen jederzeit gerne zur Verfügung.
+</p>
+
+<p style="color: #374151; margin-top: 20px;">
+    Mit freundlichen Grüßen,<br>
+    Ihr {{storeName}} Team
+</p>

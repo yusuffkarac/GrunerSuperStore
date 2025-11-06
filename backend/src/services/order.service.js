@@ -5,6 +5,7 @@ import {
   ForbiddenError,
 } from '../utils/errors.js';
 import couponService from './coupon.service.js';
+import queueService from './queue.service.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -335,6 +336,105 @@ class OrderService {
     });
   }
 
+  // ===== MAİL GÖNDERİM HELPERİ =====
+  async sendOrderEmails(order) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, mail gönderilmedi.');
+        return;
+      }
+
+      const user = order.user || (await prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+      }));
+
+      if (!user) return;
+
+      // Sipariş detaylarını hazırla
+      const orderItems = order.orderItems || [];
+      const address = order.address ?
+        `${order.address.street} ${order.address.houseNumber}, ${order.address.postalCode} ${order.address.city}` :
+        null;
+
+      const deliveryType = order.type === 'delivery' ? 'Lieferung' : 'Abholung im Laden';
+      const paymentTypeMap = {
+        cash: 'Bargeld',
+        card_on_delivery: 'Karte bei Lieferung',
+        none: 'Keine Zahlung',
+      };
+
+      // 1. Müşteriye sipariş alındı maili
+      await queueService.addEmailJob({
+        to: user.email,
+        subject: 'Bestellung erfolgreich aufgegeben',
+        template: 'order-received',
+        data: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          orderNo: order.orderNo,
+          orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+          deliveryType,
+          address,
+          items: orderItems.map((item) => ({
+            productName: item.productName,
+            variantName: item.variantName,
+            quantity: item.quantity,
+            price: parseFloat(item.price).toFixed(2),
+          })),
+          subtotal: parseFloat(order.subtotal).toFixed(2),
+          discount: order.discount ? parseFloat(order.discount).toFixed(2) : null,
+          deliveryFee: parseFloat(order.deliveryFee).toFixed(2),
+          total: parseFloat(order.total).toFixed(2),
+          paymentType: paymentTypeMap[order.paymentType] || '',
+          note: order.note,
+        },
+        metadata: { orderId: order.id, type: 'order-received' },
+        priority: 1, // Yüksek öncelik
+      });
+
+      // 2. Admin'e yeni sipariş bildirimi
+      const adminEmail = settings.emailNotificationSettings?.adminEmail;
+      if (adminEmail) {
+        await queueService.addEmailJob({
+          to: adminEmail,
+          subject: `Neue Bestellung: ${order.orderNo}`,
+          template: 'order-notification-admin',
+          data: {
+            orderNo: order.orderNo,
+            orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+            customerName: `${user.firstName} ${user.lastName}`,
+            customerEmail: user.email,
+            customerPhone: user.phone,
+            deliveryType,
+            address,
+            items: orderItems.map((item) => ({
+              productName: item.productName,
+              variantName: item.variantName,
+              quantity: item.quantity,
+              price: parseFloat(item.price).toFixed(2),
+            })),
+            itemCount: orderItems.length,
+            total: parseFloat(order.total).toFixed(2),
+            paymentType: paymentTypeMap[order.paymentType] || '',
+            note: order.note,
+            adminOrderUrl: `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/orders/${order.id}`,
+          },
+          metadata: { orderId: order.id, type: 'order-notification-admin' },
+          priority: 2,
+        });
+      }
+
+      console.log(`✅ Sipariş mailleri kuyruğa eklendi: ${order.orderNo}`);
+    } catch (error) {
+      // Mail hatası sipariş oluşturmayı engellemez
+      console.error('Mail gönderim hatası:', error);
+    }
+  }
+
   // Kullanıcının siparişlerini getir
   async getOrders(userId, filters = {}) {
     const { status, type, page = 1, limit = 10 } = filters;
@@ -553,7 +653,7 @@ class OrderService {
     }
 
     // Güncellenmiş siparişi getir
-    return await prisma.order.findUnique({
+    const updatedOrder = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
         orderItems: true,
@@ -569,6 +669,111 @@ class OrderService {
         },
       },
     });
+
+    // Status değiştiyse ve settings'te aktifse mail gönder
+    if (order.status !== status) {
+      await this.sendOrderStatusChangedEmail(order.status, status, updatedOrder);
+    }
+
+    return updatedOrder;
+  }
+
+  // Sipariş durumu değişikliği maili
+  async sendOrderStatusChangedEmail(oldStatus, newStatus, order) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP veya notification ayarları yoksa çık
+      if (!settings?.smtpSettings || !settings?.emailNotificationSettings) {
+        return;
+      }
+
+      const notifySettings = settings.emailNotificationSettings.notifyOnOrderStatus || {};
+
+      // Bu durum değişikliği için mail gönderilmeyecekse çık
+      if (!notifySettings[newStatus]) {
+        console.log(`⚠️  ${newStatus} durumu için mail bildirimi kapalı.`);
+        return;
+      }
+
+      const user = order.user;
+      if (!user) return;
+
+      // Durum text'leri
+      const statusTextMap = {
+        pending: 'Ausstehend',
+        accepted: 'Akzeptiert',
+        preparing: 'In Vorbereitung',
+        shipped: 'Versandt',
+        delivered: 'Geliefert',
+        cancelled: 'Storniert',
+      };
+
+      const statusMessageMap = {
+        accepted: 'Ihre Bestellung wurde bestätigt und wird bald bearbeitet.',
+        preparing: 'Wir bereiten Ihre Bestellung gerade vor.',
+        shipped: 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
+        delivered: 'Ihre Bestellung wurde erfolgreich zugestellt. Vielen Dank!',
+        cancelled: 'Ihre Bestellung wurde storniert.',
+      };
+
+      // İptal durumu için farklı template kullan
+      if (newStatus === 'cancelled') {
+        await queueService.addEmailJob({
+          to: user.email,
+          subject: `Bestellung ${order.orderNo} storniert`,
+          template: 'order-cancelled',
+          data: {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            orderNo: order.orderNo,
+            orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+            cancelDate: new Date().toLocaleString('de-DE'),
+            total: parseFloat(order.total).toFixed(2),
+            items: order.orderItems.map((item) => ({
+              productName: item.productName,
+              variantName: item.variantName,
+              quantity: item.quantity,
+              price: parseFloat(item.price).toFixed(2),
+            })),
+            refundInfo: order.paymentType !== 'none' ?
+              'Die Rückerstattung wird innerhalb von 5-7 Werktagen bearbeitet.' : null,
+            shopUrl: process.env.SHOP_URL || 'http://localhost:5173',
+          },
+          metadata: { orderId: order.id, type: 'order-cancelled' },
+          priority: 1,
+        });
+      } else {
+        // Diğer durum değişiklikleri için
+        await queueService.addEmailJob({
+          to: user.email,
+          subject: `Bestellung ${order.orderNo} - Status aktualisiert`,
+          template: 'order-status-changed',
+          data: {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            orderNo: order.orderNo,
+            orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+            oldStatusText: statusTextMap[oldStatus] || oldStatus,
+            newStatusText: statusTextMap[newStatus] || newStatus,
+            statusMessage: statusMessageMap[newStatus] || '',
+            total: parseFloat(order.total).toFixed(2),
+            itemCount: order.orderItems.length,
+            items: order.orderItems.map((item) => ({
+              productName: item.productName,
+              variantName: item.variantName,
+              quantity: item.quantity,
+            })),
+          },
+          metadata: { orderId: order.id, type: 'order-status-changed', oldStatus, newStatus },
+          priority: 2,
+        });
+      }
+
+      console.log(`✅ Durum değişikliği maili kuyruğa eklendi: ${order.orderNo} (${oldStatus} → ${newStatus})`);
+    } catch (error) {
+      console.error('Status change mail hatası:', error);
+    }
   }
 
   // Kullanıcı sipariş iptali

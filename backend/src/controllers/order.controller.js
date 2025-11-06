@@ -9,6 +9,11 @@ class OrderController {
 
     const order = await orderService.createOrder(userId, orderData);
 
+    // Mail gönderimini asenkron başlat (response'u bekletmemek için)
+    orderService.sendOrderEmails(order).catch((err) => {
+      console.error('Mail gönderim hatası:', err);
+    });
+
     res.status(201).json({
       success: true,
       message: 'Bestellung erfolgreich aufgegeben',
