@@ -113,6 +113,7 @@ function AppContent() {
           <Route path="/kayit" element={<Kayit />} />
           <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
           <Route path="/sifre-sifirla" element={<SifreSifirla />} />
+          <Route path="/reset-password" element={<SifreSifirla />} />
           <Route path="/profil" element={<Profil />} />
           <Route path="/siparislerim" element={<Siparislerim />} />
           <Route path="/siparis/:id" element={<SiparisDetay />} />
