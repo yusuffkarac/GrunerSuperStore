@@ -276,6 +276,7 @@ model Settings {
   id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   guestCanViewProducts      Boolean  @default(true) @map("guest_can_view_products")
   homepageSettings          Json?    @map("homepage_settings")
+  orderIdFormat             Json?    @map("order_id_format")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import { useAlert } from '../contexts/AlertContext';
@@ -241,24 +241,33 @@ function Sepet() {
         animate={{ y: 0 }}
         className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg max-w-[600px] mx-auto"
       >
-        {/* Toplam */}
-        <div className="flex items-center justify-between mb-4">
+      {/* Toplam */}
+      <div className="flex items-start justify-between mb-3">
           <span className="text-gray-600">Zwischensumme</span>
-          <span className="text-2xl font-bold text-gray-900">{total.toFixed(2)} €</span>
+          <div className="text-right">
+            <span className="text-2xl font-bold text-gray-900 block">{total.toFixed(2)} €</span>
+            <span className="text-xs text-gray-500">Versandkosten an der Kasse</span>
+          </div>
         </div>
 
         {/* Checkout butonu */}
-        <button
-          onClick={handleCheckout}
-          className="w-full bg-green-600 text-white py-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-        >
-          <span>Zur Kasse gehen</span>
-          <FiArrowRight />
-        </button>
+      <button
+        onClick={handleCheckout}
+        className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
+      >
+        <span>Zur Kasse gehen</span>
+        <FiArrowRight />
+      </button>
 
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Versandkosten werden an der Kasse berechnet
-        </p>
+      {/* Siparişlerim butonu */}
+      <button
+        onClick={() => navigate('/siparislerim')}
+        className="w-full mt-2 border border-gray-300 text-gray-800 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+      >
+        <FiPackage />
+        Siparişlerim
+      </button>
+      
       </motion.div>
     </div>
   );

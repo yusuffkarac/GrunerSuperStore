@@ -454,28 +454,154 @@ class OrderService {
 
   // Sipariş numarası oluştur (örnek: GS-20250105-0001)
   async generateOrderNumber() {
+    // Settings'ten format ayarlarını al
+    const settings = await prisma.settings.findFirst();
+    const format = settings?.orderIdFormat || {
+      prefix: 'GS',
+      separator: '-',
+      dateFormat: 'YYYYMMDD',
+      numberFormat: 'sequential',
+      numberPadding: 4,
+      resetPeriod: 'daily',
+      caseTransform: 'uppercase',
+      startFrom: 1,
+    };
+
     const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    let dateStr = '';
+    let searchPrefix = '';
 
-    // Bugünkü son sipariş numarasını bul
-    const lastOrder = await prisma.order.findFirst({
-      where: {
-        orderNo: {
-          startsWith: `GS-${dateStr}`,
-        },
-      },
-      orderBy: {
-        orderNo: 'desc',
-      },
-    });
+    // Tarih formatını oluştur
+    if (format.dateFormat && format.dateFormat !== 'none') {
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
 
-    let sequence = 1;
-    if (lastOrder) {
-      const lastSequence = parseInt(lastOrder.orderNo.split('-')[2]);
-      sequence = lastSequence + 1;
+      switch (format.dateFormat) {
+        case 'YYYYMMDD':
+          dateStr = `${year}${month}${day}`;
+          break;
+        case 'YYMMDD':
+          dateStr = `${String(year).slice(-2)}${month}${day}`;
+          break;
+        case 'DDMMYYYY':
+          dateStr = `${day}${month}${year}`;
+          break;
+        case 'DDMMYY':
+          dateStr = `${day}${month}${String(year).slice(-2)}`;
+          break;
+        case 'YYYYMM':
+          dateStr = `${year}${month}`;
+          break;
+        case 'YYMM':
+          dateStr = `${String(year).slice(-2)}${month}`;
+          break;
+        default:
+          dateStr = `${year}${month}${day}`;
+      }
     }
 
-    return `GS-${dateStr}-${sequence.toString().padStart(4, '0')}`;
+    // Reset period'a göre search prefix oluştur
+    const prefix = format.prefix || '';
+    const separator = format.separator || '';
+
+    if (format.resetPeriod === 'daily') {
+      searchPrefix = dateStr
+        ? `${prefix}${separator}${dateStr}${separator}`
+        : `${prefix}${separator}`;
+    } else if (format.resetPeriod === 'monthly') {
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      searchPrefix = `${prefix}${separator}${year}${month}${separator}`;
+    } else if (format.resetPeriod === 'yearly') {
+      const year = today.getFullYear();
+      searchPrefix = `${prefix}${separator}${year}${separator}`;
+    } else {
+      // never - hiç reset olmasın
+      searchPrefix = `${prefix}${separator}`;
+    }
+
+    // Sipariş numarasını oluştur
+    const padding = format.numberPadding || 4;
+    let sequenceStr = '';
+
+    if (format.numberFormat === 'random') {
+      // Random numara üret - unique olana kadar dene
+      const maxAttempts = 10;
+      let attempts = 0;
+      let isUnique = false;
+
+      while (!isUnique && attempts < maxAttempts) {
+        // Random numara üret
+        const maxNumber = Math.pow(10, padding) - 1;
+        const randomNum = Math.floor(Math.random() * (maxNumber + 1));
+        sequenceStr = randomNum.toString().padStart(padding, '0');
+
+        // Bu numarayla başka sipariş var mı kontrol et
+        const testOrderNo = dateStr
+          ? `${prefix}${separator}${dateStr}${separator}${sequenceStr}`
+          : `${prefix}${separator}${sequenceStr}`;
+
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            orderNo: format.caseTransform === 'uppercase'
+              ? testOrderNo.toUpperCase()
+              : format.caseTransform === 'lowercase'
+              ? testOrderNo.toLowerCase()
+              : testOrderNo,
+          },
+        });
+
+        if (!existingOrder) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      // Eğer 10 denemede unique bulamazsa, timestamp ekle
+      if (!isUnique) {
+        const timestamp = Date.now().toString().slice(-padding);
+        sequenceStr = timestamp.padStart(padding, '0');
+      }
+    } else {
+      // Sequential (sıralı) numara
+      const lastOrder = await prisma.order.findFirst({
+        where: {
+          orderNo: {
+            startsWith: searchPrefix,
+          },
+        },
+        orderBy: {
+          orderNo: 'desc',
+        },
+      });
+
+      let sequence = parseInt(format.startFrom ?? 1) || 1;
+      if (lastOrder) {
+        // Son sipariş numarasından sequence'i çıkar
+        const parts = lastOrder.orderNo.split(separator);
+        const lastPart = parts[parts.length - 1];
+        sequence = parseInt(lastPart) + 1;
+      }
+
+      sequenceStr = sequence.toString().padStart(padding, '0');
+    }
+
+    let orderNo = '';
+    if (dateStr) {
+      orderNo = `${prefix}${separator}${dateStr}${separator}${sequenceStr}`;
+    } else {
+      orderNo = `${prefix}${separator}${sequenceStr}`;
+    }
+
+    // Case transform uygula
+    if (format.caseTransform === 'uppercase') {
+      orderNo = orderNo.toUpperCase();
+    } else if (format.caseTransform === 'lowercase') {
+      orderNo = orderNo.toLowerCase();
+    }
+
+    return orderNo;
   }
 }
 

@@ -329,14 +329,14 @@ function Produkte() {
                 <FiGrid size={18} />
               </button>
             </div>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="text-sm text-red-600 hover:text-red-700 transition-colors"
-              >
-                Filter zurücksetzen
-              </button>
-            )}
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-red-600 hover:text-red-700 transition-colors"
+            >
+              Filter zurücksetzen
+            </button>
+          )}
           </div>
         </div>
 
@@ -430,113 +430,113 @@ function Produkte() {
           <>
             {/* Desktop Table View */}
             {viewMode === 'list' && (
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Produkt
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Kategorie
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Preis
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Lager
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Aktionen
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                                <img
-                                  src={normalizeImageUrl(product.imageUrls[0])}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              ) : (
-                                <FiPackage className="text-gray-400" size={20} />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-gray-900 truncate">
-                                {product.name}
-                              </div>
-                              {product.brand && (
-                                <div className="text-sm text-gray-500">{product.brand}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
-                          {product.category?.name || '-'}
-                        </td>
-                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                          {parseFloat(product.price).toFixed(2)} €
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="text-sm">
-                            <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                              {product.stock}
-                            </span>
-                            {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            {product.isActive ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                                <FiCheck size={12} />
-                                Aktiv
-                              </span>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Produkt
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kategorie
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Preis
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Lager
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Aktionen
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {products.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
+                              <img
+                                src={normalizeImageUrl(product.imageUrls[0])}
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                                <FiXCircle size={12} />
-                                Inaktiv
-                              </span>
-                            )}
-                            {product.isFeatured && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                                Featured
-                              </span>
+                              <FiPackage className="text-gray-400" size={20} />
                             )}
                           </div>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openModal(product)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Bearbeiten"
-                            >
-                              <FiEdit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Löschen"
-                            >
-                              <FiTrash2 size={18} />
-                            </button>
+                          <div className="min-w-0">
+                            <div className="font-medium text-gray-900 truncate">
+                              {product.name}
+                            </div>
+                            {product.brand && (
+                              <div className="text-sm text-gray-500">{product.brand}</div>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {product.category?.name || '-'}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                        {parseFloat(product.price).toFixed(2)} €
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm">
+                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
+                            {product.stock}
+                          </span>
+                          {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          {product.isActive ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                              <FiCheck size={12} />
+                              Aktiv
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                              <FiXCircle size={12} />
+                              Inaktiv
+                            </span>
+                          )}
+                          {product.isFeatured && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
+                              Featured
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openModal(product)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Bearbeiten"
+                          >
+                            <FiEdit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Löschen"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             )}
 
             {/* Desktop Card View */}
@@ -618,7 +618,7 @@ function Produkte() {
 
             {/* Mobile Cards (when card view selected) */}
             {viewMode === 'card' && (
-              <div className="md:hidden divide-y divide-gray-200">
+            <div className="md:hidden divide-y divide-gray-200">
               {products.map((product) => (
                 <div key={product.id} className="p-4">
                   <div className="flex items-start gap-3 mb-3">
@@ -693,13 +693,14 @@ function Produkte() {
             </div>
             )}
 
-            {/* Mobile List View (when list view selected) */}
+            {/* Mobile List View (when list view selected) - Compact */}
             {viewMode === 'list' && (
-              <div className="md:hidden divide-y divide-gray-200">
+              <div className="md:hidden divide-y divide-gray-100">
                 {products.map((product) => (
-                  <div key={product.id} className="p-4 border-b border-gray-200">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div key={product.id} className="py-3 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {/* Compact Image */}
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
                           <img
                             src={normalizeImageUrl(product.imageUrls[0])}
@@ -707,63 +708,62 @@ function Produkte() {
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
-                          <FiPackage className="text-gray-400" size={24} />
+                          <FiPackage className="text-gray-400" size={18} />
                         )}
                       </div>
+                      
+                      {/* Product Info - Compact */}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 mb-1">
-                          {product.name}
-                        </div>
-                        {product.brand && (
-                          <div className="text-sm text-gray-500 mb-1">{product.brand}</div>
-                        )}
-                        <div className="text-sm text-gray-600 mb-1">
-                          {product.category?.name || '-'}
-                        </div>
-                        <div className="text-base font-bold text-gray-900 mb-2">
-                          {parseFloat(product.price).toFixed(2)} €
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm text-gray-900 truncate">
+                            {product.name}
+                          </span>
                           {product.isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                              <FiCheck size={12} />
-                              Aktiv
-                            </span>
+                            <FiCheck className="text-green-600 flex-shrink-0" size={16} />
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                              <FiXCircle size={12} />
-                              Inaktiv
-                            </span>
+                            <FiXCircle className="text-gray-400 flex-shrink-0" size={16} />
                           )}
                           {product.isFeatured && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                              Featured
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded flex-shrink-0">
+                              F
                             </span>
                           )}
                         </div>
-                        <div className="text-sm">
-                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                            Lager: {product.stock}
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span className="text-xs font-semibold text-gray-900">
+                            {parseFloat(product.price).toFixed(2)}€
                           </span>
-                          {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
+                          <span className="text-gray-400">•</span>
+                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-600'}>
+                            {product.stock}
+                            {product.unit && <span className="text-gray-400">/{product.unit}</span>}
+                          </span>
+                          {product.category?.name && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <span className="truncate">{product.category.name}</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openModal(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
-                      >
-                        <FiEdit2 size={16} />
-                        Bearbeiten
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm border border-red-200"
-                      >
-                        <FiTrash2 size={16} />
-                        Löschen
-                      </button>
+                      
+                      {/* Compact Action Buttons */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => openModal(product)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Bearbeiten"
+                        >
+                          <FiEdit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Löschen"
+                        >
+                          <FiTrash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

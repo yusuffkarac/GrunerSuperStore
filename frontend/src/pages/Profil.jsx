@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiPackage } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import { useAlert } from '../contexts/AlertContext';
@@ -219,6 +219,15 @@ function Profil() {
   return (
     <div className="container-mobile py-6 pb-20">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Mein Profil</h1>
+
+      {/* Siparişlerim kısayolu */}
+      <button
+        onClick={() => navigate('/siparislerim')}
+        className="w-full mb-4 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+      >
+        <FiPackage />
+        Siparişlerim
+      </button>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-gray-200">

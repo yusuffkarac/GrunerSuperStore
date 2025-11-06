@@ -10,6 +10,16 @@ class SettingsService {
       settings = await prisma.settings.create({
         data: {
           guestCanViewProducts: true,
+          orderIdFormat: {
+            prefix: 'GS',
+            separator: '-',
+            dateFormat: 'YYYYMMDD',
+            numberFormat: 'sequential',
+            numberPadding: 4,
+            resetPeriod: 'daily',
+            caseTransform: 'uppercase',
+            startFrom: 1,
+          },
         },
       });
     }
@@ -28,6 +38,9 @@ class SettingsService {
     if (data.homepageSettings !== undefined) {
       updateData.homepageSettings = data.homepageSettings;
     }
+    if (data.orderIdFormat !== undefined) {
+      updateData.orderIdFormat = data.orderIdFormat;
+    }
 
     // Eğer ayarlar yoksa önce oluştur
     if (!settings) {
@@ -35,6 +48,16 @@ class SettingsService {
         data: {
           guestCanViewProducts: data.guestCanViewProducts ?? true,
           homepageSettings: data.homepageSettings ?? null,
+          orderIdFormat: data.orderIdFormat ?? {
+            prefix: 'GS',
+            separator: '-',
+            dateFormat: 'YYYYMMDD',
+            numberFormat: 'sequential',
+            numberPadding: 4,
+            resetPeriod: 'daily',
+            caseTransform: 'uppercase',
+            startFrom: 1,
+          },
         },
       });
     } else {

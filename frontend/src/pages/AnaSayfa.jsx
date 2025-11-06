@@ -305,14 +305,14 @@ function AnaSayfa() {
           </div>
 
           {/* Kategori kartları */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
             {categories.slice(0, 8).map((category) => (
               <Link
                 key={category.id}
                 to={`/urunler?category=${category.id}`}
-                className="group bg-white/10 backdrop-blur-md rounded-xl p-4 hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40"
+                className="group bg-white/10 backdrop-blur-md rounded-xl p-3 hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40"
               >
-                <div className="aspect-square bg-white/20 rounded-lg mb-3 flex items-center justify-center overflow-hidden group-hover:shadow-lg transition-shadow">
+                <div className="aspect-square bg-white/20 rounded-lg mb-2 flex items-center justify-center overflow-hidden group-hover:shadow-lg transition-shadow">
                   {category.imageUrl ? (
                     <img
                       src={category.imageUrl}
@@ -321,10 +321,10 @@ function AnaSayfa() {
                       loading="lazy"
                     />
                   ) : (
-                    <MdInventory className="text-4xl text-white/80" />
+                    <MdInventory className="text-3xl text-white/80" />
                   )}
                 </div>
-                <h3 className="font-semibold text-center text-sm md:text-base">
+                <h3 className="font-semibold text-center text-xs md:text-sm">
                   {category.name}
                 </h3>
               </Link>
