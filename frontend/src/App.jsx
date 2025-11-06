@@ -23,6 +23,8 @@ import Sepet from './pages/Sepet';
 import SiparisVer from './pages/SiparisVer';
 import Giris from './pages/Giris';
 import Kayit from './pages/Kayit';
+import SifremiUnuttum from './pages/SifremiUnuttum';
+import SifreSifirla from './pages/SifreSifirla';
 import Profil from './pages/Profil';
 import Siparislerim from './pages/Siparislerim';
 import SiparisDetay from './pages/SiparisDetay';
@@ -109,6 +111,8 @@ function AppContent() {
           <Route path="/siparis-ver" element={<SiparisVer />} />
           <Route path="/giris" element={<Giris />} />
           <Route path="/kayit" element={<Kayit />} />
+          <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
+          <Route path="/sifre-sifirla" element={<SifreSifirla />} />
           <Route path="/profil" element={<Profil />} />
           <Route path="/siparislerim" element={<Siparislerim />} />
           <Route path="/siparis/:id" element={<SiparisDetay />} />
