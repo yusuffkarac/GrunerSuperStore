@@ -447,6 +447,9 @@ function Produkte() {
                       Lager
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Barcode
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -493,6 +496,9 @@ function Produkte() {
                           </span>
                           {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
                         </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {product.barcode || '-'}
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
@@ -593,6 +599,11 @@ function Produkte() {
                           </span>
                           {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
                         </div>
+                        {product.barcode && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Barcode: {product.barcode}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
@@ -670,6 +681,11 @@ function Produkte() {
                         </span>
                         {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
                       </div>
+                      {product.barcode && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Barcode: {product.barcode}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -742,6 +758,12 @@ function Produkte() {
                             <>
                               <span className="text-gray-400">•</span>
                               <span className="truncate">{product.category.name}</span>
+                            </>
+                          )}
+                          {product.barcode && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-xs text-gray-500 truncate">BC: {product.barcode}</span>
                             </>
                           )}
                         </div>

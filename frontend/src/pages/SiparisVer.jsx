@@ -114,7 +114,8 @@ function SiparisVer() {
       navigate(`/siparis/${response.data.order.id}`);
     } catch (error) {
       console.error('Sipariş hatası:', error);
-      toast.error(error.response?.data?.message || 'Fehler beim Aufgeben der Bestellung');
+      // Axios interceptor hata objesini { message, status, data } olarak döndürüyor
+      toast.error(error.message || error?.data?.message || 'Fehler beim Aufgeben der Bestellung');
     } finally {
       setLoading(false);
     }

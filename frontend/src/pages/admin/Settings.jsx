@@ -21,6 +21,31 @@ function Settings() {
     startFrom: 1,
   });
 
+  // Yeni iş ayarları state'leri
+  const [minOrderAmount, setMinOrderAmount] = useState('');
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState('');
+  const [shippingRules, setShippingRules] = useState([]);
+  const [deliverySettings, setDeliverySettings] = useState({
+    teslimatAcik: true,
+    magazadanTeslimAcik: true,
+    teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
+    siparisKapanisSaati: '19:30',
+  });
+  const [paymentOptions, setPaymentOptions] = useState({
+    kartKapida: true,
+    nakit: true,
+    online: false,
+    kapidaOdemeUcreti: { type: 'flat', value: 0 },
+  });
+  const [orderLimits, setOrderLimits] = useState({
+    maxSiparisTutari: '',
+    maxUrunAdedi: '',
+    maxSepetKalemi: '',
+  });
+  const [storeSettings, setStoreSettings] = useState({
+    bakimModu: false,
+  });
+
   // Ayarları yükle
   useEffect(() => {
     fetchSettings();
@@ -37,6 +62,38 @@ function Settings() {
       if (response.data.settings.orderIdFormat) {
         setOrderIdFormat(response.data.settings.orderIdFormat);
       }
+
+      // İş ayarları
+      const s = response.data.settings;
+      setMinOrderAmount(s.minOrderAmount ?? '');
+      setFreeShippingThreshold(s.freeShippingThreshold ?? '');
+      setShippingRules(Array.isArray(s.shippingRules) ? s.shippingRules : []);
+      setDeliverySettings(
+        s.deliverySettings ?? {
+          teslimatAcik: true,
+          magazadanTeslimAcik: true,
+          teslimatSaatleri: [
+            { gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' },
+          ],
+          siparisKapanisSaati: '19:30',
+        }
+      );
+      setPaymentOptions(
+        s.paymentOptions ?? {
+          kartKapida: true,
+          nakit: true,
+          online: false,
+          kapidaOdemeUcreti: { type: 'flat', value: 0 },
+        }
+      );
+      setOrderLimits(
+        s.orderLimits ?? {
+          maxSiparisTutari: '',
+          maxUrunAdedi: '',
+          maxSepetKalemi: '',
+        }
+      );
+      setStoreSettings(s.storeSettings ?? { bakimModu: false });
     } catch (err) {
       setError(err.message || 'Fehler beim Laden der Einstellungen');
       toast.error(err.message || 'Fehler beim Laden der Einstellungen');
@@ -52,11 +109,43 @@ function Settings() {
       const response = await settingsService.updateSettings({
         guestCanViewProducts: settings.guestCanViewProducts,
         orderIdFormat: orderIdFormat,
+        minOrderAmount: minOrderAmount === '' ? null : parseFloat(minOrderAmount),
+        freeShippingThreshold:
+          freeShippingThreshold === ''
+            ? null
+            : parseFloat(freeShippingThreshold),
+        shippingRules,
+        deliverySettings,
+        paymentOptions,
+        orderLimits: {
+          maxSiparisTutari:
+            orderLimits.maxSiparisTutari === ''
+              ? null
+              : parseFloat(orderLimits.maxSiparisTutari),
+          maxUrunAdedi:
+            orderLimits.maxUrunAdedi === ''
+              ? null
+              : parseInt(orderLimits.maxUrunAdedi),
+          maxSepetKalemi:
+            orderLimits.maxSepetKalemi === ''
+              ? null
+              : parseInt(orderLimits.maxSepetKalemi),
+        },
+        storeSettings,
       });
       setSettings(response.data.settings);
       if (response.data.settings.orderIdFormat) {
         setOrderIdFormat(response.data.settings.orderIdFormat);
       }
+      // geri okuma
+      const s2 = response.data.settings;
+      setMinOrderAmount(s2.minOrderAmount ?? '');
+      setFreeShippingThreshold(s2.freeShippingThreshold ?? '');
+      setShippingRules(Array.isArray(s2.shippingRules) ? s2.shippingRules : []);
+      setDeliverySettings(s2.deliverySettings ?? deliverySettings);
+      setPaymentOptions(s2.paymentOptions ?? paymentOptions);
+      setOrderLimits(s2.orderLimits ?? orderLimits);
+      setStoreSettings(s2.storeSettings ?? storeSettings);
       toast.success('Einstellungen erfolgreich gespeichert');
     } catch (err) {
       toast.error(err.message || 'Fehler beim Speichern der Einstellungen');
@@ -457,6 +546,204 @@ function Settings() {
               disabled={saving}
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
+              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+            </button>
+          </div>
+        </div>
+
+        {/* İş Kuralları: Min/Ücretsiz Kargo ve Kargo Kuralları */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Kargo ve Limitler</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Sipariş Tutarı</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={minOrderAmount}
+                  onChange={(e) => setMinOrderAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="örn. 20.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ücretsiz Kargo Eşiği</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={freeShippingThreshold}
+                  onChange={(e) => setFreeShippingThreshold(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="örn. 100.00"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-900">Kargo Kuralları</h3>
+                <button
+                  type="button"
+                  onClick={() => setShippingRules([...(shippingRules || []), { min: 0, max: null, fee: 0, type: 'flat' }])}
+                  className="px-3 py-1 text-sm bg-primary-600 text-white rounded"
+                >Kural Ekle</button>
+              </div>
+              <div className="space-y-3">
+                {(shippingRules || []).map((r, idx) => (
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Min</label>
+                      <input type="number" step="0.01" value={r.min ?? ''} onChange={(e)=>{
+                        const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                        const copy = [...shippingRules]; copy[idx] = { ...copy[idx], min: v }; setShippingRules(copy);
+                      }} className="w-full px-2 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Max</label>
+                      <input type="number" step="0.01" value={r.max ?? ''} onChange={(e)=>{
+                        const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                        const copy = [...shippingRules]; copy[idx] = { ...copy[idx], max: v }; setShippingRules(copy);
+                      }} className="w-full px-2 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Tip</label>
+                      <select value={r.type || 'flat'} onChange={(e)=>{
+                        const copy = [...shippingRules]; copy[idx] = { ...copy[idx], type: e.target.value };
+                        setShippingRules(copy);
+                      }} className="w-full px-2 py-2 border rounded">
+                        <option value="flat">Sabit</option>
+                        <option value="percent">Yüzde</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Değer</label>
+                      <input type="number" step="0.01" value={r.type==='percent' ? (r.percent ?? r.value ?? 0) : (r.fee ?? r.value ?? 0)} onChange={(e)=>{
+                        const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                        const copy = [...shippingRules];
+                        copy[idx] = r.type==='percent' ? { ...copy[idx], percent: v, fee: undefined } : { ...copy[idx], fee: v, percent: undefined };
+                        setShippingRules(copy);
+                      }} className="w-full px-2 py-2 border rounded" />
+                    </div>
+                    <div className="flex justify-end">
+                      <button type="button" onClick={()=>{
+                        const copy = [...shippingRules]; copy.splice(idx,1); setShippingRules(copy);
+                      }} className="px-3 py-2 text-sm bg-red-100 text-red-700 rounded">Sil</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+            </button>
+          </div>
+        </div>
+
+        {/* Teslimat ve Ödeme */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Teslimat ve Ödeme</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Teslimat</h3>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Teslimat Açık</span>
+                  <button onClick={()=>setDeliverySettings({ ...deliverySettings, teslimatAcik: !deliverySettings.teslimatAcik })} className={`relative inline-flex h-6 w-11 rounded-full ${deliverySettings.teslimatAcik?'bg-primary-600':'bg-gray-200'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${deliverySettings.teslimatAcik?'translate-x-5':'translate-x-0'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Mağazadan Teslim Açık</span>
+                  <button onClick={()=>setDeliverySettings({ ...deliverySettings, magazadanTeslimAcik: !deliverySettings.magazadanTeslimAcik })} className={`relative inline-flex h-6 w-11 rounded-full ${deliverySettings.magazadanTeslimAcik?'bg-primary-600':'bg-gray-200'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${deliverySettings.magazadanTeslimAcik?'translate-x-5':'translate-x-0'}`} />
+                  </button>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sipariş Kapanış Saati</label>
+                  <input type="time" value={deliverySettings.siparisKapanisSaati || ''} onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisKapanisSaati: e.target.value })} className="w-full px-3 py-2 border rounded" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Ödeme</h3>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Kart Kapıda</span>
+                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.kartKapida?'bg-primary-600':'bg-gray-200'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.kartKapida?'translate-x-5':'translate-x-0'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Nakit</span>
+                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.nakit?'bg-primary-600':'bg-gray-200'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.nakit?'translate-x-5':'translate-x-0'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">Online (devre dışı bırakılabilir)</span>
+                  <button onClick={()=>setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} className={`relative inline-flex h-6 w-11 rounded-full ${paymentOptions.online?'bg-primary-600':'bg-gray-200'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${paymentOptions.online?'translate-x-5':'translate-x-0'}`} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Kapıda Ücret Tipi</label>
+                    <select value={paymentOptions.kapidaOdemeUcreti?.type || 'flat'} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), type: e.target.value } })} className="w-full px-3 py-2 border rounded">
+                      <option value="flat">Sabit</option>
+                      <option value="percent">Yüzde</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Kapıda Ücret Değeri</label>
+                    <input type="number" step="0.01" value={paymentOptions.kapidaOdemeUcreti?.value ?? 0} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), value: parseFloat(e.target.value||'0') } })} className="w-full px-3 py-2 border rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+            </button>
+          </div>
+        </div>
+
+        {/* Limitler ve Mağaza */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Limitler ve Mağaza</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Sipariş Tutarı</label>
+                <input type="number" step="0.01" value={orderLimits.maxSiparisTutari ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSiparisTutari: e.target.value })} className="w-full px-3 py-2 border rounded" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Ürün Adedi</label>
+                <input type="number" value={orderLimits.maxUrunAdedi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxUrunAdedi: e.target.value })} className="w-full px-3 py-2 border rounded" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Sepet Kalemi</label>
+                <input type="number" value={orderLimits.maxSepetKalemi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSepetKalemi: e.target.value })} className="w-full px-3 py-2 border rounded" />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Mağaza</h3>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-gray-700">Bakım Modu</span>
+                <button onClick={()=>setStoreSettings({ ...storeSettings, bakimModu: !storeSettings.bakimModu })} className={`relative inline-flex h-6 w-11 rounded-full ${storeSettings.bakimModu?'bg-primary-600':'bg-gray-200'}`}>
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ${storeSettings.bakimModu?'translate-x-5':'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
               {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
             </button>
           </div>

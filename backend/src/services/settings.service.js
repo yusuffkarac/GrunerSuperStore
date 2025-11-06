@@ -20,6 +20,38 @@ class SettingsService {
             caseTransform: 'uppercase',
             startFrom: 1,
           },
+          // Business defaults
+          minOrderAmount: null,
+          freeShippingThreshold: null,
+          shippingRules: [
+            { min: 0, max: 49.99, fee: 4.99, type: 'flat' },
+            { min: 50.0, max: null, fee: 0, type: 'flat' },
+          ],
+          deliverySettings: {
+            teslimatAcik: true,
+            magazadanTeslimAcik: true,
+            teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
+            siparisKapanisSaati: '19:30',
+          },
+          paymentOptions: {
+            kartKapida: true,
+            nakit: true,
+            online: false,
+            kapidaOdemeUcreti: { type: 'flat', value: 0 },
+          },
+          orderLimits: {
+            maxSiparisTutari: null,
+            maxUrunAdedi: null,
+            maxSepetKalemi: null,
+          },
+          storeSettings: {
+            bakimModu: false,
+            dilYerelAyar: 'de-DE',
+            iletisimBilgileri: null,
+            faturaBilgileri: null,
+            bannerlar: [],
+            seoAyarları: null,
+          },
         },
       });
     }
@@ -41,6 +73,27 @@ class SettingsService {
     if (data.orderIdFormat !== undefined) {
       updateData.orderIdFormat = data.orderIdFormat;
     }
+    if (data.minOrderAmount !== undefined) {
+      updateData.minOrderAmount = data.minOrderAmount;
+    }
+    if (data.freeShippingThreshold !== undefined) {
+      updateData.freeShippingThreshold = data.freeShippingThreshold;
+    }
+    if (data.shippingRules !== undefined) {
+      updateData.shippingRules = data.shippingRules;
+    }
+    if (data.deliverySettings !== undefined) {
+      updateData.deliverySettings = data.deliverySettings;
+    }
+    if (data.paymentOptions !== undefined) {
+      updateData.paymentOptions = data.paymentOptions;
+    }
+    if (data.orderLimits !== undefined) {
+      updateData.orderLimits = data.orderLimits;
+    }
+    if (data.storeSettings !== undefined) {
+      updateData.storeSettings = data.storeSettings;
+    }
 
     // Eğer ayarlar yoksa önce oluştur
     if (!settings) {
@@ -57,6 +110,37 @@ class SettingsService {
             resetPeriod: 'daily',
             caseTransform: 'uppercase',
             startFrom: 1,
+          },
+          minOrderAmount: data.minOrderAmount ?? null,
+          freeShippingThreshold: data.freeShippingThreshold ?? null,
+          shippingRules: data.shippingRules ?? [
+            { min: 0, max: 49.99, fee: 4.99, type: 'flat' },
+            { min: 50.0, max: null, fee: 0, type: 'flat' },
+          ],
+          deliverySettings: data.deliverySettings ?? {
+            teslimatAcik: true,
+            magazadanTeslimAcik: true,
+            teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
+            siparisKapanisSaati: '19:30',
+          },
+          paymentOptions: data.paymentOptions ?? {
+            kartKapida: true,
+            nakit: true,
+            online: false,
+            kapidaOdemeUcreti: { type: 'flat', value: 0 },
+          },
+          orderLimits: data.orderLimits ?? {
+            maxSiparisTutari: null,
+            maxUrunAdedi: null,
+            maxSepetKalemi: null,
+          },
+          storeSettings: data.storeSettings ?? {
+            bakimModu: false,
+            dilYerelAyar: 'de-DE',
+            iletisimBilgileri: null,
+            faturaBilgileri: null,
+            bannerlar: [],
+            seoAyarları: null,
           },
         },
       });

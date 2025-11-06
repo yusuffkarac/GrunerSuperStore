@@ -35,6 +35,8 @@ class OrderService {
     }
 
     return await prisma.$transaction(async (tx) => {
+      // Ayarları çek
+      const settings = await tx.settings.findFirst();
       // Ürün bilgilerini ve stok kontrolü
       const productIds = items.map((item) => item.productId);
       const products = await tx.product.findMany({
@@ -51,6 +53,7 @@ class OrderService {
       // Stok kontrolü ve fiyat hesaplama
       let subtotal = 0;
       const orderItems = [];
+      let totalQuantity = 0;
 
       for (const item of items) {
         const product = products.find((p) => p.id === item.productId);
@@ -67,6 +70,7 @@ class OrderService {
 
         const itemTotal = parseFloat(product.price) * item.quantity;
         subtotal += itemTotal;
+        totalQuantity += item.quantity;
 
         orderItems.push({
           productId: product.id,
@@ -81,8 +85,60 @@ class OrderService {
         });
       }
 
-      // Delivery fee hesaplama (şimdilik sabit, gelecekte delivery_zones'dan alınacak)
-      const deliveryFee = type === 'delivery' ? 5.0 : 0;
+      // Order limits kontrolleri
+      const limits = settings?.orderLimits || {};
+      if (limits.maxSepetKalemi && items.length > limits.maxSepetKalemi) {
+        throw new ValidationError(`Maximale Anzahl verschiedener Produkte: ${limits.maxSepetKalemi}`);
+      }
+      if (limits.maxUrunAdedi && totalQuantity > limits.maxUrunAdedi) {
+        throw new ValidationError(`Maximale Stückzahl im Warenkorb: ${limits.maxUrunAdedi}`);
+      }
+      if (limits.maxSiparisTutari && subtotal > parseFloat(limits.maxSiparisTutari)) {
+        throw new ValidationError(`Maximaler Bestellwert überschritten: ${limits.maxSiparisTutari}`);
+      }
+
+      // Minimum sipariş tutarı kontrolü
+      if (settings?.minOrderAmount && subtotal < parseFloat(settings.minOrderAmount)) {
+        throw new ValidationError(`Mindestbestellwert: ${settings.minOrderAmount}`);
+      }
+
+      // Kargo ücreti hesaplama
+      let deliveryFee = 0;
+      if (type === 'delivery') {
+        // Ücretsiz kargo eşiği
+        const freeTh = settings?.freeShippingThreshold;
+        if (!freeTh || subtotal < parseFloat(freeTh)) {
+          const rules = Array.isArray(settings?.shippingRules)
+            ? settings.shippingRules
+            : [];
+          // Uyan ilk kuralı uygula (min <= subtotal <= max)
+          const rule = rules.find((r) => {
+            const minOk = r.min == null || subtotal >= parseFloat(r.min);
+            const maxOk = r.max == null || subtotal <= parseFloat(r.max);
+            return minOk && maxOk;
+          });
+          if (rule) {
+            if (rule.type === 'percent') {
+              deliveryFee = (subtotal * parseFloat(rule.percent ?? rule.value ?? 0)) / 100;
+            } else {
+              deliveryFee = parseFloat(rule.fee ?? rule.value ?? 0);
+            }
+          }
+        }
+      }
+
+      // Kapıda ödeme ücreti ekle
+      if (paymentType && (paymentType === 'cash' || paymentType === 'card_on_delivery')) {
+        const kapida = settings?.paymentOptions?.kapidaOdemeUcreti;
+        if (kapida) {
+          if (kapida.type === 'percent') {
+            deliveryFee += (subtotal * parseFloat(kapida.value || 0)) / 100;
+          } else {
+            deliveryFee += parseFloat(kapida.value || 0);
+          }
+        }
+      }
+
       const total = subtotal + deliveryFee;
 
       // Sipariş numarası oluştur

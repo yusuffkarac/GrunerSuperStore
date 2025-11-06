@@ -14,12 +14,30 @@ class SettingsController {
 
   // PUT /api/admin/settings - Admin only
   updateSettings = asyncHandler(async (req, res) => {
-    const { guestCanViewProducts, homepageSettings, orderIdFormat } = req.body;
+    const {
+      guestCanViewProducts,
+      homepageSettings,
+      orderIdFormat,
+      minOrderAmount,
+      freeShippingThreshold,
+      shippingRules,
+      deliverySettings,
+      paymentOptions,
+      orderLimits,
+      storeSettings,
+    } = req.body;
 
     const settings = await settingsService.updateSettings({
       guestCanViewProducts,
       homepageSettings,
       orderIdFormat,
+      minOrderAmount,
+      freeShippingThreshold,
+      shippingRules,
+      deliverySettings,
+      paymentOptions,
+      orderLimits,
+      storeSettings,
     });
 
     res.status(200).json({

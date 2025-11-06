@@ -277,6 +277,14 @@ model Settings {
   guestCanViewProducts      Boolean  @default(true) @map("guest_can_view_products")
   homepageSettings          Json?    @map("homepage_settings")
   orderIdFormat             Json?    @map("order_id_format")
+  // Business ayarları
+  minOrderAmount            Decimal? @db.Decimal(12, 2) @map("min_order_amount")
+  freeShippingThreshold     Decimal? @db.Decimal(12, 2) @map("free_shipping_threshold")
+  shippingRules             Json?    @map("shipping_rules")
+  deliverySettings          Json?    @map("delivery_settings")
+  paymentOptions            Json?    @map("payment_options")
+  orderLimits               Json?    @map("order_limits")
+  storeSettings             Json?    @map("store_settings")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
