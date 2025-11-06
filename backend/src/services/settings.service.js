@@ -85,6 +85,9 @@ class SettingsService {
     if (data.orderIdFormat !== undefined) {
       updateData.orderIdFormat = data.orderIdFormat;
     }
+    if (data.themeColors !== undefined) {
+      updateData.themeColors = data.themeColors;
+    }
     if (data.minOrderAmount !== undefined) {
       updateData.minOrderAmount = data.minOrderAmount;
     }
@@ -129,6 +132,7 @@ class SettingsService {
             caseTransform: 'uppercase',
             startFrom: 1,
           },
+          themeColors: data.themeColors ?? null,
           minOrderAmount: data.minOrderAmount ?? null,
           freeShippingThreshold: data.freeShippingThreshold ?? null,
           shippingRules: data.shippingRules ?? [

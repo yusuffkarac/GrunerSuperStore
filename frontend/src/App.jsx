@@ -42,6 +42,7 @@ import Coupons from './pages/admin/Coupons';
 import Users from './pages/admin/Users';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
+import DesignSettings from './pages/admin/DesignSettings';
 
 // Sayfa geçişlerini yöneten iç bileşen
 function AppContent() {
@@ -129,6 +130,7 @@ function AppContent() {
           <Route path="users" element={<Users />} />
           <Route path="settings" element={<Settings />} />
           <Route path="homepage-settings" element={<HomePageSettings />} />
+          <Route path="design-settings" element={<DesignSettings />} />
         </Route>
 
         {/* 404 */}

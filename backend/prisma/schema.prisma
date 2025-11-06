@@ -383,6 +383,7 @@ model Settings {
   guestCanViewProducts      Boolean  @default(true) @map("guest_can_view_products")
   homepageSettings          Json?    @map("homepage_settings")
   orderIdFormat             Json?    @map("order_id_format")
+  themeColors               Json?    @map("theme_colors")
   // Business ayarları
   minOrderAmount            Decimal? @db.Decimal(12, 2) @map("min_order_amount")
   freeShippingThreshold     Decimal? @db.Decimal(12, 2) @map("free_shipping_threshold")
