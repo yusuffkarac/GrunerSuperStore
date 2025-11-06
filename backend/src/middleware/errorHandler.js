@@ -3,7 +3,8 @@ import { AppError } from '../utils/errors.js';
 // Global error handler middleware
 export const errorHandler = (err, req, res, next) => {
   // Log hatayı
-  if (process.env.NODE_ENV === 'development') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
     console.error('❌ Error:', err);
   } else {
     // Production'da sadece önemli hataları logla
@@ -17,7 +18,7 @@ export const errorHandler = (err, req, res, next) => {
     return res.status(err.statusCode).json({
       success: false,
       message: err.message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+      ...(!isProduction && { stack: err.stack }),
     });
   }
 
@@ -52,15 +53,14 @@ export const errorHandler = (err, req, res, next) => {
 
   // Diğer tüm hatalar (beklenmeyen)
   const statusCode = err.statusCode || 500;
-  const message =
-    process.env.NODE_ENV === 'production'
-      ? 'Ein Fehler ist aufgetreten'
-      : err.message;
+  const message = isProduction
+    ? 'Ein Fehler ist aufgetreten'
+    : err.message;
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV === 'development' && {
+    ...(!isProduction && {
       stack: err.stack,
       error: err,
     }),
@@ -96,7 +96,7 @@ const handlePrismaError = (err, res) => {
       return res.status(500).json({
         success: false,
         message: 'Datenbankfehler',
-        ...(process.env.NODE_ENV === 'development' && { code: err.code }),
+        ...(process.env.NODE_ENV !== 'production' && { code: err.code }),
       });
   }
 };

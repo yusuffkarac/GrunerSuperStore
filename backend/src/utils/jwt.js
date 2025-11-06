@@ -5,9 +5,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // Token oluştur
-export const generateToken = (payload) => {
+export const generateToken = (payload, expiresIn = null) => {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+    expiresIn: expiresIn || JWT_EXPIRES_IN,
   });
 };
 
@@ -17,7 +17,7 @@ export const verifyToken = (token) => {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      throw new UnauthorizedError('Token abgelaufen');
+      throw new UnauthorizedError('Der Link ist abgelaufen. Bitte fordern Sie einen neuen Link an.');
     }
     throw new UnauthorizedError('Ungültiger Token');
   }

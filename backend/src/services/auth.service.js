@@ -11,9 +11,12 @@ import queueService from './queue.service.js';
 class AuthService {
   // Kullanıcı kaydı
   async register({ firstName, lastName, email, password, phone }) {
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
     // Email kontrolü
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -28,7 +31,7 @@ class AuthService {
       data: {
         firstName,
         lastName,
-        email,
+        email: normalizedEmail,
         passwordHash,
         phone: phone || null,
       },
@@ -86,9 +89,12 @@ class AuthService {
 
   // Kullanıcı girişi
   async login({ email, password }) {
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -141,8 +147,11 @@ class AuthService {
 
   // Şifre sıfırlama talebi
   async forgotPassword(email) {
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -192,13 +201,14 @@ class AuthService {
   }
 
   // Şifre sıfırlama
-  async resetPassword(token, newPassword) {
+  async resetPassword(token, password) {
     // Token'ı doğrula
     let decoded;
     try {
       decoded = verifyToken(token);
     } catch (error) {
-      throw new UnauthorizedError('Ungültiger oder abgelaufener Token');
+      // verifyToken zaten uygun hata mesajını fırlatıyor
+      throw error;
     }
 
     if (decoded.type !== 'reset') {
@@ -206,7 +216,7 @@ class AuthService {
     }
 
     // Yeni şifreyi hash'le
-    const passwordHash = await hashPassword(newPassword);
+    const passwordHash = await hashPassword(password);
 
     // Şifreyi güncelle
     await prisma.user.update({

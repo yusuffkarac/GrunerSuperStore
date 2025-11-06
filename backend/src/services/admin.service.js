@@ -6,15 +6,18 @@ import { UnauthorizedError, NotFoundError } from '../utils/errors.js';
 class AdminService {
   // Admin girişi
   async login({ email, password }) {
-    console.log('🔐 [Admin Service] Login attempt for:', email);
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('🔐 [Admin Service] Login attempt for:', normalizedEmail);
 
     // Admin'i bul
     const admin = await prisma.admin.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!admin) {
-      console.error('❌ [Admin Service] Admin bulunamadı:', email);
+      console.error('❌ [Admin Service] Admin bulunamadı:', normalizedEmail);
       throw new UnauthorizedError('Ungültige Anmeldedaten');
     }
 

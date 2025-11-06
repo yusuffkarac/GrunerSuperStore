@@ -440,13 +440,19 @@ class UserService {
     }
 
     // Email değişiyorsa kontrol et
-    if (email && email !== user.email) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
+    let normalizedEmail = email;
+    if (email) {
+      // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+      normalizedEmail = email.toLowerCase().trim();
+      
+      if (normalizedEmail !== user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
 
-      if (existingUser) {
-        throw new ConflictError('E-Mail bereits registriert');
+        if (existingUser) {
+          throw new ConflictError('E-Mail bereits registriert');
+        }
       }
     }
 
@@ -454,7 +460,7 @@ class UserService {
     const updateData = {};
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
-    if (email !== undefined) updateData.email = email;
+    if (email !== undefined) updateData.email = normalizedEmail;
     if (phone !== undefined) updateData.phone = phone || null;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (password) {

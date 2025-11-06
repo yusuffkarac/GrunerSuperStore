@@ -92,7 +92,7 @@ function SifreSifirla() {
     try {
       await api.post('/auth/reset-password', {
         token,
-        newPassword: formData.password,
+        password: formData.password,
       });
 
       setSuccess(true);

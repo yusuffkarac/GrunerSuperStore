@@ -8,7 +8,7 @@ export const adminLoginValidation = [
     .withMessage('E-Mail ist erforderlich')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body('password')
     .notEmpty()
@@ -37,7 +37,7 @@ export const createUserValidation = [
     .withMessage('E-Mail ist erforderlich')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body('password')
     .notEmpty()
@@ -90,7 +90,7 @@ export const updateUserValidation = [
     .withMessage('E-Mail darf nicht leer sein')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body('password')
     .optional()

@@ -22,7 +22,7 @@ export const registerValidation = [
     .withMessage('E-Mail ist erforderlich')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body('password')
     .notEmpty()
@@ -51,7 +51,7 @@ export const loginValidation = [
     .withMessage('E-Mail ist erforderlich')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body('password')
     .notEmpty()
@@ -66,7 +66,7 @@ export const forgotPasswordValidation = [
     .withMessage('E-Mail ist erforderlich')
     .isEmail()
     .withMessage('Ungültige E-Mail-Adresse')
-    .normalizeEmail(),
+    .toLowerCase(),
 ];
 
 // Reset password validasyonu
