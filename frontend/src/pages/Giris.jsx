@@ -156,13 +156,12 @@ function Giris() {
 
           {/* Şifremi Unuttum */}
           <div className="text-right">
-            <button
-              type="button"
-              onClick={() => toast.info('Passwort zurücksetzen-Funktion kommt bald')}
+            <Link
+              to="/sifremi-unuttum"
               className="text-sm text-green-600 hover:text-green-700"
             >
               Passwort vergessen?
-            </button>
+            </Link>
           </div>
 
           {/* Giriş Butonu */}
