@@ -19,6 +19,10 @@
     --color-primary-700: #047857;
     --color-primary-800: #065f46;
     --color-primary-900: #064e3b;
+    --primary-rgb: 22, 163, 74;
+    --primary-400: #4ade80;
+    --primary-500: #22c55e;
+    --primary-600: #16a34a;
     --color-header-bg: #16a34a;
     --color-header-text: #ffffff;
     --color-button-cart: #16a34a;
@@ -60,7 +64,151 @@
     @apply max-w-mobile md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4;
   }
 
-  /* Bottom Navigation */
+  /* Bottom Navigation - Modern Glass Morphism Style */
+  .bottom-nav-modern {
+    @apply fixed bottom-0 left-0 right-0;
+    @apply flex items-center justify-around;
+    @apply h-16 px-2;
+    @apply safe-area-bottom;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06), 0 -2px 8px rgba(0, 0, 0, 0.04);
+    z-index: 999999;
+    position: relative;
+  }
+
+  /* Animated active indicator - sliding pill */
+  .bottom-nav-indicator {
+    position: absolute;
+    top: 6px;
+    left: 0;
+    width: 20%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-600), var(--primary-500));
+    border-radius: 999px;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 2px 8px var(--primary-400);
+  }
+
+  /* Navigation item */
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center flex-1 relative;
+    min-width: 0;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Item content with ripple effect */
+  .bottom-nav-item-content {
+    @apply flex flex-col items-center justify-center w-full py-2 px-1;
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Hover effect for desktop */
+  @media (hover: hover) {
+    .bottom-nav-item-content:hover {
+      background: rgba(var(--primary-rgb), 0.08);
+      transform: translateY(-2px);
+    }
+  }
+
+  /* Active state background */
+  .bottom-nav-item-content.active {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
+  }
+
+  /* Tap feedback */
+  .bottom-nav-item:active .bottom-nav-item-content {
+    transform: scale(0.92);
+    transition: transform 0.15s ease;
+  }
+
+  /* Icon wrapper */
+  .bottom-nav-icon-wrapper {
+    @apply relative mb-1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Icon styling */
+  .bottom-nav-icon {
+    width: 24px;
+    height: 24px;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    color: #6b7280;
+    stroke-width: 1.5;
+  }
+
+  /* Active icon - larger with color and bounce */
+  .bottom-nav-icon.active {
+    color: var(--primary-600);
+    transform: scale(1.15);
+    stroke-width: 2;
+    filter: drop-shadow(0 2px 4px rgba(var(--primary-rgb), 0.2));
+  }
+
+  /* Badge styling with pulse */
+  .bottom-nav-badge {
+    @apply absolute flex items-center justify-center;
+    @apply bg-primary-600 text-white text-[10px] font-bold;
+    @apply rounded-full leading-none;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    top: -6px;
+    right: -8px;
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4), 0 0 0 3px rgba(255, 255, 255, 0.9);
+    animation: badgePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes badgePulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Label styling */
+  .bottom-nav-label {
+    @apply text-[10px] leading-tight truncate w-full text-center;
+    color: #6b7280;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  /* Active label */
+  .bottom-nav-label.active {
+    color: var(--primary-600);
+    font-weight: 600;
+    transform: scale(1.02);
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .bottom-nav-modern {
+      background: rgba(31, 41, 55, 0.9);
+      border-top-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3), 0 -2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .bottom-nav-icon {
+      color: #9ca3af;
+    }
+
+    .bottom-nav-label {
+      color: #9ca3af;
+    }
+  }
+
+  /* Legacy support */
   .bottom-nav {
     @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200;
     @apply flex items-center justify-around;
