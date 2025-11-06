@@ -7,6 +7,8 @@ import {
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  verifyEmailValidation,
+  resendVerificationValidation,
 } from '../validators/auth.validators.js';
 
 const router = express.Router();
@@ -14,6 +16,18 @@ const router = express.Router();
 // Public routes
 router.post('/register', registerValidation, validate, authController.register);
 router.post('/login', loginValidation, validate, authController.login);
+router.post(
+  '/verify-email',
+  verifyEmailValidation,
+  validate,
+  authController.verifyEmail
+);
+router.post(
+  '/resend-verification',
+  resendVerificationValidation,
+  validate,
+  authController.resendVerification
+);
 router.post(
   '/forgot-password',
   forgotPasswordValidation,
