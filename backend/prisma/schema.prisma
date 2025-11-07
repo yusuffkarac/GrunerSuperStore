@@ -455,6 +455,25 @@ model Campaign {
 }
 
 // ===================================
+// BARCODE LABELS
+// ===================================
+
+model BarcodeLabel {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String // Product name
+  price     Decimal  @db.Decimal(12, 2)
+  unit      String? // Optional unit type (kg, adet, litre, etc.)
+  barcode   String // Barcode number
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([barcode])
+  @@index([name])
+  @@index([createdAt(sort: Desc)])
+  @@map("barcode_labels")
+}
+
+// ===================================
 // PRODUCT VARIANTS
 // ===================================
 

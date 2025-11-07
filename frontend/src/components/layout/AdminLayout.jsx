@@ -13,6 +13,7 @@ import {
   FiEdit3,
   FiTag,
   FiDroplet,
+  FiPrinter,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -41,6 +42,7 @@ function AdminLayout() {
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers },
+    { path: '/admin/barcode-labels', label: 'Barkod Etiketleri', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
