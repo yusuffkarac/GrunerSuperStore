@@ -45,6 +45,8 @@ import Users from './pages/admin/Users';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
+import BarcodeLabels from './pages/admin/BarcodeLabels';
+import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 
 // Sayfa geçişlerini yöneten iç bileşen
 function AppContent() {
@@ -124,6 +126,10 @@ function AppContent() {
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Barcode Labels Print - Ayrı sayfa (AdminLayout dışında) */}
+        <Route path="/admin/barcode-labels/print" element={<BarcodeLabelsPrint />} />
+
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -133,6 +139,7 @@ function AppContent() {
           <Route path="campaigns" element={<Campaigns />} />
           <Route path="coupons" element={<Coupons />} />
           <Route path="users" element={<Users />} />
+          <Route path="barcode-labels" element={<BarcodeLabels />} />
           <Route path="settings" element={<Settings />} />
           <Route path="homepage-settings" element={<HomePageSettings />} />
           <Route path="design-settings" element={<DesignSettings />} />
