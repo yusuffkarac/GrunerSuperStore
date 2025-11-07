@@ -54,6 +54,21 @@ const authService = {
     const response = await api.post('/admin/auth/login', credentials);
     return response;
   },
+
+  // Email doğrulama
+  verifyEmail: async ({ email, code }) => {
+    const response = await api.post('/auth/verify-email', { email, code });
+    if (response.data?.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response;
+  },
+
+  // Doğrulama kodunu yeniden gönder
+  resendVerification: async (email) => {
+    return await api.post('/auth/resend-verification', { email });
+  },
 };
 
 export default authService;

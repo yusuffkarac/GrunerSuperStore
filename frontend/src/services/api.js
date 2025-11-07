@@ -54,8 +54,17 @@ api.interceptors.response.use(
     // Token expired veya unauthorized
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
-      // Eğer zaten giriş/kayıt sayfasındaysak redirect yapma (sonsuz döngüyü önle)
-      if (currentPath !== '/giris' && currentPath !== '/kayit' && currentPath !== '/admin/login') {
+      // Eğer zaten giriş/kayıt/email doğrulama sayfasındaysak redirect yapma (sonsuz döngüyü önle)
+      const publicPaths = [
+        '/giris',
+        '/kayit',
+        '/email-dogrula',
+        '/sifremi-unuttum',
+        '/sifre-sifirla',
+        '/reset-password',
+        '/admin/login'
+      ];
+      if (!publicPaths.includes(currentPath)) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/giris';

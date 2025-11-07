@@ -108,11 +108,23 @@ class AuthService {
 
   // E-posta doğrulama
   async verifyEmail({ email, code }) {
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('🔍 [verifyEmail] Aranan email:', normalizedEmail);
+    console.log('🔍 [verifyEmail] Orijinal email:', email);
+    
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
+      // Debug: Tüm kullanıcıları listele
+      const allUsers = await prisma.user.findMany({
+        select: { email: true },
+        take: 10,
+      });
+      console.log('🔍 [verifyEmail] Veritabanındaki ilk 10 email:', allUsers.map(u => u.email));
       throw new NotFoundError('Benutzer nicht gefunden');
     }
 
@@ -168,8 +180,11 @@ class AuthService {
 
   // Doğrulama kodunu yeniden gönder
   async resendVerificationCode(email) {
+    // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
+    const normalizedEmail = email.toLowerCase().trim();
+    
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -242,14 +257,14 @@ class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedError('Ungültige Anmeldedaten');
+      throw new UnauthorizedError('E-Mail oder Passwort ist falsch');
     }
 
     // Şifre kontrolü
     const isPasswordValid = await comparePassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedError('Ungültige Anmeldedaten');
+      throw new UnauthorizedError('E-Mail oder Passwort ist falsch');
     }
 
     // E-posta doğrulama kontrolü

@@ -100,8 +100,15 @@ function Kayit() {
         password: formData.password,
       });
 
-      toast.success('Registrierung erfolgreich!');
-      navigate('/');
+      toast.success('Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mail.');
+      // Email doğrulama sayfasına yönlendir
+      const encodedEmail = encodeURIComponent(formData.email);
+      console.log('📧 [Kayit] Email doğrulama sayfasına yönlendiriliyor:', {
+        originalEmail: formData.email,
+        encodedEmail: encodedEmail,
+        url: `/email-dogrula?email=${encodedEmail}`
+      });
+      navigate(`/email-dogrula?email=${encodedEmail}`);
     } catch (error) {
       console.error('Kayıt hatası:', error);
       toast.error(

@@ -77,6 +77,14 @@ class AuthController {
   verifyEmail = asyncHandler(async (req, res) => {
     const { email, code } = req.body;
 
+    console.log('📥 [Controller] verifyEmail isteği alındı:', { 
+      email, 
+      code,
+      emailType: typeof email,
+      emailLength: email?.length,
+      hasDot: email?.includes('.')
+    });
+
     const result = await authService.verifyEmail({ email, code });
 
     res.status(200).json({
