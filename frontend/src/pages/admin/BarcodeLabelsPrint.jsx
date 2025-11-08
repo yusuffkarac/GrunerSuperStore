@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import JsBarcode from 'jsbarcode';
 import barcodeLabelService from '../../services/barcodeLabelService';
 import Loading from '../../components/common/Loading';
 
@@ -8,44 +7,81 @@ function BarcodeLabelsPrint() {
   const [searchParams] = useSearchParams();
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const barcodeRefs = useRef([]);
 
   useEffect(() => {
     loadLabels();
   }, []);
 
-  // Barkod görsellerini oluştur
   useEffect(() => {
     if (labels.length > 0) {
-      labels.forEach((label) => {
-        const svgId = `barcode-${label.id}`;
-        const svg = document.getElementById(svgId);
-        if (svg) {
+      // JsBarcode kütüphanesini yükle ve barkodları oluştur
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+      script.onload = () => {
+        generateBarcodes();
+        // Barkodlar oluşturulduktan sonra yazdır
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, [labels]);
+
+  const generateBarcodes = () => {
+    if (window.JsBarcode) {
+      labels.forEach((label, index) => {
+        const canvas = barcodeRefs.current[index];
+        if (canvas && label.barcode) {
           try {
-            JsBarcode(svg, label.barcode, {
-              format: 'EAN13',
+            // Barkod formatını otomatik algıla
+            const barcodeValue = label.barcode.toString();
+            let format = 'CODE128';
+            
+            // EAN13 için 13 haneli sayı kontrolü
+            if (/^\d{13}$/.test(barcodeValue)) {
+              format = 'EAN13';
+            } 
+            // EAN8 için 8 haneli sayı kontrolü
+            else if (/^\d{8}$/.test(barcodeValue)) {
+              format = 'EAN8';
+            }
+
+            window.JsBarcode(canvas, barcodeValue, {
+              format: format,
               width: 2,
               height: 50,
-              displayValue: false,
+              displayValue: true,
+              fontSize: 12,
               margin: 0,
+              marginTop: 5,
+              marginBottom: 5
             });
           } catch (error) {
-            // EAN13 formatı desteklenmiyorsa CODE128 dene
+            console.error('Barkod oluşturma hatası:', error);
+            // Hata durumunda CODE128 ile tekrar dene
             try {
-              JsBarcode(svg, label.barcode, {
+              window.JsBarcode(canvas, label.barcode.toString(), {
                 format: 'CODE128',
                 width: 2,
                 height: 50,
-                displayValue: false,
-                margin: 0,
+                displayValue: true,
+                fontSize: 12,
+                margin: 0
               });
             } catch (e) {
-              console.error('Barkod oluşturma hatası:', e);
+              console.error('CODE128 ile de başarısız:', e);
             }
           }
         }
       });
     }
-  }, [labels]);
+  };
 
   const loadLabels = async () => {
     try {
@@ -59,11 +95,6 @@ function BarcodeLabelsPrint() {
       const ids = idsParam.split(',');
       const response = await barcodeLabelService.getBarcodeLabelsByIds(ids);
       setLabels(response.data.labels || []);
-
-      // Veriler yüklenince otomatik yazdır
-      setTimeout(() => {
-        window.print();
-      }, 500);
     } catch (error) {
       console.error('Etiket yükleme hatası:', error);
     } finally {
@@ -96,116 +127,93 @@ function BarcodeLabelsPrint() {
         /* Genel stiller */
         .print-container {
           width: 100%;
-          max-width: 210mm; /* A4 width */
+          max-width: 210mm;
           margin: 0 auto;
           padding: 10mm;
           background: white;
         }
 
-        /* Etiket grid - 2 sütun x 4 satır = 8 etiket */
+        /* Etiket grid - 2 sütun x 5 satır = 10 etiket */
         .labels-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 8mm;
+          gap: 5mm;
           width: 100%;
         }
 
-        /* Tek etiket */
+        /* Tek etiket - Resme göre tasarım */
         .label-item {
           width: 100%;
-          height: 65mm;
-          border: 2px solid #22c55e;
+          height: 50mm;
+          border: 2px solid #059669;
           border-radius: 4px;
-          padding: 8mm;
-          display: flex;
-          flex-direction: column;
+          padding: 5mm;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          grid-template-rows: auto 1fr;
+          gap: 3mm;
           background: white;
           page-break-inside: avoid;
         }
 
         @media print {
           .label-item {
-            border: 2px solid #22c55e;
+            border: 2px solid #059669;
           }
         }
 
-        /* Üst kısım - Ürün başlığı */
-        .label-title {
-          font-size: 16pt;
+        /* Ürün adı - Sol üst, tam genişlik */
+        .label-header {
+          grid-column: 1 / -1;
+          font-size: 14pt;
           font-weight: bold;
-          color: #1a202c;
-          margin-bottom: 8mm;
-          line-height: 1.3;
+          color: #000;
+          line-height: 1.2;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
-        .label-product-id {
-          font-weight: 900;
-        }
-
-        /* Alt kısım - Barkod ve Fiyat */
-        .label-content {
-          flex: 1;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 4mm;
-        }
-
-        /* Barkod alanı - sol taraf */
+        /* Sol alan - Barkod */
         .label-barcode-section {
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
+          align-items: center;
+          justify-content: center;
           gap: 2mm;
-          flex: 0 1 auto;
-          min-width: 0;
         }
 
-        .label-barcode-id {
-          font-size: 14pt;
-          font-weight: 700;
-          color: #1a202c;
-        }
-
-        .label-barcode-image {
-          width: 100%;
-          max-width: 50mm;
-          height: auto;
-        }
-
-        .label-barcode-image svg {
-          width: 100%;
-          height: auto;
-        }
-
-        .label-barcode-number {
-          font-family: 'Courier New', monospace;
-          font-size: 12pt;
+        .label-sku {
+          font-size: 11pt;
           font-weight: bold;
-          color: #1a202c;
-          letter-spacing: 2px;
+          color: #000;
+          margin-bottom: 1mm;
         }
 
-        /* Fiyat alanı - sağ alt köşe */
+        .barcode-canvas {
+          max-width: 100%;
+        }
+
+        /* Sağ alan - Fiyat */
         .label-price-section {
           display: flex;
-          align-items: flex-end;
-          justify-content: flex-end;
-          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          padding-left: 5mm;
+          border-left: 1px solid #e0e0e0;
         }
 
         .label-price {
           font-size: 36pt;
           font-weight: 900;
-          color: #1a202c;
+          color: #000;
           line-height: 1;
           white-space: nowrap;
         }
 
         .label-price-currency {
-          font-size: 28pt;
-          font-weight: 700;
+          font-size: 24pt;
+          margin-left: 2mm;
         }
 
         /* Toolbar (sadece ekranda görünür) */
@@ -298,47 +306,38 @@ function BarcodeLabelsPrint() {
       {/* Etiketler */}
       <div className="content-wrapper">
         <div className="labels-grid">
-          {labels.map((label) => {
-            // ID'yi kısa formata çevir (UUID'nin ilk 8 karakteri veya tam ID)
-            const shortId = label.id.substring(0, 8).toUpperCase();
-            const productId = `P${shortId}`;
-            const priceFormatted = parseFloat(label.price).toFixed(2).replace('.', ',');
-            
-            return (
-              <div key={label.id} className="label-item">
-                {/* Üst kısım - Başlık */}
-                <div className="label-title">
-                  <span className="label-product-id">[{productId}]</span> {label.name}
-                </div>
+          {labels.map((label, index) => (
+            <div key={label.id} className="label-item">
+              {/* Ürün Adı - Üst kısım, tam genişlik */}
+              <div className="label-header">
+                [{label.sku || label.barcode}] {label.name}
+              </div>
 
-                {/* Alt kısım - Barkod ve Fiyat */}
-                <div className="label-content">
-                  {/* Sol taraf - Barkod */}
-                  <div className="label-barcode-section">
-                    <div className="label-barcode-id">{productId}</div>
-                    <div className="label-barcode-image">
-                      <svg id={`barcode-${label.id}`}></svg>
-                    </div>
-                    <div className="label-barcode-number">{label.barcode}</div>
-                  </div>
+              {/* Sol taraf - Barkod */}
+              <div className="label-barcode-section">
+                <div className="label-sku">{label.sku || label.barcode}</div>
+                <canvas
+                  ref={(el) => (barcodeRefs.current[index] = el)}
+                  className="barcode-canvas"
+                ></canvas>
+              </div>
 
-                  {/* Sağ alt köşe - Fiyat */}
-                  <div className="label-price-section">
-                    <div className="label-price">
-                      {priceFormatted} <span className="label-price-currency">€</span>
-                    </div>
-                  </div>
+              {/* Sağ taraf - Fiyat */}
+              <div className="label-price-section">
+                <div className="label-price">
+                  {parseFloat(label.price).toFixed(2)}
+                  <span className="label-price-currency">€</span>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
-        {/* Boş etiketler (8'in katı olması için) */}
-        {labels.length % 8 !== 0 && (
+        {/* Boş etiketler (10'un katı olması için) */}
+        {labels.length % 10 !== 0 && (
           <>
-            {[...Array(8 - (labels.length % 8))].map((_, index) => (
-              <div key={`empty-${index}`} className="label-item" style={{ border: 'none' }}>
+            {[...Array(10 - (labels.length % 10))].map((_, index) => (
+              <div key={`empty-${index}`} className="label-item" style={{ border: 'none', visibility: 'hidden' }}>
                 {/* Boş etiket */}
               </div>
             ))}
