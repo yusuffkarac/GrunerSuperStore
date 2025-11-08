@@ -14,7 +14,7 @@ yarn.lock
 .env.staging
 
 # Configuration files
-frontend/src/config/appConfig.js
+# frontend/src/config/appConfig.js - Build için gerekli, git'e eklenmeli
 
 # Build outputs
 frontend/dist/

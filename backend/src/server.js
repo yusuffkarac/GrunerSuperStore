@@ -34,7 +34,8 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Trust proxy - reverse proxy (nginx) arkasında çalışırken gerekli
-app.set('trust proxy', true);
+// 1 değeri sadece bir proxy'ye (nginx) güvenmek anlamına gelir
+app.set('trust proxy', 1);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -43,6 +44,10 @@ const limiter = rateLimit({
   message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Trust proxy validation'ını kapat - nginx proxy'si güvenilir
+  validate: {
+    trustProxy: false,
+  },
 });
 
 // Middleware
