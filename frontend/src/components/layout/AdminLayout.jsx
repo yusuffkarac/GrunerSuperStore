@@ -34,7 +34,6 @@ function AdminLayout() {
       const admin = JSON.parse(adminData);
       return admin.role?.toString().trim().toLowerCase();
     } catch (error) {
-      console.error('Error parsing admin data:', error);
       return null;
     }
   };
