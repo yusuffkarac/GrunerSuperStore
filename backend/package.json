@@ -10,7 +10,9 @@
     "migrate:reset": "node src/config/runMigrations.js reset",
     "create-admin": "node src/scripts/createAdmin.js",
     "import-barcodes": "node src/scripts/importBarcodeLabels.js",
-    "import-products": "node src/scripts/importProducts.js"
+    "import-products": "node src/scripts/importProducts.js",
+    "update-product-images": "node src/scripts/updateProductImages.js",
+    "remove-openfoodfacts-images": "node src/scripts/removeOpenFoodFactsImages.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
