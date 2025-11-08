@@ -472,7 +472,6 @@ function BarcodeLabelsPrint() {
 
               {/* Sol taraf - Barkod */}
               <div className="label-barcode-section">
-                <div className="label-sku">{label.sku || label.barcode}</div>
                 <canvas
                   ref={(el) => (barcodeRefs.current[index] = el)}
                   className="barcode-canvas"

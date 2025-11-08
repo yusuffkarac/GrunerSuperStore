@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import authService from '../../services/authService';
+import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -12,11 +13,12 @@ function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Zaten giriş yapmışsa dashboard'a yönlendir
+  // Zaten giriş yapmışsa yönlendir
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
     if (adminToken) {
-      navigate('/admin/dashboard');
+      // Barkod-only modunda barkod sayfasına, değilse dashboard'a yönlendir
+      navigate(BARCODE_ONLY_MODE ? '/admin/barcode-labels' : '/admin/dashboard');
     }
   }, [navigate]);
 
@@ -65,7 +67,8 @@ function AdminLogin() {
 
         // Navigate öncesi kısa bir gecikme
         setTimeout(() => {
-          navigate('/admin/dashboard');
+          // Barkod-only modunda barkod sayfasına, değilse dashboard'a yönlendir
+          navigate(BARCODE_ONLY_MODE ? '/admin/barcode-labels' : '/admin/dashboard');
         }, 100);
       } else {
         console.error('❌ Token veya admin bulunamadı');

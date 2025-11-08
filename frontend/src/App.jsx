@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Config
+import { BARCODE_ONLY_MODE } from './config/appConfig';
+
 // Context
 import { AlertProvider } from './contexts/AlertContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -137,18 +140,30 @@ function AppContent() {
         <Route path="/admin/barcode-labels/print" element={<BarcodeLabelsPrint />} />
 
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="products" element={<Produkte />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="campaigns" element={<Campaigns />} />
-          <Route path="coupons" element={<Coupons />} />
-          <Route path="users" element={<Users />} />
-          <Route path="barcode-labels" element={<BarcodeLabels />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="homepage-settings" element={<HomePageSettings />} />
-          <Route path="design-settings" element={<DesignSettings />} />
+          {BARCODE_ONLY_MODE ? (
+            // Sadece barkod etiketleri modu aktifse
+            <>
+              <Route index element={<Navigate to="/admin/barcode-labels" replace />} />
+              <Route path="barcode-labels" element={<BarcodeLabels />} />
+              <Route path="*" element={<Navigate to="/admin/barcode-labels" replace />} />
+            </>
+          ) : (
+            // Normal mod - tüm sayfalar erişilebilir
+            <>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="products" element={<Produkte />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="coupons" element={<Coupons />} />
+              <Route path="users" element={<Users />} />
+              <Route path="barcode-labels" element={<BarcodeLabels />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="homepage-settings" element={<HomePageSettings />} />
+              <Route path="design-settings" element={<DesignSettings />} />
+            </>
+          )}
         </Route>
 
         {/* 404 */}

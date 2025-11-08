@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
+import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 
 function AdminLayout() {
   const navigate = useNavigate();
@@ -31,10 +32,14 @@ function AdminLayout() {
       navigate('/admin/login');
       toast.error('Bitte melden Sie sich an');
     } else {
+      // Barkod-only modunda ve barkod sayfasında değilsek yönlendir
+      if (BARCODE_ONLY_MODE && !location.pathname.includes('/admin/barcode-labels')) {
+        navigate('/admin/barcode-labels');
+      }
     }
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
-  const menuItems = [
+  const allMenuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome },
     { path: '/admin/products', label: 'Produkte', icon: FiPackage },
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag },
@@ -47,6 +52,11 @@ function AdminLayout() {
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
   ];
+
+  // Barkod-only modunda sadece barkod etiketleri menüsünü göster
+  const menuItems = BARCODE_ONLY_MODE
+    ? allMenuItems.filter(item => item.path === '/admin/barcode-labels')
+    : allMenuItems;
 
   const handleLogout = async () => {
     const confirmed = await showConfirm('Möchten Sie sich wirklich abmelden?');
