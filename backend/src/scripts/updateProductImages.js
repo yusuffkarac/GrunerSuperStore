@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import https from 'https';
 import http from 'http';
+import { getJson } from 'serpapi';
+
+// .env dosyasını yükle
+dotenv.config();
 
 // ES modules için __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +60,61 @@ function httpRequest(url, options = {}) {
 }
 
 /**
- * OpenFoodFacts API'sinden ürün fotoğrafını çek
+ * SerpAPI ile Google Images'tan ürün fotoğrafını çek
+ * @param {string} productName - Ürün adı
+ * @returns {Promise<string|null>} Fotoğraf URL'i veya null
+ */
+async function fetchImageFromGoogleImages(productName) {
+  if (!productName || productName.trim().length === 0) {
+    return null;
+  }
+
+  const apiKey = process.env.SERPAPI_KEY || '75d6f3ee666e92c37cd318bc828ff29411afbfd5411b97f4b15d497c81e07156';
+
+  if (!apiKey) {
+    console.error('  ⚠️  SERPAPI_KEY environment variable bulunamadı!');
+    return null;
+  }
+
+  try {
+    return new Promise((resolve, reject) => {
+      getJson(
+        {
+          q: productName,
+          engine: 'google_images',
+          ijn: '0',
+          api_key: apiKey,
+          num: 5, // İlk 5 sonucu al
+        },
+        (json) => {
+          try {
+            if (json && json.images_results && json.images_results.length > 0) {
+              // İlk sonucu al (en uygun)
+              const firstResult = json.images_results[0];
+              const imageUrl = firstResult.original || firstResult.link || null;
+              
+              if (imageUrl) {
+                resolve(imageUrl);
+              } else {
+                resolve(null);
+              }
+            } else {
+              resolve(null);
+            }
+          } catch (error) {
+            reject(error);
+          }
+        }
+      );
+    });
+  } catch (error) {
+    console.error(`  ❌ Ürün "${productName}" için hata:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * OpenFoodFacts API'sinden ürün fotoğrafını çek (fallback)
  * @param {string} barcode - Ürün barkodu
  * @returns {Promise<string|null>} Fotoğraf URL'i veya null
  */
@@ -169,7 +227,7 @@ async function updateProductImages() {
     // Rate limiting için delay fonksiyonu
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    console.log('📸 OpenFoodFacts API\'sinden fotoğraflar çekiliyor...\n');
+    console.log('📸 Google Images (SerpAPI) üzerinden fotoğraflar çekiliyor...\n');
 
     for (let i = 0; i < productsWithoutImages.length; i++) {
       const product = productsWithoutImages[i];
@@ -179,8 +237,13 @@ async function updateProductImages() {
       );
 
       try {
-        // OpenFoodFacts API'sinden fotoğraf çek
-        const imageUrl = await fetchImageFromOpenFoodFacts(product.barcode);
+        // Önce Google Images'tan fotoğraf çek (ürün adı ile)
+        let imageUrl = await fetchImageFromGoogleImages(product.name);
+
+        // Eğer bulunamazsa ve barcode varsa, OpenFoodFacts'i dene (fallback)
+        if (!imageUrl && product.barcode) {
+          imageUrl = await fetchImageFromOpenFoodFacts(product.barcode);
+        }
 
         if (imageUrl) {
           // Mevcut imageUrls array'ini al (boş olabilir)
@@ -208,14 +271,9 @@ async function updateProductImages() {
           skipped++;
         }
 
-        // Rate limiting: Her 10 istekten sonra 1 saniye bekle
-        // OpenFoodFacts API limiti: ~10 istek/saniye
-        if ((i + 1) % 10 === 0) {
-          await delay(1000);
-        } else {
-          // Her istek arasında 100ms bekle
-          await delay(100);
-        }
+        // Rate limiting: SerpAPI için her istek arasında 1 saniye bekle
+        // SerpAPI free plan: ~100 istek/ay, rate limit var
+        await delay(1000); // Her istek arasında 1 saniye bekle
       } catch (error) {
         errors.push({
           id: product.id,
