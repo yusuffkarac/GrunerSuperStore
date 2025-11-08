@@ -1,37 +1,57 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import barcodeLabelService from '../../services/barcodeLabelService';
+import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 
 function BarcodeLabelsPrint() {
   const [searchParams] = useSearchParams();
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [labelSettings, setLabelSettings] = useState({
+    labelHeaderFontSize: 16,
+    labelPriceFontSize: 46,
+    labelPriceCurrencyFontSize: 24,
+    labelSkuFontSize: 11,
+  });
   const barcodeRefs = useRef([]);
 
   useEffect(() => {
     loadLabels();
+    loadLabelSettings();
   }, []);
 
+  // Etiket ayarlarını yükle
+  const loadLabelSettings = async () => {
+    try {
+      const response = await settingsService.getSettings();
+      if (response.data?.settings?.barcodeLabelSettings) {
+        setLabelSettings(response.data.settings.barcodeLabelSettings);
+      }
+    } catch (error) {
+      console.error('Etiket ayarları yükleme hatası:', error);
+    }
+  };
+
   useEffect(() => {
-    if (labels.length > 0) {
+    if (labels.length > 0 && labelSettings.labelHeaderFontSize) {
       // JsBarcode kütüphanesini yükle ve barkodları oluştur
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
       script.onload = () => {
         generateBarcodes();
-        // Barkodlar oluşturulduktan sonra yazdır
-        setTimeout(() => {
-          window.print();
-        }, 500);
+        // Barkodlar oluşturulduktan sonra otomatik yazdırmayı kaldırdık
+        // Kullanıcı manuel olarak yazdırabilir
       };
       document.body.appendChild(script);
 
       return () => {
-        document.body.removeChild(script);
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
       };
     }
-  }, [labels]);
+  }, [labels, labelSettings]);
 
   const generateBarcodes = () => {
     if (window.JsBarcode) {
@@ -42,18 +62,7 @@ function BarcodeLabelsPrint() {
             // Barkod formatını otomatik algıla
             const barcodeValue = label.barcode.toString();
             let format = 'CODE128';
-            
-            // EAN13 için 13 haneli sayı kontrolü
-            if (/^\d{13}$/.test(barcodeValue)) {
-              format = 'EAN13';
-            } 
-            // EAN8 için 8 haneli sayı kontrolü
-            else if (/^\d{8}$/.test(barcodeValue)) {
-              format = 'EAN8';
-            }
-
-            window.JsBarcode(canvas, barcodeValue, {
-              format: format,
+            let options = {
               width: 2,
               height: 50,
               displayValue: true,
@@ -61,7 +70,63 @@ function BarcodeLabelsPrint() {
               margin: 0,
               marginTop: 5,
               marginBottom: 5
-            });
+            };
+            
+            // EAN13 için 13 haneli sayı kontrolü
+            if (/^\d{13}$/.test(barcodeValue)) {
+              format = 'EAN13';
+              // EAN-13 için özel ayarlar (fotoğraftaki gibi)
+              options = {
+                format: 'EAN13',
+                width: 2.5,           // Daha kalın çizgiler
+                height: 60,            // Daha yüksek barkod
+                displayValue: true,    // Altında sayıları göster
+                fontSize: 14,          // Daha büyük font
+                font: 'monospace',     // Monospace font (daha okunabilir)
+                textAlign: 'center',   // Ortalanmış metin
+                textPosition: 'bottom', // Altında göster
+                textMargin: 2,         // Metin ile barkod arası boşluk
+                margin: 0,
+                marginTop: 5,
+                marginBottom: 5,
+                background: '#ffffff',  // Beyaz arka plan
+                lineColor: '#000000'    // Siyah çizgiler
+              };
+            } 
+            // EAN8 için 8 haneli sayı kontrolü
+            else if (/^\d{8}$/.test(barcodeValue)) {
+              format = 'EAN8';
+              options = {
+                format: 'EAN8',
+                width: 2.5,
+                height: 60,
+                displayValue: true,
+                fontSize: 14,
+                font: 'monospace',
+                textAlign: 'center',
+                textPosition: 'bottom',
+                textMargin: 2,
+                margin: 0,
+                marginTop: 5,
+                marginBottom: 5,
+                background: '#ffffff',
+                lineColor: '#000000'
+              };
+            } else {
+              // CODE128 için varsayılan ayarlar
+              options = {
+                format: 'CODE128',
+                width: 2,
+                height: 50,
+                displayValue: true,
+                fontSize: 12,
+                margin: 0,
+                marginTop: 5,
+                marginBottom: 5
+              };
+            }
+
+            window.JsBarcode(canvas, barcodeValue, options);
           } catch (error) {
             console.error('Barkod oluşturma hatası:', error);
             // Hata durumunda CODE128 ile tekrar dene
@@ -83,6 +148,66 @@ function BarcodeLabelsPrint() {
     }
   };
 
+  // Dosya adı oluştur
+  const generateFileName = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+    const countStr = `${labels.length}-Stück`;
+    return `Barcode-Etiketten_${dateStr}_${timeStr}_${countStr}`;
+  };
+
+  // Yazdırma için dosya adını ayarla
+  const handlePrint = () => {
+    const fileName = generateFileName();
+    document.title = fileName;
+    window.print();
+    // Yazdırma sonrası title'ı geri al (isteğe bağlı)
+    setTimeout(() => {
+      document.title = 'Barcode-Etiketten drucken';
+    }, 1000);
+  };
+
+  // PDF olarak indir
+  const handleDownloadPDF = async () => {
+    try {
+      // Barkodların oluşturulmasını bekle
+      if (!window.JsBarcode) {
+        alert('Barcodes sind noch nicht bereit. Bitte warten Sie einige Sekunden.');
+        return;
+      }
+
+      // html2pdf kütüphanesini dinamik olarak yükle
+      if (!window.html2pdf) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => {
+          setTimeout(() => downloadPDF(), 500); // Barkodların render olması için bekle
+        };
+        document.body.appendChild(script);
+      } else {
+        setTimeout(() => downloadPDF(), 500);
+      }
+    } catch (error) {
+      console.error('PDF indirme hatası:', error);
+      alert('PDF-Download fehlgeschlagen. Bitte verwenden Sie die Druckfunktion.');
+    }
+  };
+
+  const downloadPDF = () => {
+    const fileName = generateFileName();
+    const element = document.querySelector('.print-container');
+    const opt = {
+      margin: [10, 10],
+      filename: `${fileName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    window.html2pdf().set(opt).from(element).save();
+  };
+
   const loadLabels = async () => {
     try {
       const idsParam = searchParams.get('ids');
@@ -94,7 +219,16 @@ function BarcodeLabelsPrint() {
 
       const ids = idsParam.split(',');
       const response = await barcodeLabelService.getBarcodeLabelsByIds(ids);
-      setLabels(response.data.labels || []);
+      const loadedLabels = response.data.labels || [];
+      setLabels(loadedLabels);
+      
+      // Sayfa yüklendiğinde dosya adını ayarla
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+      const countStr = `${loadedLabels.length}-Stück`;
+      const fileName = `Barcode-Etiketten_${dateStr}_${timeStr}_${countStr}`;
+      document.title = fileName;
     } catch (error) {
       console.error('Etiket yükleme hatası:', error);
     } finally {
@@ -104,9 +238,8 @@ function BarcodeLabelsPrint() {
 
   if (loading) return <Loading />;
 
-  return (
-    <div className="print-container">
-      <style>{`
+  // Dinamik CSS oluştur
+  const dynamicStyles = `
         /* Print stilleri */
         @media print {
           @page {
@@ -165,13 +298,15 @@ function BarcodeLabelsPrint() {
         /* Ürün adı - Sol üst, tam genişlik */
         .label-header {
           grid-column: 1 / -1;
-          font-size: 14pt;
+          font-size: ${labelSettings.labelHeaderFontSize || 16}pt;
           font-weight: bold;
           color: #000;
           line-height: 1.2;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          word-wrap: break-word;
         }
 
         /* Sol alan - Barkod */
@@ -184,7 +319,7 @@ function BarcodeLabelsPrint() {
         }
 
         .label-sku {
-          font-size: 11pt;
+          font-size: ${labelSettings.labelSkuFontSize || 11}pt;
           font-weight: bold;
           color: #000;
           margin-bottom: 1mm;
@@ -204,7 +339,7 @@ function BarcodeLabelsPrint() {
         }
 
         .label-price {
-          font-size: 36pt;
+          font-size: ${labelSettings.labelPriceFontSize || 46}pt;
           font-weight: 900;
           color: #000;
           line-height: 1;
@@ -212,7 +347,7 @@ function BarcodeLabelsPrint() {
         }
 
         .label-price-currency {
-          font-size: 24pt;
+          font-size: ${labelSettings.labelPriceCurrencyFontSize || 24}pt;
           margin-left: 2mm;
         }
 
@@ -257,6 +392,21 @@ function BarcodeLabelsPrint() {
           background: #047857;
         }
 
+        .pdf-button {
+          padding: 10px 24px;
+          background: #2563eb;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .pdf-button:hover {
+          background: #1d4ed8;
+        }
+
         .close-button {
           padding: 10px 24px;
           background: #6b7280;
@@ -281,24 +431,31 @@ function BarcodeLabelsPrint() {
             margin-top: 0;
           }
         }
-      `}</style>
+      `;
+
+  return (
+    <div className="print-container">
+      <style>{dynamicStyles}</style>
 
       {/* Toolbar */}
       <div className="print-toolbar no-print">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
-            Barkod Etiketleri Yazdır
+            Barcode-Etiketten drucken
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            {labels.length} adet etiket hazır
+            {labels.length} Etiketten bereit
           </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => window.print()} className="print-button">
-            🖨️ Yazdır
+          <button onClick={handlePrint} className="print-button">
+            🖨️ Drucken
+          </button>
+          <button onClick={handleDownloadPDF} className="pdf-button">
+            📥 PDF herunterladen
           </button>
           <button onClick={() => window.close()} className="close-button">
-            Kapat
+            Schließen
           </button>
         </div>
       </div>
@@ -310,7 +467,7 @@ function BarcodeLabelsPrint() {
             <div key={label.id} className="label-item">
               {/* Ürün Adı - Üst kısım, tam genişlik */}
               <div className="label-header">
-                [{label.sku || label.barcode}] {label.name}
+               {label.name}
               </div>
 
               {/* Sol taraf - Barkod */}

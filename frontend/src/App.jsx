@@ -87,9 +87,13 @@ function AppContent() {
     };
   }, []);
 
-  // Sağ tıklamayı (context menu) engelle
+  // Sağ tıklamayı (context menu) engelle - admin sayfalarında engelleme
   useEffect(() => {
     const handleContextMenu = (e) => {
+      // Admin sayfalarında context menu'yu engelleme
+      if (location.pathname.startsWith('/admin')) {
+        return;
+      }
       e.preventDefault();
     };
 
@@ -99,7 +103,7 @@ function AppContent() {
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, []);
+  }, [location.pathname]);
 
   return (
     <>

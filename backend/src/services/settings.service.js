@@ -64,6 +64,12 @@ class SettingsService {
               cancelled: true,
             },
           },
+          barcodeLabelSettings: {
+            labelHeaderFontSize: 16,
+            labelPriceFontSize: 46,
+            labelPriceCurrencyFontSize: 24,
+            labelSkuFontSize: 11,
+          },
         },
       });
     }
@@ -114,6 +120,9 @@ class SettingsService {
     }
     if (data.emailNotificationSettings !== undefined) {
       updateData.emailNotificationSettings = data.emailNotificationSettings;
+    }
+    if (data.barcodeLabelSettings !== undefined) {
+      updateData.barcodeLabelSettings = data.barcodeLabelSettings;
     }
 
     // Eğer ayarlar yoksa önce oluştur
@@ -174,6 +183,12 @@ class SettingsService {
               delivered: true,
               cancelled: true,
             },
+          },
+          barcodeLabelSettings: data.barcodeLabelSettings ?? {
+            labelHeaderFontSize: 16,
+            labelPriceFontSize: 46,
+            labelPriceCurrencyFontSize: 24,
+            labelSkuFontSize: 11,
           },
         },
       });

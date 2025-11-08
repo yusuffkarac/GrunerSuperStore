@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiPrinter, FiCheckSquare, FiSquare } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiPrinter, FiCheckSquare, FiSquare, FiChevronLeft, FiChevronRight, FiSettings, FiRotateCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import barcodeLabelService from '../../services/barcodeLabelService';
+import settingsService from '../../services/settingsService';
 import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
@@ -12,9 +13,23 @@ function BarcodeLabels() {
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingLabel, setEditingLabel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabels, setSelectedLabels] = useState([]); // Toplu baskı için seçilenler
+  const [labelSettings, setLabelSettings] = useState({
+    labelHeaderFontSize: 16,
+    labelPriceFontSize: 46,
+    labelPriceCurrencyFontSize: 24,
+    labelSkuFontSize: 11,
+  });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [customItemsPerPage, setCustomItemsPerPage] = useState('');
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -27,21 +42,83 @@ function BarcodeLabels() {
   // Verileri yükle
   useEffect(() => {
     loadLabels();
-  }, [searchQuery]);
+    loadLabelSettings();
+  }, [searchQuery, currentPage, itemsPerPage]);
 
   const loadLabels = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
       if (searchQuery) params.search = searchQuery;
 
       const response = await barcodeLabelService.getAllBarcodeLabels(params);
       setLabels(response.data.labels || []);
+      
+      // Pagination bilgilerini güncelle
+      if (response.data.pagination) {
+        setTotal(response.data.pagination.total || 0);
+        setTotalPages(response.data.pagination.totalPages || 0);
+      }
+      
+      // Sayfa değiştiğinde seçimleri temizle
+      setSelectedLabels([]);
     } catch (error) {
-      toast.error('Barkod etiketleri yüklenemedi');
+      toast.error('Barcode-Etiketten konnten nicht geladen werden');
       console.error('Etiket yükleme hatası:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Etiket ayarlarını yükle
+  const loadLabelSettings = async () => {
+    try {
+      const response = await settingsService.getSettings();
+      if (response.data?.settings?.barcodeLabelSettings) {
+        setLabelSettings(response.data.settings.barcodeLabelSettings);
+      }
+    } catch (error) {
+      console.error('Etiket ayarları yükleme hatası:', error);
+    }
+  };
+
+  // Etiket ayarlarını varsayılan değerlere sıfırla
+  const handleResetLabelSettings = () => {
+    setLabelSettings({
+      labelHeaderFontSize: 16,
+      labelPriceFontSize: 46,
+      labelPriceCurrencyFontSize: 24,
+      labelSkuFontSize: 11,
+    });
+    toast.info('Einstellungen wurden auf Standardwerte zurückgesetzt');
+  };
+
+  // Etiket ayarlarını kaydet
+  const handleSaveLabelSettings = async () => {
+    try {
+      // Boş string değerleri varsayılan değerlerle değiştir
+      const settingsToSave = {
+        labelHeaderFontSize: labelSettings.labelHeaderFontSize === '' ? 16 : labelSettings.labelHeaderFontSize,
+        labelPriceFontSize: labelSettings.labelPriceFontSize === '' ? 46 : labelSettings.labelPriceFontSize,
+        labelPriceCurrencyFontSize: labelSettings.labelPriceCurrencyFontSize === '' ? 24 : labelSettings.labelPriceCurrencyFontSize,
+        labelSkuFontSize: labelSettings.labelSkuFontSize === '' ? 11 : labelSettings.labelSkuFontSize,
+      };
+      
+      await settingsService.updateSettings({
+        barcodeLabelSettings: settingsToSave,
+      });
+      
+      // State'i de güncelle
+      setLabelSettings(settingsToSave);
+      
+      toast.success('Etikett-Einstellungen wurden gespeichert');
+      setShowSettingsModal(false);
+    } catch (error) {
+      toast.error('Einstellungen konnten nicht gespeichert werden');
+      console.error('Ayarlar kaydetme hatası:', error);
     }
   };
 
@@ -87,15 +164,15 @@ function BarcodeLabels() {
 
     // Validasyon
     if (!formData.name.trim()) {
-      toast.error('Ürün adı gereklidir');
+      toast.error('Produktname ist erforderlich');
       return;
     }
     if (!formData.price || parseFloat(formData.price) < 0) {
-      toast.error('Geçerli bir fiyat giriniz');
+      toast.error('Bitte geben Sie einen gültigen Preis ein');
       return;
     }
     if (!formData.barcode.trim()) {
-      toast.error('Barkod numarası gereklidir');
+      toast.error('Barcode-Nummer ist erforderlich');
       return;
     }
 
@@ -109,37 +186,39 @@ function BarcodeLabels() {
 
       if (editingLabel) {
         await barcodeLabelService.updateBarcodeLabel(editingLabel.id, data);
-        toast.success('Barkod etiketi güncellendi');
+        toast.success('Barcode-Etikett wurde aktualisiert');
       } else {
         await barcodeLabelService.createBarcodeLabel(data);
-        toast.success('Barkod etiketi oluşturuldu');
+        toast.success('Barcode-Etikett wurde erstellt');
       }
 
       loadLabels();
       closeModal();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Bir hata oluştu');
+      toast.error(error.response?.data?.message || 'Ein Fehler ist aufgetreten');
       console.error('Form submit hatası:', error);
     }
   };
 
   // Etiket silme
   const handleDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Etiket Sil',
-      message: 'Bu barkod etiketini silmek istediğinizden emin misiniz?',
-      confirmText: 'Sil',
-      cancelText: 'İptal',
-      type: 'danger',
-    });
+    const confirmed = await showConfirm(
+      'Sind Sie sicher, dass Sie dieses Barcode-Etikett löschen möchten?',
+      {
+        title: 'Etikett löschen',
+        confirmText: 'Löschen',
+        cancelText: 'Abbrechen',
+        type: 'danger',
+      }
+    );
 
     if (confirmed) {
       try {
         await barcodeLabelService.deleteBarcodeLabel(id);
-        toast.success('Barkod etiketi silindi');
+        toast.success('Barcode-Etikett wurde gelöscht');
         loadLabels();
       } catch (error) {
-        toast.error('Silme işlemi başarısız');
+        toast.error('Löschvorgang fehlgeschlagen');
         console.error('Silme hatası:', error);
       }
     }
@@ -165,7 +244,7 @@ function BarcodeLabels() {
   // Toplu baskı
   const handlePrint = () => {
     if (selectedLabels.length === 0) {
-      toast.warning('Lütfen yazdırmak için etiket seçiniz');
+      toast.warning('Bitte wählen Sie Etiketten zum Drucken aus');
       return;
     }
 
@@ -177,29 +256,101 @@ function BarcodeLabels() {
   // Toplu silme
   const handleBulkDelete = async () => {
     if (selectedLabels.length === 0) {
-      toast.warning('Lütfen silmek için etiket seçiniz');
+      toast.warning('Bitte wählen Sie Etiketten zum Löschen aus');
       return;
     }
 
-    const confirmed = await showConfirm({
-      title: 'Toplu Silme',
-      message: `${selectedLabels.length} adet barkod etiketini silmek istediğinizden emin misiniz?`,
-      confirmText: 'Sil',
-      cancelText: 'İptal',
-      type: 'danger',
-    });
+    const confirmed = await showConfirm(
+      `Sind Sie sicher, dass Sie ${selectedLabels.length} Barcode-Etiketten löschen möchten?`,
+      {
+        title: 'Massenlöschung',
+        confirmText: 'Löschen',
+        cancelText: 'Abbrechen',
+        type: 'danger',
+      }
+    );
 
     if (confirmed) {
       try {
         await barcodeLabelService.bulkDeleteBarcodeLabels(selectedLabels);
-        toast.success('Barkod etiketleri silindi');
+        toast.success('Barcode-Etiketten wurden gelöscht');
         setSelectedLabels([]);
         loadLabels();
       } catch (error) {
-        toast.error('Silme işlemi başarısız');
+        toast.error('Löschvorgang fehlgeschlagen');
         console.error('Toplu silme hatası:', error);
       }
     }
+  };
+
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleItemsPerPageChange = (value) => {
+    const numValue = parseInt(value);
+    if (numValue > 0) {
+      setItemsPerPage(numValue);
+      setCurrentPage(1); // Sayfa başına öğe değiştiğinde ilk sayfaya dön
+      setCustomItemsPerPage(''); // Custom input'u temizle
+    }
+  };
+
+  const handleCustomItemsPerPageSubmit = (e) => {
+    e.preventDefault();
+    const numValue = parseInt(customItemsPerPage);
+    if (numValue > 0) {
+      setItemsPerPage(numValue);
+      setCurrentPage(1);
+      setCustomItemsPerPage('');
+    } else {
+      toast.error('Bitte geben Sie eine gültige Zahl ein');
+    }
+  };
+
+  // Sayfa numaralarını hesapla (maksimum 7 sayfa göster)
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 7;
+    
+    if (totalPages <= maxVisible) {
+      // Tüm sayfaları göster
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // İlk sayfa
+      pages.push(1);
+      
+      if (currentPage <= 4) {
+        // Başta göster
+        for (let i = 2; i <= 5; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        // Sonda göster
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Ortada göster
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   if (loading) return <Loading />;
@@ -208,8 +359,8 @@ function BarcodeLabels() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Barkod Etiketleri</h1>
-        <p className="text-gray-600 mt-1">Ürün etiketlerinizi yönetin ve yazdırın</p>
+        <h1 className="text-2xl font-bold text-gray-900">Barcode-Etiketten</h1>
+        <p className="text-gray-600 mt-1">Verwalten und drucken Sie Ihre Produktetiketten</p>
       </div>
 
       {/* Toolbar */}
@@ -220,9 +371,12 @@ function BarcodeLabels() {
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Ürün adı veya barkod ara..."
+              placeholder="Produktname oder Barcode suchen..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Arama yapıldığında ilk sayfaya dön
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
@@ -231,11 +385,19 @@ function BarcodeLabels() {
         {/* Butonlar */}
         <div className="flex gap-2">
           <button
+            onClick={() => setShowSettingsModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            title="Etikettdruckeinstellungen"
+          >
+            <FiSettings />
+            Einstellungen
+          </button>
+          <button
             onClick={() => openModal()}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
             <FiPlus />
-            Yeni Etiket
+            Neues Etikett
           </button>
 
           {selectedLabels.length > 0 && (
@@ -245,26 +407,69 @@ function BarcodeLabels() {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <FiPrinter />
-                Yazdır ({selectedLabels.length})
+                Drucken ({selectedLabels.length})
               </button>
               <button
                 onClick={handleBulkDelete}
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 <FiTrash2 />
-                Sil ({selectedLabels.length})
+                Löschen ({selectedLabels.length})
               </button>
             </>
           )}
         </div>
       </div>
 
+      {/* Items Per Page Selector */}
+      <div className="mb-4 flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700 font-medium">Pro Seite:</label>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => handleItemsPerPageChange(e.target.value)}
+            className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+            <option value={500}>500</option>
+          </select>
+        </div>
+        
+        <form onSubmit={handleCustomItemsPerPageSubmit} className="flex items-center gap-2">
+          <label className="text-sm text-gray-700 font-medium">Benutzerdefiniert:</label>
+          <input
+            type="number"
+            min="1"
+            value={customItemsPerPage}
+            onChange={(e) => setCustomItemsPerPage(e.target.value)}
+            placeholder="Zahl eingeben"
+            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          />
+          <button
+            type="submit"
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+          >
+            Anwenden
+          </button>
+        </form>
+
+        {total > 0 && (
+          <div className="text-sm text-gray-600">
+            Insgesamt {total} Produkte werden angezeigt
+          </div>
+        )}
+      </div>
+
       {/* Etiket Listesi */}
       {labels.length === 0 ? (
         <EmptyState
-          title="Henüz barkod etiketi yok"
-          description="Yeni bir barkod etiketi oluşturarak başlayın"
-          actionLabel="Yeni Etiket"
+          title="Noch keine Barcode-Etiketten vorhanden"
+          description="Beginnen Sie mit der Erstellung eines neuen Barcode-Etiketts"
+          actionLabel="Neues Etikett"
           onAction={() => openModal()}
         />
       ) : (
@@ -284,11 +489,11 @@ function BarcodeLabels() {
                     )}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ürün Adı</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fiyat</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Birim</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Barkod</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">İşlemler</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produktname</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Preis</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Einheit</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Barcode</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Aktionen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -320,14 +525,14 @@ function BarcodeLabels() {
                       <button
                         onClick={() => openModal(label)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Düzenle"
+                        title="Bearbeiten"
                       >
                         <FiEdit2 />
                       </button>
                       <button
                         onClick={() => handleDelete(label.id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Sil"
+                        title="Löschen"
                       >
                         <FiTrash2 />
                       </button>
@@ -337,6 +542,79 @@ function BarcodeLabels() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="text-sm text-gray-600">
+            Seite {currentPage} / {totalPages} (Insgesamt {total} Produkte)
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* İlk Sayfa */}
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm"
+            >
+              Erste
+            </button>
+
+            {/* Önceki Sayfa */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              <FiChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Sayfa Numaraları */}
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((page, index) => {
+                if (page === '...') {
+                  return (
+                    <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                      ...
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-2 min-w-[40px] border rounded-lg transition-colors text-sm ${
+                      currentPage === page
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sonraki Sayfa */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              <FiChevronRight className="w-5 h-5" />
+            </button>
+
+            {/* Son Sayfa */}
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm"
+            >
+              Letzte
+            </button>
+          </div>
         </div>
       )}
 
@@ -364,7 +642,7 @@ function BarcodeLabels() {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <h2 className="text-xl font-bold text-gray-900">
-                    {editingLabel ? 'Etiket Düzenle' : 'Yeni Etiket'}
+                    {editingLabel ? 'Etikett bearbeiten' : 'Neues Etikett'}
                   </h2>
                   <button
                     onClick={closeModal}
@@ -379,7 +657,7 @@ function BarcodeLabels() {
                   {/* Ürün Adı */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ürün Adı <span className="text-red-500">*</span>
+                      Produktname <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -387,7 +665,7 @@ function BarcodeLabels() {
                       value={formData.name}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      placeholder="Ürün adını girin"
+                      placeholder="Produktname eingeben"
                       required
                     />
                   </div>
@@ -395,7 +673,7 @@ function BarcodeLabels() {
                   {/* Fiyat */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fiyat (€) <span className="text-red-500">*</span>
+                      Preis (€) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -413,7 +691,7 @@ function BarcodeLabels() {
                   {/* Birim */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Birim Tipi (Opsiyonel)
+                      Einheitstyp (Optional)
                     </label>
                     <input
                       type="text"
@@ -421,14 +699,14 @@ function BarcodeLabels() {
                       value={formData.unit}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      placeholder="örn: kg, adet, litre"
+                      placeholder="z.B.: kg, Stück, Liter"
                     />
                   </div>
 
                   {/* Barkod */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Barkod Numarası <span className="text-red-500">*</span>
+                      Barcode-Nummer <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -448,16 +726,209 @@ function BarcodeLabels() {
                       onClick={closeModal}
                       className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      İptal
+                      Abbrechen
                     </button>
                     <button
                       type="submit"
                       className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                     >
-                      {editingLabel ? 'Güncelle' : 'Oluştur'}
+                      {editingLabel ? 'Aktualisieren' : 'Erstellen'}
                     </button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Ayarlar Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettingsModal(false)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Etikettdruckeinstellungen
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleResetLabelSettings}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Auf Standardwerte zurücksetzen"
+                    >
+                      <FiRotateCw className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setShowSettingsModal(false)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <FiX className="w-6 h-6" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 space-y-4">
+                  {/* Ürün Adı Font Boyutu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Produktname Schriftgröße (pt)
+                    </label>
+                    <input
+                      type="number"
+                      min="8"
+                      max="32"
+                      value={labelSettings.labelHeaderFontSize}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelHeaderFontSize: '',
+                          });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue)) {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelHeaderFontSize: numValue,
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Fiyat Font Boyutu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preis Schriftgröße (pt)
+                    </label>
+                    <input
+                      type="number"
+                      min="20"
+                      max="80"
+                      value={labelSettings.labelPriceFontSize}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelPriceFontSize: '',
+                          });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue)) {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelPriceFontSize: numValue,
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Para Birimi Font Boyutu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Währung (€) Schriftgröße (pt)
+                    </label>
+                    <input
+                      type="number"
+                      min="10"
+                      max="40"
+                      value={labelSettings.labelPriceCurrencyFontSize}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelPriceCurrencyFontSize: '',
+                          });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue)) {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelPriceCurrencyFontSize: numValue,
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* SKU/Barkod Font Boyutu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SKU/Barcode Schriftgröße (pt)
+                    </label>
+                    <input
+                      type="number"
+                      min="8"
+                      max="20"
+                      value={labelSettings.labelSkuFontSize}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelSkuFontSize: '',
+                          });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue)) {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelSkuFontSize: numValue,
+                            });
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Butonlar */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowSettingsModal(false)}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLabelSettings}
+                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      Speichern
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </>

@@ -28,6 +28,7 @@ class SettingsController {
       storeSettings,
       smtpSettings,
       emailNotificationSettings,
+      barcodeLabelSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -44,6 +45,7 @@ class SettingsController {
       storeSettings,
       smtpSettings,
       emailNotificationSettings,
+      barcodeLabelSettings,
     });
 
     res.status(200).json({
