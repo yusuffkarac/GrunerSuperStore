@@ -86,7 +86,7 @@ function Header() {
 
 
   return (
-    <header className="sticky top-0 z-50 bg-primary-600 text-white shadow-sm">
+    <header className="sticky top-0 z-50 bg-primary-600 text-white shadow-sm bg-white">
       {/* Mobil Status Bar (görsel olarak) */}
       
 
@@ -104,6 +104,21 @@ function Header() {
             </button>
           )}
 
+          {/* Logo - Geri butonu gösterilmediğinde göster */}
+          {!showBackButton && (
+            <Link
+              to="/"
+              className="flex-shrink-0 flex items-center justify-center"
+              aria-label="Ana Sayfa"
+            >
+              <img
+                src="/logo.png"
+                alt="Gruner SuperStore"
+                className="h-10 w-auto object-contain"
+              />
+            </Link>
+          )}
+
           {/* Arama çubuğu - beyaz, yuvarlatılmış */}
           <div className="flex-1 relative" ref={searchRef}>
             <form onSubmit={handleSearch} className="relative">
@@ -118,7 +133,7 @@ function Header() {
                     setShowResults(true);
                   }
                 }}
-                className="w-full px-4 py-2 pl-10 pr-4 bg-white text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 shadow-sm"
+                className="w-full px-4 py-2 pl-10 pr-4 bg-white text-gray-900 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 shadow-sm border border-gray-300"
               />
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </form>

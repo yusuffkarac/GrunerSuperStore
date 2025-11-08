@@ -1,7 +1,7 @@
 import prisma from '../config/prisma.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateToken } from '../utils/jwt.js';
-import { UnauthorizedError, NotFoundError } from '../utils/errors.js';
+import { UnauthorizedError, NotFoundError, ConflictError } from '../utils/errors.js';
 
 class AdminService {
   // Admin girişi
@@ -534,6 +534,193 @@ class AdminService {
     }
 
     return createdVariants;
+  }
+
+  // ===============================
+  // ADMIN MANAGEMENT
+  // ===============================
+
+  // Tüm adminleri listele
+  async getAdminsForAdmin(filters = {}) {
+    const {
+      search,
+      role,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filters;
+
+    const skip = (page - 1) * limit;
+
+    // WHERE koşulları
+    const where = {};
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (role) {
+      where.role = role;
+    }
+
+    // Toplam sayı
+    const total = await prisma.admin.count({ where });
+
+    // Adminleri getir
+    const admins = await prisma.admin.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { [sortBy]: sortOrder },
+      skip,
+      take: parseInt(limit),
+    });
+
+    return {
+      admins,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // Admin detayını getir
+  async getAdminByIdForAdmin(adminId) {
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!admin) {
+      throw new NotFoundError('Administrator nicht gefunden');
+    }
+
+    return admin;
+  }
+
+  // Admin oluştur
+  async createAdminForAdmin(data) {
+    const { firstName, email, password, role = 'admin' } = data;
+
+    // Email kontrolü
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (existingAdmin) {
+      throw new ConflictError('E-Mail bereits registriert');
+    }
+
+    // Şifreyi hash'le
+    const passwordHash = await hashPassword(password);
+
+    // Admin oluştur
+    const admin = await prisma.admin.create({
+      data: {
+        firstName,
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        role,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return admin;
+  }
+
+  // Admin güncelle
+  async updateAdminForAdmin(adminId, data) {
+    const { firstName, email, password, role } = data;
+
+    // Admin'i bul
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!existingAdmin) {
+      throw new NotFoundError('Administrator nicht gefunden');
+    }
+
+    // Email değişiyorsa kontrol et
+    if (email && email.toLowerCase().trim() !== existingAdmin.email) {
+      const emailExists = await prisma.admin.findUnique({
+        where: { email: email.toLowerCase().trim() },
+      });
+
+      if (emailExists) {
+        throw new ConflictError('E-Mail bereits registriert');
+      }
+    }
+
+    // Güncelleme verilerini hazırla
+    const updateData = {};
+
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (email !== undefined) updateData.email = email.toLowerCase().trim();
+    if (role !== undefined) updateData.role = role;
+    if (password !== undefined) {
+      updateData.passwordHash = await hashPassword(password);
+    }
+
+    // Admin'i güncelle
+    const admin = await prisma.admin.update({
+      where: { id: adminId },
+      data: updateData,
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return admin;
+  }
+
+  // Admin sil
+  async deleteAdminForAdmin(adminId) {
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) {
+      throw new NotFoundError('Administrator nicht gefunden');
+    }
+
+    await prisma.admin.delete({
+      where: { id: adminId },
+    });
+
+    return { message: 'Administrator wurde gelöscht' };
   }
 }
 

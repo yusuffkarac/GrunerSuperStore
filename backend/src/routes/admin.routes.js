@@ -5,7 +5,7 @@ import uploadController from '../controllers/upload.controller.js';
 import { authenticateAdmin } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
-import { adminLoginValidation, createUserValidation, updateUserValidation } from '../validators/admin.validators.js';
+import { adminLoginValidation, createUserValidation, updateUserValidation, createAdminValidation, updateAdminValidation } from '../validators/admin.validators.js';
 import {
   updateOrderStatusValidation,
   orderIdValidation,
@@ -160,6 +160,25 @@ router.put('/users/:id', updateUserValidation, validate, adminController.updateU
 
 // PUT /api/admin/users/:id/status - Kullanıcı aktif/pasif yap
 router.put('/users/:id/status', adminController.toggleUserStatus);
+
+// ===============================
+// ADMIN MANAGEMENT
+// ===============================
+
+// GET /api/admin/admins - Tüm adminleri listele
+router.get('/admins', adminController.getAdmins);
+
+// GET /api/admin/admins/:id - Admin detayı
+router.get('/admins/:id', adminController.getAdminById);
+
+// POST /api/admin/admins - Yeni admin oluştur
+router.post('/admins', createAdminValidation, validate, adminController.createAdmin);
+
+// PUT /api/admin/admins/:id - Admin güncelle
+router.put('/admins/:id', updateAdminValidation, validate, adminController.updateAdmin);
+
+// DELETE /api/admin/admins/:id - Admin sil
+router.delete('/admins/:id', adminController.deleteAdmin);
 
 // ===============================
 // SETTINGS MANAGEMENT

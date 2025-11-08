@@ -17,6 +17,7 @@ import AdminLayout from './components/layout/AdminLayout';
 // Components
 import InstallPrompt from './components/common/InstallPrompt';
 import PageLoading from './components/common/PageLoading';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Pages
 import AnaSayfa from './pages/AnaSayfa';
@@ -46,6 +47,7 @@ import Categories from './pages/admin/Categories';
 import Campaigns from './pages/admin/Campaigns';
 import Coupons from './pages/admin/Coupons';
 import Users from './pages/admin/Users';
+import Admins from './pages/admin/Admins';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
@@ -141,10 +143,12 @@ function AppContent() {
 
         <Route path="/admin" element={<AdminLayout />}>
           {BARCODE_ONLY_MODE ? (
-            // Sadece barkod etiketleri modu aktifse
+            // Sadece barkod etiketleri modu aktifse - belirli sayfalar erişilebilir
             <>
               <Route index element={<Navigate to="/admin/barcode-labels" replace />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
+              <Route path="admins" element={<Admins />} />
+              <Route path="users" element={<Users />} />
               <Route path="*" element={<Navigate to="/admin/barcode-labels" replace />} />
             </>
           ) : (
@@ -158,6 +162,7 @@ function AppContent() {
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="coupons" element={<Coupons />} />
               <Route path="users" element={<Users />} />
+              <Route path="admins" element={<Admins />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
@@ -177,25 +182,27 @@ function App() {
   return (
     <ThemeProvider>
       <AlertProvider>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <AppContent />
-          <ToastContainer
-          position="bottom-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          limit={2}
-        />
+        <ErrorBoundary>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AppContent />
+            <ToastContainer
+            position="bottom-center"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+            limit={2}
+          />
 
-          {/* PWA Install Prompt */}
-          <InstallPrompt />
-        </Router>
+            {/* PWA Install Prompt */}
+            <InstallPrompt />
+          </Router>
+        </ErrorBoundary>
       </AlertProvider>
     </ThemeProvider>
   );

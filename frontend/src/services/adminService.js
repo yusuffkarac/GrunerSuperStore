@@ -228,6 +228,32 @@ const adminService = {
     const response = await adminApi.post(`/admin/products/${productId}/variants/bulk`, data);
     return response.data;
   },
+
+  // Admin yönetimi
+  getAdmins: async (params) => {
+    const response = await adminApi.get('/admin/admins', { params });
+    return response.data;
+  },
+
+  getAdminById: async (id) => {
+    const response = await adminApi.get(`/admin/admins/${id}`);
+    return response.data;
+  },
+
+  createAdmin: async (data) => {
+    const response = await adminApi.post('/admin/admins', data);
+    return response.data;
+  },
+
+  updateAdmin: async (id, data) => {
+    const response = await adminApi.put(`/admin/admins/${id}`, data);
+    return response.data;
+  },
+
+  deleteAdmin: async (id) => {
+    const response = await adminApi.delete(`/admin/admins/${id}`);
+    return response.data;
+  },
 };
 
 export default adminService;

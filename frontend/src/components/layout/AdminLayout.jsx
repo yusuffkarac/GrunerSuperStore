@@ -14,6 +14,7 @@ import {
   FiTag,
   FiDroplet,
   FiPrinter,
+  FiShield,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -32,8 +33,15 @@ function AdminLayout() {
       navigate('/admin/login');
       toast.error('Bitte melden Sie sich an');
     } else {
-      // Barkod-only modunda ve barkod sayfasında değilsek yönlendir
-      if (BARCODE_ONLY_MODE && !location.pathname.includes('/admin/barcode-labels')) {
+      // Barkod-only modunda izin verilen sayfalar
+      const allowedPathsInBarcodeMode = [
+        '/admin/barcode-labels',
+        '/admin/admins',
+        '/admin/users'
+      ];
+      
+      // Barkod-only modunda ve izin verilen sayfalardan biri değilsek yönlendir
+      if (BARCODE_ONLY_MODE && !allowedPathsInBarcodeMode.includes(location.pathname)) {
         navigate('/admin/barcode-labels');
       }
     }
@@ -47,15 +55,20 @@ function AdminLayout() {
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers },
+    { path: '/admin/admins', label: 'Administratoren', icon: FiShield },
     { path: '/admin/barcode-labels', label: 'Barkod Etiketleri', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
   ];
 
-  // Barkod-only modunda sadece barkod etiketleri menüsünü göster
+  // Barkod-only modunda sadece izin verilen menü öğelerini göster
   const menuItems = BARCODE_ONLY_MODE
-    ? allMenuItems.filter(item => item.path === '/admin/barcode-labels')
+    ? allMenuItems.filter(item => 
+        item.path === '/admin/barcode-labels' ||
+        item.path === '/admin/admins' ||
+        item.path === '/admin/users'
+      )
     : allMenuItems;
 
   const handleLogout = async () => {
@@ -69,9 +82,9 @@ function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-screen bg-gray-100 flex flex-col lg:flex-row overflow-hidden">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between">
+      <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -81,18 +94,18 @@ function AdminLayout() {
         </button>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${
+          className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 flex flex-col h-screen lg:h-full ${
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           }`}
         >
-          <div className="p-6 border-b">
+          <div className="p-6 border-b flex-shrink-0">
             <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
           </div>
 
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -116,7 +129,7 @@ function AdminLayout() {
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-auto"
             >
               <FiLogOut size={20} />
               <span>Abmelden</span>
@@ -133,7 +146,7 @@ function AdminLayout() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto">
           <Outlet />
         </main>
       </div>

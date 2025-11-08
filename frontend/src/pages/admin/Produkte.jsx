@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -10,6 +10,373 @@ import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { cleanRequestData } from '../../utils/requestUtils';
+
+// Memoized Product Row Component
+const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
+  const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+    ? normalizeImageUrl(product.imageUrls[0])
+    : null;
+
+  return (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover rounded-lg"
+                loading="lazy"
+              />
+            ) : (
+              <FiPackage className="text-gray-400" size={20} />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-gray-900 truncate">
+              {product.name}
+            </div>
+            {product.brand && (
+              <div className="text-sm text-gray-500">{product.brand}</div>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-4 text-sm text-gray-600">
+        {product.category?.name || '-'}
+      </td>
+      <td className="px-4 py-4 text-sm font-medium text-gray-900">
+        {parseFloat(product.price).toFixed(2)} €
+      </td>
+      <td className="px-4 py-4">
+        <div className="text-sm">
+          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
+            {product.stock}
+          </span>
+          {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
+        </div>
+      </td>
+      <td className="px-4 py-4 text-sm text-gray-600">
+        {product.barcode || '-'}
+      </td>
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-2">
+          {product.isActive ? (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+              <FiCheck size={12} />
+              Aktiv
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+              <FiXCircle size={12} />
+              Inaktiv
+            </span>
+          )}
+          {product.isFeatured && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
+              Featured
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => onOpenVariants(product)}
+            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Varianten verwalten"
+          >
+            <FiLayers size={18} />
+          </button>
+          <button
+            onClick={() => onEdit(product)}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Bearbeiten"
+          >
+            <FiEdit2 size={18} />
+          </button>
+          <button
+            onClick={() => onDelete(product)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Löschen"
+          >
+            <FiTrash2 size={18} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+ProductRow.displayName = 'ProductRow';
+
+// Memoized Product Card Component (Desktop)
+const ProductCardDesktop = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
+  const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+    ? normalizeImageUrl(product.imageUrls[0])
+    : null;
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+              loading="lazy"
+            />
+          ) : (
+            <FiPackage className="text-gray-400" size={24} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-gray-900 mb-1 truncate">
+            {product.name}
+          </div>
+          <div className="text-sm text-gray-500 mb-2">
+            {product.brand ? product.brand : 'Keine Marke'}
+          </div>
+          <div className="text-lg font-bold text-gray-900 mb-2">
+            {parseFloat(product.price).toFixed(2)} €
+          </div>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {product.isActive ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                <FiCheck size={12} />
+                Aktiv
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                <FiXCircle size={12} />
+                Inaktiv
+              </span>
+            )}
+            {product.isFeatured && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
+                Featured
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            {product.category?.name || '-'}
+          </div>
+          <div className="text-sm">
+            <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
+              Lager: {product.stock}
+            </span>
+            {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Barcode: {product.barcode}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
+        <button
+          onClick={() => onOpenVariants(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
+        >
+          <FiLayers size={16} />
+          Varianten
+        </button>
+        <button
+          onClick={() => onEdit(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
+        >
+          <FiEdit2 size={16} />
+          Bearbeiten
+        </button>
+        <button
+          onClick={() => onDelete(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm border border-red-200"
+        >
+          <FiTrash2 size={16} />
+          Löschen
+        </button>
+      </div>
+    </div>
+  );
+});
+
+ProductCardDesktop.displayName = 'ProductCardDesktop';
+
+// Memoized Product Card Component (Mobile)
+const ProductCardMobile = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
+  const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+    ? normalizeImageUrl(product.imageUrls[0])
+    : null;
+
+  return (
+    <div className="p-4">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+              loading="lazy"
+            />
+          ) : (
+            <FiPackage className="text-gray-400" size={24} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-gray-900 mb-1">
+            {product.name}
+          </div>
+          {product.brand && (
+            <div className="text-sm text-gray-500 mb-2">{product.brand}</div>
+          )}
+          <div className="text-lg font-bold text-gray-900 mb-2">
+            {parseFloat(product.price).toFixed(2)} €
+          </div>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {product.isActive ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                <FiCheck size={12} />
+                Aktiv
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                <FiXCircle size={12} />
+                Inaktiv
+              </span>
+            )}
+            {product.isFeatured && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
+                Featured
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600 mb-2">
+            Kategorie: {product.category?.name || '-'}
+          </div>
+          <div className="text-sm">
+            <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
+              Lager: {product.stock}
+            </span>
+            {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Barcode: {product.barcode}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onOpenVariants(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
+        >
+          <FiLayers size={16} />
+          Varianten
+        </button>
+        <button
+          onClick={() => onEdit(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
+        >
+          <FiEdit2 size={16} />
+          Bearbeiten
+        </button>
+        <button
+          onClick={() => onDelete(product)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm border border-red-200"
+        >
+          <FiTrash2 size={16} />
+          Löschen
+        </button>
+      </div>
+    </div>
+  );
+});
+
+ProductCardMobile.displayName = 'ProductCardMobile';
+
+// Memoized Mobile List Row Component
+const ProductMobileRow = memo(({ product, onEdit, onDelete }) => {
+  const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+    ? normalizeImageUrl(product.imageUrls[0])
+    : null;
+
+  return (
+    <div className="py-3 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+              loading="lazy"
+            />
+          ) : (
+            <FiPackage className="text-gray-400" size={18} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-sm text-gray-900 truncate">
+              {product.name}
+            </span>
+            {product.isActive ? (
+              <FiCheck className="text-green-600 flex-shrink-0" size={16} />
+            ) : (
+              <FiXCircle className="text-gray-400 flex-shrink-0" size={16} />
+            )}
+            {product.isFeatured && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded flex-shrink-0">
+                F
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="text-xs font-semibold text-gray-900">
+              {parseFloat(product.price).toFixed(2)}€
+            </span>
+            <span className="text-gray-400">•</span>
+            <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-600'}>
+              {product.stock}
+              {product.unit && <span className="text-gray-400">/{product.unit}</span>}
+            </span>
+            {product.category?.name && (
+              <>
+                <span className="text-gray-400">•</span>
+                <span className="truncate">{product.category.name}</span>
+              </>
+            )}
+            {product.barcode && (
+              <>
+                <span className="text-gray-400">•</span>
+                <span className="text-xs text-gray-500 truncate">BC: {product.barcode}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => onEdit(product)}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Bearbeiten"
+          >
+            <FiEdit2 size={18} />
+          </button>
+          <button
+            onClick={() => onDelete(product)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Löschen"
+          >
+            <FiTrash2 size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+ProductMobileRow.displayName = 'ProductMobileRow';
 
 function Produkte() {
   const { showConfirm } = useAlert();
@@ -124,7 +491,7 @@ function Produkte() {
   }, [loadProducts]);
 
   // Modal aç/kapat
-  const openModal = (product = null) => {
+  const openModal = useCallback((product = null) => {
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -161,12 +528,12 @@ function Produkte() {
       });
     }
     setShowModal(true);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setShowModal(false);
     setEditingProduct(null);
-  };
+  }, []);
 
   // Form submit
   const handleSubmit = async (e) => {
@@ -208,7 +575,7 @@ function Produkte() {
   };
 
   // Ürün sil
-  const handleDelete = async (product) => {
+  const handleDelete = useCallback(async (product) => {
     const confirmed = await showConfirm(
       `Möchten Sie "${product.name}" wirklich löschen?`,
       { title: 'Produkt löschen' }
@@ -223,10 +590,10 @@ function Produkte() {
         toast.error(error.response?.data?.message || 'Fehler beim Löschen');
       }
     }
-  };
+  }, [showConfirm, loadProducts]);
 
   // Varyant modal aç
-  const openVariantModal = async (product) => {
+  const openVariantModal = useCallback(async (product) => {
     setSelectedProductForVariants(product);
     setShowVariantModal(true);
     setLoadingVariants(true);
@@ -243,7 +610,7 @@ function Produkte() {
     } finally {
       setLoadingVariants(false);
     }
-  };
+  }, []);
 
   const closeVariantModal = () => {
     setShowVariantModal(false);
@@ -499,6 +866,19 @@ function Produkte() {
     localStorage.setItem('produkteViewMode', mode);
   }, []);
 
+  // Memoized product handlers
+  const handleEditProduct = useCallback((product) => {
+    openModal(product);
+  }, [openModal]);
+
+  const handleDeleteProduct = useCallback((product) => {
+    handleDelete(product);
+  }, [handleDelete]);
+
+  const handleOpenVariants = useCallback((product) => {
+    openVariantModal(product);
+  }, [openVariantModal]);
+
   if (loading && products.length === 0) {
     return <Loading />;
   }
@@ -708,93 +1088,13 @@ function Produkte() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                              <img
-                                src={normalizeImageUrl(product.imageUrls[0])}
-                                alt={product.name}
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            ) : (
-                              <FiPackage className="text-gray-400" size={20} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {product.name}
-                            </div>
-                            {product.brand && (
-                              <div className="text-sm text-gray-500">{product.brand}</div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {product.category?.name || '-'}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                        {parseFloat(product.price).toFixed(2)} €
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm">
-                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                            {product.stock}
-                          </span>
-                          {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {product.barcode || '-'}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          {product.isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                              <FiCheck size={12} />
-                              Aktiv
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                              <FiXCircle size={12} />
-                              Inaktiv
-                            </span>
-                          )}
-                          {product.isFeatured && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => openVariantModal(product)}
-                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            title="Varianten verwalten"
-                          >
-                            <FiLayers size={18} />
-                          </button>
-                          <button
-                            onClick={() => openModal(product)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Bearbeiten"
-                          >
-                            <FiEdit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Löschen"
-                          >
-                            <FiTrash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    <ProductRow
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEditProduct}
+                      onDelete={handleDeleteProduct}
+                      onOpenVariants={handleOpenVariants}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -805,87 +1105,13 @@ function Produkte() {
             {viewMode === 'card' && (
               <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 {products.map((product) => (
-                  <div key={product.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                          <img
-                            src={normalizeImageUrl(product.imageUrls[0])}
-                            alt={product.name}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <FiPackage className="text-gray-400" size={24} />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 mb-1 truncate">
-                          {product.name}
-                        </div>
-                        {product.brand && (
-                          <div className="text-sm text-gray-500 mb-2">{product.brand}</div>
-                        )}
-                        <div className="text-lg font-bold text-gray-900 mb-2">
-                          {parseFloat(product.price).toFixed(2)} €
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                          {product.isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                              <FiCheck size={12} />
-                              Aktiv
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                              <FiXCircle size={12} />
-                              Inaktiv
-                            </span>
-                          )}
-                          {product.isFeatured && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          {product.category?.name || '-'}
-                        </div>
-                        <div className="text-sm">
-                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                            Lager: {product.stock}
-                          </span>
-                          {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
-                        </div>
-                        {product.barcode && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            Barcode: {product.barcode}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
-                      <button
-                        onClick={() => openVariantModal(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
-                      >
-                        <FiLayers size={16} />
-                        Varianten
-                      </button>
-                      <button
-                        onClick={() => openModal(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
-                      >
-                        <FiEdit2 size={16} />
-                        Bearbeiten
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm border border-red-200"
-                      >
-                        <FiTrash2 size={16} />
-                        Löschen
-                      </button>
-                    </div>
-                  </div>
+                  <ProductCardDesktop
+                    key={product.id}
+                    product={product}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                    onOpenVariants={handleOpenVariants}
+                  />
                 ))}
               </div>
             )}
@@ -894,87 +1120,13 @@ function Produkte() {
             {viewMode === 'card' && (
             <div className="md:hidden divide-y divide-gray-200">
               {products.map((product) => (
-                <div key={product.id} className="p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                        <img
-                          src={normalizeImageUrl(product.imageUrls[0])}
-                          alt={product.name}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        <FiPackage className="text-gray-400" size={24} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 mb-1">
-                        {product.name}
-                      </div>
-                      {product.brand && (
-                        <div className="text-sm text-gray-500 mb-2">{product.brand}</div>
-                      )}
-                      <div className="text-lg font-bold text-gray-900 mb-2">
-                        {parseFloat(product.price).toFixed(2)} €
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        {product.isActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                            <FiCheck size={12} />
-                            Aktiv
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                            <FiXCircle size={12} />
-                            Inaktiv
-                          </span>
-                        )}
-                        {product.isFeatured && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                            Featured
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        Kategorie: {product.category?.name || '-'}
-                      </div>
-                      <div className="text-sm">
-                        <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                          Lager: {product.stock}
-                        </span>
-                        {product.unit && <span className="text-gray-500 ml-1">/{product.unit}</span>}
-                      </div>
-                      {product.barcode && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Barcode: {product.barcode}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openVariantModal(product)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm border border-purple-200"
-                    >
-                      <FiLayers size={16} />
-                      Varianten
-                    </button>
-                    <button
-                      onClick={() => openModal(product)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm border border-blue-200"
-                    >
-                      <FiEdit2 size={16} />
-                      Bearbeiten
-                    </button>
-                    <button
-                      onClick={() => handleDelete(product)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm border border-red-200"
-                    >
-                      <FiTrash2 size={16} />
-                      Löschen
-                    </button>
-                  </div>
-                </div>
+                <ProductCardMobile
+                  key={product.id}
+                  product={product}
+                  onEdit={handleEditProduct}
+                  onDelete={handleDeleteProduct}
+                  onOpenVariants={handleOpenVariants}
+                />
               ))}
             </div>
             )}
@@ -983,81 +1135,12 @@ function Produkte() {
             {viewMode === 'list' && (
               <div className="md:hidden divide-y divide-gray-100">
                 {products.map((product) => (
-                  <div key={product.id} className="py-3 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      {/* Compact Image */}
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {Array.isArray(product.imageUrls) && product.imageUrls.length > 0 ? (
-                          <img
-                            src={normalizeImageUrl(product.imageUrls[0])}
-                            alt={product.name}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <FiPackage className="text-gray-400" size={18} />
-                        )}
-                      </div>
-                      
-                      {/* Product Info - Compact */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-gray-900 truncate">
-                            {product.name}
-                          </span>
-                          {product.isActive ? (
-                            <FiCheck className="text-green-600 flex-shrink-0" size={16} />
-                          ) : (
-                            <FiXCircle className="text-gray-400 flex-shrink-0" size={16} />
-                          )}
-                          {product.isFeatured && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded flex-shrink-0">
-                              F
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span className="text-xs font-semibold text-gray-900">
-                            {parseFloat(product.price).toFixed(2)}€
-                          </span>
-                          <span className="text-gray-400">•</span>
-                          <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-600'}>
-                            {product.stock}
-                            {product.unit && <span className="text-gray-400">/{product.unit}</span>}
-                          </span>
-                          {product.category?.name && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className="truncate">{product.category.name}</span>
-                            </>
-                          )}
-                          {product.barcode && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-xs text-gray-500 truncate">BC: {product.barcode}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Compact Action Buttons */}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => openModal(product)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Bearbeiten"
-                        >
-                          <FiEdit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Löschen"
-                        >
-                          <FiTrash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <ProductMobileRow
+                    key={product.id}
+                    product={product}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                  />
                 ))}
               </div>
             )}
