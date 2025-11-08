@@ -12,7 +12,11 @@ function SuperAdminRoute({ children }) {
   try {
     const admin = JSON.parse(adminData);
     
-    if (admin.role !== 'superadmin') {
+    // Role kontrolü (case-insensitive)
+    const adminRole = admin.role?.toString().trim().toLowerCase();
+    
+    if (adminRole !== 'superadmin') {
+      console.error('❌ [SuperAdminRoute] Zugriff verweigert. Admin role:', admin.role);
       toast.error('Zugriff verweigert - Nur für Super-Administratoren');
       return <Navigate to="/admin/dashboard" replace />;
     }

@@ -32,7 +32,7 @@ function AdminLayout() {
       const adminData = localStorage.getItem('admin');
       if (!adminData) return null;
       const admin = JSON.parse(adminData);
-      return admin.role;
+      return admin.role?.toString().trim().toLowerCase();
     } catch (error) {
       console.error('Error parsing admin data:', error);
       return null;

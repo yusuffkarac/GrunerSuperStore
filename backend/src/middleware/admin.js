@@ -55,6 +55,7 @@ export const authenticateAdmin = async (req, res, next) => {
     }
 
     console.log('✅ [Admin Middleware] Admin doğrulandı:', admin.email);
+    console.log('✅ [Admin Middleware] Admin role:', admin.role);
 
     // Admin'i req'e ekle
     req.admin = admin;
@@ -67,8 +68,20 @@ export const authenticateAdmin = async (req, res, next) => {
 
 // Superadmin kontrolü (ileride gerekirse)
 export const requireSuperAdmin = (req, res, next) => {
-  if (req.admin.role !== 'superadmin') {
+  // Önce authenticateAdmin'in çalıştığından emin ol
+  if (!req.admin) {
+    throw new UnauthorizedError('Administrator nicht authentifiziert');
+  }
+
+  // Role kontrolü (case-insensitive ve trim)
+  const adminRole = req.admin.role?.toString().trim().toLowerCase();
+  
+  if (adminRole !== 'superadmin') {
+    console.error('❌ [SuperAdmin Middleware] Zugriff verweigert. Admin role:', req.admin.role);
+    console.error('❌ [SuperAdmin Middleware] Normalized role:', adminRole);
     throw new ForbiddenError('Zugriff verweigert - Nur für Super-Administratoren');
   }
+
+  console.log('✅ [SuperAdmin Middleware] Superadmin-Zugriff gewährt für:', req.admin.email);
   next();
 };
