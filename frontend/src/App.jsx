@@ -18,6 +18,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import InstallPrompt from './components/common/InstallPrompt';
 import PageLoading from './components/common/PageLoading';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import SuperAdminRoute from './components/common/SuperAdminRoute';
 
 // Pages
 import AnaSayfa from './pages/AnaSayfa';
@@ -147,8 +148,22 @@ function AppContent() {
             <>
               <Route index element={<Navigate to="/admin/barcode-labels" replace />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
-              <Route path="admins" element={<Admins />} />
-              <Route path="users" element={<Users />} />
+              <Route 
+                path="admins" 
+                element={
+                  <SuperAdminRoute>
+                    <Admins />
+                  </SuperAdminRoute>
+                } 
+              />
+              <Route 
+                path="users" 
+                element={
+                  <SuperAdminRoute>
+                    <Users />
+                  </SuperAdminRoute>
+                } 
+              />
               <Route path="*" element={<Navigate to="/admin/barcode-labels" replace />} />
             </>
           ) : (
@@ -161,8 +176,22 @@ function AppContent() {
               <Route path="categories" element={<Categories />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="coupons" element={<Coupons />} />
-              <Route path="users" element={<Users />} />
-              <Route path="admins" element={<Admins />} />
+              <Route 
+                path="users" 
+                element={
+                  <SuperAdminRoute>
+                    <Users />
+                  </SuperAdminRoute>
+                } 
+              />
+              <Route 
+                path="admins" 
+                element={
+                  <SuperAdminRoute>
+                    <Admins />
+                  </SuperAdminRoute>
+                } 
+              />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />

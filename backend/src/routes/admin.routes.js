@@ -2,7 +2,7 @@ import express from 'express';
 import adminController from '../controllers/admin.controller.js';
 import settingsController from '../controllers/settings.controller.js';
 import uploadController from '../controllers/upload.controller.js';
-import { authenticateAdmin } from '../middleware/admin.js';
+import { authenticateAdmin, requireSuperAdmin } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
 import { adminLoginValidation, createUserValidation, updateUserValidation, createAdminValidation, updateAdminValidation } from '../validators/admin.validators.js';
@@ -143,42 +143,42 @@ router.put('/categories/:id', adminController.updateCategory);
 router.delete('/categories/:id', adminController.deleteCategory);
 
 // ===============================
-// USER MANAGEMENT
+// USER MANAGEMENT (Super Admin Only)
 // ===============================
 
 // GET /api/admin/users - Tüm kullanıcıları listele
-router.get('/users', adminController.getUsers);
+router.get('/users', requireSuperAdmin, adminController.getUsers);
 
 // GET /api/admin/users/:id - Kullanıcı detayı
-router.get('/users/:id', adminController.getUserById);
+router.get('/users/:id', requireSuperAdmin, adminController.getUserById);
 
 // POST /api/admin/users - Yeni kullanıcı oluştur
-router.post('/users', createUserValidation, validate, adminController.createUser);
+router.post('/users', requireSuperAdmin, createUserValidation, validate, adminController.createUser);
 
 // PUT /api/admin/users/:id - Kullanıcı güncelle
-router.put('/users/:id', updateUserValidation, validate, adminController.updateUser);
+router.put('/users/:id', requireSuperAdmin, updateUserValidation, validate, adminController.updateUser);
 
 // PUT /api/admin/users/:id/status - Kullanıcı aktif/pasif yap
-router.put('/users/:id/status', adminController.toggleUserStatus);
+router.put('/users/:id/status', requireSuperAdmin, adminController.toggleUserStatus);
 
 // ===============================
-// ADMIN MANAGEMENT
+// ADMIN MANAGEMENT (Super Admin Only)
 // ===============================
 
 // GET /api/admin/admins - Tüm adminleri listele
-router.get('/admins', adminController.getAdmins);
+router.get('/admins', requireSuperAdmin, adminController.getAdmins);
 
 // GET /api/admin/admins/:id - Admin detayı
-router.get('/admins/:id', adminController.getAdminById);
+router.get('/admins/:id', requireSuperAdmin, adminController.getAdminById);
 
 // POST /api/admin/admins - Yeni admin oluştur
-router.post('/admins', createAdminValidation, validate, adminController.createAdmin);
+router.post('/admins', requireSuperAdmin, createAdminValidation, validate, adminController.createAdmin);
 
 // PUT /api/admin/admins/:id - Admin güncelle
-router.put('/admins/:id', updateAdminValidation, validate, adminController.updateAdmin);
+router.put('/admins/:id', requireSuperAdmin, updateAdminValidation, validate, adminController.updateAdmin);
 
 // DELETE /api/admin/admins/:id - Admin sil
-router.delete('/admins/:id', adminController.deleteAdmin);
+router.delete('/admins/:id', requireSuperAdmin, adminController.deleteAdmin);
 
 // ===============================
 // SETTINGS MANAGEMENT

@@ -26,6 +26,21 @@ function AdminLayout() {
   const { showConfirm } = useAlert();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Admin rolünü kontrol et
+  const getAdminRole = () => {
+    try {
+      const adminData = localStorage.getItem('admin');
+      if (!adminData) return null;
+      const admin = JSON.parse(adminData);
+      return admin.role;
+    } catch (error) {
+      console.error('Error parsing admin data:', error);
+      return null;
+    }
+  };
+
+  const isSuperAdmin = getAdminRole() === 'superadmin';
+
   // Admin authentication kontrolü
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -33,6 +48,14 @@ function AdminLayout() {
       navigate('/admin/login');
       toast.error('Bitte melden Sie sich an');
     } else {
+      // Süper admin olmayanların "Benutzer" ve "Administratoren" sayfalarına erişimini engelle
+      const restrictedPaths = ['/admin/users', '/admin/admins'];
+      if (restrictedPaths.includes(location.pathname) && !isSuperAdmin) {
+        navigate('/admin/dashboard');
+        toast.error('Zugriff verweigert - Nur für Super-Administratoren');
+        return;
+      }
+
       // Barkod-only modunda izin verilen sayfalar
       const allowedPathsInBarcodeMode = [
         '/admin/barcode-labels',
@@ -45,7 +68,7 @@ function AdminLayout() {
         navigate('/admin/barcode-labels');
       }
     }
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, isSuperAdmin]);
 
   const allMenuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome },
@@ -54,8 +77,8 @@ function AdminLayout() {
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
-    { path: '/admin/users', label: 'Benutzer', icon: FiUsers },
-    { path: '/admin/admins', label: 'Administratoren', icon: FiShield },
+    { path: '/admin/users', label: 'Benutzer', icon: FiUsers, superAdminOnly: true },
+    { path: '/admin/admins', label: 'Administratoren', icon: FiShield, superAdminOnly: true },
     { path: '/admin/barcode-labels', label: 'Barkod Etiketleri', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
@@ -63,13 +86,18 @@ function AdminLayout() {
   ];
 
   // Barkod-only modunda sadece izin verilen menü öğelerini göster
+  // Normal modda sadece superadmin'ler "Benutzer" ve "Administratoren" görebilir
   const menuItems = BARCODE_ONLY_MODE
-    ? allMenuItems.filter(item => 
-        item.path === '/admin/barcode-labels' ||
-        item.path === '/admin/admins' ||
-        item.path === '/admin/users'
-      )
-    : allMenuItems;
+    ? allMenuItems.filter(item => {
+        // Barkod-only modunda sadece belirli sayfalar gösterilir
+        // Ancak "Benutzer" ve "Administratoren" sadece superadmin'ler için
+        if (item.path === '/admin/barcode-labels') return true;
+        if (item.superAdminOnly) return isSuperAdmin;
+        return false;
+      })
+    : allMenuItems.filter(item => 
+        !item.superAdminOnly || isSuperAdmin
+      );
 
   const handleLogout = async () => {
     const confirmed = await showConfirm('Möchten Sie sich wirklich abmelden?');
