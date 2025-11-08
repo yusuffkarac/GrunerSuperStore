@@ -356,19 +356,19 @@ function BarcodeLabels() {
   if (loading) return <Loading />;
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Barcode-Etiketten</h1>
-        <p className="text-gray-600 mt-1">Verwalten und drucken Sie Ihre Produktetiketten</p>
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Barcode-Etiketten</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-1">Verwalten und drucken Sie Ihre Produktetiketten</p>
       </div>
 
       {/* Toolbar */}
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-4 md:mb-6 space-y-3">
         {/* Arama */}
-        <div className="flex-1 min-w-[300px]">
+        <div className="w-full">
           <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
             <input
               type="text"
               placeholder="Produktname oder Barcode suchen..."
@@ -377,44 +377,48 @@ function BarcodeLabels() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1); // Arama yapıldığında ilk sayfaya dön
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Butonlar */}
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 md:flex md:flex-row md:gap-2">
           <button
             onClick={() => setShowSettingsModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="flex items-center justify-center gap-1 px-2.5 py-2 text-xs md:text-sm md:px-4 md:py-2 md:text-base bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             title="Etikettdruckeinstellungen"
           >
-            <FiSettings />
-            Einstellungen
+            <FiSettings className="w-3.5 h-3.5 md:w-5 md:h-5 flex-shrink-0" />
+            <span className="ml-1 hidden sm:inline">Einstellungen</span>
+            <span className="ml-1 sm:hidden">Einst.</span>
           </button>
           <button
             onClick={() => openModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            className="flex items-center justify-center gap-1 px-2.5 py-2 text-xs md:text-sm md:px-4 md:py-2 md:text-base bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
-            <FiPlus />
-            Neues Etikett
+            <FiPlus className="w-3.5 h-3.5 md:w-5 md:h-5 flex-shrink-0" />
+            <span className="ml-1 hidden sm:inline">Neues Etikett</span>
+            <span className="ml-1 sm:hidden">Neu</span>
           </button>
 
           {selectedLabels.length > 0 && (
             <>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-1 px-2.5 py-2 text-xs md:text-sm md:px-4 md:py-2 md:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <FiPrinter />
-                Drucken ({selectedLabels.length})
+                <FiPrinter className="w-3.5 h-3.5 md:w-5 md:h-5 flex-shrink-0" />
+                <span className="ml-1 hidden sm:inline">Drucken ({selectedLabels.length})</span>
+                <span className="ml-1 sm:hidden">Druck ({selectedLabels.length})</span>
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="flex items-center justify-center gap-1 px-2.5 py-2 text-xs md:text-sm md:px-4 md:py-2 md:text-base bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                <FiTrash2 />
-                Löschen ({selectedLabels.length})
+                <FiTrash2 className="w-3.5 h-3.5 md:w-5 md:h-5 flex-shrink-0" />
+                <span className="ml-1 hidden sm:inline">Löschen ({selectedLabels.length})</span>
+                <span className="ml-1 sm:hidden">Lösch ({selectedLabels.length})</span>
               </button>
             </>
           )}
@@ -422,13 +426,13 @@ function BarcodeLabels() {
       </div>
 
       {/* Items Per Page Selector */}
-      <div className="mb-4 flex items-center gap-4 flex-wrap">
+      <div className="mb-4 space-y-2 md:space-y-0 md:flex md:items-center md:gap-4 md:flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-700 font-medium">Pro Seite:</label>
+          <label className="text-xs md:text-sm text-gray-700 font-medium whitespace-nowrap">Pro Seite:</label>
           <select
             value={itemsPerPage}
             onChange={(e) => handleItemsPerPageChange(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="px-2 md:px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -440,25 +444,25 @@ function BarcodeLabels() {
         </div>
         
         <form onSubmit={handleCustomItemsPerPageSubmit} className="flex items-center gap-2">
-          <label className="text-sm text-gray-700 font-medium">Benutzerdefiniert:</label>
+          <label className="text-xs md:text-sm text-gray-700 font-medium whitespace-nowrap">Benutzerdefiniert:</label>
           <input
             type="number"
             min="1"
             value={customItemsPerPage}
             onChange={(e) => setCustomItemsPerPage(e.target.value)}
-            placeholder="Zahl eingeben"
-            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            placeholder="Zahl"
+            className="w-20 md:w-24 px-2 md:px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
           <button
             type="submit"
-            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+            className="px-2 md:px-3 py-1.5 text-xs md:text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
           >
             Anwenden
           </button>
         </form>
 
         {total > 0 && (
-          <div className="text-sm text-gray-600">
+          <div className="text-xs md:text-sm text-gray-600">
             Insgesamt {total} Produkte werden angezeigt
           </div>
         )}
@@ -473,110 +477,188 @@ function BarcodeLabels() {
           onAction={() => openModal()}
         />
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left">
-                  <button
-                    onClick={toggleSelectAll}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    {selectedLabels.length === labels.length ? (
-                      <FiCheckSquare className="w-5 h-5" />
-                    ) : (
-                      <FiSquare className="w-5 h-5" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produktname</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Preis</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Einheit</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Barcode</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {labels.map((label) => (
-                <motion.tr
-                  key={label.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3">
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left">
                     <button
-                      onClick={() => toggleSelectLabel(label.id)}
+                      onClick={toggleSelectAll}
                       className="text-gray-600 hover:text-gray-900"
                     >
-                      {selectedLabels.includes(label.id) ? (
-                        <FiCheckSquare className="w-5 h-5 text-emerald-600" />
+                      {selectedLabels.length === labels.length ? (
+                        <FiCheckSquare className="w-5 h-5" />
                       ) : (
                         <FiSquare className="w-5 h-5" />
                       )}
                     </button>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{label.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">€{parseFloat(label.price).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{label.unit || '-'}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-900">{label.barcode}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Produktname</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Preis</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Einheit</th>
+                  <th className="hidden lg:table-cell px-4 py-3 text-left text-sm font-semibold text-gray-700">Barcode</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {labels.map((label) => (
+                  <motion.tr
+                    key={label.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3">
                       <button
-                        onClick={() => openModal(label)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Bearbeiten"
+                        onClick={() => toggleSelectLabel(label.id)}
+                        className="text-gray-600 hover:text-gray-900"
                       >
-                        <FiEdit2 />
+                        {selectedLabels.includes(label.id) ? (
+                          <FiCheckSquare className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <FiSquare className="w-5 h-5" />
+                        )}
                       </button>
-                      <button
-                        onClick={() => handleDelete(label.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Löschen"
-                      >
-                        <FiTrash2 />
-                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{label.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 font-semibold">€{parseFloat(label.price).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{label.unit || '-'}</td>
+                    <td className="hidden lg:table-cell px-4 py-3 text-sm font-mono text-gray-900">{label.barcode}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openModal(label)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Bearbeiten"
+                        >
+                          <FiEdit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(label.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Löschen"
+                        >
+                          <FiTrash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-2">
+            {/* Select All Button */}
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={toggleSelectAll}
+                className="flex items-center gap-1.5 text-xs text-gray-700 hover:text-gray-900"
+              >
+                {selectedLabels.length === labels.length ? (
+                  <FiCheckSquare className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <FiSquare className="w-4 h-4" />
+                )}
+                <span>Alle auswählen</span>
+              </button>
+            </div>
+
+            {/* Cards */}
+            {labels.map((label) => (
+              <motion.div
+                key={label.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white rounded-lg shadow-sm p-2.5 border border-gray-200"
+              >
+                <div className="flex items-center gap-2">
+                  {/* Checkbox */}
+                  <button
+                    onClick={() => toggleSelectLabel(label.id)}
+                    className="text-gray-600 hover:text-gray-900 flex-shrink-0"
+                  >
+                    {selectedLabels.includes(label.id) ? (
+                      <FiCheckSquare className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <FiSquare className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs font-semibold text-gray-900 mb-0.5 line-clamp-2">
+                      {label.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                      <span className="text-xs font-semibold text-gray-900">€{parseFloat(label.price).toFixed(2)}</span>
+                      {label.unit && (
+                        <span className="text-xs text-gray-500">• {label.unit}</span>
+                      )}
+                      <span className="text-xs text-gray-400 font-mono">{label.barcode}</span>
                     </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={() => openModal(label)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Bearbeiten"
+                    >
+                      <FiEdit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(label.id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Löschen"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
-          <div className="text-sm text-gray-600">
-            Seite {currentPage} / {totalPages} (Insgesamt {total} Produkte)
+        <div className="mt-4 md:mt-6 space-y-3 md:space-y-0 md:flex md:items-center md:justify-between md:flex-wrap md:gap-4">
+          <div className="text-xs md:text-sm text-gray-600 text-center md:text-left">
+            Seite {currentPage} / {totalPages} <span className="hidden sm:inline">(Insgesamt {total} Produkte)</span>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-1 md:gap-2">
             {/* İlk Sayfa */}
             <button
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm"
+              className="px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-xs md:text-sm"
             >
-              Erste
+              <span className="hidden sm:inline">Erste</span>
+              <span className="sm:hidden">«</span>
             </button>
 
             {/* Önceki Sayfa */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="p-1.5 md:p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             >
-              <FiChevronLeft className="w-5 h-5" />
+              <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
 
             {/* Sayfa Numaraları */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 md:gap-1">
               {getPageNumbers().map((page, index) => {
                 if (page === '...') {
                   return (
-                    <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                    <span key={`ellipsis-${index}`} className="px-1 md:px-2 text-gray-400 text-xs md:text-sm">
                       ...
                     </span>
                   );
@@ -585,7 +667,7 @@ function BarcodeLabels() {
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-2 min-w-[40px] border rounded-lg transition-colors text-sm ${
+                    className={`px-2 md:px-3 py-1.5 md:py-2 min-w-[32px] md:min-w-[40px] border rounded-lg transition-colors text-xs md:text-sm ${
                       currentPage === page
                         ? 'bg-emerald-600 text-white border-emerald-600'
                         : 'border-gray-300 hover:bg-gray-50'
@@ -601,18 +683,19 @@ function BarcodeLabels() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="p-1.5 md:p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             >
-              <FiChevronRight className="w-5 h-5" />
+              <FiChevronRight className="w-4 h-4 md:w-5 md:h-5" />
             </button>
 
             {/* Son Sayfa */}
             <button
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm"
+              className="px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-xs md:text-sm"
             >
-              Letzte
+              <span className="hidden sm:inline">Letzte</span>
+              <span className="sm:hidden">»</span>
             </button>
           </div>
         </div>

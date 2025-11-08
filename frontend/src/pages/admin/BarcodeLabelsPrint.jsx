@@ -280,10 +280,10 @@ function BarcodeLabelsPrint() {
           height: 50mm;
           border: 2px solid #059669;
           border-radius: 4px;
-          padding: 5mm;
+          padding: 3mm;
           display: grid;
           grid-template-columns: 1fr auto;
-          grid-template-rows: auto 1fr;
+          grid-template-rows: 18mm 1fr;
           gap: 3mm;
           background: white;
           page-break-inside: avoid;
@@ -307,6 +307,8 @@ function BarcodeLabelsPrint() {
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-wrap: break-word;
+          min-height: 18mm;
+
         }
 
         /* Sol alan - Barkod */
@@ -335,7 +337,6 @@ function BarcodeLabelsPrint() {
           align-items: center;
           justify-content: center;
           padding-left: 5mm;
-          border-left: 1px solid #e0e0e0;
         }
 
         .label-price {
@@ -401,6 +402,7 @@ function BarcodeLabelsPrint() {
           font-weight: 600;
           cursor: pointer;
           transition: background 0.2s;
+          display: none;
         }
 
         .pdf-button:hover {
@@ -470,21 +472,23 @@ function BarcodeLabelsPrint() {
                {label.name}
               </div>
 
-              {/* Sol taraf - Barkod */}
-              <div className="label-barcode-section">
-                <canvas
-                  ref={(el) => (barcodeRefs.current[index] = el)}
-                  className="barcode-canvas"
-                ></canvas>
-              </div>
-
-              {/* Sağ taraf - Fiyat */}
-              <div className="label-price-section">
-                <div className="label-price">
-                  {parseFloat(label.price).toFixed(2)}
-                  <span className="label-price-currency">€</span>
+              {/* Sol taraf - Barkod ve Sağ taraf - Fiyat birlikte */}
+              <div style={{ display: 'flex', alignItems: 'stretch', height: '100%' }}>
+                <div className="label-barcode-section" style={{ flex: 1 }}>
+                  <canvas
+                    ref={(el) => (barcodeRefs.current[index] = el)}
+                    className="barcode-canvas"
+                  ></canvas>
+                </div>
+                <div className="label-price-section" style={{ flex: 1 }}>
+                  <div className="label-price">
+                    {parseFloat(label.price).toFixed(2)}
+                    <span className="label-price-currency">€</span>
+                  </div>
                 </div>
               </div>
+
+              
             </div>
           ))}
         </div>

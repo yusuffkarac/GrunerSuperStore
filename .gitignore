@@ -13,6 +13,9 @@ yarn.lock
 .env.production
 .env.staging
 
+# Configuration files
+frontend/src/config/appConfig.js
+
 # Build outputs
 frontend/dist/
 frontend/build/

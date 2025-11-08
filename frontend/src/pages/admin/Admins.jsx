@@ -221,29 +221,30 @@ function Admins() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Administratoren</h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Administratoren</h1>
+          <p className="text-gray-600 mt-0.5 md:mt-1 text-xs md:text-base">
             {total} {total === 1 ? 'Administrator' : 'Administratoren'} insgesamt
           </p>
         </div>
         <button
           onClick={() => openFormModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          <FiPlus size={18} />
-          Neuer Administrator
+          <FiPlus size={16} className="md:w-[18px] md:h-[18px]" />
+          <span className="hidden sm:inline">Neuer Administrator</span>
+          <span className="sm:hidden">Neu</span>
         </button>
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-3 md:p-4 space-y-3 md:space-y-4">
         {/* Search Bar */}
         <div className="relative">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <FiSearch className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Name, E-Mail suchen..."
@@ -252,7 +253,7 @@ function Admins() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
         </div>
 
@@ -260,11 +261,11 @@ function Admins() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
+            className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-700 hover:text-gray-900"
           >
-            <FiFilter size={18} />
+            <FiFilter size={16} className="md:w-[18px] md:h-[18px]" />
             Filter {activeFilterCount > 0 && (
-              <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="bg-green-600 text-white text-xs px-1.5 md:px-2 py-0.5 rounded-full">
                 {activeFilterCount}
               </span>
             )}
@@ -272,7 +273,7 @@ function Admins() {
           {activeFilterCount > 0 && (
             <button
               onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-700"
+              className="text-xs md:text-sm text-red-600 hover:text-red-700"
             >
               Filter zurücksetzen
             </button>
@@ -445,64 +446,70 @@ function Admins() {
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-gray-200">
               {admins.map((admin) => (
-                <div key={admin.id} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-green-700 font-semibold">
-                          {admin.firstName?.[0]}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">
+                <div key={admin.id} className="p-2.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    {/* Avatar */}
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-green-700 font-semibold text-xs">
+                        {admin.firstName?.[0]}
+                      </span>
+                    </div>
+                    
+                    {/* Name & Email */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-xs text-gray-900 truncate">
                           {admin.firstName}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                          <FiMail size={12} />
-                          {admin.email}
-                        </div>
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded flex-shrink-0 ${
+                          admin.role === 'superadmin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          <FiShield size={10} />
+                          <span className="hidden sm:inline">{admin.role === 'superadmin' ? 'Superadmin' : 'Admin'}</span>
+                          <span className="sm:hidden">{admin.role === 'superadmin' ? 'SA' : 'A'}</span>
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
+                        <FiMail size={10} />
+                        <span className="truncate">{admin.email}</span>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${
-                      admin.role === 'superadmin'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      <FiShield size={12} />
-                      {admin.role === 'superadmin' ? 'Superadmin' : 'Admin'}
-                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
-                    <span>
-                      Erstellt: {new Date(admin.createdAt).toLocaleDateString('de-DE', {
+                  
+                  {/* Date & Actions */}
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">
+                      {new Date(admin.createdAt).toLocaleDateString('de-DE', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
                       })}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openAdminDetail(admin)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <FiEye size={16} />
-                      Details
-                    </button>
-                    <button
-                      onClick={() => openFormModal(admin)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    >
-                      <FiEdit2 size={16} />
-                      Bearbeiten
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAdmin(admin)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <FiTrash2 size={16} />
-                      Löschen
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openAdminDetail(admin)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Details"
+                      >
+                        <FiEye size={14} />
+                      </button>
+                      <button
+                        onClick={() => openFormModal(admin)}
+                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
+                        title="Bearbeiten"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAdmin(admin)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Löschen"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -513,21 +520,21 @@ function Admins() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1.5 md:gap-2">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-2.5 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Zurück
           </button>
-          <span className="px-4 py-2 text-sm text-gray-600">
-            Seite {currentPage} von {totalPages}
+          <span className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-gray-600">
+            {currentPage} / {totalPages}
           </span>
           <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-2.5 md:px-4 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Weiter
           </button>

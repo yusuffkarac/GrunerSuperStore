@@ -38,6 +38,7 @@ function Users() {
     phone: '',
     password: '',
     isActive: true,
+    isEmailVerified: false,
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -118,6 +119,7 @@ function Users() {
         phone: user.phone || '',
         password: '',
         isActive: user.isActive !== undefined ? user.isActive : true,
+        isEmailVerified: user.isEmailVerified !== undefined ? user.isEmailVerified : false,
       });
     } else {
       setEditingUser(null);
@@ -128,6 +130,7 @@ function Users() {
         phone: '',
         password: '',
         isActive: true,
+        isEmailVerified: false,
       });
     }
     setFormErrors({});
@@ -144,6 +147,7 @@ function Users() {
       phone: '',
       password: '',
       isActive: true,
+      isEmailVerified: false,
     });
     setFormErrors({});
   };
@@ -197,6 +201,7 @@ function Users() {
         email: formData.email.trim(),
         phone: formData.phone.trim() || null,
         isActive: formData.isActive,
+        isEmailVerified: formData.isEmailVerified,
       };
 
       if (formData.password) {
@@ -927,6 +932,20 @@ function Users() {
                     />
                     <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                       Benutzer ist aktiv
+                    </label>
+                  </div>
+
+                  {/* Email Verified Status */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isEmailVerified"
+                      checked={formData.isEmailVerified}
+                      onChange={(e) => setFormData({ ...formData, isEmailVerified: e.target.checked })}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <label htmlFor="isEmailVerified" className="text-sm font-medium text-gray-700">
+                      E-Mail bestätigt
                     </label>
                   </div>
 

@@ -289,6 +289,7 @@ class UserService {
           email: true,
           phone: true,
           isActive: true,
+          isEmailVerified: true,
           createdAt: true,
           updatedAt: true,
           _count: {
@@ -326,6 +327,7 @@ class UserService {
         email: true,
         phone: true,
         isActive: true,
+        isEmailVerified: true,
         createdAt: true,
         updatedAt: true,
         addresses: {
@@ -387,7 +389,7 @@ class UserService {
 
   // Admin: Yeni kullanıcı oluştur
   async createUserForAdmin(data) {
-    const { firstName, lastName, email, password, phone, isActive } = data;
+    const { firstName, lastName, email, password, phone, isActive, isEmailVerified } = data;
 
     // Email kontrolü
     const existingUser = await prisma.user.findUnique({
@@ -410,6 +412,7 @@ class UserService {
         passwordHash,
         phone: phone || null,
         isActive: isActive !== undefined ? isActive : true,
+        isEmailVerified: isEmailVerified !== undefined ? isEmailVerified : false,
       },
       select: {
         id: true,
@@ -418,6 +421,7 @@ class UserService {
         email: true,
         phone: true,
         isActive: true,
+        isEmailVerified: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -428,7 +432,7 @@ class UserService {
 
   // Admin: Kullanıcı güncelle
   async updateUserForAdmin(userId, data) {
-    const { firstName, lastName, email, password, phone, isActive } = data;
+    const { firstName, lastName, email, password, phone, isActive, isEmailVerified } = data;
 
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
@@ -463,6 +467,7 @@ class UserService {
     if (email !== undefined) updateData.email = normalizedEmail;
     if (phone !== undefined) updateData.phone = phone || null;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (isEmailVerified !== undefined) updateData.isEmailVerified = isEmailVerified;
     if (password) {
       updateData.passwordHash = await hashPassword(password);
     }
@@ -477,6 +482,7 @@ class UserService {
         email: true,
         phone: true,
         isActive: true,
+        isEmailVerified: true,
         createdAt: true,
         updatedAt: true,
       },
