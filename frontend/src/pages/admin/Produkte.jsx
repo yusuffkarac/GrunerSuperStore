@@ -442,6 +442,12 @@ function Produkte() {
     isActive: true,
     isFeatured: false,
     showStock: false,
+    ingredientsText: '',
+    allergens: [],
+    nutriscoreGrade: '',
+    ecoscoreGrade: '',
+    nutritionData: null,
+    openfoodfactsCategories: [],
   });
 
   // Verileri yükle fonksiyonları
@@ -494,9 +500,11 @@ function Produkte() {
   const openModal = useCallback((product = null) => {
     if (product) {
       setEditingProduct(product);
+      // ingredientsText varsa description'a da kopyala (eğer description boşsa)
+      const description = product.description || product.ingredientsText || '';
       setFormData({
         name: product.name || '',
-        description: product.description || '',
+        description: description,
         categoryId: product.categoryId || '',
         price: parseFloat(product.price) || '',
         stock: product.stock || '',
@@ -508,6 +516,12 @@ function Produkte() {
         isActive: product.isActive !== undefined ? product.isActive : true,
         isFeatured: product.isFeatured || false,
         showStock: product.showStock !== undefined ? product.showStock : false,
+        ingredientsText: product.ingredientsText || '',
+        allergens: Array.isArray(product.allergens) ? product.allergens : [],
+        nutriscoreGrade: product.nutriscoreGrade || '',
+        ecoscoreGrade: product.ecoscoreGrade || '',
+        nutritionData: product.nutritionData || null,
+        openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
       });
     } else {
       setEditingProduct(null);
@@ -525,6 +539,12 @@ function Produkte() {
         isActive: true,
         isFeatured: false,
         showStock: false,
+        ingredientsText: '',
+        allergens: [],
+        nutriscoreGrade: '',
+        ecoscoreGrade: '',
+        nutritionData: null,
+        openfoodfactsCategories: [],
       });
     }
     setShowModal(true);
@@ -553,6 +573,12 @@ function Produkte() {
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
         showStock: formData.showStock,
+        ingredientsText: formData.ingredientsText || null,
+        allergens: formData.allergens && formData.allergens.length > 0 ? formData.allergens : null,
+        nutriscoreGrade: formData.nutriscoreGrade || null,
+        ecoscoreGrade: formData.ecoscoreGrade || null,
+        nutritionData: formData.nutritionData || null,
+        openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
       };
 
       // Boş string'leri, null ve undefined değerleri temizle
@@ -1356,6 +1382,170 @@ function Produkte() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                   </div>
+
+                  {/* Ingredients Text */}
+                  {formData.ingredientsText && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Inhaltsstoffe (OpenFoodFacts)
+                      </label>
+                      <textarea
+                        value={formData.ingredientsText}
+                        onChange={(e) => setFormData({ ...formData, ingredientsText: e.target.value })}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-gray-50"
+                        placeholder="Von OpenFoodFacts importiert"
+                      />
+                    </div>
+                  )}
+
+                  {/* Allergens */}
+                  {formData.allergens && formData.allergens.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Allergene
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.allergens.map((allergen, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full"
+                          >
+                            {allergen}
+                          </span>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.allergens.join(', ')}
+                        onChange={(e) => {
+                          const allergens = e.target.value.split(',').map(a => a.trim()).filter(a => a);
+                          setFormData({ ...formData, allergens });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mt-2"
+                        placeholder="Komma-getrennt eingeben"
+                      />
+                    </div>
+                  )}
+
+                  {/* Nutri-Score & Eco-Score */}
+                  {(formData.nutriscoreGrade || formData.ecoscoreGrade) && (
+                    <div className="grid grid-cols-2 gap-4">
+                      {formData.nutriscoreGrade && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nutri-Score
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-2xl font-bold ${
+                              formData.nutriscoreGrade === 'a' ? 'text-green-600' :
+                              formData.nutriscoreGrade === 'b' ? 'text-lime-600' :
+                              formData.nutriscoreGrade === 'c' ? 'text-yellow-600' :
+                              formData.nutriscoreGrade === 'd' ? 'text-orange-600' :
+                              'text-red-600'
+                            }`}>
+                              {formData.nutriscoreGrade.toUpperCase()}
+                            </span>
+                            <select
+                              value={formData.nutriscoreGrade}
+                              onChange={(e) => setFormData({ ...formData, nutriscoreGrade: e.target.value })}
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            >
+                              <option value="">-</option>
+                              <option value="a">A</option>
+                              <option value="b">B</option>
+                              <option value="c">C</option>
+                              <option value="d">D</option>
+                              <option value="e">E</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                      {formData.ecoscoreGrade && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Eco-Score
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-2xl font-bold ${
+                              formData.ecoscoreGrade === 'a' ? 'text-green-600' :
+                              formData.ecoscoreGrade === 'b' ? 'text-lime-600' :
+                              formData.ecoscoreGrade === 'c' ? 'text-yellow-600' :
+                              formData.ecoscoreGrade === 'd' ? 'text-orange-600' :
+                              'text-red-600'
+                            }`}>
+                              {formData.ecoscoreGrade.toUpperCase()}
+                            </span>
+                            <select
+                              value={formData.ecoscoreGrade}
+                              onChange={(e) => setFormData({ ...formData, ecoscoreGrade: e.target.value })}
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            >
+                              <option value="">-</option>
+                              <option value="a">A</option>
+                              <option value="b">B</option>
+                              <option value="c">C</option>
+                              <option value="d">D</option>
+                              <option value="e">E</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Nutrition Data */}
+                  {formData.nutritionData && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nährwertinformationen
+                      </label>
+                      <div className="bg-gray-50 p-4 rounded-lg text-sm">
+                        <div className="grid grid-cols-2 gap-2">
+                          {formData.nutritionData.energyKcal && (
+                            <div>
+                              <span className="font-medium">Energie:</span> {formData.nutritionData.energyKcal} {formData.nutritionData.energyKcalUnit || 'kcal'}
+                            </div>
+                          )}
+                          {formData.nutritionData.proteins !== undefined && (
+                            <div>
+                              <span className="font-medium">Eiweiß:</span> {formData.nutritionData.proteins} {formData.nutritionData.proteinsUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.carbohydrates !== undefined && (
+                            <div>
+                              <span className="font-medium">Kohlenhydrate:</span> {formData.nutritionData.carbohydrates} {formData.nutritionData.carbohydratesUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.sugars !== undefined && (
+                            <div>
+                              <span className="font-medium">Zucker:</span> {formData.nutritionData.sugars} {formData.nutritionData.sugarsUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.fat !== undefined && (
+                            <div>
+                              <span className="font-medium">Fett:</span> {formData.nutritionData.fat} {formData.nutritionData.fatUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.saturatedFat !== undefined && (
+                            <div>
+                              <span className="font-medium">Gesättigte Fettsäuren:</span> {formData.nutritionData.saturatedFat} {formData.nutritionData.saturatedFatUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.salt !== undefined && (
+                            <div>
+                              <span className="font-medium">Salz:</span> {formData.nutritionData.salt} {formData.nutritionData.saltUnit || 'g'}
+                            </div>
+                          )}
+                          {formData.nutritionData.fiber !== undefined && (
+                            <div>
+                              <span className="font-medium">Ballaststoffe:</span> {formData.nutritionData.fiber} {formData.nutritionData.fiberUnit || 'g'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Image Upload */}
                   <div>

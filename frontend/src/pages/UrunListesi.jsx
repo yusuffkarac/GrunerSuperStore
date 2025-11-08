@@ -29,6 +29,18 @@ function UrunListesi() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  
+  // Sorting
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || '');
+  const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') || '');
+
+  // URL parametrelerinden sıralama değerlerini oku
+  useEffect(() => {
+    const urlSortBy = searchParams.get('sortBy') || '';
+    const urlSortOrder = searchParams.get('sortOrder') || '';
+    setSortBy(urlSortBy);
+    setSortOrder(urlSortOrder);
+  }, [searchParams]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,6 +108,8 @@ function UrunListesi() {
 
         if (searchQuery) params.search = searchQuery;
         if (selectedCategory) params.categoryId = selectedCategory;
+        if (sortBy) params.sortBy = sortBy;
+        if (sortOrder) params.sortOrder = sortOrder;
 
         const response = await productService.getProducts(params);
 
@@ -103,28 +117,32 @@ function UrunListesi() {
         setTotalPages(response.data.pagination?.totalPages || 1);
         setTotalProducts(response.data.pagination?.total || 0);
       } catch (err) {
-        setError(err.message || 'Ürünler yüklenirken hata oluştu');
+        setError(err.message || 'Fehler beim Laden der Produkte');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [currentPage, searchQuery, selectedCategory, canViewProducts]);
+  }, [currentPage, searchQuery, selectedCategory, sortBy, sortOrder, canViewProducts]);
 
   // Debounced search - kullanıcı yazmayı bıraktıktan 500ms sonra ara
   useEffect(() => {
     const timer = setTimeout(() => {
+      const currentParams = Object.fromEntries(searchParams);
+      
       if (searchQuery) {
-        setSearchParams({ search: searchQuery });
+        setSearchParams({ ...currentParams, search: searchQuery });
       } else {
-        setSearchParams({});
+        // Sadece search parametresini kaldır, diğerlerini koru
+        const { search, ...restParams } = currentParams;
+        setSearchParams(restParams);
       }
       setCurrentPage(1); // Yeni arama yapıldığında sayfa 1'e dön
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, setSearchParams]);
+  }, [searchQuery, setSearchParams, searchParams]);
 
   // Ürün için geçerli kampanyayı bul
   const getCampaignForProduct = (product) => {
@@ -166,17 +184,41 @@ function UrunListesi() {
     setSelectedCategory(categoryId);
     setCurrentPage(1);
 
+    const currentParams = Object.fromEntries(searchParams);
+    
     if (categoryId) {
-      setSearchParams({ category: categoryId });
+      setSearchParams({ ...currentParams, category: categoryId });
     } else {
-      setSearchParams({});
+      // Sadece category parametresini kaldır, diğerlerini koru
+      const { category, ...restParams } = currentParams;
+      setSearchParams(restParams);
     }
+  };
+
+  // Sıralama handler'ı
+  const handleSort = (newSortBy, newSortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setShowSort(false);
+    setCurrentPage(1);
+    
+    const newParams = { ...Object.fromEntries(searchParams) };
+    if (newSortBy) {
+      newParams.sortBy = newSortBy;
+      newParams.sortOrder = newSortOrder;
+    } else {
+      delete newParams.sortBy;
+      delete newParams.sortOrder;
+    }
+    setSearchParams(newParams);
   };
 
   // Filtreleri temizle
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('');
+    setSortBy('');
+    setSortOrder('');
     setCurrentPage(1);
     setSearchParams({});
   };
@@ -186,8 +228,9 @@ function UrunListesi() {
     let count = 0;
     if (searchQuery) count++;
     if (selectedCategory) count++;
+    if (sortBy) count++;
     return count;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, sortBy]);
 
   // Eğer guest göremiyorsa
   if (!canViewProducts) {
@@ -249,7 +292,7 @@ function UrunListesi() {
               }`}
             >
               <FiFilter className="w-5 h-5" />
-              <span>Filtrele</span>
+              <span>Filtern</span>
             </button>
 
             {/* Ayırıcı çizgi */}
@@ -259,7 +302,7 @@ function UrunListesi() {
             <button
               onClick={() => setShowSort(!showSort)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 transition-colors ${
-                showSort
+                showSort || sortBy
                   ? 'text-primary-600 font-medium'
                   : 'text-gray-600'
               }`}
@@ -267,7 +310,7 @@ function UrunListesi() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
-              <span>Sırala</span>
+              <span>Sortieren</span>
             </button>
           </div>
         </div>
@@ -314,14 +357,14 @@ function UrunListesi() {
         <div className="container-mobile py-4">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Filtreler</h3>
+              <h3 className="font-semibold text-gray-900">Filter</h3>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
                   className="text-sm text-primary-600 hover:underline flex items-center gap-1"
                 >
                   <FiX className="w-4 h-4" />
-                  Temizle
+                  Zurücksetzen
                 </button>
               )}
             </div>
@@ -329,7 +372,7 @@ function UrunListesi() {
             {/* Kategori filtresi */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kategori
+                Kategorie
               </label>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -340,7 +383,7 @@ function UrunListesi() {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Tümü
+                  Alle
                 </button>
                 {categories.map((category) => (
                   <button
@@ -365,20 +408,56 @@ function UrunListesi() {
       {showSort && (
         <div className="container-mobile py-4">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Sırala</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Sortieren</h3>
             <div className="space-y-2">
-              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
-                Fiyat: Düşükten Yükseğe
+              <button
+                onClick={() => handleSort('price', 'asc')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  sortBy === 'price' && sortOrder === 'asc'
+                    ? 'bg-primary-50 text-primary-600 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                Preis: Niedrig bis Hoch
               </button>
-              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
-                Fiyat: Yüksekten Düşüğe
+              <button
+                onClick={() => handleSort('price', 'desc')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  sortBy === 'price' && sortOrder === 'desc'
+                    ? 'bg-primary-50 text-primary-600 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                Preis: Hoch bis Niedrig
               </button>
-              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
-                İsim: A-Z
+              <button
+                onClick={() => handleSort('name', 'asc')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  sortBy === 'name' && sortOrder === 'asc'
+                    ? 'bg-primary-50 text-primary-600 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                Name: A-Z
               </button>
-              <button className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
-                İsim: Z-A
+              <button
+                onClick={() => handleSort('name', 'desc')}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  sortBy === 'name' && sortOrder === 'desc'
+                    ? 'bg-primary-50 text-primary-600 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                Name: Z-A
               </button>
+              {(sortBy || sortOrder) && (
+                <button
+                  onClick={() => handleSort('', '')}
+                  className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-50 text-gray-500 text-sm border-t border-gray-200 pt-2 mt-2"
+                >
+                  Sortierung entfernen
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -414,7 +493,7 @@ function UrunListesi() {
       {!loading && !error && products.length > 0 && (
         <>
           <div className="container-mobile py-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {products.map((product, index) => (
                 <UrunKarti
                   key={product.id}

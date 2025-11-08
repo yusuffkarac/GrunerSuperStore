@@ -1,0 +1,938 @@
+[
+  {
+    "productId": "059c0793-4c11-4ae3-b350-eaa6fe6414ca",
+    "name": "Duru Yesil Mercimek -Grüne Linsen 2kg",
+    "barcode": "8691440776543",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:17:32.510Z"
+  },
+  {
+    "productId": "10bd7b1d-27ee-4285-a511-7b6cf18b700e",
+    "name": "Fabuloso Lavanda 950ml/1LT",
+    "barcode": "8718951517639",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:17:32.511Z"
+  },
+  {
+    "productId": "12461686-bc51-42e9-8297-1ecf7b573a3c",
+    "name": "SanBenedetto Succoso Arancia Carota Limone Zero 0,40L",
+    "barcode": "8001620015612",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:17:32.511Z"
+  },
+  {
+    "productId": "15184a8b-7f90-4295-9e84-a7068ef6b98b",
+    "name": "Rauch Eistee Lemon 0,33l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "9008700200523",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:17:32.512Z"
+  },
+  {
+    "productId": "16d9b060-aacb-462d-831b-0f5b7ac9af7d",
+    "name": "Suntat Kimyon tozu Kreuzkümmel 70g",
+    "barcode": "8690804025341",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:17:39.592Z"
+  },
+  {
+    "productId": "181341a0-0cd3-4703-8b02-c6523b2ba1d4",
+    "name": "Ayax Fete des Fleurs 1L",
+    "barcode": "8718951324640",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:17:54.669Z"
+  },
+  {
+    "productId": "1893dbc4-5296-4b9d-8beb-ad0f1162dcfc",
+    "name": "Piyale Kelebek-Farfalle 500g",
+    "barcode": "8690516005099",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:17:54.673Z"
+  },
+  {
+    "productId": "1a95db72-0c9f-442e-b2c2-f440f9fe5e55",
+    "name": "Landliebe Haltbare Landmilch 3,5% 1l",
+    "barcode": "4067517005788",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:18:18.960Z"
+  },
+  {
+    "productId": "1c95d746-ddb2-4cd1-ae43-1b50222644e1",
+    "name": "Kervan Komi Beyaz 800g",
+    "barcode": "4040328037131",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:18:24.918Z"
+  },
+  {
+    "productId": "1fea0657-3eae-47c8-8b8c-12d35ddd720d",
+    "name": "Persil Color Megaperls Tiefenrein 1,040kg",
+    "barcode": "4015200035024",
+    "reason": "Client network socket disconnected before secure TLS connection was established",
+    "error": "Client network socket disconnected before secure TLS connection was established",
+    "timestamp": "2025-11-08T18:18:52.563Z"
+  },
+  {
+    "productId": "2356f721-0cfe-474d-a94b-81b963189c2c",
+    "name": "Somun Brot (Stück)",
+    "barcode": "2100000206117",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:19:17.976Z"
+  },
+  {
+    "productId": "25305b85-da4f-472a-b19c-781a170e947f",
+    "name": "Suntat Truthan Salami Snack 175g",
+    "barcode": "4040328040049",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:19:24.411Z"
+  },
+  {
+    "productId": "2574ebf1-507a-4866-b53f-1e2588ea6d22",
+    "name": "Langnese Calippo Cola 105ml",
+    "barcode": "8000920461235",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:19:24.414Z"
+  },
+  {
+    "productId": "2a86733c-f078-475e-b326-b8f5c08967c1",
+    "name": "Piyale Kalem-Penne Rigate 500g",
+    "barcode": "8690516003521",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:20:17.102Z"
+  },
+  {
+    "productId": "2ad24ad4-0f7b-421a-a175-b7b6a8b69845",
+    "name": "Powerade Mount.Blast 0,5l DPG   Inkl. 0,25€ Pfand",
+    "barcode": "90357350",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:20:17.104Z"
+  },
+  {
+    "productId": "2d115ee9-e17d-4b80-b3db-6c1df314509c",
+    "name": "Öncu Acili Ketcap - Scharf 400g",
+    "barcode": "8693891534017",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:25.548Z"
+  },
+  {
+    "productId": "2df1bf4b-17b3-4946-8a9d-34d9b1236a3f",
+    "name": "Cilaglu Inegöl Köfte Harci 90g",
+    "barcode": "8682631800628",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:25.553Z"
+  },
+  {
+    "productId": "2e15baf8-2165-42bf-a0fe-dbb81e7bbcd1",
+    "name": "Cilaglu Akcaabat Köfte Harci 80g",
+    "barcode": "8682631800864",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:25.554Z"
+  },
+  {
+    "productId": "2ee464ed-40cb-4cec-a21a-47092f88f0b0",
+    "name": "Tanay Ceylon Yaprak Cayi - Schwarzertee 500g",
+    "barcode": "4032489010108",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:37.277Z"
+  },
+  {
+    "productId": "2ee5e4b1-855b-4798-b86a-98c884b22a46",
+    "name": "Abido Toz Biber  Schwarzerpfeffer gemahlen 50g",
+    "barcode": "5283001118027",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:21:37.278Z"
+  },
+  {
+    "productId": "2f18d009-5fc9-4de5-afaa-28647c737663",
+    "name": "Persil Color 4 in 1 Discs  272g",
+    "barcode": "4015200035017",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:37.281Z"
+  },
+  {
+    "productId": "31117f82-53ee-49e1-89e0-a8bf32c88c13",
+    "name": "A.Tatlici - Tahini 350g",
+    "barcode": "8690585220102",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:37.285Z"
+  },
+  {
+    "productId": "33904259-bf9b-40cb-9f5a-96f1fab94a17",
+    "name": "Trilya Elma Sirkesi - Apfelessig 1l",
+    "barcode": "8681330500587",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:46.070Z"
+  },
+  {
+    "productId": "35f01aee-f5e8-4a3a-b4bd-825ffc1da52a",
+    "name": "Revasser Trilece Karamel Preliv 850g",
+    "barcode": "8606112573191",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:21:50.331Z"
+  },
+  {
+    "productId": "364228f1-1924-4779-b6cb-e3bf2ced7ec6",
+    "name": "Paprika",
+    "barcode": "2100000151462",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:50.333Z"
+  },
+  {
+    "productId": "366673dd-fc0f-44d7-a91f-de4b8c5c0b2a",
+    "name": "Suntat Mayonnaise 450g",
+    "barcode": "8690804378867",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:50.336Z"
+  },
+  {
+    "productId": "37c809ec-2255-425e-852d-06ad5f22314e",
+    "name": "Bizim Mutfak Et Aromali Bulyon Brühwürfel mit Rind. 12st.",
+    "barcode": "8690504644859",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:21:59.303Z"
+  },
+  {
+    "productId": "3ba16e73-3e42-48ea-af61-acc6c8cb42c0",
+    "name": "Costa de Arosa selezione Tonno E Fagili 2X160g",
+    "barcode": "8057502934892",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:22:10.166Z"
+  },
+  {
+    "productId": "3c025bd9-5e2f-482b-91da-7b667b2e4f8c",
+    "name": "Brändle vita Rapsöl 750ml",
+    "barcode": "4008722001240",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:22:25.409Z"
+  },
+  {
+    "productId": "3c83602f-3a15-4a78-8d38-b40e779a8601",
+    "name": "Abido Karanfil Tüm Gewürz Nelken 50g",
+    "barcode": "5283001104662",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:22:25.413Z"
+  },
+  {
+    "productId": "425b06ff-83d9-4466-90a5-36ffaf38f22f",
+    "name": "Griesson Cookies Classic 40% Chocolat chips 150g",
+    "barcode": "4001518116990",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:25:26.810Z"
+  },
+  {
+    "productId": "45209505-1ae1-4e75-936e-735469922b88",
+    "name": "Abido Maya Hefe 50g",
+    "barcode": "5283001109018",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:25:36.385Z"
+  },
+  {
+    "productId": "4da4b498-a5bb-45f6-863d-e554703ffb89",
+    "name": "RINDERGULASCH 200g",
+    "barcode": "3850104020018",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:26:04.327Z"
+  },
+  {
+    "productId": "501cdcdc-4ac6-426d-98cf-28c851622d1f",
+    "name": "Tee to go frisch ca 200ml",
+    "barcode": "2100000206148",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:26:04.335Z"
+  },
+  {
+    "productId": "53799c45-714b-4eff-8a3a-d70577ee050d",
+    "name": "Caffee to go frisch M ca 200ml",
+    "barcode": "2100000206100",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:26:18.821Z"
+  },
+  {
+    "productId": "54e9f79c-cc5b-4007-a79f-0e465c7497fa",
+    "name": "Trilya Limon Sosu - Zitronendressing 1l",
+    "barcode": "8681330500570",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:26:18.843Z"
+  },
+  {
+    "productId": "57a78510-dfd9-46d1-b033-fce4b4e94712",
+    "name": "Coca-Cola Light 0,5l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "5000112548167",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:26:23.713Z"
+  },
+  {
+    "productId": "57f16eee-7fbd-4ef3-9713-bc3d68ecc69d",
+    "name": "Coca Cola Zero (MW) 12x1L inkl. 3,30€",
+    "barcode": "2100000242351",
+    "reason": "Dosya çok büyük (max 10MB)",
+    "error": "Dosya çok büyük (max 10MB)",
+    "timestamp": "2025-11-08T18:26:35.768Z"
+  },
+  {
+    "productId": "5902980d-eb82-49f4-8b33-a17368b917c2",
+    "name": "Viss Scheurmilcch Original 500ml",
+    "barcode": "8720181239908",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:26:35.772Z"
+  },
+  {
+    "productId": "64093ec1-bb75-4cdc-9404-e4c8d650d653",
+    "name": "Sucuk Pide Schiffchen (Stück)",
+    "barcode": "2100000206032",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:07.466Z"
+  },
+  {
+    "productId": "64360fd2-1542-4c29-b010-a5ca90ab028b",
+    "name": "Karsa Klas- Doppel keks cacao und Marschmello 220g",
+    "barcode": "8690766337698",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:20.758Z"
+  },
+  {
+    "productId": "647e7587-9ca6-480d-bde7-2c41b2995c65",
+    "name": "Schär Paniermehl    Breadcrumbs   300g",
+    "barcode": "8008698004753",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:20.766Z"
+  },
+  {
+    "productId": "65ff2c0a-b584-40b5-98ed-66c06dbfa386",
+    "name": "Belegtes Sandwich (Stück)",
+    "barcode": "2100000206094",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:27:20.779Z"
+  },
+  {
+    "productId": "69dd7467-d7d6-42d4-8f07-8d82ad702eeb",
+    "name": "Frosta Nasi Goreng 500g",
+    "barcode": "4008366001262",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:27:30.432Z"
+  },
+  {
+    "productId": "700ec5a6-5571-48b1-a577-d4aeda08d19f",
+    "name": "Piyale Bugday Nisastasi 200g",
+    "barcode": "8690504642275",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:44.407Z"
+  },
+  {
+    "productId": "7154e18e-9205-4656-97b2-7f87b82558dc",
+    "name": "Almette Tomaten Pesto 150g",
+    "barcode": "4002671145505",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:52.113Z"
+  },
+  {
+    "productId": "71b4811c-33f6-4129-93c5-fe10bf46aca4",
+    "name": "Calata DE Mari Tonno al naturale 3X80g",
+    "barcode": "8057502936056",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:52.118Z"
+  },
+  {
+    "productId": "7315928e-da6a-4401-b8e9-8989cbcdaaa7",
+    "name": "Barilla Al Bronzo Fusilloni n.380 500g",
+    "barcode": "8076809585217",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:58.876Z"
+  },
+  {
+    "productId": "73d24557-3ef3-44eb-a9ae-27cf3525bf68",
+    "name": "Agride Olio Extra Vergine Di Oliva Olivetta 1l",
+    "barcode": "8028148304509",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:58.885Z"
+  },
+  {
+    "productId": "76cf6454-8f65-4a05-a764-4747f65a23d0",
+    "name": "Dasty Yag Cözucü Degreaser Original 1L",
+    "barcode": "8051566120949",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:27:58.901Z"
+  },
+  {
+    "productId": "76fc7df0-03fd-47cf-8f7d-6709e884e7b2",
+    "name": "Dere Cig Köftelik Bulgur -Weizengrütze extra fein 1kg",
+    "barcode": "4260065870253",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:04.466Z"
+  },
+  {
+    "productId": "7cb14275-0b6f-4ff1-b07b-5d2490915539",
+    "name": "ARGETA Halal Huhn Pikant 95g",
+    "barcode": "3838471045940",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:11.683Z"
+  },
+  {
+    "productId": "7d8ca5a8-29c3-457c-b5a7-45c244a2d728",
+    "name": "TUKAS Aci Ketcap 650g",
+    "barcode": "8690508601858",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:20.026Z"
+  },
+  {
+    "productId": "7db32c2a-52bf-4983-9b22-6281aac9840c",
+    "name": "Alnatura  Couscous 500g",
+    "barcode": "4104420241275",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:20.027Z"
+  },
+  {
+    "productId": "84a975a6-99a7-40ef-b3eb-148be33bd170",
+    "name": "TRILYA Barbunya Pilaki 400g",
+    "barcode": "8681330502499",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:34.539Z"
+  },
+  {
+    "productId": "84c14783-149e-4d10-813a-37c22e54a516",
+    "name": "Suntat Türk Kahvesi - Türkischer Mokka-Kaffee 100g",
+    "barcode": "8690804291722",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:28:34.540Z"
+  },
+  {
+    "productId": "871b1a5b-ab1d-4443-942b-b410de85615c",
+    "name": "Duru Kirgiz Fasulye 9mm - Weiße Bohnen 1Kg",
+    "barcode": "8691440309147",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:49.127Z"
+  },
+  {
+    "productId": "88476917-4f96-41f9-8b61-307ab16c2521",
+    "name": "Suntat Mammut- schwarze Oliven mit Stein 700g",
+    "barcode": "8690804015335",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:28:49.131Z"
+  },
+  {
+    "productId": "90f8e7ef-4314-403e-808f-dfd9e7f38fe1",
+    "name": "Ponti Aceto Di Vino Rosso 1l",
+    "barcode": "8001010031215",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:33:51.498Z"
+  },
+  {
+    "productId": "9282d3ea-ffb9-4c3c-b0ca-ceb5dfec09b5",
+    "name": "Bastoncini Balocco senza latte e uova aggiunti 700g",
+    "barcode": "8001100066967",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:34:05.019Z"
+  },
+  {
+    "productId": "92a1f764-29b9-44b9-aa51-9054f983c0d5",
+    "name": "Fuze Tea Lemon Lemongrass 0,4l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "5000112667417",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:05.022Z"
+  },
+  {
+    "productId": "934f280d-bb78-4a52-aed5-1237681c5738",
+    "name": "Crich Waffers alla Nocciola Hazelnuss 250g",
+    "barcode": "8008620052616",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:34:05.031Z"
+  },
+  {
+    "productId": "93666ff7-32e0-418e-afc9-e81e78f57d7a",
+    "name": "Wiesenh.Geflügel Bierschinken 100g",
+    "barcode": "4019467470505",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:34:05.032Z"
+  },
+  {
+    "productId": "9388d5aa-fedb-4606-9af3-95d3e29e6d36",
+    "name": "Bahlsen ohne Gleichen Edelherb 125g",
+    "barcode": "4017100264900",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:05.033Z"
+  },
+  {
+    "productId": "95c606b7-1782-4b34-b819-1dd4f1caca1f",
+    "name": "Öz-Yil Lahmacun Hamurun 240g= 8Stück",
+    "barcode": "8697404531364",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:10.142Z"
+  },
+  {
+    "productId": "963f4416-2e98-4091-9852-4e21e01f7ed9",
+    "name": "Emmi Caffe Latte Macchiato 230ml  Inkl. 0,25€ Pfand",
+    "barcode": "7610900138913",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:10.150Z"
+  },
+  {
+    "productId": "9d0c7629-6822-4ac7-829e-982da2db44b2",
+    "name": "Durra Hot Pepperpaste - Paprikamark 650g",
+    "barcode": "6210241334220",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:27.842Z"
+  },
+  {
+    "productId": "9f1d3524-df7a-44a1-95c6-150fd8322340",
+    "name": "Spielzeug",
+    "barcode": "2100000000067",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:35.384Z"
+  },
+  {
+    "productId": "9fb703bb-28fe-4047-9871-fb032329fbc4",
+    "name": "Ülker Halley -Erdbeere 240g",
+    "barcode": "8690504188162",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:35.387Z"
+  },
+  {
+    "productId": "a0a0acf0-2e45-4914-b58f-ea71110832a3",
+    "name": "AL-RAII  Tavuk Salam - HÜHNER geschmack  840g",
+    "barcode": "8711135571472",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:40.999Z"
+  },
+  {
+    "productId": "a11ba34e-3e8b-47cd-8414-089ac0ae3b44",
+    "name": "Piyale Yüksük-Ditaloni 500g",
+    "barcode": "8690516005709",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:41.004Z"
+  },
+  {
+    "productId": "a2183392-03cc-4cbc-8079-b2e68cfa78d7",
+    "name": "Costsa de ARSA Filetti Di Branzino   - Wolfsbarschfilets 100g /150g",
+    "barcode": "8057502931020",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:41.009Z"
+  },
+  {
+    "productId": "a33a2d18-a40c-4454-a2e7-8ae9dcb0e0a5",
+    "name": "Suntat Tomaten Ketchup 500g",
+    "barcode": "8690804378393",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:34:41.011Z"
+  },
+  {
+    "productId": "a591d487-31c0-45ec-a1fa-f607fd0cfdcc",
+    "name": "Falim Multi Fruit 7 g",
+    "barcode": "8690524055635",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:03.035Z"
+  },
+  {
+    "productId": "a602de6d-0168-4cb5-8cb1-e5b9b39ec827",
+    "name": "Suntat Pommes Baharati Pommes Würzsalz 140g",
+    "barcode": "8690804026300",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:35:03.040Z"
+  },
+  {
+    "productId": "a8b18149-8b14-4655-a228-cfac166078c6",
+    "name": "Duru Kocabasi Mohut 9mm -Kichererbsen 1Kg",
+    "barcode": "8691440710431",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:07.140Z"
+  },
+  {
+    "productId": "aa7cd7fd-63c7-468d-8d21-7f79e7e26dcd",
+    "name": "Bresso Kräuter 150g",
+    "barcode": "4000400008053",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:14.520Z"
+  },
+  {
+    "productId": "ac917d3c-9c9b-4f7f-b0cd-7875dca12bbf",
+    "name": "Koska Keciboynuzu /Harnup Pekmezi  - Johannisbrotmelasse 380g",
+    "barcode": "8690710137312",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:14.533Z"
+  },
+  {
+    "productId": "ad7429da-beb0-4b39-90f8-ccc989a11627",
+    "name": "Suntat Urfa Isot Paprika Gewürzzubereitung 75g",
+    "barcode": "8690804028618",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:35:23.473Z"
+  },
+  {
+    "productId": "aedccad9-89d6-4cf9-b29c-fbbdaf6006b8",
+    "name": "Paprika Carliston aus der Türkei 400g (Beutel)",
+    "barcode": "2100000205981",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:35:23.489Z"
+  },
+  {
+    "productId": "af70e07a-00c5-4717-beef-1a57b964499d",
+    "name": "Knorr Et Suyu Bulyon Rinderbouillon 24 st.",
+    "barcode": "8690637723520",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:31.792Z"
+  },
+  {
+    "productId": "b021f515-9534-44aa-94a7-4c95afca740f",
+    "name": "Lipton Yellow Label (1,5g x 100) 150g",
+    "barcode": "8720608011582",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:35:31.797Z"
+  },
+  {
+    "productId": "b085ca55-3ea0-4c58-b374-f0bdaaa185f8",
+    "name": "Öz Kayseri Pastirma Dilim 100g",
+    "barcode": "4260003874015",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:31.805Z"
+  },
+  {
+    "productId": "b4a340ec-b679-4ac0-b0ec-41a94cd1fb44",
+    "name": "Oro di Parma Pizzasauce 400g",
+    "barcode": "4008100168237",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:35:47.690Z"
+  },
+  {
+    "productId": "b55ce29c-007b-4ba1-92bd-9a778860bc47",
+    "name": "Duru Yerli Patlayan Misir -Popcorn 1Kg",
+    "barcode": "8691440710455",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:35:47.698Z"
+  },
+  {
+    "productId": "b7fc8496-217f-415d-ab81-e3e85f7583db",
+    "name": "Kuru Kahveci Mehmet Efendi - Türkischerkaffe 500g",
+    "barcode": "8690627023500",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:35:55.954Z"
+  },
+  {
+    "productId": "ba0c8e88-1257-4dc1-a093-b9bd56df0ace",
+    "name": "Walnüsse aus Frankreich (Kg)",
+    "barcode": "2100000205936",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:36:04.151Z"
+  },
+  {
+    "productId": "ba87a604-0709-447d-a50f-edca6b398197",
+    "name": "Abido  Kisnis Tüm Koriander ganz 50g",
+    "barcode": "5283001118065",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:36:04.156Z"
+  },
+  {
+    "productId": "c4bc985d-c6a3-496f-8256-8af507691c68",
+    "name": "Monster Aussie Style Lemonade 0,5l DPG inkl. 0,25€ Pfand",
+    "barcode": "5060947541986",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:36:47.417Z"
+  },
+  {
+    "productId": "05ab2f9c-765b-4f4c-93f5-0afe19b69820",
+    "name": "Cipso Original Denit Tuzlu",
+    "barcode": "8680782529221",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:44:38.928Z"
+  },
+  {
+    "productId": "0acd6724-7e89-44cb-81d9-38f06ff87bb9",
+    "name": "Patos Rolls Hot Chilli & Lime 109g",
+    "barcode": "8681506021106",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:44:45.940Z"
+  },
+  {
+    "productId": "0b2f8b51-b0a8-4de6-ae9f-79a6ca037e1e",
+    "name": "Durra Green Zaatar 400g",
+    "barcode": "6251136006990",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:44:55.660Z"
+  },
+  {
+    "productId": "0bb226e1-06b0-48e0-852b-3e8010966feb",
+    "name": "Duru Yesil Mercimek- Grüne Linse 1Kg",
+    "barcode": "8691440710363",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:44:55.668Z"
+  },
+  {
+    "productId": "0e31c6d1-c718-40f0-a024-4f54b82ba559",
+    "name": "Suntat Elma sirkesi - Apfelessig 500ml",
+    "barcode": "8690804001895",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:00.787Z"
+  },
+  {
+    "productId": "0f6189a0-2057-49ab-a7fb-335149501feb",
+    "name": "Suntat Mischgemüse eingelegt 1610g",
+    "barcode": "8690804152610",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:00.793Z"
+  },
+  {
+    "productId": "1086a616-d57a-4445-a2a0-6a62f0401d60",
+    "name": "Eichblatt Salat / Rot  aus Frankreich (Stück)",
+    "barcode": "2100000151400",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:45:00.802Z"
+  },
+  {
+    "productId": "141f2047-d1fe-411e-986b-1a36ee95ba02",
+    "name": "Gurken",
+    "barcode": "",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:09.392Z"
+  },
+  {
+    "productId": "69c7d302-bd45-4372-98ea-51c9688fdfd2",
+    "name": "Frische Vollmilch 3,5%",
+    "barcode": "4008452002017",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:45:09.405Z"
+  },
+  {
+    "productId": "a3a92dc4-df92-4afb-add7-de2dcfb0b026",
+    "name": "Roggenmischbrot",
+    "barcode": "312312313",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:45:21.451Z"
+  },
+  {
+    "productId": "c573f0d5-3861-4277-bd50-607d71d4c129",
+    "name": "Karotten",
+    "barcode": "",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:45:21.456Z"
+  },
+  {
+    "productId": "d2548130-58e7-4a66-9d81-d45654a415f1",
+    "name": "Fanta Orange 0,5l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "5000112548082",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:43.844Z"
+  },
+  {
+    "productId": "d5ebc9c4-fadf-4d6a-9ec3-9d039adfbccf",
+    "name": "Teekanne Innere Ruhe Bio Kräuter Körper und Seele 18 Beutel",
+    "barcode": "4009300020776",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:52.459Z"
+  },
+  {
+    "productId": "d6497dbd-dd42-4bf0-a86a-7efaa4c97119",
+    "name": "Ostmann Pfeffer schwarz ganz 40g",
+    "barcode": "4002674044652",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:52.467Z"
+  },
+  {
+    "productId": "d8e5bcf2-1def-44b8-aab5-25f405a5665e",
+    "name": "San Pellegrino Limonata 0,33l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "8002270406799",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:58.820Z"
+  },
+  {
+    "productId": "d902596e-52ce-4abd-8103-7fe20d47e611",
+    "name": "MC Vities Sakliköy  Volkornkeks mit Milchschokolade 100g",
+    "barcode": "8690504082996",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:45:58.821Z"
+  },
+  {
+    "productId": "dd768776-a615-42c3-9418-f234b54af461",
+    "name": "Piyale Acili Tarhana Corbasi 65g",
+    "barcode": "8690516500020",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:46:18.368Z"
+  },
+  {
+    "productId": "dd7bfe93-02e7-42f0-81ea-588344abb553",
+    "name": "Abido Koriander gemahlen Kisnis Toz  Koriander Samen 50g",
+    "barcode": "5283001111066",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:46:18.369Z"
+  },
+  {
+    "productId": "de2fb541-8e1f-4990-89cb-df0339b4f5b2",
+    "name": "Gazi Jogurt 3,6% 500ml",
+    "barcode": "4002566114609",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:46:18.378Z"
+  },
+  {
+    "productId": "e2756610-42e8-401b-abd8-97acaa3f8ecb",
+    "name": "Sanbitter Rot 10x 100ml",
+    "barcode": "2100000151288",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:46:35.412Z"
+  },
+  {
+    "productId": "e37dc6a9-4c48-476c-9840-5f8521170215",
+    "name": "Suntat Alice Ceylon Yaprak Cayi - schwarzertee 500g",
+    "barcode": "8690804027666",
+    "reason": "İndirme zaman aşımı",
+    "error": "İndirme zaman aşımı",
+    "timestamp": "2025-11-08T18:46:46.703Z"
+  },
+  {
+    "productId": "e58d84cc-fbba-42b1-9da8-41581b856f69",
+    "name": "Durra Broad Fava Beans 400g / 268g",
+    "barcode": "6251136003579",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:46:52.181Z"
+  },
+  {
+    "productId": "e7807d6e-6485-4746-9729-c14b4ca6e580",
+    "name": "Maggi Granules 130g",
+    "barcode": "7613039660874",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:47:01.342Z"
+  },
+  {
+    "productId": "efd328d7-0b5c-4afd-8864-27714f8daad1",
+    "name": "Koska Üzüm Pekmezi - Traubensirup 800g",
+    "barcode": "8690710030354",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:47:14.811Z"
+  },
+  {
+    "productId": "f2f74196-0266-4a7d-8e6d-f58cefca7b62",
+    "name": "Emmi Caffe Latte Vanille 230ml",
+    "barcode": "7610900042562/F7610900042562",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:47:21.681Z"
+  },
+  {
+    "productId": "f3deec39-cda5-4958-a69b-a18cd36d2db3",
+    "name": "Costsa de AROSA Filetti Di Salmone  - Lachsfiliets 100g / 150g",
+    "barcode": "8057502930986",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:47:21.685Z"
+  },
+  {
+    "productId": "f44a1524-580b-4323-b5ae-2b5e52a13c99",
+    "name": "Red Bull White Edition Kokos 0,25l DPG  Inkl. 0,25€ Pfand",
+    "barcode": "90433627",
+    "reason": "Geçersiz content-type",
+    "error": "Geçersiz content-type",
+    "timestamp": "2025-11-08T18:47:21.687Z"
+  },
+  {
+    "productId": "f4509b48-630e-491b-b66c-f3183a5ea6d6",
+    "name": "Ace  Candeggina Normale Igienizzante 5L",
+    "barcode": "8001480021051",
+    "reason": "Fotoğraf bulunamadı",
+    "error": null,
+    "timestamp": "2025-11-08T18:47:21.687Z"
+  }
+]

@@ -55,15 +55,15 @@ function AdminLayout() {
         return;
       }
 
-      // Barkod-only modunda izin verilen sayfalar
+      // Barkod-only modunda izin verilen sayfalar (süper adminler hariç)
       const allowedPathsInBarcodeMode = [
         '/admin/barcode-labels',
         '/admin/admins',
         '/admin/users'
       ];
       
-      // Barkod-only modunda ve izin verilen sayfalardan biri değilsek yönlendir
-      if (BARCODE_ONLY_MODE && !allowedPathsInBarcodeMode.includes(location.pathname)) {
+      // Barkod-only modunda ve izin verilen sayfalardan biri değilsek yönlendir (süper adminler hariç)
+      if (BARCODE_ONLY_MODE && !isSuperAdmin && !allowedPathsInBarcodeMode.includes(location.pathname)) {
         navigate('/admin/barcode-labels');
       }
     }
@@ -84,9 +84,9 @@ function AdminLayout() {
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
   ];
 
-  // Barkod-only modunda sadece izin verilen menü öğelerini göster
-  // Normal modda sadece superadmin'ler "Benutzer" ve "Administratoren" görebilir
-  const menuItems = BARCODE_ONLY_MODE
+  // Barkod-only modunda sadece izin verilen menü öğelerini göster (süper adminler hariç)
+  // Normal modda veya süper admin ise tüm menü öğeleri gösterilir
+  const menuItems = (BARCODE_ONLY_MODE && !isSuperAdmin)
     ? allMenuItems.filter(item => {
         // Barkod-only modunda sadece belirli sayfalar gösterilir
         // Ancak "Benutzer" ve "Administratoren" sadece superadmin'ler için

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiHeart, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiArrowLeft, FiChevronLeft, FiChevronRight, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -25,6 +25,10 @@ function UrunDetay() {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [isRippleActive, setIsRippleActive] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  const [showZoom, setShowZoom] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const imageRef = useRef(null);
+  const imageContainerRef = useRef(null);
 
   // Store'lar
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
@@ -60,7 +64,7 @@ function UrunDetay() {
           // Kampanya hatası ürün görünümünü etkilemesin
         }
       } catch (err) {
-        setError(err.message || 'Ürün yüklenirken hata oluştu');
+        setError(err.message || 'Fehler beim Laden des Produkts');
       } finally {
         setLoading(false);
       }
@@ -262,6 +266,30 @@ function UrunDetay() {
     setSelectedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   }, [images.length]);
 
+  // Zoom için mouse hareketi
+  const handleMouseMove = useCallback((e) => {
+    if (!imageContainerRef.current) return;
+    
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setZoomPosition({ 
+      x: Math.max(0, Math.min(100, x)), 
+      y: Math.max(0, Math.min(100, y)),
+      clientX: e.clientX - rect.left,
+      clientY: e.clientY - rect.top,
+    });
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setShowZoom(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setShowZoom(false);
+  }, []);
+
   // Loading state
   if (loading) {
     return (
@@ -297,16 +325,45 @@ function UrunDetay() {
       {/* Desktop: İki sütunlu grid, Mobile: Tek sütun */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
         {/* Ürün görselleri */}
-        <div className="mb-6 lg:mb-0 flex flex-col items-center lg:items-start">
-          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-3 w-full max-w-[350px] aspect-square lg:max-w-none lg:max-h-none lg:w-full">
+        <div className="lg:mb-0 flex flex-col items-center lg:items-start relative">
+          <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-3 w-full max-w-[300px] aspect-square lg:max-w-none lg:max-h-none lg:w-full">
             {images.length > 0 ? (
               <>
-                <img
-                  src={images[selectedImageIndex]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                />
+                <div 
+                  ref={imageContainerRef}
+                  className="relative w-full h-full cursor-zoom-in"
+                  onMouseMove={handleMouseMove}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <img
+                    ref={imageRef}
+                    src={images[selectedImageIndex]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                  />
+                </div>
+                
+                {/* Zoom preview panel - Desktop'ta sağ tarafta */}
+                {showZoom && imageRef.current && imageContainerRef.current && (
+                  <div className="hidden lg:block fixed w-[500px] h-[500px] bg-white border-2 border-gray-200 rounded-lg shadow-2xl overflow-hidden z-50 pointer-events-none"
+                    style={{
+                      left: `${imageContainerRef.current.getBoundingClientRect().right + 32}px`,
+                      top: `${imageContainerRef.current.getBoundingClientRect().top}px`,
+                    }}
+                  >
+                    <div 
+                      className="w-full h-full"
+                      style={{
+                        backgroundImage: `url(${images[selectedImageIndex]})`,
+                        backgroundSize: `${imageRef.current.offsetWidth * 2.5}px ${imageRef.current.offsetHeight * 2.5}px`,
+                        backgroundPosition: `-${(zoomPosition.x / 100) * imageRef.current.offsetWidth * 2.5 - 250}px -${(zoomPosition.y / 100) * imageRef.current.offsetHeight * 2.5 - 250}px`,
+                        backgroundRepeat: 'no-repeat',
+                      }}
+                    />
+                  </div>
+                )}
                 
                 {/* Görsel navigasyon butonları (birden fazla görsel varsa) */}
                 {images.length > 1 && (
@@ -593,14 +650,177 @@ function UrunDetay() {
           )}
 
           {/* Açıklama */}
-          {product.description && (
+          {(product.description || product.ingredientsText) && (
             <div className="mb-6 lg:mb-0">
               <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
                 Beschreibung
               </h2>
+              {product.description && (
+                <p className="text-base lg:text-base text-gray-600 leading-relaxed whitespace-pre-line mb-3">
+                  {product.description}
+                </p>
+              )}
+              {product.ingredientsText && !product.description && (
+                <p className="text-base lg:text-base text-gray-600 leading-relaxed whitespace-pre-line">
+                  {product.ingredientsText}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* İçerik Bilgisi (ingredientsText) */}
+          {product.ingredientsText && product.description && (
+            <div className="mb-6 lg:mb-0">
+              <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
+                Inhaltsstoffe
+              </h2>
               <p className="text-base lg:text-base text-gray-600 leading-relaxed whitespace-pre-line">
-                {product.description}
+                {product.ingredientsText}
               </p>
+            </div>
+          )}
+
+          {/* Alerjenler */}
+          {product.allergens && Array.isArray(product.allergens) && product.allergens.length > 0 && (
+            <div className="mb-6 lg:mb-0">
+              <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
+                Allergene
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {product.allergens.map((allergen, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-800 text-sm font-medium rounded-full"
+                  >
+                    {allergen}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nutri-Score & Eco-Score */}
+          {(product.nutriscoreGrade || product.ecoscoreGrade) && (
+            <div className="mb-6 lg:mb-0">
+              <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
+                Bewertungen
+              </h2>
+              <div className="flex flex-wrap gap-4">
+                {product.nutriscoreGrade && (
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className={`text-4xl font-bold ${
+                      product.nutriscoreGrade === 'a' ? 'text-green-600' :
+                      product.nutriscoreGrade === 'b' ? 'text-lime-600' :
+                      product.nutriscoreGrade === 'c' ? 'text-yellow-600' :
+                      product.nutriscoreGrade === 'd' ? 'text-orange-600' :
+                      'text-red-600'
+                    }`}>
+                      {product.nutriscoreGrade.toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">Nutri-Score</div>
+                      <div className="text-sm text-gray-600">Nährwertqualität</div>
+                    </div>
+                  </div>
+                )}
+                {product.ecoscoreGrade && (
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className={`text-4xl font-bold ${
+                      product.ecoscoreGrade === 'a' ? 'text-green-600' :
+                      product.ecoscoreGrade === 'b' ? 'text-lime-600' :
+                      product.ecoscoreGrade === 'c' ? 'text-yellow-600' :
+                      product.ecoscoreGrade === 'd' ? 'text-orange-600' :
+                      'text-red-600'
+                    }`}>
+                      {product.ecoscoreGrade.toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">Eco-Score</div>
+                      <div className="text-sm text-gray-600">Umweltauswirkungen</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Beslenme Bilgileri */}
+          {product.nutritionData && (
+            <div className="mb-6 lg:mb-0">
+              <h2 className="text-lg lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-3">
+                Nährwertinformationen
+              </h2>
+              <div className="bg-gray-50 rounded-lg p-4 lg:p-6 border border-gray-200">
+                <div className="text-xs text-gray-600 mb-3 font-medium">
+                  Pro 100g / 100ml
+                </div>
+                <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                  {product.nutritionData.energyKcal !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Energie</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.energyKcal} {product.nutritionData.energyKcalUnit || 'kcal'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.fat !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Fett</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.fat} {product.nutritionData.fatUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.saturatedFat !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm text-gray-700">davon gesättigte Fettsäuren</div>
+                      <div className="text-base font-medium text-gray-600">
+                        {product.nutritionData.saturatedFat} {product.nutritionData.saturatedFatUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.carbohydrates !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Kohlenhydrate</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.carbohydrates} {product.nutritionData.carbohydratesUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.sugars !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm text-gray-700">davon Zucker</div>
+                      <div className="text-base font-medium text-gray-600">
+                        {product.nutritionData.sugars} {product.nutritionData.sugarsUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.proteins !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Eiweiß</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.proteins} {product.nutritionData.proteinsUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.salt !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Salz</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.salt} {product.nutritionData.saltUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                  {product.nutritionData.fiber !== undefined && (
+                    <div className="border-b border-gray-200 pb-2">
+                      <div className="text-sm font-semibold text-gray-900">Ballaststoffe</div>
+                      <div className="text-lg font-bold text-gray-700">
+                        {product.nutritionData.fiber} {product.nutritionData.fiberUnit || 'g'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

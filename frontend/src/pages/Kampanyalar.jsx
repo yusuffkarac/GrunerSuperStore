@@ -34,7 +34,7 @@ function Kampanyalar() {
       setCampaigns(response.data.campaigns || []);
       setFilteredCampaigns(response.data.campaigns || []);
     } catch (error) {
-      toast.error('Kampanyalar yüklenemedi');
+      toast.error('Kampagnen konnten nicht geladen werden');
       console.error('Kampanya yükleme hatası:', error);
     } finally {
       setLoading(false);
@@ -76,11 +76,11 @@ function Kampanyalar() {
       case 'FIXED_AMOUNT':
         return `€${campaign.discountAmount} Rabatt`;
       case 'BUY_X_GET_Y':
-        return `${campaign.buyQuantity} Al ${campaign.getQuantity} Öde`;
+        return `${campaign.buyQuantity} kaufen ${campaign.getQuantity} zahlen`;
       case 'FREE_SHIPPING':
         return 'Kostenloser Versand';
       default:
-        return 'Kampanya';
+        return 'Kampagne';
     }
   };
 

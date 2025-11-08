@@ -70,18 +70,18 @@ enum EmailStatus {
 // ===================================
 
 model User {
-  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  firstName                  String    @map("first_name")
-  lastName                   String    @map("last_name")
-  email                      String    @unique
-  passwordHash               String    @map("password_hash")
-  phone                      String?
-  isActive                   Boolean   @default(true) @map("is_active")
-  isEmailVerified            Boolean   @default(false) @map("is_email_verified")
-  emailVerificationCode      String?   @map("email_verification_code")
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName                   String    @map("first_name")
+  lastName                    String    @map("last_name")
+  email                       String    @unique
+  passwordHash                String    @map("password_hash")
+  phone                       String?
+  isActive                    Boolean   @default(true) @map("is_active")
+  isEmailVerified             Boolean   @default(false) @map("is_email_verified")
+  emailVerificationCode       String?   @map("email_verification_code")
   emailVerificationCodeExpiry DateTime? @map("email_verification_code_expiry")
-  createdAt                  DateTime  @default(now()) @map("created_at")
-  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
 
   // Relations
   addresses    Address[]
@@ -145,23 +145,29 @@ model Category {
 }
 
 model Product {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  categoryId    String   @map("category_id") @db.Uuid
-  name          String
-  slug          String   @unique
-  description   String?
-  price         Decimal  @db.Decimal(12, 2)
-  stock         Int      @default(0)
-  lowStockLevel Int?     @map("low_stock_level")
-  unit          String?
-  barcode       String?
-  brand         String?
-  imageUrls     Json     @default("[]") @map("image_urls")
-  isActive      Boolean  @default(true) @map("is_active")
-  isFeatured    Boolean  @default(false) @map("is_featured")
-  showStock     Boolean  @default(false) @map("show_stock")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId              String   @map("category_id") @db.Uuid
+  name                    String
+  slug                    String   @unique
+  description             String?
+  price                   Decimal  @db.Decimal(12, 2)
+  stock                   Int      @default(0)
+  lowStockLevel           Int?     @map("low_stock_level")
+  unit                    String?
+  barcode                 String?
+  brand                   String?
+  imageUrls               Json     @default("[]") @map("image_urls")
+  ingredientsText         String?  @map("ingredients_text")
+  allergens               Json?    @default("[]")
+  nutriscoreGrade         String?  @map("nutriscore_grade")
+  ecoscoreGrade           String?  @map("ecoscore_grade")
+  nutritionData           Json?    @map("nutrition_data")
+  openfoodfactsCategories Json?    @map("openfoodfacts_categories")
+  isActive                Boolean  @default(true) @map("is_active")
+  isFeatured              Boolean  @default(false) @map("is_featured")
+  showStock               Boolean  @default(false) @map("show_stock")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   // Relations
   category       Category               @relation(fields: [categoryId], references: [id], onDelete: Restrict)

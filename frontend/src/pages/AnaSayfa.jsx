@@ -9,6 +9,7 @@ import campaignService from '../services/campaignService';
 import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
 import useAuthStore from '../store/authStore';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Ana Sayfa
 function AnaSayfa() {
@@ -81,6 +82,8 @@ function AnaSayfa() {
   };
 
   const sliderRef = useRef(null);
+  const campaignSliderRef = useRef(null);
+  const [currentCampaignIndex, setCurrentCampaignIndex] = useState(0);
 
   // Verileri yükle
   useEffect(() => {
@@ -123,7 +126,17 @@ function AnaSayfa() {
         setCategories(categoriesRes.data.categories || []);
         setFeaturedProducts(featuredRes.data.products || []);
         setBestSellers(bestSellersRes.data.products || []);
-        setCampaigns(campaignsRes.data.campaigns || []);
+        const loadedCampaigns = campaignsRes.data.campaigns || [];
+        setCampaigns(loadedCampaigns);
+        
+        // Debug: Kampanya görsellerini kontrol et
+        if (loadedCampaigns.length > 0) {
+          console.log('Kampanyalar yüklendi:', loadedCampaigns.map(c => ({ 
+            name: c.name, 
+            imageUrl: c.imageUrl,
+            normalized: c.imageUrl ? normalizeImageUrl(c.imageUrl) : null
+          })));
+        }
       } catch (error) {
         console.error('Veri yükleme hatası:', error);
       } finally {
@@ -138,7 +151,9 @@ function AnaSayfa() {
   const scrollSlider = (direction) => {
     if (!sliderRef.current) return;
 
-    const scrollAmount = sliderRef.current.offsetWidth * 0.8;
+    const cardWidth = 160; // md:w-[160px]
+    const gap = 16; // gap-4 = 16px
+    const scrollAmount = cardWidth + gap;
     const newScrollLeft =
       direction === 'left'
         ? sliderRef.current.scrollLeft - scrollAmount
@@ -149,6 +164,17 @@ function AnaSayfa() {
       behavior: 'smooth',
     });
   };
+
+  // Kampanya otomatik döndürme
+  useEffect(() => {
+    if (campaigns.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentCampaignIndex((prev) => (prev + 1) % campaigns.length);
+    }, 3000); // 3 saniye
+
+    return () => clearInterval(interval);
+  }, [campaigns.length]);
 
   // Ürün için geçerli kampanyayı bul
   const getCampaignForProduct = (product) => {
@@ -325,126 +351,171 @@ function AnaSayfa() {
 
   return (
     <div className="pb-20 bg-white">
-      {/* Hero Banner / Kategoriler */}
-      <section className="relative bg-primary-600 text-white py-6 px-4 mb-0 overflow-hidden">
-        {/* Dekoratif arka plan */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary-300 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="container-mobile relative z-10">
-          {/* Kategori kartları */}
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {categories.slice(0, 6).map((category, index) => (
+      {/* Kampanyalar Bölümü - Üstte */}
+      {campaigns.length > 0 && (
+        <section className="bg-white py-4 md:py-6 border-b border-gray-100">
+          <div className="container-mobile">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Kampagnen</h2>
               <Link
-                key={category.id}
-                to={`/urunler?category=${category.id}`}
-                className="group text-center"
+                to="/kampanyalar"
+                className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
               >
-                <div className="aspect-square bg-white/20 rounded-xl mb-2 flex items-center justify-center overflow-hidden group-hover:bg-white/30 transition-all">
-                  {category.imageUrl ? (
-                    <img
-                      src={category.imageUrl}
-                      alt={category.name}
-                      className="w-full h-full object-cover"
-                      loading={index < 6 ? "eager" : "lazy"}
-                    />
-                  ) : (
-                    <MdInventory className="text-2xl text-white/80" />
-                  )}
-                </div>
-                <h3 className="font-medium text-center text-xs text-white">
-                  {category.name}
-                </h3>
+                Alle anzeigen
+                <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      <div className="bg-white">
-        <div className="container-mobile py-4">
-          {/* Kampanyalar Bölümü */}
-          {campaigns.length > 0 && (
-            <section className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Kampanyalar</h2>
-                <Link
-                  to="/kampanyalar"
-                  className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
-                >
-                  Tümünü gör
-                  <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
+            {/* Otomatik dönen kampanya banner - Tek satır */}
+            <div className="relative overflow-hidden rounded-2xl">
+              <div 
+                ref={campaignSliderRef}
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentCampaignIndex * 100}%)` }}
+              >
+                {campaigns.map((campaign, index) => {
+                  const normalizedImageUrl = campaign.imageUrl ? normalizeImageUrl(campaign.imageUrl) : null;
+                  return (
+                    <Link
+                      key={campaign.id}
+                      to="/kampanyalar"
+                      className="block w-full flex-shrink-0 group"
+                    >
+                      <div className="relative bg-gradient-to-br  to-primary-100 rounded-2xl overflow-hidden border border-primary-200 hover:shadow-lg transition-shadow">
+                        {normalizedImageUrl ? (
+                          <div className="relative h-48 md:h-64 bg-gray-200 overflow-hidden">
+                            <img
+                              src={normalizedImageUrl}
+                              alt={campaign.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading={index === 0 ? "eager" : "lazy"}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                                const parent = e.target.parentElement;
+                                if (parent && !parent.querySelector('.fallback-icon')) {
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'h-full w-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center fallback-icon';
+                                  fallback.innerHTML = '<svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>';
+                                  parent.appendChild(fallback);
+                                }
+                              }}
+                            />
+                            {/* Daha şeffaf overlay - görseli kapatmasın */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary-600/40 to-transparent pointer-events-none"></div>
+                          </div>
+                        ) : (
+                          <div className="h-48 md:h-64 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                            <FiTag className="w-16 h-16 text-white opacity-50" />
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4 md:top-6 md:left-6 right-4 md:right-6 z-10">
+                          {/* <div className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm md:text-base font-bold shadow-lg inline-flex items-center gap-2 mb-3">
+                            <FiTag className="w-4 h-4" />
+                            <span>
+                              {campaign.type === 'PERCENTAGE' && `%${campaign.discountPercent} Rabatt`}
+                              {campaign.type === 'FIXED_AMOUNT' && `€${campaign.discountAmount} Rabatt`}
+                              {campaign.type === 'BUY_X_GET_Y' && `${campaign.buyQuantity} kaufen ${campaign.getQuantity} zahlen`}
+                              {campaign.type === 'FREE_SHIPPING' && 'Kostenloser Versand'}
+                            </span>
+                          </div> */}
+                          {/* <h3 className="text-xl md:text-2xl font-bold text-white mb-2 drop-shadow-lg">
+                            {campaign.name}
+                          </h3> */}
+                          {/* {campaign.description && (
+                            <p className="text-white/90 text-sm md:text-base drop-shadow-md line-clamp-2">
+                              {campaign.description}
+                            </p>
+                          )} */}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {campaigns.slice(0, 3).map((campaign, index) => (
+              {/* İndikatör noktaları */}
+              {campaigns.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  {campaigns.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentCampaignIndex(index);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        index === currentCampaignIndex
+                          ? 'w-8 bg-white'
+                          : 'w-2 bg-white/50 hover:bg-white/75'
+                      }`}
+                      aria-label={`Kampanya ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Kategoriler Bölümü - Altta Grid */}
+      {categories.length > 0 && (
+        <section className="bg-white py-6 md:py-8">
+          <div className="container-mobile">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Kategorien</h2>
+
+            {/* Kategori kartları - Grid düzeni */}
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 md:gap-4">
+              {categories.map((category, index) => (
                 <Link
-                  key={campaign.id}
-                  to="/kampanyalar"
-                  className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  key={category.id}
+                  to={`/urunler?category=${category.id}`}
+                  className="group text-center"
                 >
-                  {campaign.imageUrl ? (
-                    <div className="relative h-40 bg-gray-200 overflow-hidden">
-                      <img
-                        src={campaign.imageUrl}
-                        alt={campaign.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        loading={index < 3 ? "eager" : "lazy"}
-                      />
-                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1">
-                        <FiTag className="w-3 h-3" />
-                        <span>
-                          {campaign.type === 'PERCENTAGE' && `%${campaign.discountPercent} Rabatt`}
-                          {campaign.type === 'FIXED_AMOUNT' && `€${campaign.discountAmount} Rabatt`}
-                          {campaign.type === 'BUY_X_GET_Y' && `${campaign.buyQuantity} Al ${campaign.getQuantity} Öde`}
-                          {campaign.type === 'FREE_SHIPPING' && 'Kostenloser Versand'}
-                        </span>
-                      </div>
+                  <div className="bg-white rounded-xl p-0 md:p-4 hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-primary-200 hover:shadow-md h-full flex flex-col">
+                    {/* Kategori görseli - Sabit boyut */}
+                    <div className="w-full aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg mb-2 md:mb-3 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform">
+                      {category.imageUrl ? (
+                        <img
+                          src={category.imageUrl}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                          loading={index < 12 ? "eager" : "lazy"}
+                        />
+                      ) : (
+                        <MdInventory className="text-2xl md:text-3xl text-gray-300 group-hover:text-primary-400 transition-colors" />
+                      )}
                     </div>
-                  ) : (
-                    <div className="relative h-40 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                      <FiTag className="w-12 h-12 text-white opacity-50" />
-                      <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1">
-                        <FiTag className="w-3 h-3" />
-                        <span>
-                          {campaign.type === 'PERCENTAGE' && `%${campaign.discountPercent} Rabatt`}
-                          {campaign.type === 'FIXED_AMOUNT' && `€${campaign.discountAmount} Rabatt`}
-                          {campaign.type === 'BUY_X_GET_Y' && `${campaign.buyQuantity} Al ${campaign.getQuantity} Öde`}
-                          {campaign.type === 'FREE_SHIPPING' && 'Kostenloser Versand'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg text-gray-900 mb-1">{campaign.name}</h3>
-                    {campaign.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{campaign.description}</p>
-                    )}
+                    {/* Kategori adı - Daha geniş alan */}
+                    <h3 className="font-medium text-xs md:text-sm text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2 min-h-[3rem] md:min-h-[3.5rem] flex items-center justify-center px-1 pb-2 leading-tight">
+                      {category.name}
+                    </h3>
                   </div>
                 </Link>
               ))}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
+      )}
 
+      <div className="bg-white">
+        <div className="container-mobile py-4">
           {/* Öne Çıkan Ürünler */}
           {featuredProducts.length > 0 && (
             <section className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Öne Çıkan Ürünler</h2>
+                <h2 className="text-xl font-bold text-gray-900">Empfohlene Produkte</h2>
                 <Link
                   to="/urunler"
                   className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
                 >
-                  Tümünü gör
+                  Alle anzeigen
                   <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {featuredProducts.slice(0, 6).map((product, index) => (
                   <UrunKarti 
                     key={product.id} 
@@ -461,17 +532,17 @@ function AnaSayfa() {
           {bestSellers.length > 0 && (
             <section className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Çok Satanlar</h2>
+                <h2 className="text-xl font-bold text-gray-900">Bestseller</h2>
                 <Link
                   to="/urunler"
                   className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
                 >
-                  Tümünü gör
+                  Alle anzeigen
                   <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {bestSellers.slice(0, 6).map((product, index) => (
                   <UrunKarti 
                     key={product.id} 

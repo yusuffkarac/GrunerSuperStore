@@ -123,7 +123,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   }, [product, addItem]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-3 relative">
+    <div className="bg-white rounded-lg shadow-sm p-2 md:p-3 relative">
       {/* Ürün resmi */}
       <Link to={`/urun/${product.id}`} className="block relative mb-2">
         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
@@ -174,8 +174,8 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
 
         {/* Kampanya badge */}
         {campaign && (
-          <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1 z-10">
-            <FiTag className="w-3 h-3" />
+          <div className="absolute top-2 left-2 bg-red-600 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg text-[10px] md:text-xs font-bold shadow-lg flex items-center gap-1 z-10">
+            <FiTag className="w-2.5 h-2.5 md:w-3 md:h-3" />
             <span>{getCampaignBadge()}</span>
           </div>
         )}
@@ -183,7 +183,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
         {/* Sepete ekle butonu - Sağ üstte, yuvarlak, yeşil */}
         {product.stock > 0 && (
           <button
-            className={`absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all btn-press ${
+            className={`absolute top-2 right-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-md transition-all btn-press ${
               justAdded
                 ? 'bg-green-600 text-white animate-cart-add-success'
                 : 'bg-primary-600 text-white hover:bg-primary-700'
@@ -193,23 +193,23 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
             aria-label="Zum Warenkorb hinzufügen"
           >
             {justAdded ? (
-              <FiCheck className="w-5 h-5 animate-success-check" />
+              <FiCheck className="w-4 h-4 md:w-5 md:h-5 animate-success-check" />
             ) : (
-              <FiPlus className={`w-5 h-5 transition-transform ${isAnimating ? 'animate-cart-bounce' : ''}`} />
+              <FiPlus className={`w-4 h-4 md:w-5 md:h-5 transition-transform ${isAnimating ? 'animate-cart-bounce' : ''}`} />
             )}
           </button>
         )}
 
         {/* Favori butonu - Sol altta, yuvarlak, beyaz */}
         <button
-          className={`absolute bottom-2 left-2 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all btn-press ${
+          className={`absolute bottom-2 left-2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white shadow-md flex items-center justify-center transition-all btn-press ${
             isProductFavorite ? 'text-red-500' : 'text-gray-600'
           }`}
           onClick={handleToggleFavorite}
           aria-label={isProductFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
         >
           <FiHeart
-            className={`w-5 h-5 transition-all duration-300 ${
+            className={`w-4 h-4 md:w-5 md:h-5 transition-all duration-300 ${
               isProductFavorite ? 'fill-current animate-heart-fill' : ''
             } ${isHeartAnimating ? 'animate-heart-beat' : ''}`}
           />
@@ -222,23 +222,23 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
         <div className="mb-1">
           {campaign && discountedPrice !== null ? (
             <div className="flex items-center gap-2">
-              <p className="text-lg font-bold text-primary-600">
+              <p className="text-base md:text-lg font-bold text-primary-600">
                 €{discountedPrice.toFixed(2)}
               </p>
-              <p className="text-sm text-gray-500 line-through">
+              <p className="text-xs md:text-sm text-gray-500 line-through">
                 €{parseFloat(product.price).toFixed(2)}
               </p>
             </div>
           ) : (
-            <p className="text-lg font-bold text-primary-600">
+            <p className="text-base md:text-lg font-bold text-primary-600">
               €{parseFloat(product.price).toFixed(2)}
-              {product.unit && <span className="text-sm text-gray-500 font-normal"> / {product.unit}</span>}
+              {product.unit && <span className="text-xs md:text-sm text-gray-500 font-normal"> / {product.unit}</span>}
             </p>
           )}
         </div>
 
         {/* Ürün adı */}
-        <h3 className="text-sm text-gray-900 mb-1 line-clamp-2">
+        <h3 className="text-xs md:text-sm text-gray-900 mb-1 line-clamp-2">
           {product.name}
         </h3>
       </Link>

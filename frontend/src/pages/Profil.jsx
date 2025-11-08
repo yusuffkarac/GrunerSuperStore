@@ -230,7 +230,7 @@ function Profil() {
         className="w-full mb-4 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
       >
         <FiPackage />
-        Siparişlerim
+        Meine Bestellungen
       </button>
 
       {/* Tabs */}

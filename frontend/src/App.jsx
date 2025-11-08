@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -55,10 +55,33 @@ import DesignSettings from './pages/admin/DesignSettings';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 
+// Süper admin kontrolü için yardımcı fonksiyon
+const getAdminRole = () => {
+  try {
+    const adminData = localStorage.getItem('admin');
+    if (!adminData) return null;
+    const admin = JSON.parse(adminData);
+    return admin.role?.toString().trim().toLowerCase();
+  } catch (error) {
+    return null;
+  }
+};
+
 // Sayfa geçişlerini yöneten iç bileşen
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Süper admin kontrolü
+  const isSuperAdmin = getAdminRole() === 'superadmin';
+
+  // Barkod-only mod kontrolü: Sadece admin sayfalarına erişim izni (süper adminler hariç)
+  useEffect(() => {
+    if (BARCODE_ONLY_MODE && !isSuperAdmin && !location.pathname.startsWith('/admin')) {
+      navigate('/admin/login', { replace: true });
+    }
+  }, [location.pathname, navigate, isSuperAdmin]);
 
   useEffect(() => {
     // Sayfa değiştiğinde loading göster
@@ -115,26 +138,28 @@ function AppContent() {
     <>
       {isLoading && <PageLoading />}
       <Routes>
-        {/* User Layout */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<AnaSayfa />} />
-          <Route path="/urunler" element={<UrunListesi />} />
-          <Route path="/urun/:id" element={<UrunDetay />} />
-          <Route path="/sepet" element={<Sepet />} />
-          <Route path="/siparis-ver" element={<SiparisVer />} />
-          <Route path="/giris" element={<Giris />} />
-          <Route path="/kayit" element={<Kayit />} />
-          <Route path="/email-dogrula" element={<EmailDogrula />} />
-          <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
-          <Route path="/sifre-sifirla" element={<SifreSifirla />} />
-          <Route path="/reset-password" element={<SifreSifirla />} />
-          <Route path="/profil" element={<Profil />} />
-          <Route path="/siparislerim" element={<Siparislerim />} />
-          <Route path="/siparis/:id" element={<SiparisDetay />} />
-          <Route path="/favorilerim" element={<Favorilerim />} />
-          <Route path="/kampanyalar" element={<Kampanyalar />} />
-          <Route path="/karsilastir" element={<Karsilastir />} />
-        </Route>
+        {/* User Layout - Barkod-only modda erişim engellenir (süper adminler hariç) */}
+        {(!BARCODE_ONLY_MODE || isSuperAdmin) && (
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<AnaSayfa />} />
+            <Route path="/urunler" element={<UrunListesi />} />
+            <Route path="/urun/:id" element={<UrunDetay />} />
+            <Route path="/sepet" element={<Sepet />} />
+            <Route path="/siparis-ver" element={<SiparisVer />} />
+            <Route path="/giris" element={<Giris />} />
+            <Route path="/kayit" element={<Kayit />} />
+            <Route path="/email-dogrula" element={<EmailDogrula />} />
+            <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
+            <Route path="/sifre-sifirla" element={<SifreSifirla />} />
+            <Route path="/reset-password" element={<SifreSifirla />} />
+            <Route path="/profil" element={<Profil />} />
+            <Route path="/siparislerim" element={<Siparislerim />} />
+            <Route path="/siparis/:id" element={<SiparisDetay />} />
+            <Route path="/favorilerim" element={<Favorilerim />} />
+            <Route path="/kampanyalar" element={<Kampanyalar />} />
+            <Route path="/karsilastir" element={<Karsilastir />} />
+          </Route>
+        )}
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -143,8 +168,8 @@ function AppContent() {
         <Route path="/admin/barcode-labels/print" element={<BarcodeLabelsPrint />} />
 
         <Route path="/admin" element={<AdminLayout />}>
-          {BARCODE_ONLY_MODE ? (
-            // Sadece barkod etiketleri modu aktifse - belirli sayfalar erişilebilir
+          {BARCODE_ONLY_MODE && !isSuperAdmin ? (
+            // Sadece barkod etiketleri modu aktifse - belirli sayfalar erişilebilir (süper adminler hariç)
             <>
               <Route index element={<Navigate to="/admin/barcode-labels" replace />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
@@ -167,7 +192,7 @@ function AppContent() {
               <Route path="*" element={<Navigate to="/admin/barcode-labels" replace />} />
             </>
           ) : (
-            // Normal mod - tüm sayfalar erişilebilir
+            // Normal mod veya süper admin - tüm sayfalar erişilebilir
             <>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />

@@ -515,13 +515,13 @@ function Sepet() {
           <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
             <FiShoppingBag className="text-gray-400 text-4xl" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sepetiniz Boş</h2>
-          <p className="text-gray-600 mb-6">Sepetinize ürün ekleyerek başlayın</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Ihr Warenkorb ist leer</h2>
+          <p className="text-gray-600 mb-6">Beginnen Sie, indem Sie Produkte zu Ihrem Warenkorb hinzufügen</p>
           <button
             onClick={() => navigate('/')}
             className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium"
           >
-            Ürünlere Göz At
+            Produkte durchsuchen
           </button>
         </motion.div>
       </div>
@@ -534,9 +534,9 @@ function Sepet() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Sepetim</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Mein Warenkorb</h1>
             <p className="text-sm text-gray-600 mt-1">
-              {itemCount} {itemCount === 1 ? 'ürün' : 'ürün'}
+              {itemCount} {itemCount === 1 ? 'Produkt' : 'Produkte'}
             </p>
           </div>
           {items.length > 0 && (
@@ -547,7 +547,7 @@ function Sepet() {
                 hasError ? 'animate-shake' : ''
               }`}
             >
-              Temizle
+              Leeren
             </button>
           )}
         </div>
@@ -573,7 +573,7 @@ function Sepet() {
         {/* Toplam */}
         <div className="space-y-1.5 mb-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-600">Ara Toplam</span>
+            <span className="text-xs text-gray-600">Zwischensumme</span>
             <span className="text-sm text-gray-900 font-semibold">{total.toFixed(2)} €</span>
           </div>
 
@@ -594,10 +594,10 @@ function Sepet() {
 
           {/* Final toplam */}
           <div className="flex items-center justify-between pt-1.5 border-t border-gray-200">
-            <span className="text-sm text-gray-900 font-bold">Toplam</span>
+            <span className="text-sm text-gray-900 font-bold">Gesamt</span>
             <div className="text-right">
               <span className="text-lg font-bold text-primary-600 block">{finalTotal.toFixed(2)} €</span>
-              <span className="text-[10px] text-gray-500">Kargo ücreti kasadan hesaplanır</span>
+              <span className="text-[10px] text-gray-500">Versandkosten werden an der Kasse berechnet</span>
             </div>
           </div>
         </div>
@@ -607,7 +607,7 @@ function Sepet() {
           onClick={handleCheckout}
           className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-xs"
         >
-          <span>Sipariş Ver</span>
+          <span>Zur Kasse</span>
           <FiArrowRight className="w-3 h-3" />
         </button>
 
@@ -617,7 +617,7 @@ function Sepet() {
           className="w-full mt-1.5 border border-gray-300 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-xs"
         >
           <FiPackage className="w-3 h-3" />
-          Siparişlerim
+          Meine Bestellungen
         </button>
       </motion.div>
       </div>

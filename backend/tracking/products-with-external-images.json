@@ -1,0 +1,976 @@
+{
+  "generatedAt": "2025-11-08T18:43:03.128Z",
+  "totalProducts": 1014,
+  "productsWithExternalImages": 74,
+  "totalExternalImages": 80,
+  "products": [
+    {
+      "id": "0bb226e1-06b0-48e0-852b-3e8010966feb",
+      "name": "Duru Yesil Mercimek- Grüne Linse 1Kg",
+      "slug": "duru-yesil-mercimek-grune-linse-1kg-33807",
+      "barcode": "8691440710363",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://www.anthap.co.uk/cdn/shop/products/duru-green-lentils-yesil-mercimek_2de963dc-05dc-445e-ae0b-d59df0cce160.jpg?v=1597569467"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "05ab2f9c-765b-4f4c-93f5-0afe19b69820",
+      "name": "Cipso Original Denit Tuzlu",
+      "slug": "cipso-original-denit-tuzlu-37908",
+      "barcode": "8680782529221",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.openfoodfacts.org/images/products/868/078/252/9221/front_fr.3.400.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "7c3dbc52-3f31-40ab-b878-b39874247cb7",
+      "name": "Salami",
+      "slug": "salami",
+      "barcode": null,
+      "categoryName": "Fleisch & Wurst",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1599731625841-1e4ed62bd558"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "a7bd8d5e-bc0c-4099-8cf1-c787a0a7169d",
+      "name": "Orangensaft 100%",
+      "slug": "orangensaft-100",
+      "barcode": "4001679602003",
+      "categoryName": "Getränke",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1600271886742-f049cd451bba"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "41b59f58-04e4-4fe0-a9fa-7ded66d405b9",
+      "name": "Tomaten Cherry",
+      "slug": "tomaten-cherry",
+      "barcode": "",
+      "categoryName": "Obst & Gemüse",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-14-57-1762377308340-836819604.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "c573f0d5-3861-4277-bd50-607d71d4c129",
+      "name": "Karotten",
+      "slug": "karotten",
+      "barcode": "",
+      "categoryName": "Obst & Gemüse",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-14-57-1762377463501-170855371.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "18b20650-4511-4780-8c76-76e35200fca8",
+      "name": "Apfelschorle",
+      "slug": "apfelschorle",
+      "barcode": "5000112548741",
+      "categoryName": "Getränke",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1600880292203-757bb62b4baf"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "6d875e72-067d-488e-9cc4-3195af38ef82",
+      "name": "Schokolade Vollmilch",
+      "slug": "schokolade-vollmilch",
+      "barcode": "7622201426804",
+      "categoryName": "Snacks & Süßigkeiten",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1511381939415-e44015466834"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "4a8257b4-9c75-4eec-ab29-19cfe27516cd",
+      "name": "Mineralwasser Classic",
+      "slug": "mineralwasser-classic",
+      "barcode": "4100590001501",
+      "categoryName": "Getränke",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1548839140-29a749e1cf4d"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "ad4c40bf-cd43-4396-96a1-d02e1e5c5e4a",
+      "name": "Brezel",
+      "slug": "brezel",
+      "barcode": null,
+      "categoryName": "Brot & Backwaren",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1555507036-ab1f4038808a"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "f2c07cec-d051-42ca-a956-0a1f45f03e63",
+      "name": "Gummibärchen",
+      "slug": "gummibaerchen",
+      "barcode": "4001686346600",
+      "categoryName": "Snacks & Süßigkeiten",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0e2de056-7b1d-4422-9056-700853febcbd",
+      "name": "Kaffee Gemahlen",
+      "slug": "kaffee-gemahlen",
+      "barcode": "4008167103509",
+      "categoryName": "Getränke",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1447933601403-0c6688de566e"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "a3a92dc4-df92-4afb-add7-de2dcfb0b026",
+      "name": "Roggenmischbrot",
+      "slug": "roggenmischbrot",
+      "barcode": "312312313",
+      "categoryName": "Brot & Backwaren",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1598373182133-52452f7691ef"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "ba1afacc-9493-454a-afb3-79d230a2e890",
+      "name": "Butter",
+      "slug": "butter",
+      "barcode": "5011061000052",
+      "categoryName": "Milchprodukte",
+      "totalImages": 2,
+      "externalImageCount": 2,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d",
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-14-57-1762378305226-768930834.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "32889a50-4f0d-4fa3-a3a5-b2ab99158da4",
+      "name": "Hähnchenbrust",
+      "slug": "haehnchenbrust",
+      "barcode": null,
+      "categoryName": "Fleisch & Wurst",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1604503468506-a8da13d82791"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "ba3d2d4d-d3e6-4a00-b84f-081df76fde49",
+      "name": "Chips Paprika",
+      "slug": "chips-paprika",
+      "barcode": "4000522002408",
+      "categoryName": "Snacks & Süßigkeiten",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1566478989037-eec170784d0b"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "141f2047-d1fe-411e-986b-1a36ee95ba02",
+      "name": "Gurken",
+      "slug": "gurken",
+      "barcode": "",
+      "categoryName": "Obst & Gemüse",
+      "totalImages": 3,
+      "externalImageCount": 3,
+      "externalImageUrls": [
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-14-57-1762377547915-387483935.png",
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-25-49-1762377953026-543168111.png",
+        "http://localhost:5001/uploads/products/Screenshot-2025-11-06-at-00-26-06-1762377973021-369143290.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "c70078c3-ff97-4fc4-80c9-27c6277b4042",
+      "name": "Gouda Jung",
+      "slug": "gouda-jung",
+      "barcode": "4000400001016",
+      "categoryName": "Milchprodukte",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1452195100486-9cc805987862"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "5096e18e-52cc-4f30-80b7-e733f0138a8e",
+      "name": "Bio Äpfel Elstar",
+      "slug": "bio-aepfel-elstar",
+      "barcode": null,
+      "categoryName": "Obst & Gemüse",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "69c7d302-bd45-4372-98ea-51c9688fdfd2",
+      "name": "Frische Vollmilch 3,5%",
+      "slug": "vollmilch-35",
+      "barcode": "4008452002017",
+      "categoryName": "Milchprodukte",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1563636619-e9143da7973b"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "2efadc00-3eec-4412-b600-b7816ad26c5e",
+      "name": "Vollkornbrot",
+      "slug": "vollkornbrot",
+      "barcode": "",
+      "categoryName": "Brot & Backwaren",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1509440159596-0249088772ff"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "945084da-a8ac-4570-8823-07f873dbcbf4",
+      "name": "Bananen",
+      "slug": "bananen",
+      "barcode": "",
+      "categoryName": "Obst & Gemüse",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.unsplash.com/photo-1603833665858-e61d17a86224"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "b1205525-2edd-4ee2-96be-6863b3b761a9",
+      "name": "Naturjoghurt 3,8%",
+      "slug": "naturjoghurt-3-8",
+      "barcode": "4104060006777",
+      "categoryName": "Milchprodukte",
+      "totalImages": 4,
+      "externalImageCount": 4,
+      "externalImageUrls": [
+        "http://localhost:5001/uploads/products/1762379682023-809753810.png",
+        "http://localhost:5001/uploads/products/1762379581488-325526205.jpeg",
+        "http://localhost:5001/uploads/products/1762379549628-835022558.jpeg",
+        "http://localhost:5001/uploads/products/1762379684762-127174346.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0b422897-77f2-4a2f-bfdb-c57b020229ba",
+      "name": "Omega  Economy XXXl Pack  Orange 350g",
+      "slug": "omega-economy-xxxl-pack-orange-350g-37725",
+      "barcode": "4260005391558",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.barleans.com/cdn/shop/files/Barleans_SDOrangeCreme_Render_16oz_900x900_300dpi_f9bc5b21-de45-4d0f-b0ac-b9c28e6e34e9.jpg?v=1755802299"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "114a3798-4a1b-4fca-9491-616ecba875ba",
+      "name": "Mahmood Cappuccino Classic 25g",
+      "slug": "mahmood-cappuccino-classic-25g-34272",
+      "barcode": "8697449918281",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://exporgin.com/cdn/shop/files/mahmood-cappuccino-granulated-choco-sugar-free-20-x-25g-8479028_grande.jpg?v=1760486993"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "048afedc-bc4c-4144-900e-b109d7e4bf91",
+      "name": "Trauben Hell aus Italien (Kg)",
+      "slug": "trauben-hell-aus-italien-kg-34282",
+      "barcode": "2100000205950",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://sbunion.shop/wp-content/uploads/2024/06/TraubenHellUndDunkel.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0e51d89f-752e-40f3-90cc-2e582e37772c",
+      "name": "Egetürk Egem Dilim Sucuk 150g",
+      "slug": "egeturk-egem-dilim-sucuk-150g-27275",
+      "barcode": "4017979063000",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.tokfood.com/image/cache/catalog/products/egeturk-egem-garlic-beef-sausage-150g-01008-1-800x800.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0f25c404-6467-403a-8a74-7a77e63976ad",
+      "name": "Suntat Sigir Sosis 800g",
+      "slug": "suntat-sigir-sosis-800g-27263",
+      "barcode": "4040328083398",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://ik.imagekit.io/ei3q9iuhm/tr:q-85/images/products/WMFH4suZFAVuXCM3J6gbttyDY9qYh7N5SJFDR3W2.jpg?ik-sdk-version=php-2.0.0&cache=31536000"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "11273b55-44a2-45d4-8070-d08234538aab",
+      "name": "Suntat Sigir Etli Tavuk-Hindi Dilim Salam 200g",
+      "slug": "suntat-sigir-etli-tavuk-hindi-dilim-salam-200g-27274",
+      "barcode": "4040328033317",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://suntat.de/wp-content/uploads/2019/12/100200.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "08e57b21-506b-4737-b911-16de184242a3",
+      "name": "Gazi Ciftlik Jogurt 3,5% 1Kg",
+      "slug": "gazi-ciftlik-jogurt-35-1kg-25843",
+      "barcode": "4002566003118",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.openfoodfacts.org/images/products/400/256/600/3118/front_en.43.400.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "1086a616-d57a-4445-a2a0-6a62f0401d60",
+      "name": "Eichblatt Salat / Rot  aus Frankreich (Stück)",
+      "slug": "eichblatt-salat-rot-aus-frankreich-stuck-27519",
+      "barcode": "2100000151400",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://sbunion.shop/wp-content/uploads/2024/07/AdobeStock_28016048_Eichlbattrot.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "05216c4f-a135-424f-8271-eb6946e43f73",
+      "name": "Divella Mezze Penne Ricate 42 500g",
+      "slug": "divella-mezze-penne-ricate-42-500g-27450",
+      "barcode": "8005121000429",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.divella.it/wp-content/uploads/2022/12/pasta-di-semola-mezze-penne-rigate.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0aff4d6e-5cdb-4da8-941f-f4df01b64097",
+      "name": "Müller Froop Mango 100g",
+      "slug": "muller-froop-mango-100g-25880",
+      "barcode": "40858500",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://d40toz3wdlpr6.cloudfront.net/medias/sys_master/root/h84/h62/9315306831902/1014528-01.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0cba6124-d5c7-4928-bee6-5f5dde6972ba",
+      "name": "Divella Fagiolini Rigati 67 500g",
+      "slug": "divella-fagiolini-rigati-67-500g-27461",
+      "barcode": "8005121000672",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.divella.it/wp-content/uploads/2022/12/pasta-di-semola-fagiolini-rigati.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "10f69e99-08bd-4659-b51d-3ecea5015e12",
+      "name": "Piyale Spaghetti 500g",
+      "slug": "piyale-spaghetti-500g-27487",
+      "barcode": "8690516004009",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://krinos.com/wp-content/uploads/2024/12/50026_1-B.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0a774f79-2aa3-46a1-b7a0-6e1ad3083824",
+      "name": "Piyale Ince Uzun-Sedano 500g",
+      "slug": "piyale-ince-uzun-sedano-500g-27486",
+      "barcode": "8690516005631",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://bonvila.com/cdn/shop/products/8690516005631.jpg?v=1612965960"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0d451061-92fb-4a9c-a6aa-6d4cf6e70244",
+      "name": "Quikpack Müllbeutel 60L 20 Stück",
+      "slug": "quikpack-mullbeutel-60l-20-stuck-37787",
+      "barcode": "4008284070210",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://cdn.bueromarkt-ag.de/product/55da4bdf7d3fed0f307149b2b201befe29a9288f/muellbeutel_quickpack_60_liter.jpg?1739423043"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "06aaeada-43d9-4866-b50d-c292abd06919",
+      "name": "Succo",
+      "slug": "succo-27546",
+      "barcode": "2100000151677",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.allrecipes.com/thmb/L243LZ0nV6eq7NBcGuVgNjmhp2I=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/28516-old-fashioned-sicilian-succo-MOLLE888-4x3-1-bf65d95b91144462a06d6168e3fd190a.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "09679243-3a23-4f4f-8fdf-f85bcfea8a4a",
+      "name": "Suntat Cemen tozu Bockshornklee 180g",
+      "slug": "suntat-cemen-tozu-bockshornklee-180g-32213",
+      "barcode": "8690804379741",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://beslen-food.de/media/image/product/1169/md/bockshornklee-saat-pulver-180g-pet-klein~2.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0acd6724-7e89-44cb-81d9-38f06ff87bb9",
+      "name": "Patos Rolls Hot Chilli & Lime 109g",
+      "slug": "patos-rolls-hot-chilli-lime-109g-37909",
+      "barcode": "8681506021106",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://turkishplaza.com/cdn/shop/files/9hMo9C-L3O_500x500_d79bafd8-b9f6-4c39-a487-f3c09f5fd05e.png?v=1733254143"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "1104f040-c019-4431-8961-7ff993ffcee1",
+      "name": "Red Bull Dose 0,25l inkl. 0,25€ Pfand",
+      "slug": "red-bull-dose-025l-inkl-025eur-pfand-37911",
+      "barcode": "90162565",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.delicando.com/imagecache/item-fullscreen/8bf95a2986df58825ff1f561b170fd59dbdb6450c27066358485a6f358e5d8da.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "06d491cb-43ec-4659-a8db-85b4f0de4796",
+      "name": "Pastefrolle Balocco uova fresche italiane 700g",
+      "slug": "pastefrolle-balocco-uova-fresche-italiane-700g-34858",
+      "barcode": "8001100066998",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.tigros.it/photo2/2024/05/22/1/main/large/pim-00000008001100066998-main-20240521-152119.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0deb0aeb-12e5-43ef-b3a5-72ded19eb8a1",
+      "name": "Develey Garten Kräuter Dressing 25ml",
+      "slug": "develey-garten-krauter-dressing-25ml-34893",
+      "barcode": "4006824986861",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.develey-foodservice.de/files/23351/master23351_700.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0de185d1-10b2-488f-9f17-106095bdb340",
+      "name": "Lorenz Clubs Cracker 200g",
+      "slug": "lorenz-clubs-cracker-200g-37888",
+      "barcode": "4018077620003",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://brands-of-germany.com/cdn/shop/products/ClubsCracker.gif?v=1628260980"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "11814c01-bb4f-4f86-a8eb-6ce8d3defeb6",
+      "name": "Öncu Nar Eksili Sos - Granatapfelsauce 330g",
+      "slug": "oncu-nar-eksili-sos-granatapfelsauce-330g-34956",
+      "barcode": "8693891195980",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.turkishfoodmarket.us/images/thumbs/0000856_oncu-pomegranate-sauce-330g_625.jpeg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "039398d1-85d8-4b97-bcc8-28b8986a8f8d",
+      "name": "Süper Maya Peynir Mayasi 100g",
+      "slug": "super-maya-peynir-mayasi-100g-37914",
+      "barcode": "8697408620026",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://productimages.hepsiburada.net/s/56/375/11260995469362.jpg/format:webp"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "048d8eb6-937a-445f-bc38-03c9e78068d0",
+      "name": "Alnatura Käse Gebäck Gauda 80g",
+      "slug": "alnatura-kase-geback-gauda-80g-37863",
+      "barcode": "4104420227552",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://mediaservice.alnatura.de/image/501324310981/image_qhot18cjl95jpc0pk0rjcfo76t/-FJPG"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0516555f-91b7-4385-9f3b-2095f5332b95",
+      "name": "Divella Mista 41 500g",
+      "slug": "divella-mista-41-500g-27457",
+      "barcode": "8005121000412",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://piccolosgastronomia.com/cdn/shop/products/1452616287_8005121600414_immaginePacco_1200x1200.jpg?v=1616188563"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "05296524-b6d4-4991-b6e6-402ccc0b6f64",
+      "name": "Coca Cola Zero 1L inkl. 0,25€ Pfand",
+      "slug": "coca-cola-zero-1l-inkl-025eur-pfand-37923",
+      "barcode": "5449000134264",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.openfoodfacts.org/images/products/544/900/013/4264/front_en.65.400.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "00839e21-b8e7-46cf-a80b-0723adcc9fd3",
+      "name": "AL-RAII Sigir Salam  - RIND geschmack 340g",
+      "slug": "al-raii-sigir-salam-rind-geschmack-340g-30767",
+      "barcode": "8711135572325",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://hepsi-markt.de/wp-content/uploads/2025/03/013504.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "010be04b-2f1a-4f9f-b786-c18374e307fb",
+      "name": "Aurora Weizenmehl Typ 405 1Kg",
+      "slug": "aurora-weizenmehl-typ-405-1kg-34760",
+      "barcode": "4000406070078",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://germandelistore.com/media/image/c3/b6/46/aurora_weizenmehl_405_front.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0152f2d4-a874-4a99-b0dc-e026b266dc20",
+      "name": "Falcone Cantucci Pistacchio e Credro 180g",
+      "slug": "falcone-cantucci-pistacchio-e-credro-180g-34866",
+      "barcode": "8023696008237",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://i.ebayimg.com/images/g/5fIAAOSw-2Bj2osb/s-l1200.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "01e1e4b2-eadd-4d09-bba1-9c1d40a46ebe",
+      "name": "Müllers Mühle Belguga Linsen 500g",
+      "slug": "mullers-muhle-belguga-linsen-500g-34770",
+      "barcode": "4000286231873",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.muellers-muehle.de/fileadmin/Produkte/Linsen/821866-MM-Beluga-Linsen-500g-Pack-frontal-Desktop-Packshots-560x560.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "032ef0c9-9e97-472d-884f-f33a907a831f",
+      "name": "Menos Fruit 33g",
+      "slug": "menos-fruit-33g-37824",
+      "barcode": "80880974",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.dolesunshine.com/wp-content/uploads/sites/14/2024/11/00038900029050_A1C1-2000x2000.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "08ae6ae7-717f-4afb-a137-723e4b2529e1",
+      "name": "Divella Ditali 61 500g",
+      "slug": "divella-ditali-61-500g-27455",
+      "barcode": "8005121000610",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://d2lnr5mha7bycj.cloudfront.net/product-image/file/large_d6aa0b8c-dcfc-461c-8d6a-cbd6a74d7846.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0b2f8b51-b0a8-4de6-ae9f-79a6ca037e1e",
+      "name": "Durra Green Zaatar 400g",
+      "slug": "durra-green-zaatar-400g-33885",
+      "barcode": "6251136006990",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.openfoodfacts.org/images/products/625/113/600/6990/front_en.18.400.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0c1656ee-bd55-4a30-8534-29fe297d920e",
+      "name": "Camlica Limon Aromali Gazoz 1,5L inkl. 0,25€ Pfand",
+      "slug": "camlica-limon-aromali-gazoz-15l-inkl-025eur-pfand-34883",
+      "barcode": "4260256411159",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://ik.imagekit.io/ei3q9iuhm/tr:q-85/images/products/QhRbA0lVpW7sTphX5Qqhb5cRFleapRcy6YYxBcax.jpg?ik-sdk-version=php-2.0.0&cache=31536000"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0e1d984d-8edd-4a5b-98da-7d26cea64da9",
+      "name": "Arla Finello Pizzakäse 150g",
+      "slug": "arla-finello-pizzakase-150g-25834",
+      "barcode": "5760466896481",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.arlafoods.de/49d179/globalassets/arla-global/products---overview/all-our-brands/finello/de/2023/arla-finello-packshots-2023-cms_300x400-pizza.png?width=1200&height=630&rmode=max"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0e31c6d1-c718-40f0-a024-4f54b82ba559",
+      "name": "Suntat Elma sirkesi - Apfelessig 500ml",
+      "slug": "suntat-elma-sirkesi-apfelessig-500ml-34930",
+      "barcode": "8690804001895",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://aima-online.de/cdn/shop/files/Suntat-Apfelessig_7c0e50f8-97e1-4358-bad2-b3a7464d8568.png?v=1755525379"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0f6189a0-2057-49ab-a7fb-335149501feb",
+      "name": "Suntat Mischgemüse eingelegt 1610g",
+      "slug": "suntat-mischgemuse-eingelegt-1610g-34225",
+      "barcode": "8690804152610",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "http://aima-online.de/cdn/shop/files/Suntat-EingelegtesMischgemuese_KarisikTursu_950g.png?v=1753536762"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0f64feee-bbad-40f9-a66b-478bae818620",
+      "name": "Erciyes Ailemin Hindi Sosis 500g",
+      "slug": "erciyes-ailemin-hindi-sosis-500g-27267",
+      "barcode": "4011259040057",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.erciyes-online.de/fileadmin/user_upload/Erciyes_Produkte/Produktbilder/erciyes-c%C4%B1zzb%C4%B1zz-%C4%B1zgaral%C4%B1k-sosis-800g.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0fabad62-0403-4793-b786-f63b1d9de4c0",
+      "name": "Herta Finesse Putenbrust mit Honig 100g",
+      "slug": "herta-finesse-putenbrust-mit-honig-100g-27528",
+      "barcode": "4000582189694",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://images.openfoodfacts.org/images/products/400/058/218/9694/front_de.22.full.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "10342f04-e7ba-4b96-a178-4cf570984337",
+      "name": "C&W Cafeteria Erdbeer-Joghurt 600g",
+      "slug": "c-w-cafeteria-erdbeer-joghurt-600g-2055",
+      "barcode": "4008577020373",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://lebensmittel-versand.eu/media/image/product/18019/md/coppenrath-wiese-cafeteria-erdbeer-joghurt-600g.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "10e93935-3120-472b-80a1-923d8f09b36f",
+      "name": "Haribo Happy Cola  100g",
+      "slug": "haribo-happy-cola-100g-37874",
+      "barcode": "4001686006085",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://riekersmeats.com/cdn/shop/products/6E31D15B-3BA1-42C7-AF5F-FD70DD6E02F4_1000x.jpg?v=1637333546"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "08f97586-3e94-4ee7-bce4-8ac50c5b2fb8",
+      "name": "Suntat Mascarpone 250g",
+      "slug": "suntat-mascarpone-250g-24481",
+      "barcode": "4040328039340",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://bakkalamca.be/2789-large_default/suntat-mascarpone-250g.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "09f75287-d079-4550-8f70-2fbebd3d6718",
+      "name": "Efepasa Etap Biberli Sigir Dilim Salam 150g",
+      "slug": "efepasa-etap-biberli-sigir-dilim-salam-150g-27279",
+      "barcode": "4017979058006",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://bakkalamca.be/117-large_default/efepasa-etap-biberli-sigir-dilim-salam-150g.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "0ad59148-041a-4531-98c4-4b453f91e378",
+      "name": "Ferrero Rocher Classic",
+      "slug": "ferrero-rocher-classic-37922",
+      "barcode": "8000500365618",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.ferrerorocher.com/int/sites/ferrerorocher20_int/files/2023-05/fr_classic_ic_t4_fronte_premium_gold_teaser_0.png?t=1759854508"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "06ae8c16-223f-4556-a938-21343168d61f",
+      "name": "Mövenpick Der Milde gemahlen 500g",
+      "slug": "movenpick-der-milde-gemahlen-500g-2257",
+      "barcode": "4006581017303",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://m.media-amazon.com/images/I/61fcqmWgtxL._AC_UF894,1000_QL80_.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "06e03b03-cf41-41eb-81af-78014b4d47e2",
+      "name": "Efepasa Arzum Tavuk-Hindi Dilim Salam 200g",
+      "slug": "efepasa-arzum-tavuk-hindi-dilim-salam-200g-27277",
+      "barcode": "4017979056002",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.ordrs.co.uk/cdn/shop/files/efepasa-arzum-tavuk-hindi-dilimli-salam-200g-ready-mealspre-cooked-meals-mfc-supermarket-191785.jpg?v=1706897835"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "068de5a4-dcf4-4200-a94e-9fe02042ad97",
+      "name": "Galbani Ricotta 250g",
+      "slug": "galbani-ricotta-250g-25839",
+      "barcode": "8000430194012",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://www.galbani.co.uk/wp-content/uploads/2021/05/GLB_Ricotta-250g.png"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "07537e7d-fe6c-454c-9bd1-c0ac627d083b",
+      "name": "Duru Sehriyeli Pilavlik Bulgur 1Kg",
+      "slug": "duru-sehriyeli-pilavlik-bulgur-1kg-33809",
+      "barcode": "8691440305439",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://cdn.dsmcdn.com/ty15/product/media/images/20201013/19/15572387/72710696/1/1_org_zoom.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "076d4aeb-04c2-4382-8e6c-95249a04695e",
+      "name": "Piyale Tel Sehriye- Capellini Corti 500g",
+      "slug": "piyale-tel-sehriye-capellini-corti-500g-27477",
+      "barcode": "8690516005211",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://krinos.com/wp-content/uploads/2024/12/50025_1-B.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "07731969-6789-434d-af92-86b1a6318063",
+      "name": "Falim Erdbeere 7g",
+      "slug": "falim-erdbeere-7g-37826",
+      "barcode": "8690524055536",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://at-shop-lwl.com/img/p/5/8/6/7/5867-home_default.jpg"
+      ],
+      "localImageUrls": []
+    },
+    {
+      "id": "08941fdd-0dd3-40ad-847e-74d7f6c9c302",
+      "name": "Suntat Limontuzu Zitronensäure 140g",
+      "slug": "suntat-limontuzu-zitronensaure-140g-32202",
+      "barcode": "8690804025549",
+      "categoryName": "Genel",
+      "totalImages": 1,
+      "externalImageCount": 1,
+      "externalImageUrls": [
+        "https://ik.imagekit.io/ei3q9iuhm/tr:q-85/images/products/w4Y6Z5HHH2Rlu8eh4PK2obDly0rftsg7HuR5rtnZ.jpg?ik-sdk-version=php-2.0.0&cache=31536000"
+      ],
+      "localImageUrls": []
+    }
+  ]
+}

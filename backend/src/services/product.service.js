@@ -330,7 +330,9 @@ class ProductService {
     // Sadece schema'da tanımlı alanları kabul et
     const allowedFields = [
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
-      'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock'
+      'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
+      'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
+      'nutritionData', 'openfoodfactsCategories'
     ];
     
     const createData = {};
@@ -412,7 +414,9 @@ class ProductService {
     // Sadece schema'da tanımlı alanları kabul et
     const allowedFields = [
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
-      'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock'
+      'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
+      'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
+      'nutritionData', 'openfoodfactsCategories'
     ];
     
     const updateData = {};

@@ -1,38 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiCompass, FiRepeat, FiShoppingCart, FiFileText, FiGift, FiHeart } from 'react-icons/fi';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { FiHome, FiGrid, FiShoppingCart, FiHeart, FiUser } from 'react-icons/fi';
+import { useRef, useMemo } from 'react';
 import useCartStore from '../../store/cartStore';
-import campaignService from '../../services/campaignService';
 
 // Bottom Navigation - Nur auf Mobilgeräten sichtbar
 function BottomNav() {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
-  const [campaignCount, setCampaignCount] = useState(0);
   const navRef = useRef(null);
 
-  // Aktif kampanya sayısını yükle
-  useEffect(() => {
-    const loadCampaignCount = async () => {
-      try {
-        const response = await campaignService.getActiveCampaigns();
-        const campaigns = response.data.campaigns || [];
-        setCampaignCount(campaigns.length);
-      } catch (error) {
-        console.error('Kampanya sayısı yüklenirken hata:', error);
-      }
-    };
-
-    loadCampaignCount();
-  }, []);
-
   const navItems = useMemo(() => [
-    { path: '/', icon: FiCompass, label: 'Entdecken' },
-    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
+    { path: '/', icon: FiHome, label: 'Startseite' },
+    { path: '/urunler', icon: FiGrid, label: 'Produkte' },
     { path: '/sepet', icon: FiShoppingCart, label: 'Warenkorb', badge: itemCount },
-    { path: '/siparislerim', icon: FiFileText, label: 'Bestellungen'},
-    { path: '/kampanyalar', icon: FiGift, label: 'Aktionen', badge: campaignCount },
-  ], [itemCount, campaignCount]);
+    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
+    { path: '/profil', icon: FiUser, label: 'Profil' },
+  ], [itemCount]);
 
   // Aktif index'i hesapla
   const activeIndex = useMemo(() => {
