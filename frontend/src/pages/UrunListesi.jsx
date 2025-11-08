@@ -33,7 +33,8 @@ function UrunListesi() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 12;
+  const [totalProducts, setTotalProducts] = useState(0);
+  const itemsPerPage = 24; // 12'den 24'e artırıldı
 
   // Ayarları kontrol et
   useEffect(() => {
@@ -99,7 +100,8 @@ function UrunListesi() {
         const response = await productService.getProducts(params);
 
         setProducts(response.data.products || []);
-        setTotalPages(response.data.totalPages || 1);
+        setTotalPages(response.data.pagination?.totalPages || 1);
+        setTotalProducts(response.data.pagination?.total || 0);
       } catch (err) {
         setError(err.message || 'Ürünler yüklenirken hata oluştu');
       } finally {
@@ -222,8 +224,13 @@ function UrunListesi() {
 
   // Seçili kategorideki ürün sayısını hesapla
   const getCategoryProductCount = (categoryId) => {
-    if (!categoryId) return products.length;
-    return products.filter(p => p.categoryId === categoryId).length;
+    if (!categoryId) {
+      // Tümü seçiliyse, toplam aktif ürün sayısını göster
+      return totalProducts;
+    }
+    // Kategori seçiliyse, o kategorideki aktif ürün sayısını göster
+    const category = categories.find((c) => c.id === categoryId.toString());
+    return category?._count?.products || 0;
   };
 
   return (
@@ -279,7 +286,7 @@ function UrunListesi() {
                     : 'bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >
-                Tümü ({products.length})
+                Tümü ({totalProducts})
               </button>
               {categories.map((category) => {
                 const count = getCategoryProductCount(category.id);

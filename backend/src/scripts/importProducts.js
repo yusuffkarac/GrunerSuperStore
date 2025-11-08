@@ -191,6 +191,14 @@ async function importProducts() {
     const defaultCategoryId = await getOrCreateDefaultCategory();
     console.log('');
 
+    // Tüm kategorileri cache'le (performans için)
+    console.log('🔍 Kategoriler yükleniyor...');
+    const allCategories = await prisma.category.findMany({
+      select: { id: true },
+    });
+    const categoryIdsSet = new Set(allCategories.map((c) => c.id));
+    console.log(`   ${categoryIdsSet.size} kategori bulundu\n`);
+
     // Mevcut slug'ları kontrol et (duplicate kontrolü için)
     console.log('🔍 Mevcut ürünler kontrol ediliyor...');
     const existingProducts = await prisma.product.findMany({
@@ -249,14 +257,17 @@ async function importProducts() {
 
       // Slug uniqueness kontrolü ve düzeltme
       let finalSlug = productData.slug;
-      if (existingSlugs.has(finalSlug) || slugCounter[finalSlug]) {
-        // Duplicate slug varsa, unique yap
-        let counter = slugCounter[finalSlug] || 0;
-        counter++;
-        slugCounter[finalSlug] = counter;
-        finalSlug = `${productData.slug}-${counter}`;
+      
+      // Mevcut slug'larda veya aynı batch'te duplicate varsa unique yap
+      while (existingSlugs.has(finalSlug) || slugCounter[finalSlug]) {
+        const baseSlug = productData.slug;
+        const counter = (slugCounter[baseSlug] || 0) + 1;
+        slugCounter[baseSlug] = counter;
+        finalSlug = `${baseSlug}-${counter}`;
       }
-      slugCounter[finalSlug] = (slugCounter[finalSlug] || 0) + 1;
+      
+      // Bu slug'ı kullanıldı olarak işaretle (aynı batch içinde duplicate kontrolü için)
+      slugCounter[finalSlug] = 1;
       productData.slug = finalSlug;
 
       // Slug boş mu kontrol et
@@ -302,7 +313,24 @@ async function importProducts() {
     console.log(`\n\n✅ Veri hazırlama tamamlandı:`);
     console.log(`   📊 Toplam ürün: ${jsonData.length}`);
     console.log(`   ✅ Eklenecek: ${productsToInsert.length}`);
-    console.log(`   ⏭️  Atlanan: ${skipped.length}\n`);
+    console.log(`   ⏭️  Atlanan: ${skipped.length}`);
+    
+    // Atlanan kayıtların sebeplerini göster
+    if (skipped.length > 0) {
+      const skippedReasons = {};
+      skipped.forEach((item) => {
+        const reason = item.reason || 'Bilinmeyen';
+        skippedReasons[reason] = (skippedReasons[reason] || 0) + 1;
+      });
+      console.log(`\n   📋 Atlama sebepleri:`);
+      Object.entries(skippedReasons)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([reason, count]) => {
+          console.log(`      - ${reason}: ${count} kayıt`);
+        });
+    }
+    
+    console.log('');
 
     if (productsToInsert.length === 0) {
       console.log('⚠️  Eklenecek kayıt yok. İşlem sonlandırılıyor.');
@@ -314,6 +342,9 @@ async function importProducts() {
     const batchSize = 50; // Product daha karmaşık olduğu için batch size küçük
     let inserted = 0;
     let errors = [];
+    let duplicateCount = 0;
+    let categoryErrorCount = 0;
+    let otherErrorCount = 0;
 
     for (let i = 0; i < productsToInsert.length; i += batchSize) {
       const batch = productsToInsert.slice(i, i + batchSize);
@@ -323,6 +354,18 @@ async function importProducts() {
         for (const productData of batch) {
           try {
             const { categoryId, ...restData } = productData;
+            
+            // Category'nin var olduğunu kontrol et (cache'den)
+            if (!categoryIdsSet.has(categoryId)) {
+              categoryErrorCount++;
+              skipped.push({
+                name: productData.name,
+                slug: productData.slug,
+                reason: `Kategori bulunamadı: ${categoryId}`,
+              });
+              continue;
+            }
+
             await prisma.product.create({
               data: {
                 ...restData,
@@ -336,24 +379,36 @@ async function importProducts() {
             // Unique constraint hatası (slug/barcode duplicate)
             if (
               error.code === 'P2002' ||
-              error.message.includes('Unique constraint')
+              error.message.includes('Unique constraint') ||
+              error.message.includes('unique')
             ) {
+              duplicateCount++;
               skipped.push({
                 name: productData.name,
                 slug: productData.slug,
-                reason: `Duplicate: ${error.meta?.target?.join(', ') || 'unknown'}`,
+                reason: `Duplicate: ${error.meta?.target?.join(', ') || 'slug/barcode'}`,
+              });
+            } else if (error.code === 'P2025' || error.message.includes('Record to connect')) {
+              categoryErrorCount++;
+              skipped.push({
+                name: productData.name,
+                slug: productData.slug,
+                reason: `Kategori bağlantı hatası: ${error.message}`,
               });
             } else {
+              otherErrorCount++;
               errors.push({
                 name: productData.name,
+                slug: productData.slug,
                 error: error.message,
+                code: error.code,
               });
             }
           }
         }
 
         process.stdout.write(
-          `\r   Kaydedilen: ${inserted}/${productsToInsert.length}`
+          `\r   Kaydedilen: ${inserted}/${productsToInsert.length} | Duplicate: ${duplicateCount} | Kategori Hatası: ${categoryErrorCount} | Diğer: ${otherErrorCount}`
         );
       } catch (error) {
         console.error(
@@ -370,31 +425,48 @@ async function importProducts() {
     console.log('\n\n✅ Import işlemi tamamlandı!');
     console.log(`   ✅ Başarıyla eklendi: ${inserted}`);
     console.log(`   ⏭️  Atlandı: ${skipped.length}`);
+    console.log(`   🔄 Duplicate: ${duplicateCount}`);
+    console.log(`   📁 Kategori hatası: ${categoryErrorCount}`);
+    console.log(`   ❌ Diğer hatalar: ${otherErrorCount}`);
 
     if (errors.length > 0) {
-      console.log(`   ❌ Hata sayısı: ${errors.length}`);
-      console.log('\n📋 Hatalar:');
-      errors.slice(0, 10).forEach((err, index) => {
+      console.log(`\n❌ Detaylı hata sayısı: ${errors.length}`);
+      console.log('\n📋 İlk 20 hata:');
+      errors.slice(0, 20).forEach((err, index) => {
         console.log(
-          `   ${index + 1}. ${err.name || err.batch}: ${err.error}`
+          `   ${index + 1}. ${err.name || err.batch} (${err.slug || 'N/A'}): ${err.error} [Code: ${err.code || 'N/A'}]`
         );
       });
-      if (errors.length > 10) {
-        console.log(`   ... ve ${errors.length - 10} hata daha`);
+      if (errors.length > 20) {
+        console.log(`   ... ve ${errors.length - 20} hata daha`);
       }
     }
 
-    // Atlanan kayıtları göster (ilk 10)
+    // Atlanan kayıtları göster (sebep bazında grupla)
     if (skipped.length > 0) {
-      console.log('\n📋 İlk 10 atlanan kayıt:');
-      skipped.slice(0, 10).forEach((item, index) => {
-        console.log(
-          `   ${index + 1}. ID: ${item.id || 'N/A'}, Name: ${item.name || 'N/A'}, Sebep: ${item.reason}`
-        );
+      console.log('\n📋 Atlanan kayıtlar (sebep bazında):');
+      const skippedByReason = {};
+      skipped.forEach((item) => {
+        const reason = item.reason || 'Bilinmeyen';
+        if (!skippedByReason[reason]) {
+          skippedByReason[reason] = [];
+        }
+        skippedByReason[reason].push(item);
       });
-      if (skipped.length > 10) {
-        console.log(`   ... ve ${skipped.length - 10} kayıt daha`);
-      }
+
+      Object.entries(skippedByReason)
+        .sort((a, b) => b[1].length - a[1].length)
+        .forEach(([reason, items]) => {
+          console.log(`\n   ${reason}: ${items.length} kayıt`);
+          items.slice(0, 5).forEach((item, index) => {
+            console.log(
+              `      ${index + 1}. ID: ${item.id || 'N/A'}, Name: ${item.name || 'N/A'}, Slug: ${item.slug || 'N/A'}`
+            );
+          });
+          if (items.length > 5) {
+            console.log(`      ... ve ${items.length - 5} kayıt daha`);
+          }
+        });
     }
 
     // Özet istatistikler
