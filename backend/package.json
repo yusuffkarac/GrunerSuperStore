@@ -9,7 +9,8 @@
     "migrate": "node src/config/runMigrations.js run",
     "migrate:reset": "node src/config/runMigrations.js reset",
     "create-admin": "node src/scripts/createAdmin.js",
-    "import-barcodes": "node src/scripts/importBarcodeLabels.js"
+    "import-barcodes": "node src/scripts/importBarcodeLabels.js",
+    "import-products": "node src/scripts/importProducts.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

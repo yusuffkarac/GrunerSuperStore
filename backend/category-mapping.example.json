@@ -1,0 +1,16 @@
+{
+  "_comment": "Odoo Kategori ID'lerini UUID Kategori ID'lerine eşleştiren mapping dosyası",
+  "_instructions": "Odoo'dan gelen categ_id[0] değerini, veritabanınızdaki kategori UUID'sine eşleştirin",
+  "_example": {
+    "8": "550e8400-e29b-41d4-a716-446655440000",
+    "9": "660e8400-e29b-41d4-a716-446655440001"
+  },
+  "_how_to_use": [
+    "1. Veritabanınızdaki kategorilerin UUID'lerini öğrenin",
+    "2. Odoo'dan gelen kategori ID'lerini (categ_id[0]) bu UUID'lere eşleştirin",
+    "3. Bu dosyayı backend/category-mapping.json olarak kaydedin",
+    "4. Script otomatik olarak bu mapping'i kullanacaktır"
+  ],
+  "_note": "Eğer bu dosya yoksa, script default kategori ('Genel') kullanacaktır"
+}
+
