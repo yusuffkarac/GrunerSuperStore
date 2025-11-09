@@ -470,13 +470,90 @@ function Sepet() {
   const getDeliveryFeeWarning = () => {
     if (!settings) return null;
 
+    const minOrderAmount = settings.minOrderAmount ? parseFloat(settings.minOrderAmount) : null;
     const freeShippingThreshold = settings.freeShippingThreshold ? parseFloat(settings.freeShippingThreshold) : null;
     const shippingRules = Array.isArray(settings.shippingRules) ? settings.shippingRules : [];
 
-    // Ücretsiz kargo eşiği varsa ve henüz ulaşılmadıysa
-    if (freeShippingThreshold && finalTotal < freeShippingThreshold) {
+    // Önce minimum sipariş tutarını kontrol et
+    if (minOrderAmount && finalTotal < minOrderAmount) {
+      const remaining = minOrderAmount - finalTotal;
+      const progress = (finalTotal / minOrderAmount) * 100;
+      return {
+        type: 'minimum',
+        message: `Noch ${remaining.toFixed(2)} € bis zum Mindestbestellwert!`,
+        progress: progress,
+        target: minOrderAmount,
+      };
+    }
+
+    // Minimum sipariş tutarına ulaşıldıysa veya yoksa, shipping rules kontrolü yap
+    if ((!minOrderAmount || finalTotal >= minOrderAmount) && shippingRules.length > 0) {
+      // Kuralın ücretini hesapla (fee veya percent)
+      const calculateRuleFee = (rule, amount) => {
+        if (rule.type === 'percent') {
+          return (amount * parseFloat(rule.percent ?? rule.value ?? 0)) / 100;
+        } else {
+          return parseFloat(rule.fee ?? rule.value ?? 0);
+        }
+      };
+
+      // Mevcut kurala göre teslimat ücretini bul
+      const currentRule = shippingRules.find((r) => {
+        const minOk = r.min == null || finalTotal >= parseFloat(r.min ?? 0);
+        const maxOk = r.max == null || finalTotal <= parseFloat(r.max ?? Infinity);
+        return minOk && maxOk;
+      });
+
+      const currentFee = currentRule ? calculateRuleFee(currentRule, finalTotal) : null;
+
+      // Daha düşük ücretli bir sonraki kuralı bul
+      const nextRules = shippingRules
+        .map((r) => ({
+          ...r,
+          ruleMin: r.min ? parseFloat(r.min) : 0,
+          ruleFee: calculateRuleFee(r, r.min ? parseFloat(r.min) : finalTotal),
+        }))
+        .filter((r) => {
+          // Sonraki kural: min > finalTotal
+          if (r.ruleMin <= finalTotal) return false;
+          
+          // Eğer mevcut kural varsa: sadece mevcut ücretten düşük ücretli kuralları göster
+          if (currentFee !== null) {
+            return r.ruleFee < currentFee;
+          }
+          
+          // Eğer mevcut kural yoksa: tüm sonraki kuralları göster
+          return true;
+        })
+        .sort((a, b) => {
+          // Önce ücrete göre sırala (düşükten yükseğe), sonra min'e göre (yakından uzağa)
+          if (a.ruleFee !== b.ruleFee) {
+            return a.ruleFee - b.ruleFee;
+          }
+          return a.ruleMin - b.ruleMin;
+        });
+
+      if (nextRules.length > 0) {
+        const nextRule = nextRules[0]; // En yakın kural
+        const remaining = nextRule.ruleMin - finalTotal;
+        const nextFee = nextRule.ruleFee;
+        const progress = (finalTotal / nextRule.ruleMin) * 100;
+
+        return {
+          type: 'reduced',
+          message: `Noch ${remaining.toFixed(2)} € hinzufügen und Versandkosten werden ${nextFee.toFixed(2)} € sein!`,
+          progress: progress,
+          target: nextRule.ruleMin,
+        };
+      }
+    }
+
+    // Ücretsiz kargo eşiğini kontrol et (shipping rules'dan sonra)
+    if (freeShippingThreshold && (!minOrderAmount || finalTotal >= minOrderAmount) && finalTotal < freeShippingThreshold) {
       const remaining = freeShippingThreshold - finalTotal;
-      const progress = (finalTotal / freeShippingThreshold) * 100;
+      const progress = minOrderAmount 
+        ? ((finalTotal - minOrderAmount) / (freeShippingThreshold - minOrderAmount)) * 100
+        : (finalTotal / freeShippingThreshold) * 100;
       return {
         type: 'free',
         message: `Noch ${remaining.toFixed(2)} € bis zur kostenlosen Lieferung!`,
@@ -492,47 +569,6 @@ function Sepet() {
         message: 'Kostenlose Lieferung!',
         progress: 100,
       };
-    }
-
-    // Teslimat kurallarını kontrol et - daha düşük ücreti olan bir sonraki aralığı bul
-    if (shippingRules.length > 0) {
-      // Mevcut kurala göre teslimat ücretini bul
-      const currentRule = shippingRules.find((r) => {
-        const minOk = r.min == null || finalTotal >= parseFloat(r.min);
-        const maxOk = r.max == null || finalTotal <= parseFloat(r.max);
-        return minOk && maxOk;
-      });
-
-      if (currentRule) {
-        const currentFee = parseFloat(currentRule.fee);
-
-        // Daha düşük ücretli bir sonraki kuralı bul
-        const lowerFeeRules = shippingRules.filter((r) => {
-          const ruleMinAmount = r.min ? parseFloat(r.min) : 0;
-          const ruleFee = parseFloat(r.fee);
-          return ruleMinAmount > finalTotal && ruleFee < currentFee;
-        });
-
-        if (lowerFeeRules.length > 0) {
-          // En yakın ve en düşük ücretli kuralı bul
-          const nextRule = lowerFeeRules.reduce((closest, rule) => {
-            const ruleMin = parseFloat(rule.min);
-            const closestMin = parseFloat(closest.min);
-            return ruleMin < closestMin ? rule : closest;
-          });
-
-          const remaining = parseFloat(nextRule.min) - finalTotal;
-          const feeDifference = currentFee - parseFloat(nextRule.fee);
-          const progress = (finalTotal / parseFloat(nextRule.min)) * 100;
-
-          return {
-            type: 'reduced',
-            message: `Noch ${remaining.toFixed(2)} € und Sie sparen ${feeDifference.toFixed(2)} € Versandkosten!`,
-            progress: progress,
-            target: parseFloat(nextRule.min),
-          };
-        }
-      }
     }
 
     return null;
@@ -683,14 +719,30 @@ function Sepet() {
           <div className={`mb-3 p-2.5 rounded-lg ${
             deliveryWarning.type === 'achieved'
               ? 'bg-green-50 border border-green-200'
+              : deliveryWarning.type === 'minimum'
+              ? 'bg-amber-50 border border-amber-200'
+              : deliveryWarning.type === 'reduced'
+              ? 'bg-purple-50 border border-purple-200'
               : 'bg-blue-50 border border-blue-200'
           }`}>
             <div className="flex items-center gap-2 mb-1.5">
               <FiTruck className={`w-4 h-4 ${
-                deliveryWarning.type === 'achieved' ? 'text-green-600' : 'text-blue-600'
+                deliveryWarning.type === 'achieved' 
+                  ? 'text-green-600' 
+                  : deliveryWarning.type === 'minimum'
+                  ? 'text-amber-600'
+                  : deliveryWarning.type === 'reduced'
+                  ? 'text-purple-600'
+                  : 'text-blue-600'
               }`} />
               <p className={`text-xs font-semibold ${
-                deliveryWarning.type === 'achieved' ? 'text-green-800' : 'text-blue-800'
+                deliveryWarning.type === 'achieved' 
+                  ? 'text-green-800' 
+                  : deliveryWarning.type === 'minimum'
+                  ? 'text-amber-800'
+                  : deliveryWarning.type === 'reduced'
+                  ? 'text-purple-800'
+                  : 'text-blue-800'
               }`}>
                 {deliveryWarning.message}
               </p>
@@ -702,7 +754,13 @@ function Sepet() {
                   animate={{ width: `${deliveryWarning.progress}%` }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                   className={`h-full rounded-full ${
-                    deliveryWarning.type === 'free' ? 'bg-green-500' : 'bg-blue-500'
+                    deliveryWarning.type === 'free' 
+                      ? 'bg-green-500' 
+                      : deliveryWarning.type === 'minimum'
+                      ? 'bg-amber-500'
+                      : deliveryWarning.type === 'reduced'
+                      ? 'bg-purple-500'
+                      : 'bg-blue-500'
                   }`}
                 />
               </div>

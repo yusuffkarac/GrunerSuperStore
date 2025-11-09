@@ -59,6 +59,8 @@ import Notifications from './pages/admin/Notifications';
 import Help from './pages/admin/Help';
 import EmailTemplates from './pages/admin/EmailTemplates';
 import NotificationTemplates from './pages/admin/NotificationTemplates';
+import BulkPriceUpdates from './pages/admin/BulkPriceUpdates';
+import Aufgaben from './pages/admin/Aufgaben';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -202,6 +204,7 @@ function AppContent() {
             <>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="tasks" element={<Aufgaben />} />
               <Route path="products" element={<Produkte />} />
               <Route path="orders" element={<Orders />} />
               <Route path="categories" element={<Categories />} />
@@ -227,6 +230,7 @@ function AppContent() {
               <Route path="notifications" element={<Notifications />} />
               <Route path="email-templates" element={<EmailTemplates />} />
               <Route path="notification-templates" element={<NotificationTemplates />} />
+              <Route path="bulk-price-updates" element={<BulkPriceUpdates />} />
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />

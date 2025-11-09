@@ -3,6 +3,7 @@ import orderService from '../services/order.service.js';
 import productService from '../services/product.service.js';
 import categoryService from '../services/category.service.js';
 import userService from '../services/user.service.js';
+import taskService from '../services/task.service.js';
 import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -625,7 +626,7 @@ class AdminController {
 
   // POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
   bulkUpdatePrices = asyncHandler(async (req, res) => {
-    const { type, categoryId, productIds, adjustmentType, adjustmentValue, includeVariants } = req.body;
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue, includeVariants, updateType, temporaryPriceEndDate } = req.body;
 
     // Ürün fiyatlarını güncelle
     const productResult = await productService.bulkUpdatePrices({
@@ -634,12 +635,16 @@ class AdminController {
       productIds,
       adjustmentType,
       adjustmentValue,
+      updateType,
+      temporaryPriceEndDate,
+      includeVariants,
     });
 
     let variantResult = { updatedCount: 0 };
 
     // Varyant fiyatlarını da güncelle (eğer istenmişse)
-    if (includeVariants) {
+    // Not: Varyantlar için şu an sadece kalıcı güncelleme destekleniyor
+    if (includeVariants && updateType === 'permanent') {
       variantResult = await productService.bulkUpdateVariantPrices({
         type,
         categoryId,
@@ -651,12 +656,108 @@ class AdminController {
 
     res.status(200).json({
       success: true,
-      message: 'Preise erfolgreich aktualisiert',
+      message: updateType === 'temporary' 
+        ? 'Temporäre Preise erfolgreich aktualisiert' 
+        : 'Preise erfolgreich aktualisiert',
       data: {
         products: productResult,
         variants: variantResult,
         totalUpdated: productResult.updatedCount + variantResult.updatedCount,
+        bulkUpdateId: productResult.bulkUpdateId,
       },
+    });
+  });
+
+  // GET /api/admin/bulk-price-updates - Toplu fiyat güncellemelerini listele
+  getBulkPriceUpdates = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 20, isReverted } = req.query;
+
+    const result = await productService.getBulkPriceUpdates({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      isReverted: isReverted === 'true' ? true : isReverted === 'false' ? false : null,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  });
+
+  // POST /api/admin/bulk-price-updates/:id/revert - Toplu fiyat güncellemesini geri al
+  revertBulkPriceUpdate = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.admin?.id; // Admin middleware'den geliyor
+
+    if (!adminId) {
+      throw new Error('Admin ID bulunamadı');
+    }
+
+    const result = await productService.revertBulkPriceUpdate(id, adminId);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: { revertedCount: result.revertedCount },
+    });
+  });
+
+  // ===============================
+  // TASK MANAGEMENT
+  // ===============================
+
+  // GET /api/admin/tasks - Eksik bilgileri olan ürünleri kategorilere göre getir
+  getTasks = asyncHandler(async (req, res) => {
+    const { category } = req.query;
+
+    const tasks = await taskService.getTasks();
+
+    // Eğer belirli bir kategori filtrelenmişse, sadece o kategoriyi döndür
+    if (category && tasks[category]) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          [category]: tasks[category],
+        },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: tasks,
+    });
+  });
+
+  // POST /api/admin/tasks/ignore - Ürün için kategoriyi görmezden gel
+  ignoreTask = asyncHandler(async (req, res) => {
+    const { productId, category } = req.body;
+
+    if (!productId || !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'productId und category sind erforderlich',
+      });
+    }
+
+    const ignore = await taskService.ignoreTask(productId, category);
+
+    res.status(201).json({
+      success: true,
+      message: 'Aufgabe erfolgreich ignoriert',
+      data: { ignore },
+    });
+  });
+
+  // DELETE /api/admin/tasks/ignore/:id - Görmezden gelme kaydını kaldır
+  removeIgnore = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const ignore = await taskService.removeIgnore(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Ignore-Eintrag erfolgreich entfernt',
+      data: { ignore },
     });
   });
 }

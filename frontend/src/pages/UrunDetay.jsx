@@ -212,7 +212,10 @@ function UrunDetay() {
     : (product?.imageUrls ? normalizeImageUrls(product.imageUrls) : []);
 
   // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
-  const displayPrice = selectedVariant ? parseFloat(selectedVariant.price) : parseFloat(product?.price || 0);
+  // Backend'de geçici fiyat varsa zaten price alanında gösteriliyor
+  const baseDisplayPrice = selectedVariant 
+    ? parseFloat(selectedVariant.price) 
+    : parseFloat(product?.price || 0);
 
   // Kampanya fiyatı hesaplama
   const calculateDiscountedPrice = () => {
@@ -222,7 +225,7 @@ function UrunDetay() {
 
     switch (campaign.type) {
       case 'PERCENTAGE':
-        discountPerUnit = displayPrice * (parseFloat(campaign.discountPercent) / 100);
+        discountPerUnit = baseDisplayPrice * (parseFloat(campaign.discountPercent) / 100);
         break;
       case 'FIXED_AMOUNT':
         discountPerUnit = parseFloat(campaign.discountAmount);
@@ -233,7 +236,7 @@ function UrunDetay() {
           const sets = Math.floor(quantity / campaign.buyQuantity);
           const freeItems = campaign.buyQuantity - campaign.getQuantity;
           const totalFreeItems = sets * freeItems;
-          const totalDiscount = totalFreeItems * displayPrice;
+          const totalDiscount = totalFreeItems * baseDisplayPrice;
           discountPerUnit = totalDiscount / quantity; // Ortalama indirim per ürün
         }
         break;
@@ -241,12 +244,12 @@ function UrunDetay() {
         discountPerUnit = 0;
     }
 
-    const discountedPrice = displayPrice - discountPerUnit;
+    const discountedPrice = baseDisplayPrice - discountPerUnit;
     return Math.max(0, discountedPrice);
   };
 
   const discountedPrice = campaign ? calculateDiscountedPrice() : null;
-  const finalPrice = discountedPrice !== null ? discountedPrice : displayPrice;
+  const finalPrice = discountedPrice !== null ? discountedPrice : baseDisplayPrice;
 
   // Stok: varyant varsa varyant stokunu, yoksa ürün stokunu kullan
   const availableStock = selectedVariant ? selectedVariant.stock : (product?.stock || 0);
@@ -527,7 +530,7 @@ function UrunDetay() {
                     €{discountedPrice.toFixed(2)}
                   </span>
                   <span className="text-xl lg:text-xl text-gray-500 line-through">
-                    €{displayPrice.toFixed(2)}
+                    €{baseDisplayPrice.toFixed(2)}
                   </span>
                 </div>
                 {product.unit && (
@@ -535,10 +538,12 @@ function UrunDetay() {
                 )}
               </div>
             ) : (
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-3xl lg:text-4xl font-bold text-primary-600">
-                  €{displayPrice.toFixed(2)}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl lg:text-4xl font-bold text-primary-600">
+                    €{finalPrice.toFixed(2)}
+                  </span>
+                </div>
                 {product.unit && (
                   <span className="text-base lg:text-base text-gray-600">/ {product.unit}</span>
                 )}

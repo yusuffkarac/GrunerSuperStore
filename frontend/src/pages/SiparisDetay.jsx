@@ -14,15 +14,18 @@ import {
   FiStar,
   FiDownload,
   FiRefreshCw,
+  FiXCircle,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 import useCartStore from '../store/cartStore';
+import settingsService from '../services/settingsService';
+import { useAlert } from '../contexts/AlertContext';
 
-// OrderStatusBadge'i Siparislerim'den kopyalayabilirsiniz veya ortak bir component yapabilirsiniz
+// OrderStatusBadge von Siparislerim importieren oder gemeinsame Komponente erstellen
 import { OrderStatusBadge } from './Siparislerim';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
-// Yıldız Rating Bileşeni
+// Sternbewertungskomponente
 function StarRating({ rating, onRatingChange, readonly = false }) {
   const [hoverRating, setHoverRating] = useState(0);
 
@@ -63,11 +66,15 @@ function SiparisDetay() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [reordering, setReordering] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [settings, setSettings] = useState(null);
   const { reorderFromOrder } = useCartStore();
+  const { showConfirm } = useAlert();
 
   useEffect(() => {
     loadOrderDetails();
     loadReview();
+    loadSettings();
   }, [id]);
 
   const loadOrderDetails = async () => {
@@ -75,7 +82,7 @@ function SiparisDetay() {
       const response = await orderService.getOrderById(id);
       setOrder(response.data.order);
     } catch (error) {
-      console.error('Sipariş detay hatası:', error);
+      console.error('Fehler beim Laden der Bestelldetails:', error);
       toast.error('Bestellung konnte nicht geladen werden');
     } finally {
       setLoading(false);
@@ -90,10 +97,19 @@ function SiparisDetay() {
         setReview(response.data.review);
       }
     } catch (error) {
-      // Review yoksa hata vermez, sadece null döner
-      console.log('Review yok veya yüklenemedi');
+      // Wenn kein Review vorhanden ist, wird kein Fehler ausgegeben, nur null zurückgegeben
+      console.log('Kein Review vorhanden oder konnte nicht geladen werden');
     } finally {
       setReviewLoading(false);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const response = await settingsService.getSettings();
+      setSettings(response.data.settings);
+    } catch (error) {
+      console.error('Fehler beim Laden der Einstellungen:', error);
     }
   };
 
@@ -116,23 +132,23 @@ function SiparisDetay() {
       setShowReviewForm(false);
       setRating(0);
       setComment('');
-      loadReview(); // Review'ı yeniden yükle
+      loadReview(); // Review erneut laden
     } catch (error) {
-      console.error('Review hatası:', error);
+      console.error('Fehler beim Speichern der Bewertung:', error);
       toast.error(error.response?.data?.message || 'Bewertung konnte nicht gespeichert werden');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Fatura PDF indir
+  // Rechnung als PDF herunterladen
   const handleDownloadInvoice = () => {
     const token = localStorage.getItem('token');
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
     window.open(`${apiUrl}/orders/${id}/invoice?token=${token}`, '_blank');
   };
 
-  // Siparişi tekrar et
+  // Bestellung erneut bestellen
   const handleReorder = async () => {
     if (!order || !order.orderItems) return;
 
@@ -140,16 +156,53 @@ function SiparisDetay() {
     try {
       await reorderFromOrder(order.orderItems);
       toast.success('Produkte wurden zum Warenkorb hinzugefügt!');
-      // Kısa bir gecikme sonra sepete yönlendir
+      // Nach kurzer Verzögerung zum Warenkorb weiterleiten
       setTimeout(() => {
         navigate('/sepet');
       }, 500);
     } catch (error) {
-      console.error('Reorder hatası:', error);
+      console.error('Fehler beim erneuten Bestellen:', error);
       toast.error('Fehler beim Hinzufügen der Produkte');
     } finally {
       setReordering(false);
     }
+  };
+
+  // Bestellung stornieren
+  const handleCancelOrder = async () => {
+    const confirmed = await showConfirm(
+      'Möchten Sie diese Bestellung wirklich stornieren?',
+      {
+        title: 'Bestellung stornieren',
+        confirmText: 'Stornieren',
+        cancelText: 'Abbrechen',
+      }
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      await orderService.cancelOrder(id);
+      toast.success('Bestellung erfolgreich storniert');
+      loadOrderDetails(); // Bestelldetails erneut laden
+    } catch (error) {
+      console.error('Fehler beim Stornieren:', error);
+      toast.error(error.response?.data?.message || 'Fehler beim Stornieren der Bestellung');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Prüfen, ob Kunde stornieren kann
+  const canCustomerCancel = () => {
+    if (!order || !settings) return false;
+    if (order.status === 'cancelled') return false;
+    
+    const allowedStatuses = settings.customerCancellationSettings?.allowedStatuses || ['pending', 'accepted'];
+    return allowedStatuses.includes(order.status);
   };
 
   if (loading) {
@@ -300,6 +353,20 @@ function SiparisDetay() {
             </div>
           </div>
         )}
+
+        {/* İptal Butonu - Sadece izin verilen durumlarda göster */}
+        {canCustomerCancel() && (
+          <div className="pt-4 border-t border-gray-100">
+            <button
+              onClick={handleCancelOrder}
+              disabled={cancelling}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <FiXCircle size={18} />
+              {cancelling ? 'Wird storniert...' : 'Bestellung stornieren'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Ürünler */}
@@ -369,7 +436,7 @@ function SiparisDetay() {
               <div className="h-20 bg-gray-200 rounded"></div>
             </div>
           ) : review ? (
-            // Mevcut Review Göster
+            // Vorhandene Bewertung anzeigen
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600 mb-2">Ihre Bewertung</p>

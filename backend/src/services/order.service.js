@@ -7,10 +7,12 @@ import {
 import { getGermanyTimeInMinutes } from '../utils/date.js';
 import { validateDistance } from '../utils/distance.js';
 import couponService from './coupon.service.js';
+import productService from './product.service.js';
 import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
 import notificationTemplateService from './notification-template.service.js';
 import invoiceService from './invoice.service.js';
+import settingsService from './settings.service.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -127,6 +129,18 @@ class OrderService {
           id: { in: productIds },
           isActive: true,
         },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          temporaryPrice: true,
+          temporaryPriceEndDate: true,
+          stock: true,
+          unit: true,
+          brand: true,
+          imageUrls: true,
+          categoryId: true,
+        },
       });
 
       if (products.length !== productIds.length) {
@@ -180,7 +194,15 @@ class OrderService {
         }
 
         // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
-        const originalPrice = variant ? variant.price : product.price;
+        // Geçici fiyat kontrolü yap
+        let originalPrice;
+        if (variant) {
+          originalPrice = variant.price;
+        } else {
+          // Geçici fiyat kontrolü yap
+          const priceInfo = productService.getDisplayPrice(product);
+          originalPrice = priceInfo.displayPrice;
+        }
 
         // Kampanya fiyatı varsa kullan, yoksa orijinal fiyatı kullan
         const price = item.campaignPrice || originalPrice;
@@ -1005,10 +1027,13 @@ class OrderService {
       throw new ForbiddenError('Zugriff auf diese Bestellung verweigert');
     }
 
-    // Sadece pending veya accepted durumundaki siparişler iptal edilebilir
-    if (!['pending', 'accepted'].includes(order.status)) {
+    // Kunden-Stornierungsberechtigungen aus Einstellungen prüfen
+    const settings = await settingsService.getSettings();
+    const allowedStatuses = settings.customerCancellationSettings?.allowedStatuses || ['pending', 'accepted'];
+    
+    if (!allowedStatuses.includes(order.status)) {
       throw new ValidationError(
-        'Diese Bestellung kann nicht mehr storniert werden'
+        'Diese Bestellung kann in diesem Status nicht mehr storniert werden'
       );
     }
 

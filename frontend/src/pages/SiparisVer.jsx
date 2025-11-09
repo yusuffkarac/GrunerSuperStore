@@ -17,6 +17,7 @@ import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
+import settingsService from '../services/settingsService';
 
 function SiparisVer() {
   const navigate = useNavigate();
@@ -37,15 +38,82 @@ function SiparisVer() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [settings, setSettings] = useState(null);
 
   const subtotal = getTotal();
-  const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
+  
+  // Kargo ücreti hesaplama (shipping rules'a göre)
+  const calculateDeliveryFee = () => {
+    if (orderType !== 'delivery' || !settings) return 0;
+
+    let deliveryFee = 0;
+
+    // Ücretsiz kargo eşiği kontrolü
+    const freeShippingThreshold = settings.freeShippingThreshold 
+      ? parseFloat(settings.freeShippingThreshold) 
+      : null;
+    
+    const finalSubtotal = subtotal - couponDiscount;
+
+    if (freeShippingThreshold && finalSubtotal >= freeShippingThreshold) {
+      // Ücretsiz kargo eşiğine ulaşıldıysa ücret yok
+      deliveryFee = 0;
+    } else {
+      // Shipping rules'dan uygun kuralı bul
+      const shippingRules = Array.isArray(settings.shippingRules) 
+        ? settings.shippingRules 
+        : [];
+      
+      const rule = shippingRules.find((r) => {
+        const minOk = r.min == null || finalSubtotal >= parseFloat(r.min ?? 0);
+        const maxOk = r.max == null || finalSubtotal <= parseFloat(r.max ?? Infinity);
+        return minOk && maxOk;
+      });
+
+      if (rule) {
+        if (rule.type === 'percent') {
+          deliveryFee = (finalSubtotal * parseFloat(rule.percent ?? rule.value ?? 0)) / 100;
+        } else {
+          deliveryFee = parseFloat(rule.fee ?? rule.value ?? 0);
+        }
+      }
+    }
+
+    // Kapıda ödeme ücreti ekle
+    if (paymentType && (paymentType === 'cash' || paymentType === 'card_on_delivery')) {
+      const kapidaOdemeUcreti = settings?.paymentOptions?.kapidaOdemeUcreti;
+      if (kapidaOdemeUcreti) {
+        if (kapidaOdemeUcreti.type === 'percent') {
+          deliveryFee += (finalSubtotal * parseFloat(kapidaOdemeUcreti.value || 0)) / 100;
+        } else {
+          deliveryFee += parseFloat(kapidaOdemeUcreti.value || 0);
+        }
+      }
+    }
+
+    return deliveryFee;
+  };
+
+  const deliveryFee = calculateDeliveryFee();
   const discount = couponDiscount;
   const total = Math.max(0, subtotal + deliveryFee - discount);
 
   // Adresleri yükle
   useEffect(() => {
     loadAddresses();
+  }, []);
+
+  // Settings'i yükle
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        setSettings(response?.data?.settings || null);
+      } catch (error) {
+        console.error('Settings yükleme hatası:', error);
+      }
+    };
+    fetchSettings();
   }, []);
 
   // Profilden geri dönüldüğünde adresleri yeniden yükle

@@ -404,6 +404,35 @@ const adminService = {
     const response = await adminApi.post('/admin/products/bulk-update-prices', data);
     return response.data;
   },
+
+  // Toplu fiyat güncellemelerini listele
+  getBulkPriceUpdates: async (params) => {
+    const response = await adminApi.get('/admin/bulk-price-updates', { params });
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemesini geri al
+  revertBulkPriceUpdate: async (id) => {
+    const response = await adminApi.post(`/admin/bulk-price-updates/${id}/revert`);
+    return response.data;
+  },
+
+  // Task yönetimi
+  getTasks: async (category) => {
+    const params = category ? { category } : {};
+    const response = await adminApi.get('/admin/tasks', { params });
+    return response.data;
+  },
+
+  ignoreTask: async (productId, category) => {
+    const response = await adminApi.post('/admin/tasks/ignore', { productId, category });
+    return response.data;
+  },
+
+  removeIgnore: async (ignoreId) => {
+    const response = await adminApi.delete(`/admin/tasks/ignore/${ignoreId}`);
+    return response.data;
+  },
 };
 
 export default adminService;

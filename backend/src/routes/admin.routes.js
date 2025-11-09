@@ -108,6 +108,25 @@ router.delete('/products/:id', adminController.deleteProduct);
 // POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
 router.post('/products/bulk-update-prices', adminController.bulkUpdatePrices);
 
+// GET /api/admin/bulk-price-updates - Toplu fiyat güncellemelerini listele
+router.get('/bulk-price-updates', adminController.getBulkPriceUpdates);
+
+// POST /api/admin/bulk-price-updates/:id/revert - Toplu fiyat güncellemesini geri al
+router.post('/bulk-price-updates/:id/revert', adminController.revertBulkPriceUpdate);
+
+// ===============================
+// TASK MANAGEMENT
+// ===============================
+
+// GET /api/admin/tasks - Eksik bilgileri olan ürünleri kategorilere göre getir
+router.get('/tasks', adminController.getTasks);
+
+// POST /api/admin/tasks/ignore - Ürün için kategoriyi görmezden gel
+router.post('/tasks/ignore', adminController.ignoreTask);
+
+// DELETE /api/admin/tasks/ignore/:id - Görmezden gelme kaydını kaldır
+router.delete('/tasks/ignore/:id', adminController.removeIgnore);
+
 // ===============================
 // PRODUCT VARIANT MANAGEMENT
 // ===============================

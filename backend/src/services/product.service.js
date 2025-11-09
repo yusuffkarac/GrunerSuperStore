@@ -4,6 +4,34 @@ import { getGermanyDate } from '../utils/date.js';
 import settingsService from './settings.service.js';
 
 class ProductService {
+  /**
+   * Geçici fiyat kontrolü yapar ve aktif geçici fiyat varsa onu, yoksa normal fiyatı döndürür
+   * @param {Object} product - Ürün objesi
+   * @returns {Object} { displayPrice, isTemporary, temporaryPriceEndDate }
+   */
+  getDisplayPrice(product) {
+    const now = new Date();
+    const hasTemporaryPrice = product.temporaryPrice && product.temporaryPriceEndDate;
+    const endDate = hasTemporaryPrice ? new Date(product.temporaryPriceEndDate) : null;
+    const isTemporaryActive = hasTemporaryPrice && endDate && endDate > now;
+    
+    if (isTemporaryActive) {
+      return {
+        displayPrice: parseFloat(product.temporaryPrice),
+        isTemporary: true,
+        temporaryPriceEndDate: product.temporaryPriceEndDate,
+        originalPrice: parseFloat(product.price),
+      };
+    }
+    
+    return {
+      displayPrice: parseFloat(product.price),
+      isTemporary: false,
+      temporaryPriceEndDate: null,
+      originalPrice: null,
+    };
+  }
+
   // Ürünleri listele (filtreleme, arama, sayfalama)
   async getProducts({
     categoryId,
@@ -162,8 +190,18 @@ class ProductService {
       prisma.product.count({ where }),
     ]);
 
+    // Her ürün için geçici fiyat kontrolü yap ve price alanını güncelle
+    const productsWithDisplayPrice = products.map(product => {
+      const priceInfo = this.getDisplayPrice(product);
+      // Sadece price alanını güncelle, ekstra alanlar ekleme
+      return {
+        ...product,
+        price: priceInfo.displayPrice, // Geçici fiyat varsa onu, yoksa normal fiyatı kullan
+      };
+    });
+
     return {
-      products,
+      products: productsWithDisplayPrice,
       pagination: {
         total,
         page: parseInt(page),
@@ -221,7 +259,14 @@ class ProductService {
       throw new NotFoundError('Produkt ist nicht verfügbar');
     }
 
-    return product;
+    // Geçici fiyat kontrolü yap ve price alanını güncelle
+    const priceInfo = this.getDisplayPrice(product);
+    const productWithDisplayPrice = {
+      ...product,
+      price: priceInfo.displayPrice, // Geçici fiyat varsa onu, yoksa normal fiyatı kullan
+    };
+
+    return productWithDisplayPrice;
   }
 
   // Tek ürün getir (slug ile)
@@ -272,7 +317,17 @@ class ProductService {
       throw new NotFoundError('Produkt ist nicht verfügbar');
     }
 
-    return product;
+    // Geçici fiyat kontrolü yap ve displayPrice ekle
+    const priceInfo = this.getDisplayPrice(product);
+    const productWithDisplayPrice = {
+      ...product,
+      displayPrice: priceInfo.displayPrice,
+      isTemporaryPrice: priceInfo.isTemporary,
+      temporaryPriceEndDate: priceInfo.temporaryPriceEndDate,
+      originalPrice: priceInfo.originalPrice,
+    };
+
+    return productWithDisplayPrice;
   }
 
   // Kategorileri listele
@@ -670,10 +725,16 @@ class ProductService {
 
     // Price ve stock'u parse et
     if (updateData.price !== undefined) {
-      updateData.price = parseFloat(updateData.price);
+      updateData.price = updateData.price === '' || updateData.price === null ? null : parseFloat(updateData.price);
     }
     if (updateData.stock !== undefined) {
-      updateData.stock = parseInt(updateData.stock);
+      // Boş string veya null ise null'a çevir, aksi halde integer'a parse et
+      if (updateData.stock === '' || updateData.stock === null) {
+        updateData.stock = null;
+      } else {
+        const parsedStock = parseInt(updateData.stock);
+        updateData.stock = isNaN(parsedStock) ? null : parsedStock;
+      }
     }
     if (updateData.lowStockLevel !== undefined) {
       updateData.lowStockLevel = updateData.lowStockLevel ? parseInt(updateData.lowStockLevel) : null;
@@ -733,14 +794,19 @@ class ProductService {
 
   /**
    * Toplu fiyat güncelleme
-   * @param {Object} params - { type: 'all' | 'category' | 'products', categoryId?, productIds?, adjustmentType: 'percentage' | 'fixed', adjustmentValue: number }
-   * @returns {Object} { updatedCount, message }
+   * @param {Object} params - { type: 'all' | 'category' | 'products', categoryId?, productIds?, adjustmentType: 'percentage' | 'fixed', adjustmentValue: number, updateType: 'permanent' | 'temporary', temporaryPriceEndDate?: Date, includeVariants?: boolean }
+   * @returns {Object} { updatedCount, message, bulkUpdateId }
    */
   async bulkUpdatePrices(params) {
-    const { type, categoryId, productIds, adjustmentType, adjustmentValue } = params;
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue, updateType = 'permanent', temporaryPriceEndDate, includeVariants = false } = params;
 
     if (!type || !adjustmentType || adjustmentValue === undefined) {
       throw new Error('Fehlende erforderliche Parameter');
+    }
+
+    // Geçici fiyat için tarih kontrolü
+    if (updateType === 'temporary' && !temporaryPriceEndDate) {
+      throw new Error('Enddatum ist für temporäre Preise erforderlich');
     }
 
     const value = parseFloat(adjustmentValue);
@@ -765,9 +831,10 @@ class ProductService {
     // type === 'all' ise where boş kalır, tüm ürünler güncellenir
 
     // Önce güncellencek ürünleri çek (fiyat hesaplaması için)
+    // Geçici fiyat için mevcut fiyatı (temporaryPrice varsa onu, yoksa price'ı) kullan
     const products = await prisma.product.findMany({
       where,
-      select: { id: true, price: true, name: true },
+      select: { id: true, price: true, temporaryPrice: true, name: true },
     });
 
     if (products.length === 0) {
@@ -777,16 +844,24 @@ class ProductService {
       };
     }
 
+    // Etkilenen ürünleri kaydet (geri alma için)
+    const affectedProducts = [];
+    let variantsUpdated = 0;
+
     // Her ürün için yeni fiyatı hesapla ve güncelle
     const updatePromises = products.map(async (product) => {
+      // Mevcut fiyatı belirle (geçici fiyat varsa onu kullan, yoksa normal fiyatı)
+      const currentPrice = product.temporaryPrice ? parseFloat(product.temporaryPrice) : parseFloat(product.price);
+      const oldPrice = parseFloat(product.price);
+      
       let newPrice;
 
       if (adjustmentType === 'percentage') {
         // Yüzde artış/azalış
-        newPrice = parseFloat(product.price) * (1 + value / 100);
+        newPrice = currentPrice * (1 + value / 100);
       } else {
         // Sabit miktar artış/azalış
-        newPrice = parseFloat(product.price) + value;
+        newPrice = currentPrice + value;
       }
 
       // Negatif fiyat olmaması için kontrol
@@ -797,17 +872,75 @@ class ProductService {
       // Fiyatı 2 ondalık basamağa yuvarla
       newPrice = Math.round(newPrice * 100) / 100;
 
+      // Güncelleme tipine göre veriyi hazırla
+      const updateData = {};
+      
+      if (updateType === 'temporary') {
+        // Geçici fiyat güncellemesi
+        updateData.temporaryPrice = newPrice;
+        updateData.temporaryPriceEndDate = new Date(temporaryPriceEndDate);
+      } else {
+        // Kalıcı fiyat güncellemesi
+        updateData.price = newPrice;
+        // Geçici fiyat varsa temizle
+        updateData.temporaryPrice = null;
+        updateData.temporaryPriceEndDate = null;
+      }
+
+      // Etkilenen ürünü kaydet
+      affectedProducts.push({
+        productId: product.id,
+        productName: product.name,
+        oldPrice: oldPrice,
+        newPrice: updateType === 'temporary' ? newPrice : newPrice,
+        oldTemporaryPrice: product.temporaryPrice ? parseFloat(product.temporaryPrice) : null,
+        newTemporaryPrice: updateType === 'temporary' ? newPrice : null,
+      });
+
       return prisma.product.update({
         where: { id: product.id },
-        data: { price: newPrice },
+        data: updateData,
       });
     });
 
     await Promise.all(updatePromises);
 
+    // Varyantları da güncelle (eğer istenmişse)
+    if (includeVariants && updateType === 'permanent') {
+      const variantResult = await this.bulkUpdateVariantPrices({
+        type,
+        categoryId,
+        productIds,
+        adjustmentType,
+        adjustmentValue,
+      });
+      variantsUpdated = variantResult.updatedCount || 0;
+    }
+
+    // Güncelleme kaydını oluştur
+    const bulkUpdate = await prisma.bulkPriceUpdate.create({
+      data: {
+        type,
+        categoryId: categoryId || null,
+        productIds: productIds || null,
+        adjustmentType,
+        adjustmentValue: value,
+        updateType: updateType.toUpperCase(),
+        temporaryPriceEndDate: temporaryPriceEndDate ? new Date(temporaryPriceEndDate) : null,
+        includeVariants,
+        affectedProducts,
+        productsUpdated: products.length,
+        variantsUpdated,
+        totalUpdated: products.length + variantsUpdated,
+      },
+    });
+
     return {
       updatedCount: products.length,
+      variantsUpdated,
+      totalUpdated: products.length + variantsUpdated,
       message: `${products.length} Produkt(e) erfolgreich aktualisiert`,
+      bulkUpdateId: bulkUpdate.id,
     };
   }
 
@@ -885,6 +1018,121 @@ class ProductService {
     return {
       updatedCount: variants.length,
       message: `${variants.length} Variante(n) erfolgreich aktualisiert`,
+    };
+  }
+
+  /**
+   * Toplu fiyat güncellemelerini listele
+   * @param {Object} params - { page, limit, isReverted }
+   * @returns {Object} { updates, pagination }
+   */
+  async getBulkPriceUpdates({ page = 1, limit = 20, isReverted = null }) {
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {};
+    if (isReverted !== null) {
+      where.isReverted = isReverted === true;
+    }
+
+    const [updates, total] = await Promise.all([
+      prisma.bulkPriceUpdate.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: parseInt(limit),
+      }),
+      prisma.bulkPriceUpdate.count({ where }),
+    ]);
+
+    return {
+      updates,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Toplu fiyat güncellemesini geri al
+   * @param {String} bulkUpdateId - Güncelleme ID'si
+   * @param {String} adminId - Admin ID'si (geri alan kişi)
+   * @returns {Object} { message, revertedCount }
+   */
+  async revertBulkPriceUpdate(bulkUpdateId, adminId) {
+    // Güncelleme kaydını bul
+    const bulkUpdate = await prisma.bulkPriceUpdate.findUnique({
+      where: { id: bulkUpdateId },
+    });
+
+    if (!bulkUpdate) {
+      throw new NotFoundError('Toplu fiyat güncellemesi bulunamadı');
+    }
+
+    if (bulkUpdate.isReverted) {
+      throw new ValidationError('Bu güncelleme zaten geri alınmış');
+    }
+
+    const affectedProducts = Array.isArray(bulkUpdate.affectedProducts) 
+      ? bulkUpdate.affectedProducts 
+      : [];
+
+    if (affectedProducts.length === 0) {
+      throw new ValidationError('Geri alınacak ürün bulunamadı');
+    }
+
+    // Ürünleri geri al
+    let revertedCount = 0;
+    const updatePromises = affectedProducts.map(async (item) => {
+      const updateData = {};
+
+      if (bulkUpdate.updateType === 'TEMPORARY') {
+        // Geçici fiyat güncellemesi geri alınıyor
+        // Eski geçici fiyatı geri yükle veya null yap
+        if (item.oldTemporaryPrice !== null && item.oldTemporaryPrice !== undefined) {
+          updateData.temporaryPrice = item.oldTemporaryPrice;
+        } else {
+          updateData.temporaryPrice = null;
+          updateData.temporaryPriceEndDate = null;
+        }
+      } else {
+        // Kalıcı fiyat güncellemesi geri alınıyor
+        // Eski fiyatı geri yükle
+        updateData.price = item.oldPrice;
+        // Geçici fiyat varsa temizle (çünkü kalıcı güncelleme yapılmıştı)
+        updateData.temporaryPrice = null;
+        updateData.temporaryPriceEndDate = null;
+      }
+
+      try {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: updateData,
+        });
+        revertedCount++;
+      } catch (error) {
+        console.error(`Ürün geri alma hatası (${item.productId}):`, error);
+        // Hata olsa bile devam et
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    // Güncelleme kaydını işaretle
+    await prisma.bulkPriceUpdate.update({
+      where: { id: bulkUpdateId },
+      data: {
+        isReverted: true,
+        revertedAt: new Date(),
+        revertedBy: adminId,
+      },
+    });
+
+    return {
+      message: `${revertedCount} ürün başarıyla geri alındı`,
+      revertedCount,
     };
   }
 }

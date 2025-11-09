@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import productService from './product.service.js';
 
 class CartService {
   // Kullanıcının sepetini getir
@@ -13,6 +14,8 @@ class CartService {
             name: true,
             slug: true,
             price: true,
+            temporaryPrice: true,
+            temporaryPriceEndDate: true,
             stock: true,
             unit: true,
             brand: true,
@@ -45,7 +48,18 @@ class CartService {
     let subtotal = 0;
     const items = cartItems.map((item) => {
       // Varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
-      const price = item.variant ? parseFloat(item.variant.price) : parseFloat(item.product.price);
+      // Geçici fiyat kontrolü yap
+      let price;
+      if (item.variant) {
+        price = parseFloat(item.variant.price);
+      } else {
+        // Geçici fiyat kontrolü yap
+        const priceInfo = productService.getDisplayPrice(item.product);
+        price = priceInfo.displayPrice;
+        // Product objesini güncelle (geçici fiyat varsa price'ı güncelle)
+        item.product.price = priceInfo.displayPrice;
+      }
+      
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 

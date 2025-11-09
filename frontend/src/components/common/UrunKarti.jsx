@@ -32,24 +32,25 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   const calculateDiscountedPrice = () => {
     if (!campaign) return null;
 
-    const price = parseFloat(product.price);
-    let discountedPrice = price;
+    const basePrice = parseFloat(product.price);
+    let discountedPrice = basePrice;
 
     switch (campaign.type) {
       case 'PERCENTAGE':
-        discountedPrice = price * (1 - parseFloat(campaign.discountPercent) / 100);
+        discountedPrice = basePrice * (1 - parseFloat(campaign.discountPercent) / 100);
         break;
       case 'FIXED_AMOUNT':
-        discountedPrice = price - parseFloat(campaign.discountAmount);
+        discountedPrice = basePrice - parseFloat(campaign.discountAmount);
         break;
       default:
-        discountedPrice = price;
+        discountedPrice = basePrice;
     }
 
     return Math.max(0, discountedPrice);
   };
 
   const discountedPrice = campaign ? calculateDiscountedPrice() : null;
+  const finalPrice = discountedPrice !== null ? discountedPrice : parseFloat(product.price);
 
   // Kampanya badge metni
   const getCampaignBadge = () => {
@@ -231,7 +232,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
             </div>
           ) : (
             <p className="text-base md:text-lg font-bold text-primary-600">
-              €{parseFloat(product.price).toFixed(2)}
+              €{finalPrice.toFixed(2)}
               {product.unit && <span className="text-xs md:text-sm text-gray-500 font-normal"> / {product.unit}</span>}
             </p>
           )}

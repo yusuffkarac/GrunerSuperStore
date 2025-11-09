@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp, FiClock, FiArchive } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -14,11 +15,35 @@ import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import BulkPriceUpdateModal from '../../components/admin/BulkPriceUpdateModal';
 
+// Geçici fiyat kontrolü ve gösterimi için yardımcı fonksiyon
+const getDisplayPrice = (product) => {
+  const now = new Date();
+  const hasTemporaryPrice = product.temporaryPrice && product.temporaryPriceEndDate;
+  const endDate = hasTemporaryPrice ? new Date(product.temporaryPriceEndDate) : null;
+  const isTemporaryActive = hasTemporaryPrice && endDate && endDate > now;
+  
+  if (isTemporaryActive) {
+    return {
+      price: parseFloat(product.temporaryPrice),
+      isTemporary: true,
+      endDate: endDate,
+    };
+  }
+  
+  return {
+    price: parseFloat(product.price),
+    isTemporary: false,
+    endDate: null,
+  };
+};
+
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
   const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
     ? normalizeImageUrl(product.imageUrls[0])
     : null;
+
+  const displayPrice = getDisplayPrice(product);
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -49,8 +74,21 @@ const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
       <td className="px-4 py-4 text-sm text-gray-600">
         {product.category?.name || '-'}
       </td>
-      <td className="px-4 py-4 text-sm font-medium text-gray-900">
-        {parseFloat(product.price).toFixed(2)} €
+      <td className="px-4 py-4">
+        <div className="text-sm font-medium text-gray-900">
+          {displayPrice.price.toFixed(2)} €
+          {displayPrice.isTemporary && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+              <FiClock size={10} />
+              Geçici
+            </span>
+          )}
+        </div>
+        {displayPrice.isTemporary && product.price && (
+          <div className="text-xs text-gray-500 line-through mt-0.5">
+            {parseFloat(product.price).toFixed(2)} €
+          </div>
+        )}
       </td>
       <td className="px-4 py-4">
         <div className="text-sm">
@@ -78,7 +116,7 @@ const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
           )}
           {product.isFeatured && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-              Featured
+              Vorgestellt
             </span>
           )}
         </div>
@@ -120,6 +158,8 @@ const ProductCardDesktop = memo(({ product, onEdit, onDelete, onOpenVariants }) 
     ? normalizeImageUrl(product.imageUrls[0])
     : null;
 
+  const displayPrice = getDisplayPrice(product);
+
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-3 mb-3">
@@ -143,8 +183,19 @@ const ProductCardDesktop = memo(({ product, onEdit, onDelete, onOpenVariants }) 
             {product.brand ? product.brand : 'Keine Marke'}
           </div>
           <div className="text-lg font-bold text-gray-900 mb-2">
-            {parseFloat(product.price).toFixed(2)} €
+            {displayPrice.price.toFixed(2)} €
+            {displayPrice.isTemporary && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                <FiClock size={10} />
+                Geçici
+              </span>
+            )}
           </div>
+          {displayPrice.isTemporary && product.price && (
+            <div className="text-sm text-gray-500 line-through mb-2">
+              {parseFloat(product.price).toFixed(2)} €
+            </div>
+          )}
           <div className="flex items-center gap-2 flex-wrap mb-2">
             {product.isActive ? (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
@@ -212,6 +263,8 @@ const ProductCardMobile = memo(({ product, onEdit, onDelete, onOpenVariants }) =
     ? normalizeImageUrl(product.imageUrls[0])
     : null;
 
+  const displayPrice = getDisplayPrice(product);
+
   return (
     <div className="p-4">
       <div className="flex items-start gap-3 mb-3">
@@ -235,8 +288,19 @@ const ProductCardMobile = memo(({ product, onEdit, onDelete, onOpenVariants }) =
             <div className="text-sm text-gray-500 mb-2">{product.brand}</div>
           )}
           <div className="text-lg font-bold text-gray-900 mb-2">
-            {parseFloat(product.price).toFixed(2)} €
+            {displayPrice.price.toFixed(2)} €
+            {displayPrice.isTemporary && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                <FiClock size={10} />
+                Geçici
+              </span>
+            )}
           </div>
+          {displayPrice.isTemporary && product.price && (
+            <div className="text-sm text-gray-500 line-through mb-2">
+              {parseFloat(product.price).toFixed(2)} €
+            </div>
+          )}
           <div className="flex items-center gap-2 flex-wrap mb-2">
             {product.isActive ? (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
@@ -304,6 +368,8 @@ const ProductMobileRow = memo(({ product, onEdit, onDelete }) => {
     ? normalizeImageUrl(product.imageUrls[0])
     : null;
 
+  const displayPrice = getDisplayPrice(product);
+
   return (
     <div className="py-3 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <div className="flex items-center gap-3">
@@ -331,14 +397,24 @@ const ProductMobileRow = memo(({ product, onEdit, onDelete }) => {
             )}
             {product.isFeatured && (
               <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded flex-shrink-0">
-                F
+                V
+              </span>
+            )}
+            {displayPrice.isTemporary && (
+              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded flex-shrink-0">
+                <FiClock size={8} className="inline" />
               </span>
             )}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <span className="text-xs font-semibold text-gray-900">
-              {parseFloat(product.price).toFixed(2)}€
+              {displayPrice.price.toFixed(2)}€
             </span>
+            {displayPrice.isTemporary && product.price && (
+              <span className="text-xs text-gray-400 line-through">
+                {parseFloat(product.price).toFixed(2)}€
+              </span>
+            )}
             <span className="text-gray-400">•</span>
             <span className={product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-600'}>
               {product.stock}
@@ -383,6 +459,7 @@ ProductMobileRow.displayName = 'ProductMobileRow';
 
 function Produkte() {
   const { showConfirm } = useAlert();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -987,6 +1064,13 @@ function Produkte() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => navigate('/admin/bulk-price-updates')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm whitespace-nowrap"
+          >
+            <FiArchive className="w-4 h-4" />
+            <span>Massenaktualisierungen</span>
+          </button>
+          <button
             onClick={() => setShowBulkPriceModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
           >
@@ -1099,7 +1183,7 @@ function Produkte() {
             {/* Featured */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Featured
+                Vorgestellt
               </label>
               <select
                 value={isFeaturedFilter}
@@ -1107,8 +1191,8 @@ function Produkte() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 transition-all"
               >
                 <option value="">Alle</option>
-                <option value="true">Featured</option>
-                <option value="false">Nicht Featured</option>
+                <option value="true">Vorgestellt</option>
+                <option value="false">Nicht Vorgestellt</option>
               </select>
             </div>
 
@@ -1519,13 +1603,18 @@ function Produkte() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Einheit
                       </label>
-                      <input
-                        type="text"
-                        placeholder="z.B. kg, Stück"
+                      <select
                         value={formData.unit}
                         onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      />
+                      >
+                        <option value="">Keine Einheit</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Gr">Gr</option>
+                        <option value="Stk">Stk</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
+                      </select>
                     </div>
                   </div>
 
@@ -1615,70 +1704,68 @@ function Produkte() {
                   )}
 
                   {/* Nutri-Score & Eco-Score */}
-                  {(formData.nutriscoreGrade || formData.ecoscoreGrade) && (
-                    <div className="grid grid-cols-2 gap-4">
-                      {formData.nutriscoreGrade && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nutri-Score
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${
-                              formData.nutriscoreGrade === 'a' ? 'text-green-600' :
-                              formData.nutriscoreGrade === 'b' ? 'text-lime-600' :
-                              formData.nutriscoreGrade === 'c' ? 'text-yellow-600' :
-                              formData.nutriscoreGrade === 'd' ? 'text-orange-600' :
-                              'text-red-600'
-                            }`}>
-                              {formData.nutriscoreGrade.toUpperCase()}
-                            </span>
-                            <select
-                              value={formData.nutriscoreGrade}
-                              onChange={(e) => setFormData({ ...formData, nutriscoreGrade: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            >
-                              <option value="">-</option>
-                              <option value="a">A</option>
-                              <option value="b">B</option>
-                              <option value="c">C</option>
-                              <option value="d">D</option>
-                              <option value="e">E</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-                      {formData.ecoscoreGrade && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Eco-Score
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${
-                              formData.ecoscoreGrade === 'a' ? 'text-green-600' :
-                              formData.ecoscoreGrade === 'b' ? 'text-lime-600' :
-                              formData.ecoscoreGrade === 'c' ? 'text-yellow-600' :
-                              formData.ecoscoreGrade === 'd' ? 'text-orange-600' :
-                              'text-red-600'
-                            }`}>
-                              {formData.ecoscoreGrade.toUpperCase()}
-                            </span>
-                            <select
-                              value={formData.ecoscoreGrade}
-                              onChange={(e) => setFormData({ ...formData, ecoscoreGrade: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            >
-                              <option value="">-</option>
-                              <option value="a">A</option>
-                              <option value="b">B</option>
-                              <option value="c">C</option>
-                              <option value="d">D</option>
-                              <option value="e">E</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nutri-Score
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {formData.nutriscoreGrade && (
+                          <span className={`text-2xl font-bold ${
+                            formData.nutriscoreGrade === 'a' ? 'text-green-600' :
+                            formData.nutriscoreGrade === 'b' ? 'text-lime-600' :
+                            formData.nutriscoreGrade === 'c' ? 'text-yellow-600' :
+                            formData.nutriscoreGrade === 'd' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {formData.nutriscoreGrade.toUpperCase()}
+                          </span>
+                        )}
+                        <select
+                          value={formData.nutriscoreGrade}
+                          onChange={(e) => setFormData({ ...formData, nutriscoreGrade: e.target.value })}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="">-</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                          <option value="c">C</option>
+                          <option value="d">D</option>
+                          <option value="e">E</option>
+                        </select>
+                      </div>
                     </div>
-                  )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Eco-Score
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {formData.ecoscoreGrade && (
+                          <span className={`text-2xl font-bold ${
+                            formData.ecoscoreGrade === 'a' ? 'text-green-600' :
+                            formData.ecoscoreGrade === 'b' ? 'text-lime-600' :
+                            formData.ecoscoreGrade === 'c' ? 'text-yellow-600' :
+                            formData.ecoscoreGrade === 'd' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {formData.ecoscoreGrade.toUpperCase()}
+                          </span>
+                        )}
+                        <select
+                          value={formData.ecoscoreGrade}
+                          onChange={(e) => setFormData({ ...formData, ecoscoreGrade: e.target.value })}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="">-</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                          <option value="c">C</option>
+                          <option value="d">D</option>
+                          <option value="e">E</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Nutrition Data */}
                   {formData.nutritionData && (
@@ -1774,7 +1861,7 @@ function Produkte() {
                       id="isFeatured"
                       checked={formData.isFeatured}
                       onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                      label="Featured"
+                      label="Vorgestellt"
                       color="green"
                     />
                   </div>
