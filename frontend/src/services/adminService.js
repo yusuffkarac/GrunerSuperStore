@@ -141,6 +141,31 @@ const adminService = {
     return response.data;
   },
 
+  // Fatura PDF indir
+  downloadInvoice: async (orderId, orderNo) => {
+    try {
+      const response = await adminApi.get(`/orders/${orderId}/invoice`, {
+        responseType: 'blob',
+      });
+
+      // Blob URL oluştur ve indir
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Rechnung-${orderNo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (error) {
+      console.error('PDF indirme hatası:', error);
+      throw error;
+    }
+  },
+
   // Kullanıcı yönetimi
   getUsers: async (params) => {
     const response = await adminApi.get('/admin/users', { params });

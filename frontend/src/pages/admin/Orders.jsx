@@ -155,10 +155,13 @@ function Orders() {
   };
 
   // Fatura PDF indir
-  const handleDownloadInvoice = (orderId, orderNo) => {
-    const token = localStorage.getItem('adminToken');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    window.open(`${apiUrl}/orders/${orderId}/invoice?token=${token}`, '_blank');
+  const handleDownloadInvoice = async (orderId, orderNo) => {
+    try {
+      await adminService.downloadInvoice(orderId, orderNo);
+    } catch (error) {
+      toast.error('Rechnung konnte nicht heruntergeladen werden');
+      console.error('PDF indirme hatası:', error);
+    }
   };
 
   // Status badge rengi

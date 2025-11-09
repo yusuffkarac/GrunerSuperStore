@@ -121,10 +121,13 @@ function SiparisDetay() {
   };
 
   // Fatura PDF indir
-  const handleDownloadInvoice = () => {
-    const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    window.open(`${apiUrl}/orders/${id}/invoice?token=${token}`, '_blank');
+  const handleDownloadInvoice = async () => {
+    try {
+      await orderService.downloadInvoice(id, order.orderNo);
+    } catch (error) {
+      toast.error('Rechnung konnte nicht heruntergeladen werden');
+      console.error('PDF indirme hatası:', error);
+    }
   };
 
   if (loading) {

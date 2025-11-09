@@ -30,6 +30,31 @@ const orderService = {
   getReview: async (id) => {
     return await api.get(`/orders/${id}/review`);
   },
+
+  // Fatura PDF indir
+  downloadInvoice: async (id, orderNo) => {
+    try {
+      const response = await api.get(`/orders/${id}/invoice`, {
+        responseType: 'blob',
+      });
+
+      // Blob URL oluştur ve indir
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Rechnung-${orderNo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (error) {
+      console.error('PDF indirme hatası:', error);
+      throw error;
+    }
+  },
 };
 
 export default orderService;
