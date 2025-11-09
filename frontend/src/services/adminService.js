@@ -398,6 +398,12 @@ const adminService = {
     const response = await adminApi.delete(`/admin/notifications/${id}`);
     return response.data;
   },
+
+  // Toplu fiyat güncelleme
+  bulkUpdatePrices: async (data) => {
+    const response = await adminApi.post('/admin/products/bulk-update-prices', data);
+    return response.data;
+  },
 };
 
 export default adminService;

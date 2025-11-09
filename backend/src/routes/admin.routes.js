@@ -105,6 +105,9 @@ router.put('/products/:id', adminController.updateProduct);
 // DELETE /api/admin/products/:id - Ürün sil
 router.delete('/products/:id', adminController.deleteProduct);
 
+// POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
+router.post('/products/bulk-update-prices', adminController.bulkUpdatePrices);
+
 // ===============================
 // PRODUCT VARIANT MANAGEMENT
 // ===============================
