@@ -319,6 +319,78 @@ class AddressSearchService {
       return [];
     }
   }
+
+  /**
+   * Reverse geocoding - Koordinatlardan adres bul
+   * @param {number} latitude - Enlem
+   * @param {number} longitude - Boylam
+   * @returns {Promise<Object|null>} Bulunan adres
+   */
+  async reverseGeocode(latitude, longitude) {
+    if (!latitude || !longitude) {
+      return null;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        lat: latitude,
+        lon: longitude,
+        format: 'json',
+        addressdetails: '1',
+        'accept-language': 'de',
+      });
+
+      const url = `${this.baseUrl}/reverse?${params.toString()}`;
+
+      console.log('[AddressSearchService] Reverse geocoding isteği:', {
+        latitude,
+        longitude,
+        url: url
+      });
+
+      const response = await this.httpRequest(url, {
+        method: 'GET',
+      });
+
+      console.log('[AddressSearchService] Reverse geocoding yanıtı:', {
+        ok: response.ok,
+        status: response.status
+      });
+
+      if (!response.ok || !response.data) {
+        console.error('[AddressSearchService] Reverse geocoding hatası:', response.status, response.data);
+        return null;
+      }
+
+      const item = response.data;
+      const result = {
+        displayName: item.display_name,
+        latitude: parseFloat(item.lat),
+        longitude: parseFloat(item.lon),
+        address: {
+          street: item.address?.road || '',
+          houseNumber: item.address?.house_number || '',
+          postalCode: item.address?.postcode || '',
+          city: item.address?.city || item.address?.town || item.address?.village || '',
+          district: item.address?.suburb || item.address?.neighbourhood || '',
+          state: item.address?.state || '',
+          country: item.address?.country || '',
+        },
+        type: item.type || item.class || 'unknown',
+      };
+
+      console.log('[AddressSearchService] Reverse geocoding sonucu:', {
+        street: result.address.street,
+        city: result.address.city,
+        postalCode: result.address.postalCode
+      });
+
+      return result;
+    } catch (error) {
+      console.error('[AddressSearchService] Reverse geocoding hatası:', error.message, error.stack);
+      return null;
+    }
+  }
 }
 
 export default new AddressSearchService();

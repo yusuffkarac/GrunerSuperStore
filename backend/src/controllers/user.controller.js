@@ -233,6 +233,52 @@ class UserController {
       data: { addresses },
     });
   });
+
+  // GET /api/user/reverse-geocode
+  reverseGeocode = asyncHandler(async (req, res) => {
+    const { lat, lon } = req.query;
+
+    console.log('[UserController] reverseGeocode çağrıldı:', { lat, lon });
+
+    if (!lat || !lon) {
+      console.log('[UserController] Lat veya lon eksik');
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude ve longitude gereklidir',
+      });
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      console.log('[UserController] Geçersiz lat/lon değerleri');
+      return res.status(400).json({
+        success: false,
+        message: 'Geçersiz latitude veya longitude',
+      });
+    }
+
+    const address = await addressSearchService.reverseGeocode(latitude, longitude);
+
+    if (!address) {
+      console.log('[UserController] Adres bulunamadı');
+      return res.status(404).json({
+        success: false,
+        message: 'Adres bulunamadı',
+      });
+    }
+
+    console.log('[UserController] Reverse geocoding sonucu:', {
+      street: address.address.street,
+      city: address.address.city,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { address },
+    });
+  });
 }
 
 export default new UserController();

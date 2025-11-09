@@ -71,8 +71,36 @@ export const searchByStreetAndCity = async (street, houseNumber, city, postalCod
   return searchAddress(query, { limit: 5 });
 };
 
+/**
+ * Koordinatlardan adres bul (Reverse Geocoding)
+ * @param {number} latitude - Enlem
+ * @param {number} longitude - Boylam
+ * @returns {Promise<Object|null>} Bulunan adres
+ */
+export const reverseGeocode = async (latitude, longitude) => {
+  if (!latitude || !longitude) {
+    return null;
+  }
+
+  try {
+    const params = {
+      lat: latitude,
+      lon: longitude,
+    };
+
+    const response = await api.get('/user/reverse-geocode', { params });
+
+    // api.get zaten response.data döndürüyor (interceptor'dan dolayı)
+    return response?.data?.address || null;
+  } catch (error) {
+    console.error('[AddressSearch] Reverse geocoding hatası:', error);
+    return null;
+  }
+};
+
 export default {
   searchAddress,
   searchByPostalCodeAndCity,
   searchByStreetAndCity,
+  reverseGeocode,
 };
