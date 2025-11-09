@@ -1,0 +1,44 @@
+<h2 style="color: #111827; margin-bottom: 20px;">Ihre Rechnung ist da!</h2>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    Hallo {{firstName}} {{lastName}},
+</p>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    vielen Dank für Ihren Einkauf bei uns! Im Anhang finden Sie die Rechnung für Ihre Bestellung.
+</p>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Rechnungsdetails</h3>
+
+    <div class="info-row">
+        <span class="info-label">Rechnungsnummer:</span>
+        <span class="info-value">{{orderNo}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Rechnungsdatum:</span>
+        <span class="info-value">{{orderDate}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Gesamtbetrag:</span>
+        <span class="info-value" style="color: #059669; font-weight: 700;">{{total}}€</span>
+    </div>
+</div>
+
+<div style="background-color: #eff6ff; padding: 15px; border-radius: 6px; margin: 20px 0;">
+    <p style="color: #1e40af; margin: 0;">
+        <strong>📎 Anhang:</strong> Die vollständige Rechnung finden Sie als PDF-Datei im Anhang dieser E-Mail.
+    </p>
+</div>
+
+<p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+    Bitte bewahren Sie diese Rechnung für Ihre Unterlagen auf.
+</p>
+
+<p style="color: #374151; margin-top: 20px;">
+    Bei Fragen stehen wir Ihnen gerne zur Verfügung.<br><br>
+    Mit freundlichen Grüßen,<br>
+    Ihr {{storeName}} Team
+</p>

@@ -36,4 +36,7 @@ router.post('/:id/review', createReviewValidation, validate, orderController.cre
 // GET /api/orders/:id/review - Sipariş review'ını getir
 router.get('/:id/review', orderIdValidation, validate, orderController.getReview);
 
+// GET /api/orders/:id/invoice - Fatura PDF'ini indir/görüntüle
+router.get('/:id/invoice', orderIdValidation, validate, orderController.getInvoicePDF);
+
 export default router;

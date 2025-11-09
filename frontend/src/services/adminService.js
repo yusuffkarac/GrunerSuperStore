@@ -136,6 +136,11 @@ const adminService = {
     return response.data;
   },
 
+  sendInvoice: async (orderId) => {
+    const response = await adminApi.post(`/admin/orders/${orderId}/send-invoice`);
+    return response.data;
+  },
+
   // Kullanıcı yönetimi
   getUsers: async (params) => {
     const response = await adminApi.get('/admin/users', { params });
