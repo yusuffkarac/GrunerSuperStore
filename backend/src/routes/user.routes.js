@@ -52,4 +52,7 @@ router.post('/calculate-distance', userController.calculateDistance);
 // Adres arama
 router.get('/search-address', userController.searchAddress);
 
+// Reverse geocoding
+router.get('/reverse-geocode', userController.reverseGeocode);
+
 export default router;
