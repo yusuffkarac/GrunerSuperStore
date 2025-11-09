@@ -222,16 +222,18 @@ function SiparisDetay() {
           </div>
         )}
 
-        {/* Fatura İndir */}
-        <div className="pt-4 border-t border-gray-100">
-          <button
-            onClick={handleDownloadInvoice}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            <FiDownload size={18} />
-            Rechnung als PDF herunterladen
-          </button>
-        </div>
+        {/* Fatura İndir - Sadece admin gönderdiyse göster */}
+        {order.invoiceSent && (
+          <div className="pt-4 border-t border-gray-100">
+            <button
+              onClick={handleDownloadInvoice}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              <FiDownload size={18} />
+              Rechnung als PDF herunterladen
+            </button>
+          </div>
+        )}
 
         {/* Not */}
         {order.note && (

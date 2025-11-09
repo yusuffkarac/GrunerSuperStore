@@ -39,7 +39,7 @@ class QueueService {
 
       // Process email jobs
       this.emailQueue.process(async (job) => {
-        const { to, subject, template, data, metadata } = job.data;
+        const { to, subject, template, data, metadata, attachments } = job.data;
 
         console.log(`📧 Mail gönderiliyor: ${to} - ${subject}`);
 
@@ -49,6 +49,7 @@ class QueueService {
           template,
           data,
           metadata,
+          attachments,
         });
 
         if (!result.success) {

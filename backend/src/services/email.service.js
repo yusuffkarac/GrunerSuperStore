@@ -147,9 +147,26 @@ class EmailService {
         html,
       };
 
-      // Attachments varsa ekle
+      // Attachments varsa ekle ve Buffer'ları düzelt
       if (attachments && attachments.length > 0) {
-        mailOptions.attachments = attachments;
+        mailOptions.attachments = attachments.map((attachment) => {
+          // Eğer content Buffer değilse ve string ise, base64'ten Buffer'a çevir (queue'dan geldiğinde)
+          if (attachment.content && typeof attachment.content === 'string' && !Buffer.isBuffer(attachment.content)) {
+            try {
+              // Base64 string'i Buffer'a çevir
+              return {
+                ...attachment,
+                content: Buffer.from(attachment.content, 'base64'),
+              };
+            } catch (e) {
+              // Base64 değilse olduğu gibi kullan
+              console.warn('⚠️  Attachment content base64 decode edilemedi:', e.message);
+              return attachment;
+            }
+          }
+          // Zaten Buffer ise olduğu gibi kullan
+          return attachment;
+        });
       }
 
       const info = await this.transporter.sendMail(mailOptions);

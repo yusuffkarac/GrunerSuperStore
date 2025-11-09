@@ -1,6 +1,6 @@
 import express from 'express';
 import orderController from '../controllers/order.controller.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authenticateFlexible } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
   createOrderValidation,
@@ -11,12 +11,15 @@ import {
 
 const router = express.Router();
 
-// Tüm route'lar authentication gerektirir
-router.use(authenticate);
-
 // ===============================
 // KULLANICI ENDPOINTS
 // ===============================
+
+// GET /api/orders/:id/invoice - Fatura PDF'ini indir/görüntüle (query param token desteği, hem user hem admin)
+router.get('/:id/invoice', authenticateFlexible, orderIdValidation, validate, orderController.getInvoicePDF);
+
+// Diğer tüm route'lar standard authentication gerektirir
+router.use(authenticate);
 
 // POST /api/orders - Sipariş oluştur
 router.post('/', createOrderValidation, validate, orderController.createOrder);
@@ -35,8 +38,5 @@ router.post('/:id/review', createReviewValidation, validate, orderController.cre
 
 // GET /api/orders/:id/review - Sipariş review'ını getir
 router.get('/:id/review', orderIdValidation, validate, orderController.getReview);
-
-// GET /api/orders/:id/invoice - Fatura PDF'ini indir/görüntüle
-router.get('/:id/invoice', orderIdValidation, validate, orderController.getInvoicePDF);
 
 export default router;

@@ -3,7 +3,7 @@ import invoiceService from '../services/invoice.service.js';
 import queueService from '../services/queue.service.js';
 import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { NotFoundError } from '../utils/errors.js';
+import { NotFoundError, ForbiddenError } from '../utils/errors.js';
 
 class OrderController {
   // POST /api/orders - Sipariş oluştur
@@ -154,14 +154,32 @@ class OrderController {
   // GET /api/orders/:id/invoice - Fatura PDF'ini indir
   getInvoicePDF = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const userId = req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    // Support both user and admin tokens (from authenticateFlexible middleware)
+    const userId = req.user?.id || null;
+    const isAdmin = req.isAdmin === true || req.admin?.role === 'admin';
 
     // Sipariş kontrolü - kullanıcı kendi siparişini veya admin tüm siparişleri görebilir
     const order = await orderService.getOrderById(id, userId, isAdmin);
 
     if (!order) {
       throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // Müşteri ise, admin'in invoice gönderip göndermediğini kontrol et
+    if (!isAdmin && userId) {
+      // Email log'da bu sipariş için invoice email'i gönderilmiş mi kontrol et
+      // Prisma JSON field query için PostgreSQL JSON path syntax kullanıyoruz
+      const invoiceEmail = await prisma.$queryRaw`
+        SELECT id FROM email_logs
+        WHERE template = 'invoice'
+        AND status = 'sent'
+        AND metadata->>'orderId' = ${id}
+        LIMIT 1
+      `;
+
+      if (!invoiceEmail || invoiceEmail.length === 0) {
+        throw new ForbiddenError('Rechnung wurde noch nicht freigegeben. Bitte warten Sie auf die Bestätigung des Administrators.');
+      }
     }
 
     // PDF oluştur
@@ -202,6 +220,9 @@ class OrderController {
     // PDF oluştur
     const pdfBuffer = await invoiceService.generateInvoicePDF(id);
 
+    // Buffer'ı base64 string'e çevir (queue serialize için)
+    const pdfBase64 = pdfBuffer.toString('base64');
+
     // Mail gönder (attachment ile)
     await queueService.addEmailJob({
       to: order.user.email,
@@ -217,7 +238,7 @@ class OrderController {
       attachments: [
         {
           filename: `Rechnung-${order.orderNo}.pdf`,
-          content: pdfBuffer,
+          content: pdfBase64, // Base64 string olarak gönder
           contentType: 'application/pdf',
         },
       ],

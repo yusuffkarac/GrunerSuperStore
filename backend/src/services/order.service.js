@@ -7,6 +7,7 @@ import {
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
+import invoiceService from './invoice.service.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -490,6 +491,9 @@ class OrderService {
         console.log(`📊 Admin email gönderim özeti: ${successCount}/${adminEmails.length} başarılı`);
       }
 
+      // Not: Invoice email'i admin tarafından manuel olarak gönderilir (sendInvoice endpoint'i ile)
+      // Otomatik invoice gönderimi kaldırıldı - müşteri admin izin vermeden faturayı göremez
+
       console.log(`✅ Sipariş mailleri kuyruğa eklendi: ${order.orderNo}`);
     } catch (error) {
       // Mail hatası sipariş oluşturmayı engellemez
@@ -583,7 +587,21 @@ class OrderService {
       throw new ForbiddenError('Zugriff auf diese Bestellung verweigert');
     }
 
-    return order;
+    // Invoice gönderilip gönderilmediğini kontrol et (hem müşteri hem admin için)
+    const invoiceEmail = await prisma.$queryRaw`
+      SELECT id FROM email_logs
+      WHERE template = 'invoice'
+      AND status = 'sent'
+      AND metadata->>'orderId' = ${orderId}
+      LIMIT 1
+    `;
+    const invoiceSent = invoiceEmail && invoiceEmail.length > 0;
+
+    // Invoice bilgisini order objesine ekle
+    return {
+      ...order,
+      invoiceSent,
+    };
   }
 
   // Admin: Tüm siparişleri getir

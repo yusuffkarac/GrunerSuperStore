@@ -7,6 +7,46 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import { normalizeImageUrl } from '../../utils/imageUtils';
+
+// Order Item Component with image placeholder
+const OrderItemRow = ({ item }) => {
+  const normalizedImageUrl = item.imageUrl ? normalizeImageUrl(item.imageUrl) : null;
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+      <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center">
+        {normalizedImageUrl && !imageError ? (
+          <img 
+            src={normalizedImageUrl} 
+            alt={item.productName} 
+            className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <FiPackage className="text-gray-400" size={24} />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-gray-900">{item.productName}</p>
+        {item.variantName && (
+          <p className="text-xs text-purple-600 font-medium mt-0.5">
+            {item.variantName}
+          </p>
+        )}
+        <p className="text-sm text-gray-600">
+          {item.quantity}x {parseFloat(item.price).toFixed(2)} €
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="font-medium text-gray-900">
+          {(parseFloat(item.price) * item.quantity).toFixed(2)} €
+        </p>
+      </div>
+    </div>
+  );
+};
 
 function Orders() {
   const { showConfirm } = useAlert();
@@ -19,6 +59,11 @@ function Orders() {
   const [orderReview, setOrderReview] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [showInvoicePopup, setShowInvoicePopup] = useState(false);
+  const [invoicePopupOrder, setInvoicePopupOrder] = useState(null);
+  const [invoicePdfUrl, setInvoicePdfUrl] = useState(null);
+  const [invoicePdfBlob, setInvoicePdfBlob] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +135,52 @@ function Orders() {
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
       }
+
+      // Eğer durum "delivered" ise ve invoice henüz gönderilmemişse popup aç
+      if (newStatus === 'delivered') {
+        try {
+          // Sipariş detayını yükle ve invoice durumunu kontrol et
+          const orderDetailResponse = await adminService.getOrderById(orderId);
+          const orderDetail = orderDetailResponse.data.order;
+          
+          // Admin için invoiceSent her zaman true olabilir, ama email log kontrolü yapalım
+          // Daha güvenli bir yol: sipariş detayını yükledikten sonra kontrol et
+          if (!orderDetail.invoiceSent) {
+            // Invoice PDF URL'ini oluştur
+            const token = localStorage.getItem('adminToken');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
+            
+            setInvoicePopupOrder(orderDetail);
+            setInvoicePdfUrl(pdfUrl);
+            setShowInvoicePopup(true);
+            
+            // PDF'i blob olarak yükle
+            setLoadingPdf(true);
+            try {
+              const token = localStorage.getItem('adminToken');
+              const response = await fetch(pdfUrl, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+              if (response.ok) {
+                const blob = await response.blob();
+                setInvoicePdfBlob(URL.createObjectURL(blob));
+              } else {
+                console.error('PDF yüklenemedi:', response.status);
+              }
+            } catch (error) {
+              console.error('PDF yükleme hatası:', error);
+            } finally {
+              setLoadingPdf(false);
+            }
+          }
+        } catch (error) {
+          console.error('Invoice kontrolü hatası:', error);
+          // Hata olsa bile devam et
+        }
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Fehler beim Aktualisieren');
     }
@@ -154,11 +245,36 @@ function Orders() {
     }
   };
 
-  // Fatura PDF indir
-  const handleDownloadInvoice = (orderId, orderNo) => {
-    const token = localStorage.getItem('adminToken');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    window.open(`${apiUrl}/orders/${orderId}/invoice?token=${token}`, '_blank');
+  // Invoice popup'tan gönder
+  const handleSendInvoiceFromPopup = async () => {
+    if (!invoicePopupOrder) return;
+
+    try {
+      setSendingInvoice(true);
+      await adminService.sendInvoice(invoicePopupOrder.id);
+      toast.success('Rechnung wurde erfolgreich per E-Mail versendet');
+      setShowInvoicePopup(false);
+      setInvoicePopupOrder(null);
+      setInvoicePdfUrl(null);
+      loadOrders(); // Siparişleri yenile
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Fehler beim Senden der Rechnung');
+      console.error('Fatura gönderim hatası:', error);
+    } finally {
+      setSendingInvoice(false);
+    }
+  };
+
+  // Invoice popup'ı kapat
+  const closeInvoicePopup = () => {
+    // Blob URL'ini temizle
+    if (invoicePdfBlob) {
+      URL.revokeObjectURL(invoicePdfBlob);
+    }
+    setShowInvoicePopup(false);
+    setInvoicePopupOrder(null);
+    setInvoicePdfUrl(null);
+    setInvoicePdfBlob(null);
   };
 
   // Status badge rengi
@@ -840,33 +956,7 @@ function Orders() {
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Bestellte Artikel</h3>
                     <div className="space-y-2">
                       {selectedOrder.orderItems?.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          {item.imageUrl && (
-                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
-                              <img 
-                                src={item.imageUrl} 
-                                alt={item.productName} 
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900">{item.productName}</p>
-                            {item.variantName && (
-                              <p className="text-xs text-purple-600 font-medium mt-0.5">
-                                {item.variantName}
-                              </p>
-                            )}
-                            <p className="text-sm text-gray-600">
-                              {item.quantity}x {parseFloat(item.price).toFixed(2)} €
-                            </p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-medium text-gray-900">
-                              {(parseFloat(item.price) * item.quantity).toFixed(2)} €
-                            </p>
-                          </div>
-                        </div>
+                        <OrderItemRow key={item.id} item={item} />
                       ))}
                     </div>
                   </div>
@@ -932,6 +1022,109 @@ function Orders() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Invoice Popup - Delivered durumuna geçildiğinde */}
+      <AnimatePresence>
+        {showInvoicePopup && invoicePopupOrder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={closeInvoicePopup}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Rechnung für Bestellung #{invoicePopupOrder.orderNo}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Möchten Sie die Rechnung per E-Mail an den Kunden senden?
+                  </p>
+                </div>
+                <button
+                  onClick={closeInvoicePopup}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              {/* PDF Preview */}
+              <div className="flex-1 overflow-hidden p-6">
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50" style={{ height: '60vh' }}>
+                  {loadingPdf ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-gray-500">PDF wird geladen...</div>
+                    </div>
+                  ) : invoicePdfBlob ? (
+                    <object
+                      data={invoicePdfBlob}
+                      type="application/pdf"
+                      className="w-full h-full"
+                      aria-label="Invoice Preview"
+                    >
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <p>PDF konnte nicht geladen werden</p>
+                          <a
+                            href={invoicePdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline mt-2 inline-block"
+                          >
+                            PDF in neuem Tab öffnen
+                          </a>
+                        </div>
+                      </div>
+                    </object>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <p>PDF konnte nicht geladen werden</p>
+                        <a
+                          href={invoicePdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline mt-2 inline-block"
+                        >
+                          PDF in neuem Tab öffnen
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                <button
+                  onClick={closeInvoicePopup}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Nicht senden
+                </button>
+                <button
+                  onClick={handleSendInvoiceFromPopup}
+                  disabled={sendingInvoice}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <FiMail size={18} />
+                  {sendingInvoice ? 'Wird gesendet...' : 'Rechnung senden'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

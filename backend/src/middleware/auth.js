@@ -145,3 +145,82 @@ export const authenticateSSE = async (req, res, next) => {
     next(error);
   }
 };
+
+// Flexible authentication (accepts both user and admin tokens, supports query params)
+// Useful for endpoints like invoice downloads where admins need access to user resources
+export const authenticateFlexible = async (req, res, next) => {
+  try {
+    // Try header first, then query parameter
+    let token = null;
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      throw new UnauthorizedError('Kein Token bereitgestellt');
+    }
+
+    // Verify token
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      throw new UnauthorizedError('Ungültiger Token');
+    }
+
+    // Check if it's a user token
+    if (decoded.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedError('Benutzer nicht gefunden');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedError('Benutzer ist nicht aktiv');
+      }
+
+      req.user = user;
+      req.isAdmin = false;
+    } 
+    // Check if it's an admin token
+    else if (decoded.adminId) {
+      const admin = await prisma.admin.findUnique({
+        where: { id: decoded.adminId },
+        select: {
+          id: true,
+          firstName: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      if (!admin) {
+        throw new UnauthorizedError('Admin nicht gefunden');
+      }
+
+      req.admin = admin;
+      req.isAdmin = true;
+    } 
+    else {
+      throw new UnauthorizedError('Ungültiger Token-Typ');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

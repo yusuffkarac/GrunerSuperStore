@@ -136,6 +136,11 @@ const adminService = {
     return response.data;
   },
 
+  getOrderById: async (orderId) => {
+    const response = await adminApi.get(`/admin/orders/${orderId}`);
+    return response.data;
+  },
+
   sendInvoice: async (orderId) => {
     const response = await adminApi.post(`/admin/orders/${orderId}/send-invoice`);
     return response.data;
