@@ -350,14 +350,46 @@ function Profil() {
       return;
     }
 
+    setSearchingAddress(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // Önce koordinatları set et
         setFormData((prev) => ({
           ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: latitude,
+          longitude: longitude,
         }));
-        toast.success('Standort erfolgreich erfasst');
+
+        // Reverse geocoding ile adres bilgilerini al
+        try {
+          const addressData = await addressSearchService.reverseGeocode(latitude, longitude);
+
+          if (addressData && addressData.address) {
+            // Adres bilgilerini form'a doldur
+            setFormData((prev) => ({
+              ...prev,
+              street: addressData.address.street || prev.street,
+              houseNumber: addressData.address.houseNumber || prev.houseNumber,
+              postalCode: addressData.address.postalCode || prev.postalCode,
+              city: addressData.address.city || prev.city,
+              district: addressData.address.district || prev.district,
+              state: addressData.address.state || prev.state,
+              latitude: latitude,
+              longitude: longitude,
+            }));
+            toast.success('Standort und Adresse erfolgreich erfasst');
+          } else {
+            toast.success('Standort erfolgreich erfasst');
+          }
+        } catch (error) {
+          console.error('[Profil] Reverse geocoding hatası:', error);
+          toast.success('Standort erfolgreich erfasst');
+        } finally {
+          setSearchingAddress(false);
+        }
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -374,6 +406,7 @@ function Profil() {
             break;
         }
         toast.error(errorMessage);
+        setSearchingAddress(false);
       },
       {
         enableHighAccuracy: true,
@@ -404,10 +437,6 @@ function Profil() {
     }
     if (!formData.city.trim()) {
       toast.error('Stadt ist erforderlich');
-      return;
-    }
-    if (!formData.state.trim()) {
-      toast.error('Bundesland ist erforderlich');
       return;
     }
 
@@ -781,14 +810,14 @@ function Profil() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Bundesland <span className="text-red-500">*</span>
+                      Bundesland
                     </label>
                     <input
                       type="text"
                       name="state"
                       value={formData.state}
                       onChange={handleInputChange}
-                      placeholder="Bundesland"
+                      placeholder="Optional"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>

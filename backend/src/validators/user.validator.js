@@ -50,7 +50,7 @@ export const createAddressValidation = [
     .matches(/^\d{5}$/)
     .withMessage('PLZ muss 5 Ziffern haben'),
   body('city').trim().notEmpty().withMessage('Stadt ist erforderlich'),
-  body('state').trim().notEmpty().withMessage('Bundesland ist erforderlich'),
+  body('state').optional().trim(),
   body('description').optional().trim(),
   body('isDefault').optional().isBoolean(),
 ];
