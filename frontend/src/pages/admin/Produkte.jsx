@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
@@ -929,7 +930,10 @@ function Produkte() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Produkte</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            Produkte
+            <HelpTooltip content="Verwalten Sie Ihr Produktsortiment: Produkte hinzufügen, bearbeiten, Preise aktualisieren und Lagerbestände überwachen." />
+          </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
             {total} {total === 1 ? 'Produkt' : 'Produkte'} insgesamt
           </p>

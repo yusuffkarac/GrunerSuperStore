@@ -8,6 +8,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Coupons() {
   const { showConfirm } = useAlert();
@@ -266,7 +267,10 @@ function Coupons() {
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className=" mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Gutscheine</h1>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Gutscheine
+              <HelpTooltip content="Verwalten Sie Rabattgutscheine: Erstellen, bearbeiten und verfolgen Sie Gutscheincodes für Ihre Kunden." />
+            </h1>
             <button
               onClick={() => openModal()}
               className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"

@@ -7,6 +7,7 @@ import settingsService from '../../services/settingsService';
 import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function BarcodeLabels() {
   const { showConfirm } = useAlert();
@@ -359,7 +360,10 @@ function BarcodeLabels() {
     <div className=" md:p-6">
       {/* Header */}
       <div className="mb-4 md:mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Barcode-Etiketten</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          Barcode-Etiketten
+          <HelpTooltip content="Erstellen und drucken Sie Barcode-Etiketten für Ihre Produkte. Ideal für Lagerbestandsverwaltung und Kassensysteme." />
+        </h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">Verwalten und drucken Sie Ihre Produktetiketten</p>
       </div>
 

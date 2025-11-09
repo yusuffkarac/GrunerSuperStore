@@ -11,6 +11,7 @@ import {
   FiAlertTriangle,
 } from 'react-icons/fi';
 import adminService from '../../services/adminService';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function StatCard({ icon: Icon, title, value, change, color }) {
   return (
@@ -91,7 +92,10 @@ function Dashboard() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+          Dashboard
+          <HelpTooltip content="Überblick über wichtige Geschäftskennzahlen: Produkte, Bestellungen, Umsätze und niedrige Lagerbestände." />
+        </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">Übersicht Ihrer Geschäftsstatistiken</p>
       </div>
 

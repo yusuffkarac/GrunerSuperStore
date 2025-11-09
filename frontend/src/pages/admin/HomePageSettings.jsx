@@ -4,6 +4,7 @@ import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 // Default homepage settings
 const defaultHomepageSettings = {
@@ -143,7 +144,10 @@ function HomePageSettings() {
         {/* Header */}
         <div className="mb-6">
           <div className="mb-4 md:mb-0">
-            <h1 className="text-2xl font-bold text-gray-900">Homepage-Einstellungen</h1>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Homepage-Einstellungen
+              <HelpTooltip content="Passen Sie Ihre Startseite an: Slider-Bilder, Willkommenstexte, Slogan und hervorgehobene Kategorien bearbeiten." />
+            </h1>
             <p className="text-gray-600 mt-1">
               Verwalten Sie die Texte und Inhalte der Startseite
             </p>

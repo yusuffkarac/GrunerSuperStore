@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 // Admin-Einstellungsseite
 function Settings() {
@@ -329,7 +330,10 @@ function Settings() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Einstellungen</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Einstellungen
+            <HelpTooltip content="Konfigurieren Sie allgemeine Systemeinstellungen: Shop-Informationen, Bestelleinstellungen und Benachrichtigungen." />
+          </h1>
           <p className="text-gray-600 mt-1">
             Verwalten Sie die allgemeinen Einstellungen der Anwendung
           </p>
