@@ -131,6 +131,11 @@ const adminService = {
     return response.data;
   },
 
+  cancelOrder: async (id, cancellationData) => {
+    const response = await adminApi.put(`/admin/orders/${id}/cancel`, cancellationData);
+    return response.data;
+  },
+
   getOrderReview: async (orderId) => {
     const response = await adminApi.get(`/admin/orders/${orderId}/review`);
     return response.data;
@@ -144,6 +149,99 @@ const adminService = {
   sendInvoice: async (orderId) => {
     const response = await adminApi.post(`/admin/orders/${orderId}/send-invoice`);
     return response.data;
+  },
+
+  getDeliverySlipPDF: async (orderId) => {
+    try {
+      const response = await adminApi.get(`/admin/orders/${orderId}/delivery-slip`, {
+        responseType: 'blob',
+      });
+      
+      // Blob URL oluştur
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Yeni pencerede PDF'i aç
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        // PDF yüklendikten sonra print dialog'unu aç
+        const tryPrint = () => {
+          try {
+            if (printWindow && !printWindow.closed) {
+              printWindow.focus();
+              printWindow.print();
+            }
+          } catch (error) {
+            console.log('Print dialog açılamadı, kullanıcı manuel olarak yazdırabilir');
+          }
+        };
+        
+        // onload event'i bazı tarayıcılarda çalışmayabilir, bu yüzden timeout kullanıyoruz
+        printWindow.onload = () => {
+          setTimeout(tryPrint, 800);
+        };
+        
+        // Alternatif: onload çalışmazsa timeout ile dene
+        setTimeout(() => {
+          if (printWindow && !printWindow.closed) {
+            tryPrint();
+          }
+        }, 1500);
+        
+        // URL'i temizle (çok geç, kullanıcı print dialog'unu kapatana kadar beklemek için)
+        // Not: URL'i revoke etmek pencerenin kapanmasına neden olabilir, bu yüzden çok geç yapıyoruz
+        setTimeout(() => {
+          // Sadece pencere kapalıysa URL'i temizle
+          if (printWindow.closed) {
+            window.URL.revokeObjectURL(url);
+          } else {
+            // Pencere hala açıksa, daha sonra tekrar dene
+            const checkInterval = setInterval(() => {
+              if (printWindow.closed) {
+                window.URL.revokeObjectURL(url);
+                clearInterval(checkInterval);
+              }
+            }, 1000);
+            
+            // 30 saniye sonra zorla temizle
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              window.URL.revokeObjectURL(url);
+            }, 30000);
+          }
+        }, 10000);
+      } else {
+        // Popup blocker varsa, iframe kullan
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.print();
+            } catch (error) {
+              console.log('Print dialog açılamadı');
+            }
+            // Iframe'i temizle (print dialog açıldıktan sonra)
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              window.URL.revokeObjectURL(url);
+            }, 10000);
+          }, 800);
+        };
+      }
+    } catch (error) {
+      console.error('Lieferschein PDF hatası:', error);
+      throw error;
+    }
   },
 
   // Kullanıcı yönetimi

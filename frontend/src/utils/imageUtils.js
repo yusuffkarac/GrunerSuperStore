@@ -9,12 +9,34 @@ export const normalizeImageUrl = (url) => {
     return url;
   }
   
-  // Relative path ise API base URL ekle
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  // API base URL'i dinamik olarak oluştur (api.js ile aynı mantık)
+  const getApiBaseUrl = () => {
+    // Eğer environment variable varsa onu kullan
+    if (import.meta.env.VITE_API_URL) {
+      const url = import.meta.env.VITE_API_URL;
+      // /api ile bitiyorsa kaldır (çünkü /uploads ekleyeceğiz)
+      return url.endsWith('/api') ? url.slice(0, -4) : url;
+    }
+    
+    // Development modunda localhost kullan
+    if (import.meta.env.DEV) {
+      return 'http://localhost:5001';
+    }
+    
+    // Production'da dinamik olarak hostname ve protocol kullan
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const port = '5001';
+    return `${protocol}//${hostname}:${port}`;
+  };
+  
+  const API_BASE = getApiBaseUrl();
   
   // Eğer /uploads ile başlıyorsa API base URL ekle
+  // Backend'de hem /uploads hem de /api/uploads serve ediliyor
+  // /api/uploads kullanarak tutarlılık sağlıyoruz
   if (url.startsWith('/uploads')) {
-    return `${API_BASE}${url}`;
+    return `${API_BASE}/api${url}`;
   }
   
   // Diğer durumlarda direkt döndür

@@ -115,6 +115,20 @@ class AdminController {
     });
   });
 
+  // PUT /api/admin/orders/:id/cancel - Sipariş iptal et (Admin)
+  cancelOrder = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const cancellationData = req.body;
+
+    const order = await orderService.adminCancelOrder(id, cancellationData);
+
+    res.status(200).json({
+      success: true,
+      message: 'Bestellung erfolgreich storniert',
+      data: { order },
+    });
+  });
+
   // GET /api/admin/orders/stats - Sipariş istatistikleri
   getOrderStats = asyncHandler(async (req, res) => {
     const stats = await orderService.getOrderStats();

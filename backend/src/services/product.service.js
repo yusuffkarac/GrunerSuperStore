@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError } from '../utils/errors.js';
+import { getGermanyDate } from '../utils/date.js';
 
 class ProductService {
   // Ürünleri listele (filtreleme, arama, sayfalama)
@@ -11,6 +12,7 @@ class ProductService {
     sortBy = 'name',
     sortOrder = 'asc',
     isFeatured,
+    campaignId,
   }) {
     const skip = (page - 1) * limit;
 
@@ -19,8 +21,91 @@ class ProductService {
       isActive: true,
     };
 
+    // Kampanya filtresi
+    if (campaignId) {
+      try {
+        const now = getGermanyDate();
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaignId },
+        });
+
+        if (campaign && campaign.isActive && campaign.startDate <= now && campaign.endDate >= now) {
+          // Usage limit kontrolü
+          if (campaign.usageLimit !== null && campaign.usageCount >= campaign.usageLimit) {
+            // Kampanya limitine ulaşılmışsa boş sonuç döndür
+            return {
+              products: [],
+              pagination: {
+                total: 0,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: 0,
+              },
+            };
+          }
+
+          // Kampanya tüm mağazaya uygulanıyorsa filtre yok
+          if (!campaign.applyToAll) {
+            // Kategoriye özgü kampanyalar
+            if (campaign.categoryIds && Array.isArray(campaign.categoryIds) && campaign.categoryIds.length > 0) {
+              where.categoryId = { in: campaign.categoryIds };
+            }
+            // Ürüne özgü kampanyalar
+            else if (campaign.productIds && Array.isArray(campaign.productIds) && campaign.productIds.length > 0) {
+              where.id = { in: campaign.productIds };
+            } else {
+              // Kampanya hiçbir ürüne uygulanmıyorsa boş sonuç döndür
+              return {
+                products: [],
+                pagination: {
+                  total: 0,
+                  page: parseInt(page),
+                  limit: parseInt(limit),
+                  totalPages: 0,
+                },
+              };
+            }
+          }
+        } else {
+          // Kampanya aktif değilse boş sonuç döndür
+          return {
+            products: [],
+            pagination: {
+              total: 0,
+              page: parseInt(page),
+              limit: parseInt(limit),
+              totalPages: 0,
+            },
+          };
+        }
+      } catch (error) {
+        console.error('Kampanya yükleme hatası:', error);
+        // Hata durumunda kampanya filtresini yok say
+      }
+    }
+
     if (categoryId) {
-      where.categoryId = categoryId;
+      // Kampanya filtresi varsa ve kategori filtresi de varsa, ikisini birleştir
+      if (where.categoryId) {
+        // Eğer kampanya kategori filtresi varsa, sadece o kategoriler içinde categoryId'yi kontrol et
+        if (Array.isArray(where.categoryId.in)) {
+          if (!where.categoryId.in.includes(categoryId)) {
+            // İstenen kategori kampanya kapsamında değilse boş sonuç
+            return {
+              products: [],
+              pagination: {
+                total: 0,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: 0,
+              },
+            };
+          }
+          where.categoryId = categoryId;
+        }
+      } else {
+        where.categoryId = categoryId;
+      }
     }
 
     if (search) {

@@ -1018,6 +1018,166 @@ class OrderService {
     });
   }
 
+  // Admin sipariş iptali
+  async adminCancelOrder(orderId, cancellationData) {
+    const {
+      cancellationReason,
+      cancellationInternalNote,
+      cancellationCustomerMessage,
+      showCancellationReasonToCustomer = false,
+    } = cancellationData;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        address: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // Zaten iptal edilmişse hata ver
+    if (order.status === 'cancelled') {
+      throw new ValidationError('Diese Bestellung wurde bereits storniert');
+    }
+
+    // Teslim edilmiş siparişler iptal edilemez
+    if (order.status === 'delivered') {
+      throw new ValidationError('Gelieferte Bestellungen können nicht storniert werden');
+    }
+
+    // Stokları geri ekle ve sipariş durumunu güncelle
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // Eğer daha önce iptal edilmemişse stokları geri ekle
+      if (order.status !== 'cancelled') {
+        for (const item of order.orderItems) {
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
+              },
+            });
+          } else {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
+              },
+            });
+          }
+        }
+      }
+
+      return await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'cancelled',
+          cancellationReason: cancellationReason?.trim() || null,
+          cancellationInternalNote: cancellationInternalNote?.trim() || null,
+          cancellationCustomerMessage: cancellationCustomerMessage?.trim() || null,
+          showCancellationReasonToCustomer: showCancellationReasonToCustomer || false,
+        },
+        include: {
+          orderItems: true,
+          address: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      });
+    });
+
+    // İptal maili gönder
+    await this.sendAdminCancellationEmail(updatedOrder);
+
+    // Bildirim oluştur
+    await this.createOrderStatusNotification(order.status, 'cancelled', updatedOrder);
+
+    return updatedOrder;
+  }
+
+  // Admin iptal maili gönder
+  async sendAdminCancellationEmail(order) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, mail gönderilmedi.');
+        return;
+      }
+
+      const user = order.user;
+      if (!user) return;
+
+      // İptal sebebi ve müşteri mesajını hazırla
+      let cancelReasonText = null;
+      if (order.showCancellationReasonToCustomer && order.cancellationReason) {
+        cancelReasonText = order.cancellationReason;
+      }
+
+      // Müşteri mesajı varsa ekle
+      let customerMessageText = null;
+      if (order.cancellationCustomerMessage) {
+        customerMessageText = order.cancellationCustomerMessage;
+      }
+
+      await queueService.addEmailJob({
+        to: user.email,
+        subject: `Bestellung ${order.orderNo} storniert`,
+        template: 'order-cancelled',
+        data: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          orderNo: order.orderNo,
+          orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+          cancelDate: new Date().toLocaleString('de-DE'),
+          total: parseFloat(order.total).toFixed(2),
+          items: order.orderItems.map((item) => ({
+            productName: item.productName,
+            variantName: item.variantName,
+            quantity: item.quantity,
+            price: parseFloat(item.price).toFixed(2),
+          })),
+          cancelReason: cancelReasonText,
+          customerMessage: customerMessageText,
+          refundInfo: order.paymentType !== 'none' ?
+            'Die Rückerstattung wird innerhalb von 5-7 Werktagen bearbeitet.' : null,
+          shopUrl: process.env.SHOP_URL || 'http://localhost:5173',
+        },
+        metadata: { orderId: order.id, type: 'order-cancelled' },
+        priority: 1,
+      });
+
+      console.log(`✅ Admin iptal maili kuyruğa eklendi: ${order.orderNo}`);
+    } catch (error) {
+      console.error('Admin iptal mail hatası:', error);
+    }
+  }
+
   // Sipariş istatistikleri (Admin)
   async getOrderStats() {
     const [

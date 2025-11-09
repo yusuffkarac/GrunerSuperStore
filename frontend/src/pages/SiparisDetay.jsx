@@ -18,6 +18,7 @@ import orderService from '../services/orderService';
 
 // OrderStatusBadge'i Siparislerim'den kopyalayabilirsiniz veya ortak bir component yapabilirsiniz
 import { OrderStatusBadge } from './Siparislerim';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Yıldız Rating Bileşeni
 function StarRating({ rating, onRatingChange, readonly = false }) {
@@ -247,6 +248,26 @@ function SiparisDetay() {
             </div>
           </div>
         )}
+
+        {/* İptal Sebebi ve Mesajı - Sadece iptal edilmişse ve gösterilmesi gerekiyorsa */}
+        {order.status === 'cancelled' && order.showCancellationReasonToCustomer && order.cancellationReason && (
+          <div className="pt-4 border-t border-gray-100">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-red-900 mb-2">Grund für die Stornierung:</p>
+              <p className="text-sm text-red-800">{order.cancellationReason}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Müşteri Mesajı - İptal edilmişse ve mesaj varsa */}
+        {order.status === 'cancelled' && order.cancellationCustomerMessage && (
+          <div className="pt-4 border-t border-gray-100">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-2">Nachricht für Sie:</p>
+              <p className="text-sm text-blue-800 whitespace-pre-wrap">{order.cancellationCustomerMessage}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Ürünler */}
@@ -261,7 +282,7 @@ function SiparisDetay() {
             >
               <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                  <img src={normalizeImageUrl(item.imageUrl)} alt={item.productName} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <FiPackage className="text-gray-400 text-xl" />

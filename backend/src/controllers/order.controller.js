@@ -251,6 +251,30 @@ class OrderController {
       message: 'Rechnung wurde erfolgreich per E-Mail versendet',
     });
   });
+
+  // GET /api/orders/:id/delivery-slip - Kurye için teslimat slip PDF'ini indir
+  getDeliverySlipPDF = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    
+    // Admin routes'da olduğu için admin olduğunu biliyoruz
+    // Sipariş kontrolü - admin tüm siparişleri görebilir
+    const order = await orderService.getOrderById(id, null, true);
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // PDF oluştur
+    const pdfBuffer = await invoiceService.generateDeliverySlipPDF(id);
+
+    // PDF response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="Lieferschein-${order.orderNo}.pdf"`
+    );
+    res.send(pdfBuffer);
+  });
 }
 
 export default new OrderController();

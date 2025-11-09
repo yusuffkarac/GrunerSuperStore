@@ -74,7 +74,7 @@ function validateDistance(addressLat, addressLon, storeLat, storeLon, maxDistanc
     return {
       isValid: false,
       distance: null,
-      message: 'Konum bilgisi eksik. Lütfen adresinizi güncelleyin.',
+      message: 'Standortinformationen fehlen. Bitte aktualisieren Sie Ihre Adresse.',
     };
   }
 
@@ -94,7 +94,7 @@ function validateDistance(addressLat, addressLon, storeLat, storeLon, maxDistanc
     distance: Math.round(distance * 100) / 100, // 2 ondalık basamağa yuvarla
     message: isValid
       ? null
-      : `Sipariş verilebilir mesafe sınırı ${maxDistance} km'dir. Adresiniz markete ${distance.toFixed(2)} km uzaklıktadır.`,
+      : `Die maximal erlaubte Bestellentfernung beträgt ${maxDistance} km. Ihre Adresse ist ${distance.toFixed(2)} km vom Markt entfernt.`,
   };
 }
 

@@ -73,3 +73,31 @@ export const createReviewValidation = [
     .isLength({ max: 1000 })
     .withMessage('Kommentar darf maximal 1000 Zeichen lang sein'),
 ];
+
+// Admin sipariş iptal validasyonu
+export const adminCancelOrderValidation = [
+  param('id').isUUID().withMessage('Ungültige Bestellungs-ID'),
+
+  body('cancellationReason')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Stornierungsgrund darf maximal 500 Zeichen lang sein'),
+
+  body('cancellationInternalNote')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Interne Notiz darf maximal 1000 Zeichen lang sein'),
+
+  body('cancellationCustomerMessage')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Kundenmitteilung darf maximal 1000 Zeichen lang sein'),
+
+  body('showCancellationReasonToCustomer')
+    .optional()
+    .isBoolean()
+    .withMessage('showCancellationReasonToCustomer muss ein Boolean sein'),
+];

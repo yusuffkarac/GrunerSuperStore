@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload, FiPrinter } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -64,6 +64,13 @@ function Orders() {
   const [invoicePdfUrl, setInvoicePdfUrl] = useState(null);
   const [invoicePdfBlob, setInvoicePdfBlob] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelFormData, setCancelFormData] = useState({
+    cancellationReason: '',
+    cancellationInternalNote: '',
+    cancellationCustomerMessage: '',
+    showCancellationReasonToCustomer: false,
+  });
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,6 +94,17 @@ function Orders() {
     { value: 'shipped', label: 'Versendet' },
     { value: 'delivered', label: 'Geliefert' },
     { value: 'cancelled', label: 'Storniert' },
+  ];
+
+  // İptal sebepleri
+  const cancellationReasons = [
+    { value: 'out_of_stock', label: 'Nicht auf Lager' },
+    { value: 'customer_request', label: 'Kundenwunsch' },
+    { value: 'payment_failed', label: 'Zahlungsfehler' },
+    { value: 'invalid_address', label: 'Ungültige Adresse' },
+    { value: 'delivery_area', label: 'Nicht im Liefergebiet' },
+    { value: 'fraud_suspected', label: 'Betrugsverdacht' },
+    { value: 'other', label: 'Sonstiges' },
   ];
 
   const typeOptions = [
@@ -224,6 +242,50 @@ function Orders() {
     setOrderReview(null);
   };
 
+  // İptal modalını aç
+  const openCancelModal = () => {
+    setCancelFormData({
+      cancellationReason: '',
+      cancellationInternalNote: '',
+      cancellationCustomerMessage: '',
+      showCancellationReasonToCustomer: false,
+    });
+    setShowCancelModal(true);
+  };
+
+  // İptal modalını kapat
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+    setCancelFormData({
+      cancellationReason: '',
+      cancellationInternalNote: '',
+      cancellationCustomerMessage: '',
+      showCancellationReasonToCustomer: false,
+    });
+  };
+
+  // Sipariş iptal et
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+
+    const confirmed = await showConfirm(
+      'Bestellung stornieren',
+      'Möchten Sie diese Bestellung wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await adminService.cancelOrder(selectedOrder.id, cancelFormData);
+      toast.success('Bestellung erfolgreich storniert');
+      closeCancelModal();
+      closeModal();
+      loadOrders();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Fehler beim Stornieren');
+    }
+  };
+
   // Fatura gönder
   const handleSendInvoice = async (orderId) => {
     const confirmed = await showConfirm(
@@ -242,6 +304,29 @@ function Orders() {
       console.error('Fatura gönderim hatası:', error);
     } finally {
       setSendingInvoice(false);
+    }
+  };
+
+  // Fatura PDF indir
+  const handleDownloadInvoice = async (orderId, orderNo) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
+      window.open(pdfUrl, '_blank');
+    } catch (error) {
+      toast.error('Fehler beim Öffnen der Rechnung');
+      console.error('Fatura indirme hatası:', error);
+    }
+  };
+
+  // Kurye için teslimat slip PDF'i yazdır
+  const handlePrintDeliverySlip = async (orderId) => {
+    try {
+      await adminService.getDeliverySlipPDF(orderId);
+    } catch (error) {
+      toast.error('Fehler beim Öffnen des Lieferscheins');
+      console.error('Lieferschein yazdırma hatası:', error);
     }
   };
 
@@ -883,16 +968,17 @@ function Orders() {
                   {selectedOrder.address && (
                     <div>
                       <h3 className="text-sm font-medium text-gray-700 mb-2">Lieferadresse</h3>
-                      <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
-                        <p className="font-medium">{selectedOrder.address.title}</p>
-                        <p>{selectedOrder.address.street} {selectedOrder.address.houseNumber}</p>
-                        {selectedOrder.address.addressLine2 && (
-                          <p>{selectedOrder.address.addressLine2}</p>
+                      <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                        {selectedOrder.address.title && (
+                          <p className="font-medium mb-1">{selectedOrder.address.title}</p>
                         )}
-                        <p>
+                        <p className="leading-relaxed">
+                          {selectedOrder.address.street} {selectedOrder.address.houseNumber}
+                          {selectedOrder.address.addressLine2 && <><br />{selectedOrder.address.addressLine2}</>}
+                          <br />
                           {selectedOrder.address.postalCode} {selectedOrder.address.city}
+                          {selectedOrder.address.state && <><br />{selectedOrder.address.state}</>}
                         </p>
-                        <p>{selectedOrder.address.state}</p>
                       </div>
                     </div>
                   )}
@@ -903,6 +989,59 @@ function Orders() {
                       <h3 className="text-sm font-medium text-gray-700 mb-2">Bestellnotiz</h3>
                       <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
                         <p className="whitespace-pre-wrap">{selectedOrder.note}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* İptal Bilgileri - Sadece iptal edilmiş siparişler için */}
+                  {selectedOrder.status === 'cancelled' && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <h3 className="text-sm font-medium text-gray-700 mb-2">Stornierungsinformationen</h3>
+                      <div className="space-y-2">
+                        {/* İptal Sebebi - Müşteriye gösterilecekse */}
+                        {selectedOrder.showCancellationReasonToCustomer && selectedOrder.cancellationReason && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Stornierungsgrund (für Kunde sichtbar):</p>
+                            <div className="text-sm text-gray-900 bg-blue-50 border border-blue-200 p-2 rounded">
+                              <p>{selectedOrder.cancellationReason}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* İptal Sebebi - Sadece admin için */}
+                        {selectedOrder.cancellationReason && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Stornierungsgrund:</p>
+                            <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                              <p>{selectedOrder.cancellationReason}</p>
+                              <p className={`text-xs mt-1 ${selectedOrder.showCancellationReasonToCustomer ? 'text-green-600' : 'text-gray-500'}`}>
+                                {selectedOrder.showCancellationReasonToCustomer ? '✓ Wird dem Kunden angezeigt' : 'Nur für Admin sichtbar'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Müşteri Mesajı */}
+                        {selectedOrder.cancellationCustomerMessage && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Nachricht für den Kunden:</p>
+                            <div className="text-sm text-gray-900 bg-blue-50 border border-blue-200 p-2 rounded">
+                              <p className="whitespace-pre-wrap">{selectedOrder.cancellationCustomerMessage}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Internal Note - Sadece admin için */}
+                        {selectedOrder.cancellationInternalNote && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Interne Notiz <span className="text-red-600">(Nur für Admin)</span>:
+                            </p>
+                            <div className="text-sm text-gray-900 bg-red-50 border border-red-200 p-2 rounded">
+                              <p className="whitespace-pre-wrap">{selectedOrder.cancellationInternalNote}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -997,6 +1136,20 @@ function Orders() {
                     </div>
                   </div>
 
+                  {/* İptal İşlemi */}
+                  {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <h3 className="text-sm font-medium text-gray-700 mb-3">Bestellung stornieren</h3>
+                      <button
+                        onClick={openCancelModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                      >
+                        <FiXCircle size={16} />
+                        Bestellung stornieren
+                      </button>
+                    </div>
+                  )}
+
                   {/* Fatura İşlemleri */}
                   <div className="border-t border-gray-200 pt-4">
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Rechnungsaktionen</h3>
@@ -1015,6 +1168,20 @@ function Orders() {
                       >
                         <FiMail size={16} />
                         {sendingInvoice ? 'Wird gesendet...' : 'Per E-Mail senden'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Kurye İşlemleri */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Kurieraktionen</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handlePrintDeliverySlip(selectedOrder.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                      >
+                        <FiPrinter size={16} />
+                        Lieferschein drucken
                       </button>
                     </div>
                   </div>
@@ -1121,6 +1288,136 @@ function Orders() {
                 >
                   <FiMail size={18} />
                   {sendingInvoice ? 'Wird gesendet...' : 'Rechnung senden'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Order Modal */}
+      <AnimatePresence>
+        {showCancelModal && selectedOrder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={closeCancelModal}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Bestellung #{selectedOrder.orderNo} stornieren
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Bitte geben Sie die Stornierungsdetails ein
+                  </p>
+                </div>
+                <button
+                  onClick={closeCancelModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* İptal Sebebi */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stornierungsgrund <span className="text-gray-500">(optional)</span>
+                  </label>
+                  <select
+                    value={cancelFormData.cancellationReason}
+                    onChange={(e) => setCancelFormData({ ...cancelFormData, cancellationReason: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  >
+                    <option value="">Bitte wählen...</option>
+                    {cancellationReasons.map((reason) => (
+                      <option key={reason.value} value={reason.label}>
+                        {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* İptal sebebini müşteriye göster */}
+                {cancelFormData.cancellationReason && (
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="showReason"
+                      checked={cancelFormData.showCancellationReasonToCustomer}
+                      onChange={(e) => setCancelFormData({ ...cancelFormData, showCancellationReasonToCustomer: e.target.checked })}
+                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    />
+                    <label htmlFor="showReason" className="ml-2 text-sm text-gray-700">
+                      Stornierungsgrund dem Kunden anzeigen
+                    </label>
+                  </div>
+                )}
+
+                {/* Müşteriye Özel Mesaj */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nachricht für den Kunden <span className="text-gray-500">(optional)</span>
+                  </label>
+                  <textarea
+                    value={cancelFormData.cancellationCustomerMessage}
+                    onChange={(e) => setCancelFormData({ ...cancelFormData, cancellationCustomerMessage: e.target.value })}
+                    rows={4}
+                    placeholder="Optionale Nachricht, die dem Kunden angezeigt wird..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    maxLength={1000}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {cancelFormData.cancellationCustomerMessage.length}/1000 Zeichen
+                  </p>
+                </div>
+
+                {/* Internal Note */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Interne Notiz <span className="text-gray-500">(wird dem Kunden nicht angezeigt)</span>
+                  </label>
+                  <textarea
+                    value={cancelFormData.cancellationInternalNote}
+                    onChange={(e) => setCancelFormData({ ...cancelFormData, cancellationInternalNote: e.target.value })}
+                    rows={4}
+                    placeholder="Interne Notiz für Ihre Aufzeichnungen..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    maxLength={1000}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {cancelFormData.cancellationInternalNote.length}/1000 Zeichen
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                <button
+                  onClick={closeCancelModal}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+                >
+                  <FiXCircle size={18} />
+                  Bestellung stornieren
                 </button>
               </div>
             </motion.div>

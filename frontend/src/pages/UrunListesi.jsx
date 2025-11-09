@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { FiFilter, FiX } from 'react-icons/fi';
+import { FiFilter, FiX, FiTag } from 'react-icons/fi';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import settingsService from '../services/settingsService';
@@ -27,12 +27,19 @@ function UrunListesi() {
   // Filters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [selectedCampaign, setSelectedCampaign] = useState(searchParams.get('campaign') || '');
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   
   // Sorting
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || '');
   const [sortOrder, setSortOrder] = useState(searchParams.get('sortOrder') || '');
+
+  // URL parametrelerinden kampanya değerini oku
+  useEffect(() => {
+    const urlCampaign = searchParams.get('campaign') || '';
+    setSelectedCampaign(urlCampaign);
+  }, [searchParams]);
 
   // URL parametrelerinden sıralama değerlerini oku
   useEffect(() => {
@@ -108,6 +115,7 @@ function UrunListesi() {
 
         if (searchQuery) params.search = searchQuery;
         if (selectedCategory) params.categoryId = selectedCategory;
+        if (selectedCampaign) params.campaignId = selectedCampaign;
         if (sortBy) params.sortBy = sortBy;
         if (sortOrder) params.sortOrder = sortOrder;
 
@@ -124,7 +132,7 @@ function UrunListesi() {
     };
 
     fetchProducts();
-  }, [currentPage, searchQuery, selectedCategory, sortBy, sortOrder, canViewProducts]);
+  }, [currentPage, searchQuery, selectedCategory, selectedCampaign, sortBy, sortOrder, canViewProducts]);
 
   // Debounced search - kullanıcı yazmayı bıraktıktan 500ms sonra ara
   useEffect(() => {
@@ -217,6 +225,7 @@ function UrunListesi() {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('');
+    setSelectedCampaign('');
     setSortBy('');
     setSortOrder('');
     setCurrentPage(1);
@@ -228,9 +237,10 @@ function UrunListesi() {
     let count = 0;
     if (searchQuery) count++;
     if (selectedCategory) count++;
+    if (selectedCampaign) count++;
     if (sortBy) count++;
     return count;
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, selectedCampaign, sortBy]);
 
   // Eğer guest göremiyorsa
   if (!canViewProducts) {
@@ -276,8 +286,43 @@ function UrunListesi() {
     return category?._count?.products || 0;
   };
 
+  // Seçili kampanyayı bul
+  const selectedCampaignData = campaigns.find((c) => c.id === selectedCampaign);
+
   return (
     <div className="pb-20 bg-white">
+      {/* Kampanya Filtresi Aktifken Bilgi Banner'ı */}
+      {selectedCampaign && selectedCampaignData && (
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-4">
+          <div className="container-mobile">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FiTag className="w-5 h-5" />
+                <div>
+                  <p className="font-semibold">{selectedCampaignData.name}</p>
+                  {selectedCampaignData.description && (
+                    <p className="text-sm text-white/90">{selectedCampaignData.description}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedCampaign('');
+                  const currentParams = Object.fromEntries(searchParams);
+                  const { campaign, ...restParams } = currentParams;
+                  setSearchParams(restParams);
+                  setCurrentPage(1);
+                }}
+                className="text-white hover:text-white/80 transition-colors"
+                aria-label="Kampanya filtresini kaldır"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filtreleme/Sıralama Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
         <div className="container-mobile">
@@ -329,7 +374,7 @@ function UrunListesi() {
                     : 'bg-gray-100 text-gray-700 border border-gray-200'
                 }`}
               >
-                Tümü ({totalProducts})
+                Alle ({totalProducts})
               </button>
               {categories.map((category) => {
                 const count = getCategoryProductCount(category.id);

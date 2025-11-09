@@ -10,6 +10,7 @@ import { adminLoginValidation, createUserValidation, updateUserValidation, creat
 import {
   updateOrderStatusValidation,
   orderIdValidation,
+  adminCancelOrderValidation,
 } from '../validators/order.validators.js';
 
 const router = express.Router();
@@ -68,11 +69,22 @@ router.put(
   adminController.updateOrderStatus
 );
 
+// PUT /api/admin/orders/:id/cancel - Sipariş iptal et (Admin)
+router.put(
+  '/orders/:id/cancel',
+  adminCancelOrderValidation,
+  validate,
+  adminController.cancelOrder
+);
+
 // GET /api/admin/orders/:id/review - Sipariş review'ını getir (admin)
 router.get('/orders/:id/review', orderIdValidation, validate, orderController.getReview);
 
 // POST /api/admin/orders/:id/send-invoice - Müşteriye fatura gönder
 router.post('/orders/:id/send-invoice', orderIdValidation, validate, orderController.sendInvoice);
+
+// GET /api/admin/orders/:id/delivery-slip - Kurye için teslimat slip PDF'ini indir
+router.get('/orders/:id/delivery-slip', orderIdValidation, validate, orderController.getDeliverySlipPDF);
 
 // ===============================
 // PRODUCT MANAGEMENT

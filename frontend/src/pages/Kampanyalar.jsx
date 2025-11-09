@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import campaignService from '../services/campaignService';
 import Loading from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 function Kampanyalar() {
   const [campaigns, setCampaigns] = useState([]);
@@ -104,13 +105,31 @@ function Kampanyalar() {
     return <Loading />;
   }
 
+  // Header için ilk kampanyanın görselini kullan veya degrade
+  const headerImageUrl = campaigns.length > 0 && campaigns[0].imageUrl 
+    ? normalizeImageUrl(campaigns[0].imageUrl) 
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-8 md:py-12 px-4">
-        <div className="container-mobile">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Aktuelle Kampagnen</h1>
-          <p className="text-primary-100 text-lg">
+      <div 
+        className={`relative text-white py-8 md:py-12 px-4 overflow-hidden ${
+          headerImageUrl ? '' : 'bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800'
+        }`}
+        style={headerImageUrl ? {
+          backgroundImage: `url(${headerImageUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        } : {}}
+      >
+        {/* Overlay - Metnin okunabilirliği için */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/50 to-black/40"></div>
+        
+        <div className="container-mobile relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">Aktuelle Kampagnen</h1>
+          <p className="text-white/95 text-lg drop-shadow-md">
             Entdecken Sie unsere aktuellen Angebote und sparen Sie Geld
           </p>
         </div>
@@ -202,7 +221,7 @@ function Kampanyalar() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group flex flex-col h-full"
                   >
                     {/* Kampanya Görseli */}
                     {campaign.imageUrl ? (
@@ -249,7 +268,7 @@ function Kampanyalar() {
                       </div>
                     )}
 
-                    <div className="p-5">
+                    <div className="px-5 pt-5 pb-5 flex flex-col flex-1">
                       {/* Başlık */}
                       <h3 className="font-bold text-xl text-gray-900 mb-2">
                         {campaign.name}
@@ -263,7 +282,7 @@ function Kampanyalar() {
                       )}
 
                       {/* Detaylar */}
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-2 mb-4 flex-1">
                         {/* Tarih */}
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <FiCalendar className="w-4 h-4" />
@@ -311,7 +330,7 @@ function Kampanyalar() {
 
                       {/* Ürünlere git butonu */}
                       <Link
-                        to="/urunler"
+                        to={`/urunler?campaign=${campaign.id}`}
                         className="w-full mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <span>Jetzt einkaufen</span>

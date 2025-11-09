@@ -135,13 +135,7 @@ function AnaSayfa() {
         setCampaigns(loadedCampaigns);
         
         // Debug: Kampanya görsellerini kontrol et
-        if (loadedCampaigns.length > 0) {
-          console.log('Kampanyalar yüklendi:', loadedCampaigns.map(c => ({ 
-            name: c.name, 
-            imageUrl: c.imageUrl,
-            normalized: c.imageUrl ? normalizeImageUrl(c.imageUrl) : null
-          })));
-        }
+        // (log kaldırıldı)
       } catch (error) {
         console.error('Veri yükleme hatası:', error);
       } finally {
@@ -417,7 +411,7 @@ function AnaSayfa() {
                   return (
                     <Link
                       key={campaign.id}
-                      to="/kampanyalar"
+                      to={`/urunler?campaign=${campaign.id}`}
                       className="block w-full flex-shrink-0 group"
                     >
                       <div className="relative bg-gradient-to-br  to-primary-100 rounded-2xl overflow-hidden border border-primary-200 hover:shadow-lg transition-shadow">

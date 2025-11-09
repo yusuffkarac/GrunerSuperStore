@@ -48,6 +48,17 @@
 </div>
 {{/if}}
 
+{{#if customerMessage}}
+<div style="background-color: #eff6ff; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+    <p style="color: #1e40af; margin: 0 0 8px 0; font-weight: 600;">
+        Nachricht für Sie:
+    </p>
+    <p style="color: #1e3a8a; margin: 0; font-size: 14px; white-space: pre-wrap;">
+        {{customerMessage}}
+    </p>
+</div>
+{{/if}}
+
 <div class="info-box">
     <h3 style="color: #111827; margin-bottom: 15px;">Stornierte Artikel</h3>
 

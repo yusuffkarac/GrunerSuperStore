@@ -329,6 +329,296 @@ class InvoiceService {
   }
 
   /**
+   * Kurye için teslimat slip PDF oluştur
+   * @param {string} orderId - Sipariş ID
+   * @returns {Promise<Buffer>} - PDF buffer
+   */
+  async generateDeliverySlipPDF(orderId) {
+    // Sipariş bilgilerini getir
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                unit: true,
+              },
+            },
+          },
+        },
+        address: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // Settings'ten şirket bilgilerini al
+    const settings = await prisma.settings.findFirst();
+    const companyInfo = settings?.companyInfo || {};
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50,
+        });
+
+        const chunks = [];
+
+        // PDF stream'i buffer'a topla
+        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // === HEADER ===
+        // Logo/Şirket adı
+        doc
+          .fontSize(28)
+          .font('Helvetica-Bold')
+          .fillColor('#059669')
+          .text(companyInfo.name || 'Gruner SuperStore', 50, 50, { align: 'center', width: 495 });
+
+        // Lieferschein başlığı
+        doc
+          .fontSize(32)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text('LIEFERSCHEIN', 50, 90, { align: 'center', width: 495 });
+
+        // === SIPARIŞ NUMARASI (BÜYÜK) ===
+        doc
+          .fontSize(24)
+          .font('Helvetica-Bold')
+          .fillColor('#059669')
+          .text(`Bestellnummer: #${order.orderNo}`, 50, 130, { align: 'center', width: 495 });
+
+        // Tarih
+        const orderDate = new Date(order.createdAt).toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor('#6b7280')
+          .text(`Datum: ${orderDate}`, 50, 160, { align: 'center', width: 495 });
+
+        // === MÜŞTERI BİLGİLERİ (BÜYÜK VE NET) ===
+        let currentY = 200;
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text('KUNDE:', 50, currentY);
+
+        currentY += 25;
+        doc
+          .fontSize(14)
+          .font('Helvetica-Bold')
+          .fillColor('#374151')
+          .text(`${order.user.firstName} ${order.user.lastName}`, 50, currentY);
+
+        currentY += 20;
+        if (order.user.phone) {
+          doc
+            .fontSize(13)
+            .font('Helvetica')
+            .fillColor('#111827')
+            .text(`Telefon: ${order.user.phone}`, 50, currentY);
+          currentY += 20;
+        }
+
+        // === ADRES BİLGİLERİ (TESLİMAT İÇİN) ===
+        if (order.type === 'delivery' && order.address) {
+          currentY += 10;
+          doc
+            .fontSize(16)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text('LIEFERADRESSE:', 50, currentY);
+
+          currentY += 25;
+          doc
+            .fontSize(13)
+            .font('Helvetica-Bold')
+            .fillColor('#374151');
+
+          if (order.address.title) {
+            doc.text(order.address.title, 50, currentY);
+            currentY += 18;
+          }
+
+          doc.text(`${order.address.street} ${order.address.houseNumber}`, 50, currentY);
+          currentY += 18;
+
+          if (order.address.addressLine2) {
+            doc.text(order.address.addressLine2, 50, currentY);
+            currentY += 18;
+          }
+
+          doc.text(`${order.address.postalCode} ${order.address.city}`, 50, currentY);
+          currentY += 18;
+
+          if (order.address.state) {
+            doc.text(order.address.state, 50, currentY);
+            currentY += 18;
+          }
+        } else if (order.type === 'pickup') {
+          currentY += 10;
+          doc
+            .fontSize(16)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text('ABHOLUNG:', 50, currentY);
+
+          currentY += 25;
+          doc
+            .fontSize(13)
+            .font('Helvetica')
+            .fillColor('#374151')
+            .text('Selbstabholung im Geschäft', 50, currentY);
+          currentY += 18;
+
+          if (companyInfo.address) {
+            doc.text(companyInfo.address, 50, currentY);
+            currentY += 18;
+          }
+        }
+
+        // === ÖDEME BİLGİSİ ===
+        currentY += 20;
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text('ZAHLUNG:', 50, currentY);
+
+        currentY += 25;
+        const paymentText =
+          order.paymentType === 'cash'
+            ? 'Barzahlung bei Lieferung'
+            : order.paymentType === 'card_on_delivery'
+            ? 'Kartenzahlung bei Lieferung'
+            : 'Keine Zahlung';
+        doc
+          .fontSize(14)
+          .font('Helvetica-Bold')
+          .fillColor('#059669')
+          .text(paymentText, 50, currentY);
+
+        // === ÜRÜN LİSTESİ ===
+        currentY += 40;
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text('ARTIKEL:', 50, currentY);
+
+        currentY += 25;
+        doc.strokeColor('#e5e7eb').lineWidth(1);
+
+        // Ürünler
+        doc.fontSize(12).font('Helvetica').fillColor('#374151');
+
+        for (const item of order.orderItems) {
+          const productName = item.variantName
+            ? `${item.productName} - ${item.variantName}`
+            : item.productName;
+
+          // Ürün adı ve miktar (büyük ve net)
+          doc
+            .fontSize(13)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text(`${item.quantity}x ${productName}`, 50, currentY, { width: 400 });
+
+          currentY += 20;
+
+          // Sayfa sonu kontrolü
+          if (currentY > 700) {
+            doc.addPage();
+            currentY = 50;
+          }
+        }
+
+        // === TOPLAM ===
+        currentY += 20;
+        doc
+          .strokeColor('#111827')
+          .lineWidth(2)
+          .moveTo(50, currentY)
+          .lineTo(545, currentY)
+          .stroke();
+
+        currentY += 15;
+        doc
+          .fontSize(18)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text('GESAMT:', 50, currentY);
+
+        doc
+          .fontSize(20)
+          .font('Helvetica-Bold')
+          .fillColor('#059669')
+          .text(`€${parseFloat(order.total).toFixed(2)}`, 400, currentY, { width: 145, align: 'right' });
+
+        // === NOTLAR ===
+        if (order.note) {
+          currentY += 40;
+          doc
+            .fontSize(14)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text('HINWEISE:', 50, currentY);
+
+          currentY += 20;
+          doc
+            .fontSize(11)
+            .font('Helvetica')
+            .fillColor('#374151')
+            .text(order.note, 50, currentY, { width: 495 });
+        }
+
+        // === FOOTER ===
+        const footerY = 750;
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .fillColor('#9ca3af')
+          .text(
+            companyInfo.phone ? `Kontakt: ${companyInfo.phone}` : '',
+            50,
+            footerY,
+            { align: 'center', width: 495 }
+          );
+
+        // PDF'i sonlandır
+        doc.end();
+      } catch (error) {
+        console.error('Lieferschein PDF oluşturma hatası:', error);
+        reject(error);
+      }
+    });
+  }
+
+  /**
    * Sipariş durumu text'i
    */
   getStatusText(status) {

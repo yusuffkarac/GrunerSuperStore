@@ -12,6 +12,7 @@ class ProductController {
       sortBy,
       sortOrder,
       isFeatured,
+      campaignId,
     } = req.query;
 
     const result = await productService.getProducts({
@@ -22,6 +23,7 @@ class ProductController {
       sortBy,
       sortOrder,
       isFeatured,
+      campaignId,
     });
 
     res.status(200).json({

@@ -239,6 +239,11 @@ model Order {
   couponId    String?     @map("coupon_id") @db.Uuid
   couponCode  String?     @map("coupon_code") // Snapshot
   note        String?
+  // İptal bilgileri (Admin tarafından doldurulur)
+  cancellationReason              String?  @map("cancellation_reason") // İptal sebebi (müşteriye gösterilebilir)
+  cancellationInternalNote        String?  @map("cancellation_internal_note") // Internal not (müşteriye gösterilmez)
+  cancellationCustomerMessage     String?  @map("cancellation_customer_message") // Müşteriye özel mesaj
+  showCancellationReasonToCustomer Boolean @default(false) @map("show_cancellation_reason_to_customer") // İptal sebebini müşteriye göster
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
