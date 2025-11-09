@@ -266,8 +266,9 @@ function Categories() {
             >
               {/* Aktif/Pasif */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Status
+                  <HelpTooltip content="Filtern Sie Kategorien nach ihrem Aktivierungsstatus. Aktive Kategorien sind im Shop sichtbar, inaktive nicht." />
                 </label>
                 <select
                   value={isActiveFilter}
@@ -282,8 +283,9 @@ function Categories() {
 
               {/* Sortierung */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Sortierung
+                  <HelpTooltip content="Sortieren Sie Kategorien nach Name oder Sortierungsnummer. Die Sortierungsnummer bestimmt die Reihenfolge im Shop." />
                 </label>
                 <select
                   value={`${sortBy}-${sortOrder}`}
@@ -654,8 +656,9 @@ function Categories() {
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Name *
+                      <HelpTooltip content="Der Anzeigename der Kategorie, der den Kunden angezeigt wird." />
                     </label>
                     <input
                       type="text"
@@ -668,8 +671,9 @@ function Categories() {
 
                   {/* Slug */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Slug
+                      <HelpTooltip content="URL-freundlicher Name für die Kategorie. Wird automatisch aus dem Namen generiert, wenn leer gelassen. Beispiel: 'obst-gemuese' wird zu /kategorien/obst-gemuese" />
                     </label>
                     <input
                       type="text"
@@ -685,8 +689,9 @@ function Categories() {
 
                   {/* Image Upload */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Kategoriebild
+                      <HelpTooltip content="Laden Sie ein Bild für die Kategorie hoch oder geben Sie eine Bild-URL ein. Das Bild wird in der Kategorieübersicht und auf Produktseiten angezeigt." />
                     </label>
                     <FileUpload
                       value={formData.imageUrl || ''}
@@ -710,8 +715,9 @@ function Categories() {
 
                   {/* Sort Order */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Sortierung
+                      <HelpTooltip content="Niedrigere Zahlen erscheinen zuerst in der Kategorieliste. Kategorien mit derselben Sortierungsnummer werden alphabetisch sortiert." />
                     </label>
                     <input
                       type="number"
@@ -735,7 +741,10 @@ function Categories() {
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                         className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                       />
-                      <span className="text-sm text-gray-700">Aktiv</span>
+                      <span className="text-sm text-gray-700 flex items-center gap-2">
+                        Aktiv
+                        <HelpTooltip content="Nur aktive Kategorien werden den Kunden angezeigt. Inaktive Kategorien sind für Administratoren sichtbar, aber nicht im Shop verfügbar." />
+                      </span>
                     </label>
                   </div>
 

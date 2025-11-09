@@ -256,8 +256,9 @@ function Orders() {
             >
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Status
+                  <HelpTooltip content="Filtern Sie Bestellungen nach ihrem Status: Ausstehend, Akzeptiert, Vorbereitung, Versendet, Geliefert oder Storniert." />
                 </label>
                 <select
                   value={statusFilter}
@@ -277,8 +278,9 @@ function Orders() {
 
               {/* Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Typ
+                  <HelpTooltip content="Filtern Sie Bestellungen nach Liefertyp: Abholung (Selbstabholung) oder Lieferung (Versand an Adresse)." />
                 </label>
                 <select
                   value={typeFilter}
@@ -298,8 +300,9 @@ function Orders() {
 
               {/* Sortierung */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Sortierung
+                  <HelpTooltip content="Sortieren Sie Bestellungen nach Datum oder Betrag. Neueste zuerst zeigt die zuletzt aufgegebenen Bestellungen oben." />
                 </label>
                 <select
                   value={`${sortBy}-${sortOrder}`}

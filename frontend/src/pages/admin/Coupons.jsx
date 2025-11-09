@@ -342,32 +342,46 @@ function Coupons() {
                   className="overflow-hidden"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Alle Typen</option>
-                      <option value="PERCENTAGE">Prozent</option>
-                      <option value="FIXED_AMOUNT">Fester Betrag</option>
-                    </select>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                        Typ
+                        <HelpTooltip content="Filtern Sie Gutscheine nach Rabatttyp: Prozentrabatt oder fester Betrag." />
+                      </label>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="">Alle Typen</option>
+                        <option value="PERCENTAGE">Prozent</option>
+                        <option value="FIXED_AMOUNT">Fester Betrag</option>
+                      </select>
+                    </div>
 
-                    <select
-                      value={isActiveFilter}
-                      onChange={(e) => setIsActiveFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Alle Status</option>
-                      <option value="true">Aktiv</option>
-                      <option value="false">Inaktiv</option>
-                    </select>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1 flex items-center gap-1">
+                        Status
+                        <HelpTooltip content="Filtern Sie Gutscheine nach ihrem Aktivierungsstatus. Aktive Gutscheine können verwendet werden, inaktive nicht." />
+                      </label>
+                      <select
+                        value={isActiveFilter}
+                        onChange={(e) => setIsActiveFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="">Alle Status</option>
+                        <option value="true">Aktiv</option>
+                        <option value="false">Inaktiv</option>
+                      </select>
+                    </div>
 
+                    <div className="flex items-end">
                       <button
                         onClick={clearFilters}
-                        className="px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg"
+                        className="w-full px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg"
                       >
                         Filter zurücksetzen
                       </button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -726,8 +740,9 @@ function Coupons() {
 
                   {/* Code */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                       Gutscheincode *
+                      <HelpTooltip content="Der eindeutige Code, den Kunden beim Checkout eingeben. Wird automatisch in Großbuchstaben konvertiert. Verwenden Sie 'Erstellen' für einen zufälligen Code." />
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -766,8 +781,9 @@ function Coupons() {
 
                   {/* Type */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                       Rabatttyp *
+                      <HelpTooltip content="Prozentrabatt: Reduziert den Preis um einen Prozentsatz. Fester Betrag: Reduziert den Preis um einen festen Euro-Betrag." />
                     </label>
                     <select
                       value={formData.type}
@@ -783,8 +799,9 @@ function Coupons() {
                   {/* Discount */}
                   {formData.type === 'PERCENTAGE' ? (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                         Rabattprozentsatz *
+                        <HelpTooltip content="Der Rabattprozentsatz (0.01-100). Beispiel: 20 bedeutet 20% Rabatt. Sie können optional einen maximalen Rabattbetrag festlegen." />
                       </label>
                       <input
                         type="number"
@@ -800,8 +817,9 @@ function Coupons() {
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                         Rabattbetrag (€) *
+                        <HelpTooltip content="Der feste Rabattbetrag in Euro. Beispiel: 10.00 bedeutet 10€ Rabatt vom Gesamtpreis." />
                       </label>
                       <input
                         type="number"
@@ -819,8 +837,9 @@ function Coupons() {
                   {/* Max Discount (for percentage) */}
                   {formData.type === 'PERCENTAGE' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                         Maximaler Rabatt (€) (Optional)
+                        <HelpTooltip content="Begrenzt den maximalen Rabattbetrag bei Prozentrabatten. Beispiel: Bei 20% Rabatt und max. 50€ wird bei einem 500€ Einkauf nur 50€ statt 100€ abgezogen." />
                       </label>
                       <input
                         type="number"
@@ -837,7 +856,10 @@ function Coupons() {
 
                 {/* Date Range */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Zeitraum</h3>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    Zeitraum
+                    <HelpTooltip content="Der Zeitraum, in dem der Gutschein gültig ist. Der Gutschein kann nur zwischen Start- und Enddatum verwendet werden." />
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -868,11 +890,15 @@ function Coupons() {
 
                 {/* Rules */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Regeln</h3>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    Regeln
+                    <HelpTooltip content="Definieren Sie Bedingungen und Limits für die Gutscheinnutzung. Diese Regeln bestimmen, wann und wie oft der Gutschein verwendet werden kann." />
+                  </h3>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                       Mindestbestellwert (€) (Optional)
+                      <HelpTooltip content="Der Gutschein kann nur angewendet werden, wenn der Warenkorbwert diesen Betrag erreicht oder überschreitet." />
                     </label>
                     <input
                       type="number"
@@ -886,8 +912,9 @@ function Coupons() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                       Gesamtnutzungslimit (Optional)
+                      <HelpTooltip content="Die maximale Anzahl, wie oft dieser Gutschein insgesamt verwendet werden kann. Leer lassen für unbegrenzte Nutzung." />
                     </label>
                     <input
                       type="number"
@@ -900,8 +927,9 @@ function Coupons() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-0">
                       Nutzungslimit pro Benutzer
+                      <HelpTooltip content="Wie oft derselbe Benutzer diesen Gutschein verwenden kann. Standard ist 1 (einmal pro Benutzer)." />
                     </label>
                     <input
                       type="number"
@@ -916,7 +944,10 @@ function Coupons() {
 
                 {/* Targeting */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900">Zielgruppen</h3>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    Zielgruppen
+                    <HelpTooltip content="Bestimmen Sie, auf welche Produkte, Kategorien oder Benutzer dieser Gutschein angewendet werden kann. Sie können den Gutschein auf den gesamten Shop oder auf spezifische Kategorien/Produkte/Benutzer beschränken." />
+                  </h3>
 
                   <div className="flex items-center gap-2">
                     <input
@@ -926,8 +957,9 @@ function Coupons() {
                       onChange={(e) => setFormData({ ...formData, applyToAll: e.target.checked })}
                       className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                     />
-                    <label htmlFor="applyToAll" className="text-sm text-gray-700">
+                    <label htmlFor="applyToAll" className="text-sm text-gray-700 flex items-center gap-2">
                       Auf gesamten Shop anwenden
+                      <HelpTooltip content="Wenn aktiviert, kann der Gutschein auf alle Produkte im Shop angewendet werden. Wenn deaktiviert, können Sie spezifische Kategorien, Produkte oder Benutzer auswählen." />
                     </label>
                   </div>
 
@@ -1043,8 +1075,9 @@ function Coupons() {
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                   />
-                  <label htmlFor="isActive" className="text-sm text-gray-700">
+                  <label htmlFor="isActive" className="text-sm text-gray-700 flex items-center gap-2">
                     Aktiv
+                    <HelpTooltip content="Nur aktive Gutscheine können von Kunden verwendet werden. Inaktive Gutscheine sind gesperrt und werden beim Checkout nicht akzeptiert." />
                   </label>
                 </div>
 

@@ -83,7 +83,7 @@ function AdminLayout() {
     { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
-    { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
+    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3 },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
     { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle },
   ];

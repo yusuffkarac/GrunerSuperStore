@@ -318,8 +318,9 @@ function Users() {
             >
               {/* Aktif/Pasif */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Status
+                  <HelpTooltip content="Filtern Sie Benutzer nach ihrem Aktivierungsstatus. Aktive Benutzer können sich anmelden, inaktive nicht." />
                 </label>
                 <select
                   value={isActiveFilter}
@@ -337,8 +338,9 @@ function Users() {
 
               {/* Sortierung */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   Sortierung
+                  <HelpTooltip content="Sortieren Sie Benutzer nach Registrierungsdatum oder Namen. Neueste zuerst zeigt die zuletzt registrierten Benutzer oben." />
                 </label>
                 <select
                   value={`${sortBy}-${sortOrder}`}
@@ -832,8 +834,9 @@ function Users() {
                 <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
                   {/* First Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Vorname *
+                      <HelpTooltip content="Der Vorname des Benutzers. Wird für Bestellungen und Kommunikation verwendet." />
                     </label>
                     <input
                       type="text"
@@ -851,8 +854,9 @@ function Users() {
 
                   {/* Last Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Nachname *
+                      <HelpTooltip content="Der Nachname des Benutzers. Wird zusammen mit dem Vornamen für die vollständige Identifikation verwendet." />
                     </label>
                     <input
                       type="text"
@@ -870,8 +874,9 @@ function Users() {
 
                   {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       E-Mail *
+                      <HelpTooltip content="Die E-Mail-Adresse des Benutzers. Wird für Login, Bestellbestätigungen und Benachrichtigungen verwendet. Muss eindeutig sein." />
                     </label>
                     <input
                       type="email"
@@ -889,8 +894,9 @@ function Users() {
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Telefon
+                      <HelpTooltip content="Die Telefonnummer des Benutzers (optional). Wird für Lieferungen und Kontakt verwendet." />
                     </label>
                     <input
                       type="tel"
@@ -908,8 +914,9 @@ function Users() {
 
                   {/* Password */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                       Passwort {editingUser ? '(leer lassen, um nicht zu ändern)' : '*'}
+                      <HelpTooltip content={editingUser ? "Lassen Sie das Feld leer, um das Passwort nicht zu ändern. Geben Sie ein neues Passwort ein, um es zu aktualisieren." : "Das Passwort muss mindestens 8 Zeichen lang sein. Wird für die Anmeldung benötigt."} />
                     </label>
                     <input
                       type="password"
@@ -934,8 +941,9 @@ function Users() {
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                       className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                     />
-                    <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="isActive" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       Benutzer ist aktiv
+                      <HelpTooltip content="Aktive Benutzer können sich anmelden und Bestellungen aufgeben. Inaktive Benutzer können sich nicht anmelden." />
                     </label>
                   </div>
 
@@ -948,8 +956,9 @@ function Users() {
                       onChange={(e) => setFormData({ ...formData, isEmailVerified: e.target.checked })}
                       className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                     />
-                    <label htmlFor="isEmailVerified" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="isEmailVerified" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       E-Mail bestätigt
+                      <HelpTooltip content="Zeigt an, ob die E-Mail-Adresse des Benutzers verifiziert wurde. Verifizierte Benutzer erhalten wichtige Benachrichtigungen." />
                     </label>
                   </div>
 

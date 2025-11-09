@@ -30,6 +30,7 @@ function Settings() {
     teslimatAcik: true,
     magazadanTeslimAcik: true,
     teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
+    siparisBaslangicSaati: '09:00',
     siparisKapanisSaati: '19:30',
   });
   const [paymentOptions, setPaymentOptions] = useState({
@@ -99,6 +100,7 @@ function Settings() {
           teslimatSaatleri: [
             { gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' },
           ],
+          siparisBaslangicSaati: '09:00',
           siparisKapanisSaati: '19:30',
         }
       );
@@ -203,8 +205,15 @@ function Settings() {
       return;
     }
 
-    if (!emailNotificationSettings.adminEmail) {
-      toast.error('Bitte geben Sie eine Admin-E-Mail-Adresse ein');
+    if (!emailNotificationSettings.adminEmail || !emailNotificationSettings.adminEmail.trim()) {
+      toast.error('Bitte geben Sie mindestens eine Admin-E-Mail-Adresse ein');
+      return;
+    }
+
+    // İlk email adresini al (virgülle ayrılmış ise)
+    const emails = emailNotificationSettings.adminEmail.split(',').map(e => e.trim()).filter(e => e);
+    if (emails.length === 0) {
+      toast.error('Bitte geben Sie mindestens eine gültige E-Mail-Adresse ein');
       return;
     }
 
@@ -217,7 +226,7 @@ function Settings() {
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
         },
         body: JSON.stringify({
-          to: emailNotificationSettings.adminEmail,
+          to: emails[0], // Test için ilk email adresini kullan
           smtpSettings,
         }),
       });
@@ -225,7 +234,7 @@ function Settings() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Test-E-Mail erfolgreich gesendet! Überprüfen Sie Ihren Posteingang.');
+        toast.success(`Test-E-Mail erfolgreich an ${emails[0]} gesendet! Überprüfen Sie Ihren Posteingang.`);
       } else {
         toast.error(data.message || 'Fehler beim Senden der Test-E-Mail');
       }
@@ -496,8 +505,9 @@ function Settings() {
             <div className="space-y-6">
               {/* Prefix */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Präfix
+                  <HelpTooltip content="Text am Anfang der Bestellungs-ID. Beispiel: 'GS' ergibt Bestellungen wie GS-20250106-0001" />
                 </label>
                 <input
                   type="text"
@@ -515,8 +525,9 @@ function Settings() {
 
               {/* Separator */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Trennzeichen
+                  <HelpTooltip content="Zeichen zwischen den Teilen der Bestellungs-ID. Beispiel: '-' ergibt GS-20250106-0001" />
                 </label>
                 <select
                   value={orderIdFormat.separator}
@@ -537,8 +548,9 @@ function Settings() {
 
               {/* Datumsformat */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Datumsformat
+                  <HelpTooltip content="Wie das Datum in der Bestellungs-ID formatiert wird. JJJJMMTT zeigt das vollständige Datum, JJMMTT nur die letzten beiden Ziffern des Jahres." />
                 </label>
                 <select
                   value={orderIdFormat.dateFormat}
@@ -562,8 +574,9 @@ function Settings() {
 
               {/* Nummernformat - Sequential oder Random */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Nummernformat
+                  <HelpTooltip content="Fortlaufend: Nummern werden sequenziell erhöht (1, 2, 3...). Zufällig: Jede Bestellung erhält eine zufällige Nummer." />
                 </label>
                 <select
                   value={orderIdFormat.numberFormat}
@@ -582,8 +595,9 @@ function Settings() {
 
               {/* Zahlenformat */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Zahlenlänge (Auffüllung)
+                  <HelpTooltip content="Anzahl der Ziffern für die laufende Nummer. Beispiel: 4 Stellen ergibt 0001, 0002, 0003..." />
                 </label>
                 <select
                   value={orderIdFormat.numberPadding}
@@ -613,8 +627,9 @@ function Settings() {
               {orderIdFormat.numberFormat === 'sequential' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       Zähler zurücksetzen
+                      <HelpTooltip content="Wann die Nummerierung wieder bei 1 beginnt. Täglich: Jeden Tag neu. Monatlich: Am ersten Tag des Monats. Jährlich: Am ersten Tag des Jahres. Niemals: Fortlaufend ohne Zurücksetzung." />
                     </label>
                     <select
                       value={orderIdFormat.resetPeriod}
@@ -634,8 +649,9 @@ function Settings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                       Startnummer
+                      <HelpTooltip content="Die Nummer, mit der die Zählung beginnt. Standard ist 1. Wenn Sie bei 100 starten möchten, geben Sie 100 ein." />
                     </label>
                     <input
                       type="number"
@@ -705,7 +721,10 @@ function Settings() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mindestbestellbetrag</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Mindestbestellbetrag
+                  <HelpTooltip content="Der Mindestbetrag, den Kunden bestellen müssen, um eine Bestellung aufgeben zu können. Beispiel: 20.00 bedeutet, dass Bestellungen unter 20€ nicht möglich sind." />
+                </label>
                 <input
                   type="number"
                   min="0"
@@ -717,7 +736,10 @@ function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Kostenloser Versand-Schwellenwert</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Kostenloser Versand-Schwellenwert
+                  <HelpTooltip content="Ab diesem Bestellbetrag wird der Versand kostenlos. Beispiel: 100.00 bedeutet, dass Bestellungen ab 100€ kostenlosen Versand erhalten." />
+                </label>
                 <input
                   type="number"
                   min="0"
@@ -829,9 +851,31 @@ function Settings() {
                     }`} />
                   </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bestellschluss</label>
-                  <input type="time" value={deliverySettings.siparisKapanisSaati || ''} onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisKapanisSaati: e.target.value })} className="w-full px-3 py-2 border rounded" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Bestellbeginn
+                      <HelpTooltip content="Die Uhrzeit, ab der neue Bestellungen angenommen werden. Beispiel: 09:00 bedeutet, dass Bestellungen ab 09:00 Uhr möglich sind." />
+                    </label>
+                    <input 
+                      type="time" 
+                      value={deliverySettings.siparisBaslangicSaati || ''} 
+                      onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisBaslangicSaati: e.target.value })} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Bestellschluss
+                      <HelpTooltip content="Die Uhrzeit, nach der keine neuen Bestellungen mehr angenommen werden. Beispiel: 19:30 bedeutet, dass Bestellungen nach 19:30 Uhr nicht mehr möglich sind." />
+                    </label>
+                    <input 
+                      type="time" 
+                      value={deliverySettings.siparisKapanisSaati || ''} 
+                      onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisKapanisSaati: e.target.value })} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -884,14 +928,20 @@ function Settings() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsart an der Tür</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Zahlungsart an der Tür
+                      <HelpTooltip content="Typ der zusätzlichen Gebühr für Zahlung an der Tür. Fest: Fester Betrag (z.B. 2€). Prozent: Prozentsatz vom Bestellbetrag (z.B. 2%)." />
+                    </label>
                     <select value={paymentOptions.kapidaOdemeUcreti?.type || 'flat'} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), type: e.target.value } })} className="w-full px-3 py-2 border rounded">
                       <option value="flat">Fest</option>
                       <option value="percent">Prozent</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsbetrag an der Tür</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Zahlungsbetrag an der Tür
+                      <HelpTooltip content="Der Betrag oder Prozentsatz, der für Zahlung an der Tür zusätzlich berechnet wird. Beispiel: Bei 'Fest' und 2.00 werden 2€ zusätzlich berechnet." />
+                    </label>
                     <input type="number" step="0.01" value={paymentOptions.kapidaOdemeUcreti?.value ?? 0} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), value: parseFloat(e.target.value||'0') } })} className="w-full px-3 py-2 border rounded" />
                   </div>
                 </div>
@@ -911,15 +961,24 @@ function Settings() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Limits und Geschäft</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Bestellbetrag</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Max. Bestellbetrag
+                  <HelpTooltip content="Die maximale Summe, die ein Kunde in einer einzigen Bestellung bestellen kann. Leer lassen für unbegrenzt." />
+                </label>
                 <input type="number" step="0.01" value={orderLimits.maxSiparisTutari ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSiparisTutari: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Produktanzahl</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Max. Produktanzahl
+                  <HelpTooltip content="Die maximale Anzahl derselben Produkteinheit, die ein Kunde in einer Bestellung bestellen kann. Beispiel: 10 bedeutet maximal 10 Stück eines Produkts." />
+                </label>
                 <input type="number" value={orderLimits.maxUrunAdedi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxUrunAdedi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Warenkorbartikel</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Max. Warenkorbartikel
+                  <HelpTooltip content="Die maximale Anzahl unterschiedlicher Produkte, die ein Kunde in den Warenkorb legen kann. Beispiel: 50 bedeutet maximal 50 verschiedene Produkte." />
+                </label>
                 <input type="number" value={orderLimits.maxSepetKalemi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSepetKalemi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
             </div>
@@ -943,8 +1002,9 @@ function Settings() {
               </div>
               {storeSettings.bakimModu && (
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Wartungsmodus-Nachricht
+                    <HelpTooltip content="Diese Nachricht wird allen Besuchern angezeigt, wenn der Wartungsmodus aktiviert ist. Verwenden Sie dies für geplante Wartungsarbeiten oder Updates." />
                   </label>
                   <textarea
                     value={storeSettings.bakimModuMesaji || ''}
@@ -983,8 +1043,9 @@ function Settings() {
               <h4 className="font-medium text-gray-900">SMTP-Konfiguration</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     SMTP Host *
+                    <HelpTooltip content="Der SMTP-Server Ihres E-Mail-Anbieters. Beispiel: smtp.gmail.com für Gmail, smtp.outlook.com für Outlook." />
                   </label>
                   <input
                     type="text"
@@ -995,8 +1056,9 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Port *
+                    <HelpTooltip content="Der Port für die SMTP-Verbindung. Standard: 587 für TLS, 465 für SSL. Verwenden Sie 587 für die meisten E-Mail-Anbieter." />
                   </label>
                   <input
                     type="number"
@@ -1006,8 +1068,9 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Benutzername (E-Mail) *
+                    <HelpTooltip content="Ihre vollständige E-Mail-Adresse, die für die SMTP-Authentifizierung verwendet wird. Dies ist normalerweise dieselbe wie die Absender-E-Mail." />
                   </label>
                   <input
                     type="email"
@@ -1018,8 +1081,9 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Passwort / App-Passwort *
+                    <HelpTooltip content="Ihr E-Mail-Passwort oder App-Passwort. Für Gmail müssen Sie möglicherweise ein App-Passwort erstellen, wenn die Zwei-Faktor-Authentifizierung aktiviert ist." />
                   </label>
                   <input
                     type="password"
@@ -1030,8 +1094,9 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Absender E-Mail *
+                    <HelpTooltip content="Die E-Mail-Adresse, die als Absender in E-Mails angezeigt wird. Dies sollte eine gültige E-Mail-Adresse sein, die Sie besitzen." />
                   </label>
                   <input
                     type="email"
@@ -1042,8 +1107,9 @@ function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     Absender Name
+                    <HelpTooltip content="Der Name, der als Absender in E-Mails angezeigt wird. Beispiel: 'Gruner SuperStore' wird als Absendername angezeigt." />
                   </label>
                   <input
                     type="text"
@@ -1071,18 +1137,19 @@ function Settings() {
             <div className="space-y-4 pt-6 border-t border-gray-200">
               <h4 className="font-medium text-gray-900">E-Mail-Benachrichtigungen</h4>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Admin-E-Mail-Adresse
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Admin-E-Mail-Adressen
+                  <HelpTooltip content="An diese E-Mail-Adressen werden Benachrichtigungen über neue Bestellungen gesendet. Mehrere Adressen durch Komma trennen. Beispiel: admin1@example.com, admin2@example.com" />
                 </label>
-                <input
-                  type="email"
+                <textarea
                   value={emailNotificationSettings.adminEmail}
                   onChange={(e) => setEmailNotificationSettings({ ...emailNotificationSettings, adminEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="admin@grunersuperstore.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 resize-none"
+                  placeholder="admin1@grunersuperstore.com, admin2@grunersuperstore.com"
+                  rows={3}
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  An diese Adresse werden neue Bestellungen gesendet
+                  Mehrere E-Mail-Adressen durch Komma trennen. An diese Adressen werden neue Bestellungen gesendet.
                 </p>
               </div>
 
@@ -1124,11 +1191,11 @@ function Settings() {
             </div>
 
             {/* Test Mail Button */}
-            <div className="pt-4 flex items-center space-x-3">
+            <div className="pt-4 flex flex-col md:flex-row md:items-center gap-3">
               <button
                 onClick={handleTestEmail}
                 disabled={testingEmail}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
               >
                 {testingEmail ? 'Wird gesendet...' : '📧 Test-E-Mail senden'}
               </button>

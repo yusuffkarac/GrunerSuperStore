@@ -40,6 +40,43 @@ class OrderService {
     return await prisma.$transaction(async (tx) => {
       // Ayarları çek
       const settings = await tx.settings.findFirst();
+      
+      // Sipariş saat kontrolü
+      if (settings?.deliverySettings) {
+        const { siparisBaslangicSaati, siparisKapanisSaati } = settings.deliverySettings;
+        
+        if (siparisBaslangicSaati || siparisKapanisSaati) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const currentTime = currentHour * 60 + currentMinute; // Dakika cinsinden
+          
+          // Başlangıç saati kontrolü
+          if (siparisBaslangicSaati) {
+            const [startHour, startMinute] = siparisBaslangicSaati.split(':').map(Number);
+            const startTime = startHour * 60 + startMinute;
+            
+            if (currentTime < startTime) {
+              throw new ValidationError(
+                `Bestellungen werden erst ab ${siparisBaslangicSaati} Uhr angenommen`
+              );
+            }
+          }
+          
+          // Kapanış saati kontrolü
+          if (siparisKapanisSaati) {
+            const [endHour, endMinute] = siparisKapanisSaati.split(':').map(Number);
+            const endTime = endHour * 60 + endMinute;
+            
+            if (currentTime >= endTime) {
+              throw new ValidationError(
+                `Bestellungen werden nach ${siparisKapanisSaati} Uhr nicht mehr angenommen`
+              );
+            }
+          }
+        }
+      }
+      
       // Ürün bilgilerini ve stok kontrolü
       const productIds = items.map((item) => item.productId);
       const variantIds = items
@@ -400,33 +437,57 @@ class OrderService {
       // 2. Admin'e yeni sipariş bildirimi
       const adminEmail = settings.emailNotificationSettings?.adminEmail;
       if (adminEmail) {
-        await queueService.addEmailJob({
-          to: adminEmail,
-          subject: `Neue Bestellung: ${order.orderNo}`,
-          template: 'order-notification-admin',
-          data: {
-            orderNo: order.orderNo,
-            orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
-            customerName: `${user.firstName} ${user.lastName}`,
-            customerEmail: user.email,
-            customerPhone: user.phone,
-            deliveryType,
-            address,
-            items: orderItems.map((item) => ({
-              productName: item.productName,
-              variantName: item.variantName,
-              quantity: item.quantity,
-              price: parseFloat(item.price).toFixed(2),
-            })),
-            itemCount: orderItems.length,
-            total: parseFloat(order.total).toFixed(2),
-            paymentType: paymentTypeMap[order.paymentType] || '',
-            note: order.note,
-            adminOrderUrl: `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/orders/${order.id}`,
-          },
-          metadata: { orderId: order.id, type: 'order-notification-admin' },
-          priority: 2,
+        // Virgülle ayrılmış email adreslerini split et ve temizle
+        const adminEmails = adminEmail
+          .split(',')
+          .map((email) => email.trim())
+          .filter((email) => email && email.includes('@'));
+
+        console.log(`📧 Admin email adresleri parse edildi: ${adminEmails.length} adet`, adminEmails);
+
+        // Tüm admin email adreslerine paralel olarak bildirim gönder
+        const emailPromises = adminEmails.map(async (email) => {
+          try {
+            const result = await queueService.addEmailJob({
+              to: email,
+              subject: `Neue Bestellung: ${order.orderNo}`,
+              template: 'order-notification-admin',
+              data: {
+                orderNo: order.orderNo,
+                orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+                customerName: `${user.firstName} ${user.lastName}`,
+                customerEmail: user.email,
+                customerPhone: user.phone,
+                deliveryType,
+                address,
+                items: orderItems.map((item) => ({
+                  productName: item.productName,
+                  variantName: item.variantName,
+                  quantity: item.quantity,
+                  price: parseFloat(item.price).toFixed(2),
+                })),
+                itemCount: orderItems.length,
+                total: parseFloat(order.total).toFixed(2),
+                paymentType: paymentTypeMap[order.paymentType] || '',
+                note: order.note,
+                adminOrderUrl: `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/orders/${order.id}`,
+              },
+              metadata: { orderId: order.id, type: 'order-notification-admin' },
+              priority: 2,
+            });
+            console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
+            return { email, success: true };
+          } catch (emailError) {
+            // Bir email gönderiminde hata olsa bile diğerlerine devam et
+            console.error(`❌ Admin email gönderim hatası (${email}):`, emailError);
+            return { email, success: false, error: emailError.message };
+          }
         });
+
+        // Tüm email'lerin kuyruğa eklenmesini bekle
+        const results = await Promise.all(emailPromises);
+        const successCount = results.filter((r) => r.success).length;
+        console.log(`📊 Admin email gönderim özeti: ${successCount}/${adminEmails.length} başarılı`);
       }
 
       console.log(`✅ Sipariş mailleri kuyruğa eklendi: ${order.orderNo}`);
