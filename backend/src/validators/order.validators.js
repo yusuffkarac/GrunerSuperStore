@@ -56,3 +56,20 @@ export const updateOrderStatusValidation = [
 export const orderIdValidation = [
   param('id').isUUID().withMessage('Ungültige Bestellungs-ID'),
 ];
+
+// Sipariş değerlendirme validasyonu
+export const createReviewValidation = [
+  param('id').isUUID().withMessage('Ungültige Bestellungs-ID'),
+
+  body('rating')
+    .notEmpty()
+    .withMessage('Bewertung ist erforderlich')
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Bewertung muss zwischen 1 und 5 liegen'),
+
+  body('comment')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Kommentar darf maximal 1000 Zeichen lang sein'),
+];

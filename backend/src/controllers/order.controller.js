@@ -111,6 +111,37 @@ class OrderController {
       data: { stats },
     });
   });
+
+  // ===============================
+  // REVIEW ENDPOINTS
+  // ===============================
+
+  // POST /api/orders/:id/review - Sipariş için review oluştur
+  createReview = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
+
+    const review = await orderService.createReview(id, userId, { rating, comment });
+
+    res.status(201).json({
+      success: true,
+      message: 'Bewertung erfolgreich erstellt',
+      data: { review },
+    });
+  });
+
+  // GET /api/orders/:id/review - Sipariş review'ını getir
+  getReview = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const review = await orderService.getReview(id);
+
+    res.status(200).json({
+      success: true,
+      data: { review },
+    });
+  });
 }
 
 export default new OrderController();
