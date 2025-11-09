@@ -52,4 +52,4 @@ temp/
 *.sqlite
 
 # Uploads (if storing locally during development)
-uploads/
+#uploads/
