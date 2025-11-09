@@ -350,7 +350,6 @@ function Profil() {
       return;
     }
 
-    toast.info('Konum alınıyor...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setFormData((prev) => ({
@@ -358,7 +357,7 @@ function Profil() {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         }));
-        toast.success('Konum başarıyla alındı');
+        toast.success('Standort erfolgreich erfasst');
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -608,12 +607,12 @@ function Profil() {
               className={`fixed z-[9999] ${
                 isDesktop 
                   ? 'inset-0 flex items-center justify-center p-4' 
-                  : 'left-4 right-4 top-20'
+                  : 'left-4 right-4 top-20 bottom-20'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className={`bg-white rounded-xl shadow-2xl max-h-[80vh] overflow-y-auto w-full ${
-                isDesktop ? 'max-w-2xl' : ''
+              <div className={`bg-white rounded-xl shadow-2xl h-full overflow-y-auto w-full ${
+                isDesktop ? 'max-w-2xl max-h-[80vh]' : ''
               }`}>
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -627,7 +626,7 @@ function Profil() {
                 </button>
               </div>
 
-              <div className="p-4 space-y-4">
+              <div className="p-4 pb-6 space-y-4">
                 {/* Adresstitel */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -904,7 +903,7 @@ function Profil() {
                 </div>
 
                 {/* Butonlar */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-2 pb-4">
                   <button
                     onClick={closeModal}
                     disabled={saving}
