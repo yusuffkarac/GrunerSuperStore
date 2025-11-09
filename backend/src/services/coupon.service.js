@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { getGermanyDate } from '../utils/date.js';
 
 class CouponService {
   // Kupon kodunu doğrula ve indirim hesapla
@@ -18,7 +19,7 @@ class CouponService {
     }
 
     // Tarih kontrolü
-    const now = new Date();
+    const now = getGermanyDate();
     if (now < coupon.startDate || now > coupon.endDate) {
       throw new ValidationError('Bu kupon kodu geçerli değil');
     }

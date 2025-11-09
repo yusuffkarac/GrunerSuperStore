@@ -4,6 +4,7 @@ import {
   ValidationError,
   ForbiddenError,
 } from '../utils/errors.js';
+import { getGermanyTimeInMinutes } from '../utils/date.js';
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
@@ -47,10 +48,8 @@ class OrderService {
         const { siparisBaslangicSaati, siparisKapanisSaati } = settings.deliverySettings;
         
         if (siparisBaslangicSaati || siparisKapanisSaati) {
-          const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
-          const currentTime = currentHour * 60 + currentMinute; // Dakika cinsinden
+          // Almanya saatine göre zamanı al (CET/CEST otomatik olarak handle edilir)
+          const currentTime = getGermanyTimeInMinutes();
           
           // Başlangıç saati kontrolü
           if (siparisBaslangicSaati) {

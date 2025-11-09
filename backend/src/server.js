@@ -32,6 +32,9 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 // Config
 dotenv.config();
 
+// Timezone ayarı - Almanya saatine göre (CET/CEST otomatik handle edilir)
+process.env.TZ = 'Europe/Berlin';
+
 const app = express();
 const PORT = process.env.PORT || 5001;
 

@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { getGermanyDate } from '../utils/date.js';
 
 class CampaignService {
   // Tüm kampanyaları listele (Admin için)
@@ -60,7 +61,7 @@ class CampaignService {
 
   // Aktif kampanyaları getir (Müşteri için)
   async getActiveCampaigns() {
-    const now = new Date();
+    const now = getGermanyDate();
 
     const campaigns = await prisma.campaign.findMany({
       where: {
@@ -184,7 +185,7 @@ class CampaignService {
 
   // Belirli ürün/kategori için geçerli kampanyaları getir
   async getApplicableCampaigns({ productId, categoryId, cartTotal = 0 }) {
-    const now = new Date();
+    const now = getGermanyDate();
 
     const where = {
       isActive: true,
