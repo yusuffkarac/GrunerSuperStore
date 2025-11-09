@@ -32,6 +32,10 @@ function Settings() {
     teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
     siparisBaslangicSaati: '09:00',
     siparisKapanisSaati: '19:30',
+    distanceLimits: {
+      pickupMaxDistance: null,
+      deliveryMaxDistance: null,
+    },
   });
   const [paymentOptions, setPaymentOptions] = useState({
     kartKapida: true,
@@ -47,7 +51,13 @@ function Settings() {
   const [storeSettings, setStoreSettings] = useState({
     bakimModu: false,
     bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
+    storeLocation: {
+      latitude: null,
+      longitude: null,
+    },
+    defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
   });
+  const [newCityInput, setNewCityInput] = useState(''); // Yeni şehir ekleme input'u
 
   // E-Mail-Einstellungen
   const [smtpSettings, setSmtpSettings] = useState({
@@ -102,6 +112,10 @@ function Settings() {
           ],
           siparisBaslangicSaati: '09:00',
           siparisKapanisSaati: '19:30',
+          distanceLimits: {
+            pickupMaxDistance: null,
+            deliveryMaxDistance: null,
+          },
         }
       );
       setPaymentOptions(
@@ -121,8 +135,21 @@ function Settings() {
       );
       setStoreSettings(s.storeSettings ?? {
         bakimModu: false,
-        bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.'
-      }      );
+        bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
+        storeLocation: {
+          latitude: null,
+          longitude: null,
+        },
+        defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
+      });
+      
+      // Eski defaultCity varsa defaultCities'e çevir (geriye dönük uyumluluk)
+      if (s.storeSettings?.defaultCity && !s.storeSettings?.defaultCities) {
+        setStoreSettings(prev => ({
+          ...prev,
+          defaultCities: [s.storeSettings.defaultCity],
+        }));
+      }
 
       // E-Mail-Einstellungen
       if (s.smtpSettings) {
@@ -930,6 +957,62 @@ function Settings() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Mesafe Sınırları */}
+                        <div className="pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">Entfernungsgrenzen</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Max. Entfernung für Abholung (km)
+                                <HelpTooltip content="Die maximale Entfernung in Kilometern für Abholbestellungen. Leer lassen für unbegrenzt." />
+                              </label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={deliverySettings.distanceLimits?.pickupMaxDistance ?? ''}
+                                onChange={(e) =>
+                                  setDeliverySettings({
+                                    ...deliverySettings,
+                                    distanceLimits: {
+                                      ...deliverySettings.distanceLimits,
+                                      pickupMaxDistance: e.target.value === '' ? null : parseFloat(e.target.value),
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder="z.B. 10"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Max. Entfernung für Lieferung (km)
+                                <HelpTooltip content="Die maximale Entfernung in Kilometern für Lieferbestellungen. Leer lassen für unbegrenzt." />
+                              </label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={deliverySettings.distanceLimits?.deliveryMaxDistance ?? ''}
+                                onChange={(e) =>
+                                  setDeliverySettings({
+                                    ...deliverySettings,
+                                    distanceLimits: {
+                                      ...deliverySettings.distanceLimits,
+                                      deliveryMaxDistance: e.target.value === '' ? null : parseFloat(e.target.value),
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder="z.B. 15"
+                              />
+                            </div>
+                          </div>
+                          <p className="mt-2 text-xs text-gray-500">
+                            Bestellungen außerhalb dieser Entfernungen werden nicht akzeptiert. Die Entfernung wird zwischen dem Marktstandort und der Lieferadresse berechnet.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1134,7 +1217,144 @@ function Settings() {
             </div>
 
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Geschäft</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Geschäft</h3>
+              
+              {/* Market Konumu */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Marktstandort</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Breitengrad (Latitude)
+                      <HelpTooltip content="Die geografische Breite des Marktstandorts. Beispiel: 52.5200 für Berlin" />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.00000001"
+                      value={storeSettings.storeLocation?.latitude ?? ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          storeLocation: {
+                            ...storeSettings.storeLocation,
+                            latitude: e.target.value === '' ? null : parseFloat(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. 52.5200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Längengrad (Longitude)
+                      <HelpTooltip content="Die geografische Länge des Marktstandorts. Beispiel: 13.4050 für Berlin" />
+                    </label>
+                    <input
+                      type="number"
+                      step="0.00000001"
+                      value={storeSettings.storeLocation?.longitude ?? ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          storeLocation: {
+                            ...storeSettings.storeLocation,
+                            longitude: e.target.value === '' ? null : parseFloat(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. 13.4050"
+                    />
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Geben Sie die Koordinaten des Marktstandorts ein. Diese werden zur Entfernungsberechnung verwendet.
+                </p>
+              </div>
+
+              {/* Varsayılan Şehirler */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Adresssuche</h4>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    Varsayılan Şehirler (Default Cities)
+                    <HelpTooltip content="Adres araması için varsayılan olarak kullanılacak şehirler. Birden fazla şehir ekleyebilirsiniz. Yazım hatalarına toleranslı eşleştirme yapılır (örn: 'Waiblingn' → 'Waiblingen')." />
+                  </label>
+                  
+                  {/* Şehir listesi (chips) */}
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {(storeSettings.defaultCities || ['Waiblingen']).map((city, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                      >
+                        {city}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCities = [...(storeSettings.defaultCities || ['Waiblingen'])];
+                            newCities.splice(index, 1);
+                            setStoreSettings({
+                              ...storeSettings,
+                              defaultCities: newCities.length > 0 ? newCities : ['Waiblingen'],
+                            });
+                          }}
+                          className="text-green-600 hover:text-green-800 font-bold"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Yeni şehir ekleme */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCityInput}
+                      onChange={(e) => setNewCityInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const city = newCityInput.trim();
+                          if (city && !(storeSettings.defaultCities || []).includes(city)) {
+                            setStoreSettings({
+                              ...storeSettings,
+                              defaultCities: [...(storeSettings.defaultCities || ['Waiblingen']), city],
+                            });
+                            setNewCityInput('');
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="Şehir adı girin ve Enter'a basın (örn: Stuttgart)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const city = newCityInput.trim();
+                        if (city && !(storeSettings.defaultCities || []).includes(city)) {
+                          setStoreSettings({
+                            ...storeSettings,
+                            defaultCities: [...(storeSettings.defaultCities || ['Waiblingen']), city],
+                          });
+                          setNewCityInput('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Ekle
+                    </button>
+                  </div>
+                  
+                  <p className="mt-2 text-xs text-gray-500">
+                    Birden fazla şehir ekleyebilirsiniz. Adres araması yapılırken bu şehirlerdeki sonuçlar öncelikli olarak gösterilir. Yazım hatalarına toleranslı eşleştirme yapılır (örn: 'Waiblingn' → 'Waiblingen').
+                  </p>
+                </div>
+              </div>
+
+              {/* Wartungsmodus */}
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-gray-700">Wartungsmodus</span>
                 <button 

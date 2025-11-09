@@ -48,6 +48,14 @@ const userService = {
     const response = await api.put(`/user/addresses/${id}/default`);
     return response.data;
   },
+
+  // Yol mesafesi hesapla
+  calculateDistance: async (data) => {
+    // api.post zaten response.data döndürüyor (interceptor'dan dolayı)
+    // Bu yüzden direkt response'u döndürüyoruz
+    const response = await api.post('/user/calculate-distance', data);
+    return response;
+  },
 };
 
 export default userService;

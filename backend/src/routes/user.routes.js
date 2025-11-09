@@ -46,4 +46,10 @@ router.put(
 router.delete('/addresses/:id', userController.deleteAddress);
 router.put('/addresses/:id/default', userController.setDefaultAddress);
 
+// Mesafe hesaplama
+router.post('/calculate-distance', userController.calculateDistance);
+
+// Adres arama
+router.get('/search-address', userController.searchAddress);
+
 export default router;

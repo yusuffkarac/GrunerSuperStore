@@ -33,6 +33,10 @@ class SettingsService {
             magazadanTeslimAcik: true,
             teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
             siparisKapanisSaati: '19:30',
+            distanceLimits: {
+              pickupMaxDistance: null,
+              deliveryMaxDistance: null,
+            },
           },
           paymentOptions: {
             kartKapida: true,
@@ -52,6 +56,11 @@ class SettingsService {
             faturaBilgileri: null,
             bannerlar: [],
             seoAyarları: null,
+            storeLocation: {
+              latitude: null,
+              longitude: null,
+            },
+            defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
           },
           // Email defaults
           smtpSettings: null,
@@ -158,6 +167,10 @@ class SettingsService {
             magazadanTeslimAcik: true,
             teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
             siparisKapanisSaati: '19:30',
+            distanceLimits: {
+              pickupMaxDistance: null,
+              deliveryMaxDistance: null,
+            },
           },
           paymentOptions: data.paymentOptions ?? {
             kartKapida: true,
@@ -177,6 +190,11 @@ class SettingsService {
             faturaBilgileri: null,
             bannerlar: [],
             seoAyarları: null,
+            storeLocation: {
+              latitude: null,
+              longitude: null,
+            },
+            defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
           },
           smtpSettings: data.smtpSettings ?? null,
           emailNotificationSettings: data.emailNotificationSettings ?? {

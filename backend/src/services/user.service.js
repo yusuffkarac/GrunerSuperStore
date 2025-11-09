@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
+import { Prisma } from '@prisma/client';
 import {
   NotFoundError,
   UnauthorizedError,
@@ -111,6 +112,8 @@ class UserService {
       city,
       state,
       description,
+      latitude,
+      longitude,
       isDefault,
     } = addressData;
 
@@ -134,6 +137,8 @@ class UserService {
         city,
         state,
         description: description || null,
+        latitude: latitude !== undefined && latitude !== null ? new Prisma.Decimal(latitude) : null,
+        longitude: longitude !== undefined && longitude !== null ? new Prisma.Decimal(longitude) : null,
         isDefault: isDefault || false,
       },
     });
@@ -166,6 +171,8 @@ class UserService {
       city,
       state,
       description,
+      latitude,
+      longitude,
       isDefault,
     } = addressData;
 
@@ -191,6 +198,12 @@ class UserService {
         ...(city && { city }),
         ...(state && { state }),
         ...(description !== undefined && { description: description || null }),
+        ...(latitude !== undefined && {
+          latitude: latitude !== null ? new Prisma.Decimal(latitude) : null,
+        }),
+        ...(longitude !== undefined && {
+          longitude: longitude !== null ? new Prisma.Decimal(longitude) : null,
+        }),
         ...(isDefault !== undefined && { isDefault }),
       },
     });

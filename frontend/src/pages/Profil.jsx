@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiPackage } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
+import settingsService from '../services/settingsService';
 import { useAlert } from '../contexts/AlertContext';
 import { cleanRequestData } from '../utils/requestUtils';
+import { calculateDistance } from '../utils/distance';
+import addressSearchService from '../services/addressSearch.service';
 
 function Profil() {
   const navigate = useNavigate();
@@ -22,6 +25,25 @@ function Profil() {
   const [saving, setSaving] = useState(false);
   const { user, logout } = useAuthStore();
   const { showConfirm } = useAlert();
+  const [storeLocation, setStoreLocation] = useState(null);
+  const [distanceToStore, setDistanceToStore] = useState(null);
+  const [roadDistance, setRoadDistance] = useState(null);
+  const [loadingDistance, setLoadingDistance] = useState(false);
+  const [searchingAddress, setSearchingAddress] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Desktop kontrolü
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Adres form state
   const [formData, setFormData] = useState({
@@ -34,14 +56,108 @@ function Profil() {
     city: '',
     state: '',
     description: '',
+    latitude: null,
+    longitude: null,
     isDefault: false,
   });
 
   useEffect(() => {
     if (activeTab === 'addresses') {
       loadAddresses();
+      loadStoreLocation();
     }
   }, [activeTab]);
+
+  // Market konumunu yükle
+  const loadStoreLocation = async () => {
+    try {
+      const response = await settingsService.getSettings();
+      const storeLoc = response?.data?.settings?.storeSettings?.storeLocation;
+      if (storeLoc?.latitude && storeLoc?.longitude) {
+        setStoreLocation({
+          latitude: storeLoc.latitude,
+          longitude: storeLoc.longitude,
+        });
+      }
+    } catch (error) {
+      console.error('Market konumu yüklenemedi:', error);
+    }
+  };
+
+  // Modal açıldığında market konumunu yükle
+  useEffect(() => {
+    if (showAddressModal && !storeLocation) {
+      loadStoreLocation();
+    }
+  }, [showAddressModal]);
+
+  // Yol mesafesini hesapla
+  const calculateRoadDistance = useCallback(async () => {
+    if (
+      !storeLocation ||
+      formData.latitude === null ||
+      formData.latitude === undefined ||
+      formData.longitude === null ||
+      formData.longitude === undefined
+    ) {
+      return;
+    }
+
+    setLoadingDistance(true);
+    try {
+      const response = await userService.calculateDistance({
+        originLat: formData.latitude,
+        originLon: formData.longitude,
+        destLat: storeLocation.latitude,
+        destLon: storeLocation.longitude,
+      });
+      
+      console.log('[Profil] calculateRoadDistance yanıtı:', response);
+      console.log('[Profil] response:', response);
+      console.log('[Profil] response.data:', response?.data);
+      console.log('[Profil] response.data?.distance:', response?.data?.distance);
+      
+      // api interceptor zaten response.data döndürüyor, bu yüzden response = { success: true, data: { distance: ... } }
+      if (response?.success && response?.data?.distance !== null && response?.data?.distance !== undefined) {
+        console.log('[Profil] roadDistance set ediliyor:', response.data.distance);
+        setRoadDistance(response.data.distance);
+      } else {
+        console.warn('[Profil] roadDistance null - yanıt:', response);
+        setRoadDistance(null);
+      }
+    } catch (error) {
+      console.error('[Profil] Yol mesafesi hesaplanamadı:', error);
+      setRoadDistance(null);
+    } finally {
+      setLoadingDistance(false);
+    }
+  }, [storeLocation, formData.latitude, formData.longitude]);
+
+  // Mesafe hesapla (latitude/longitude değiştiğinde)
+  useEffect(() => {
+    if (
+      storeLocation &&
+      formData.latitude !== null &&
+      formData.latitude !== undefined &&
+      formData.longitude !== null &&
+      formData.longitude !== undefined
+    ) {
+      // Havadan mesafe hesapla (anında)
+      const distance = calculateDistance(
+        formData.latitude,
+        formData.longitude,
+        storeLocation.latitude,
+        storeLocation.longitude
+      );
+      setDistanceToStore(Math.round(distance * 100) / 100); // 2 ondalık basamağa yuvarla
+
+      // Yol mesafesini hesapla (OpenRouteService ile)
+      calculateRoadDistance();
+    } else {
+      setDistanceToStore(null);
+      setRoadDistance(null);
+    }
+  }, [formData.latitude, formData.longitude, storeLocation, calculateRoadDistance]);
 
   // Modal kapandığında adresleri yeniden yükle
   useEffect(() => {
@@ -121,8 +237,12 @@ function Profil() {
       city: '',
       state: '',
       description: '',
+      latitude: null,
+      longitude: null,
       isDefault: false,
     });
+    setDistanceToStore(null);
+    setRoadDistance(null);
     setShowAddressModal(true);
   };
 
@@ -138,6 +258,8 @@ function Profil() {
       city: address.city || '',
       state: address.state || '',
       description: address.description || '',
+      latitude: address.latitude || null,
+      longitude: address.longitude || null,
       isDefault: address.isDefault || false,
     });
     setShowAddressModal(true);
@@ -146,6 +268,12 @@ function Profil() {
   const closeModal = () => {
     setShowAddressModal(false);
     setEditingAddress(null);
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      setSearchTimeout(null);
+    }
   };
 
   // Form değişiklikleri
@@ -155,6 +283,104 @@ function Profil() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+
+    // Sokak adı değiştiğinde otomatik arama yap
+    if (name === 'street' && value.length >= 3) {
+      handleStreetSearch(value);
+    } else if (name === 'street' && value.length < 3) {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Sokak adı arama (debounce ile)
+  const handleStreetSearch = async (query) => {
+    // Önceki timeout'u temizle
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Yeni timeout oluştur (500ms debounce)
+    const timeout = setTimeout(async () => {
+      if (!query || query.trim().length < 3) {
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      setSearchingAddress(true);
+      try {
+        const results = await addressSearchService.searchAddress(query, { limit: 5 });
+        setAddressSuggestions(results);
+        setShowSuggestions(results.length > 0);
+      } catch (error) {
+        console.error('[Profil] Adres arama hatası:', error);
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setSearchingAddress(false);
+      }
+    }, 500);
+
+    setSearchTimeout(timeout);
+  };
+
+  // Adres önerisini seç
+  const handleSelectAddress = (suggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      street: suggestion.address.street || prev.street,
+      houseNumber: suggestion.address.houseNumber || prev.houseNumber,
+      postalCode: suggestion.address.postalCode || prev.postalCode,
+      city: suggestion.address.city || prev.city,
+      district: suggestion.address.district || prev.district,
+      state: suggestion.address.state || prev.state,
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    }));
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  // Konum alma fonksiyonu
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation wird von Ihrem Browser nicht unterstützt');
+      return;
+    }
+
+    toast.info('Konum alınıyor...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        toast.success('Konum başarıyla alındı');
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        let errorMessage = 'Konum alınamadı';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Konum izni reddedildi';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Konum bilgisi alınamadı';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Konum alma zaman aşımına uğradı';
+            break;
+        }
+        toast.error(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   // Adres kaydet
@@ -294,7 +520,7 @@ function Profil() {
         <div>
           <button
             onClick={openAddModal}
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 flex items-center justify-center gap-2 mb-4"
+            className=" w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 flex items-center justify-center gap-2 mb-4"
           >
             <FiPlus />
             Neue Adresse
@@ -378,9 +604,17 @@ function Profil() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="fixed inset-x-0 bottom-0 z-[9999] bg-white rounded-t-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+              className={`fixed z-[9999] ${
+                isDesktop 
+                  ? 'inset-0 flex items-center justify-center p-4' 
+                  : 'left-4 right-4 top-20'
+              }`}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+              <div className={`bg-white rounded-xl shadow-2xl max-h-[80vh] overflow-y-auto w-full ${
+                isDesktop ? 'max-w-2xl' : ''
+              }`}>
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {editingAddress ? 'Adresse bearbeiten' : 'Neue Adresse'}
                 </h2>
@@ -408,19 +642,65 @@ function Profil() {
                   />
                 </div>
 
-                {/* Straße */}
-                <div>
+                {/* Straße - Autocomplete */}
+                <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Straße <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleInputChange}
-                    placeholder="Straßenname"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="street"
+                      value={formData.street}
+                      onChange={handleInputChange}
+                      onFocus={() => {
+                        if (addressSuggestions.length > 0) {
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Dropdown'un kapanması için küçük bir gecikme
+                        setTimeout(() => setShowSuggestions(false), 200);
+                      }}
+                      placeholder="Straßenname eingeben..."
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    {searchingAddress && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Autocomplete Dropdown */}
+                  {showSuggestions && addressSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {addressSuggestions.map((suggestion, index) => {
+                        const isStreet = suggestion.address.street && suggestion.address.street.length > 0;
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleSelectAddress(suggestion)}
+                            className={`w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                              isStreet ? 'bg-green-50 hover:bg-green-100' : ''
+                            }`}
+                          >
+                            <div className="font-medium text-gray-900 flex items-center gap-2">
+                              {isStreet && <FiMapPin className="w-4 h-4 text-green-600" />}
+                              {suggestion.address.street || suggestion.displayName.split(',')[0]}
+                              {suggestion.address.houseNumber && ` ${suggestion.address.houseNumber}`}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-0.5">
+                              {suggestion.address.postalCode && `${suggestion.address.postalCode} `}
+                              {suggestion.address.city || suggestion.address.district}
+                              {suggestion.address.state && `, ${suggestion.address.state}`}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Hausnummer ve Adresszeile 2 */}
@@ -529,6 +809,85 @@ function Profil() {
                   />
                 </div>
 
+                {/* Aktuelle Position Butonu */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleGetLocation}
+                    className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FiMapPin className="w-4 h-4" />
+                    Aktuelle Position verwenden
+                  </button>
+                </div>
+
+                {/* Konum Bilgisi */}
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Standortinformationen
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2 hidden">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Breitengrad</label>
+                      <input
+                        type="number"
+                        step="0.00000001"
+                        name="latitude"
+                        value={formData.latitude ?? ''}
+                        onChange={handleInputChange}
+                        placeholder="Latitude"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Längengrad</label>
+                      <input
+                        type="number"
+                        step="0.00000001"
+                        name="longitude"
+                        value={formData.longitude ?? ''}
+                        onChange={handleInputChange}
+                        placeholder="Longitude"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500 hidden" >
+                    Standortinformationen werden für die Entfernungsberechnung verwendet. Sie können Ihre aktuelle Position automatisch abrufen oder manuell eingeben.
+                  </p>
+                  {distanceToStore !== null && storeLocation && (
+                    <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FiMapPin className="w-4 h-4 text-green-600" />
+                        <div className="flex-1">
+                          {loadingDistance ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-sm text-green-700">Entfernung wird berechnet...</span>
+                            </div>
+                          ) : roadDistance ? (
+                            <>
+                              <span className="text-sm font-medium text-green-800">
+                                Entfernung zum Markt: <strong>{roadDistance} km</strong>
+                              </span>
+                             
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-sm font-medium text-green-800">
+                                Entfernung zum Markt: <strong>{distanceToStore} km</strong>
+                              </span>
+                              
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Als Standard festlegen */}
                 <div className="flex items-center gap-2">
                   <input
@@ -572,6 +931,7 @@ function Profil() {
                   </button>
                 </div>
               </div>
+            </div>
             </motion.div>
           </>
         )}

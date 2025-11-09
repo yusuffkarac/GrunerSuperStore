@@ -1,4 +1,7 @@
 import userService from '../services/user.service.js';
+import routingService from '../services/routing.service.js';
+import addressSearchService from '../services/addressSearch.service.js';
+import settingsService from '../services/settings.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 class UserController {
@@ -107,6 +110,127 @@ class UserController {
       success: true,
       message: 'Standard-Adresse festgelegt',
       data: { address },
+    });
+  });
+
+  // POST /api/user/calculate-distance
+  calculateDistance = asyncHandler(async (req, res) => {
+    console.log('[UserController] calculateDistance çağrıldı');
+    const { originLat, originLon, destLat, destLon } = req.body;
+    
+    console.log('[UserController] Gelen parametreler:', {
+      originLat,
+      originLon,
+      destLat,
+      destLon,
+      body: req.body
+    });
+
+    // Validasyon
+    if (
+      originLat === undefined ||
+      originLon === undefined ||
+      destLat === undefined ||
+      destLon === undefined
+    ) {
+      console.warn('[UserController] Koordinatlar eksik');
+      return res.status(400).json({
+        success: false,
+        message: 'Koordinatlar eksik',
+      });
+    }
+
+    console.log('[UserController] RoutingService.calculateRoadDistance çağrılıyor...');
+    // Yol mesafesini hesapla
+    const result = await routingService.calculateRoadDistance(
+      originLat,
+      originLon,
+      destLat,
+      destLon
+    );
+
+    console.log('[UserController] RoutingService sonucu:', result);
+
+    if (!result) {
+      console.warn('[UserController] RoutingService null döndü - fallback mesajı gönderiliyor');
+      return res.status(200).json({
+        success: true,
+        data: {
+          distance: null,
+          duration: null,
+          message: 'Yol mesafesi hesaplanamadı. Havadan mesafe kullanılabilir.',
+        },
+      });
+    }
+
+    console.log('[UserController] Başarılı sonuç döndürülüyor:', {
+      distance: result.distance,
+      duration: result.duration
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        distance: result.distance,
+        duration: result.duration,
+      },
+    });
+  });
+
+  // GET /api/user/search-address
+  searchAddress = asyncHandler(async (req, res) => {
+    const { q, limit = 5, city } = req.query;
+
+    // Settings'ten varsayılan şehirleri al
+    const settings = await settingsService.getSettings();
+    const defaultCities = settings?.storeSettings?.defaultCities || [];
+    
+    // Eğer query'de city varsa kullan, yoksa defaultCities kullan
+    // city string veya comma-separated string olabilir
+    // Eğer hiç şehir yoksa (boş array), şehir filtresi uygulanmaz ve tüm sonuçlar gösterilir
+    let searchCities = null; // null = şehir filtresi yok, tüm sonuçlar gösterilir
+    if (city) {
+      // Query'de city varsa kullan
+      searchCities = typeof city === 'string' 
+        ? city.split(',').map(c => c.trim()).filter(c => c)
+        : Array.isArray(city) ? city : [city];
+    } else if (defaultCities && defaultCities.length > 0) {
+      // Query'de city yoksa ama defaultCities varsa onu kullan
+      searchCities = defaultCities;
+    }
+    // Eğer ikisi de yoksa searchCities null kalır ve tüm sonuçlar gösterilir
+
+    console.log('[UserController] searchAddress çağrıldı:', { 
+      q, 
+      limit, 
+      city, 
+      defaultCities, 
+      searchCities,
+      willFilterByCity: searchCities !== null && searchCities.length > 0
+    });
+
+    if (!q || q.trim().length < 3) {
+      console.log('[UserController] Query çok kısa, boş sonuç döndürülüyor');
+      return res.status(200).json({
+        success: true,
+        data: { addresses: [] },
+      });
+    }
+
+    const addresses = await addressSearchService.searchAddress(q, { 
+      limit: parseInt(limit),
+      city: searchCities // null veya array - null ise tüm sonuçlar gösterilir
+    });
+
+    console.log('[UserController] Adres arama sonucu:', {
+      query: q,
+      foundCount: addresses.length,
+      addresses: addresses.map(a => a.displayName)
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { addresses },
     });
   });
 }

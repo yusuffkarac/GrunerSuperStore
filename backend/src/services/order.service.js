@@ -5,6 +5,7 @@ import {
   ForbiddenError,
 } from '../utils/errors.js';
 import { getGermanyTimeInMinutes } from '../utils/date.js';
+import { validateDistance } from '../utils/distance.js';
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
@@ -26,8 +27,9 @@ class OrderService {
     }
 
     // Adres kontrolü (varsa)
+    let address = null;
     if (addressId) {
-      const address = await prisma.address.findFirst({
+      address = await prisma.address.findFirst({
         where: {
           id: addressId,
           userId: userId,
@@ -73,6 +75,42 @@ class OrderService {
                 `Bestellungen werden nach ${siparisKapanisSaati} Uhr nicht mehr angenommen`
               );
             }
+          }
+        }
+      }
+
+      // Mesafe kontrolü
+      if (settings?.storeSettings?.storeLocation && settings?.deliverySettings?.distanceLimits) {
+        const storeLocation = settings.storeSettings.storeLocation;
+        const distanceLimits = settings.deliverySettings.distanceLimits;
+        
+        // Delivery için mesafe kontrolü
+        if (type === 'delivery' && address && distanceLimits.deliveryMaxDistance !== null && distanceLimits.deliveryMaxDistance !== undefined) {
+          const distanceCheck = validateDistance(
+            address.latitude,
+            address.longitude,
+            storeLocation.latitude,
+            storeLocation.longitude,
+            distanceLimits.deliveryMaxDistance
+          );
+          
+          if (!distanceCheck.isValid) {
+            throw new ValidationError(distanceCheck.message);
+          }
+        }
+        
+        // Pickup için mesafe kontrolü (adres varsa kontrol et, yoksa atla)
+        if (type === 'pickup' && address && distanceLimits.pickupMaxDistance !== null && distanceLimits.pickupMaxDistance !== undefined) {
+          const distanceCheck = validateDistance(
+            address.latitude,
+            address.longitude,
+            storeLocation.latitude,
+            storeLocation.longitude,
+            distanceLimits.pickupMaxDistance
+          );
+          
+          if (!distanceCheck.isValid) {
+            throw new ValidationError(distanceCheck.message);
           }
         }
       }
