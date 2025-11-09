@@ -71,10 +71,27 @@ api.interceptors.response.use(
         '/reset-password',
         '/admin/login'
       ];
+      
+      // Public path'te değilsek ve token yoksa, sessizce redirect et (hata gösterme)
       if (!publicPaths.includes(currentPath)) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/giris';
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // Token yoksa, bu beklenen bir durum - sessizce redirect et
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/giris';
+          // Promise'i reject etme, sessizce işle
+          return Promise.reject({
+            message: 'Authentication required',
+            status: 401,
+            silent: true, // Component'lere bu hatanın sessizce handle edildiğini belirt
+          });
+        } else {
+          // Token varsa ama geçersizse, normal hata handling
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/giris';
+        }
       }
     }
 
