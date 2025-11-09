@@ -28,18 +28,18 @@ function HelpSection({ icon: Icon, title, children, isOpen, onToggle }) {
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-3 md:p-6 hover:bg-gray-50 transition-colors"
       >
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-green-100 rounded-lg">
-            <Icon className="text-green-600 text-xl" />
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="p-2 md:p-3 bg-green-100 rounded-lg">
+            <Icon className="text-green-600 text-lg md:text-xl" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <h2 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900">{title}</h2>
         </div>
         {isOpen ? (
-          <FiChevronUp className="text-gray-400 text-xl" />
+          <FiChevronUp className="text-gray-400 text-lg md:text-xl" />
         ) : (
-          <FiChevronDown className="text-gray-400 text-xl" />
+          <FiChevronDown className="text-gray-400 text-lg md:text-xl" />
         )}
       </button>
 
@@ -49,7 +49,7 @@ function HelpSection({ icon: Icon, title, children, isOpen, onToggle }) {
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="px-6 pb-6"
+          className="px-3 md:px-6 pb-4 md:pb-6"
         >
           {children}
         </motion.div>
@@ -60,13 +60,13 @@ function HelpSection({ icon: Icon, title, children, isOpen, onToggle }) {
 
 function StepList({ steps }) {
   return (
-    <ol className="space-y-3 ml-4">
+    <ol className="space-y-2 md:space-y-3 ml-2 md:ml-4">
       {steps.map((step, index) => (
-        <li key={index} className="flex gap-3">
-          <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+        <li key={index} className="flex gap-2 md:gap-3">
+          <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs md:text-sm font-medium">
             {index + 1}
           </span>
-          <span className="text-gray-700 pt-0.5">{step}</span>
+          <span className="text-sm md:text-base text-gray-700 pt-0.5">{step}</span>
         </li>
       ))}
     </ol>
@@ -99,10 +99,10 @@ function InfoBox({ type = 'info', children }) {
   const Icon = style.icon;
 
   return (
-    <div className={`${style.bg} ${style.border} border rounded-lg p-4 mt-4`}>
-      <div className="flex gap-3">
-        <Icon className={`${style.iconColor} flex-shrink-0 mt-0.5`} />
-        <div className="text-sm text-gray-700">{children}</div>
+    <div className={`${style.bg} ${style.border} border rounded-lg p-3 md:p-4 mt-3 md:mt-4`}>
+      <div className="flex gap-2 md:gap-3">
+        <Icon className={`${style.iconColor} flex-shrink-0 mt-0.5 text-base md:text-lg`} />
+        <div className="text-xs md:text-sm text-gray-700">{children}</div>
       </div>
     </div>
   );
@@ -123,57 +123,57 @@ function Help() {
     {
       key: 'orders',
       icon: FiShoppingBag,
-      title: 'Sipariş Yönetimi (Bestellungen)',
+      title: 'Bestellungsverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Siparişleri görüntüleyin, durumlarını güncelleyin ve müşterilerinize bildirim gönderin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Bestellungen anzeigen, Status aktualisieren und Benachrichtigungen an Kunden senden.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Sipariş Durumunu Güncelleme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Bestellstatus aktualisieren</h3>
             <StepList
               steps={[
-                'Menüden "Bestellungen" seçeneğine tıklayın',
-                'Sipariş listesinden güncellemek istediğiniz siparişi bulun',
-                'Durum sütunundaki açılır menüden yeni durumu seçin',
-                'Değişiklik otomatik olarak kaydedilir ve müşteriye bildirim gönderilir',
+                'Klicken Sie im Menü auf "Bestellungen"',
+                'Finden Sie die Bestellung, die Sie aktualisieren möchten, in der Bestellliste',
+                'Wählen Sie den neuen Status aus dem Dropdown-Menü in der Status-Spalte',
+                'Die Änderung wird automatisch gespeichert und der Kunde erhält eine Benachrichtigung',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Sipariş Durumları</h3>
-            <ul className="space-y-2 ml-4">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Bestellstatus</h3>
+            <ul className="space-y-1.5 md:space-y-2 ml-2 md:ml-4">
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Pending:</strong> Sipariş alındı, onay bekleniyor</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Pending:</strong> Bestellung erhalten, wartet auf Bestätigung</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Processing:</strong> Sipariş hazırlanıyor</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Processing:</strong> Bestellung wird vorbereitet</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Ready:</strong> Sipariş hazır, teslime bekliyor</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Ready:</strong> Bestellung ist fertig, wartet auf Lieferung</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Delivered:</strong> Sipariş teslim edildi</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Delivered:</strong> Bestellung wurde geliefert</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Cancelled:</strong> Sipariş iptal edildi</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Cancelled:</strong> Bestellung wurde storniert</span>
               </li>
             </ul>
           </div>
 
           <InfoBox type="info">
-            Her durum değişikliğinde müşteriye otomatik bildirim gönderilir. Müşteriler siparişlerinin durumunu takip edebilir.
+            Bei jeder Statusänderung wird automatisch eine Benachrichtigung an den Kunden gesendet. Kunden können den Status ihrer Bestellung verfolgen.
           </InfoBox>
 
           <InfoBox type="warning">
-            İptal edilen siparişler için ürün stokları otomatik olarak güncellenir.
+            Für stornierte Bestellungen werden die Produktbestände automatisch aktualisiert.
           </InfoBox>
         </div>
       ),
@@ -181,52 +181,52 @@ function Help() {
     {
       key: 'products',
       icon: FiPackage,
-      title: 'Ürün Yönetimi (Produkte)',
+      title: 'Produktverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Ürünleri ekleyin, düzenleyin, silin ve stok bilgilerini yönetin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Produkte hinzufügen, bearbeiten, löschen und Lagerbestände verwalten.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yeni Ürün Ekleme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Neues Produkt hinzufügen</h3>
             <StepList
               steps={[
-                'Menüden "Produkte" seçeneğine tıklayın',
-                'Sağ üstteki "Neues Produkt" butonuna tıklayın',
-                'Ürün bilgilerini doldurun (Ad, açıklama, fiyat, stok vb.)',
-                'Kategori seçin ve ürün görselini yükleyin',
-                'Barkod numarasını girin (opsiyonel)',
-                '"Speichern" butonuna tıklayarak ürünü kaydedin',
+                'Klicken Sie im Menü auf "Produkte"',
+                'Klicken Sie auf die Schaltfläche "Neues Produkt" oben rechts',
+                'Füllen Sie die Produktinformationen aus (Name, Beschreibung, Preis, Lagerbestand usw.)',
+                'Wählen Sie eine Kategorie und laden Sie das Produktbild hoch',
+                'Geben Sie die Barcode-Nummer ein (optional)',
+                'Klicken Sie auf "Speichern", um das Produkt zu speichern',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Ürün Düzenleme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Produkt bearbeiten</h3>
             <StepList
               steps={[
-                'Ürün listesinden düzenlemek istediğiniz ürünü bulun',
-                'Sağ taraftaki "Bearbeiten" butonuna tıklayın',
-                'Gerekli değişiklikleri yapın',
-                '"Speichern" butonuna tıklayarak kaydedin',
+                'Finden Sie das Produkt, das Sie bearbeiten möchten, in der Produktliste',
+                'Klicken Sie auf die Schaltfläche "Bearbeiten" auf der rechten Seite',
+                'Nehmen Sie die erforderlichen Änderungen vor',
+                'Klicken Sie auf "Speichern", um zu speichern',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Stok Uyarı Seviyesi</h3>
-            <p className="text-gray-700 mb-2">
-              Her ürün için düşük stok uyarı seviyesi belirleyebilirsiniz. Stok bu seviyenin altına düştüğünde dashboard'da uyarı görürsünüz.
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Lagerbestandswarnstufe</h3>
+            <p className="text-sm md:text-base text-gray-700 mb-2">
+              Sie können für jedes Produkt eine niedrige Lagerbestandswarnstufe festlegen. Wenn der Bestand unter diese Stufe fällt, sehen Sie eine Warnung im Dashboard.
             </p>
           </div>
 
           <InfoBox type="info">
-            Ürün görselleri maksimum 5MB boyutunda olmalıdır. Desteklenen formatlar: JPG, PNG, WebP
+            Produktbilder sollten maximal 5MB groß sein. Unterstützte Formate: JPG, PNG, WebP
           </InfoBox>
 
           <InfoBox type="success">
-            Barkod özelliğini kullanarak ürünleri kolayca tarayabilir ve sipariş sürecinizi hızlandırabilirsiniz.
+            Mit der Barcode-Funktion können Sie Produkte einfach scannen und Ihren Bestellprozess beschleunigen.
           </InfoBox>
         </div>
       ),
@@ -234,36 +234,36 @@ function Help() {
     {
       key: 'categories',
       icon: FiGrid,
-      title: 'Kategori Yönetimi (Kategorien)',
+      title: 'Kategorieverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Ürün kategorilerini oluşturun ve düzenleyin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Produktkategorien erstellen und bearbeiten.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yeni Kategori Oluşturma</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Neue Kategorie erstellen</h3>
             <StepList
               steps={[
-                'Menüden "Kategorien" seçeneğine tıklayın',
-                '"Neue Kategorie" butonuna tıklayın',
-                'Kategori adını ve açıklamasını girin',
-                'Kategori görseli yükleyin (opsiyonel)',
-                'Sıralama numarası belirleyin',
-                '"Speichern" ile kaydedin',
+                'Klicken Sie im Menü auf "Kategorien"',
+                'Klicken Sie auf die Schaltfläche "Neue Kategorie"',
+                'Geben Sie den Kategorienamen und die Beschreibung ein',
+                'Laden Sie ein Kategoriebild hoch (optional)',
+                'Legen Sie eine Sortiernummer fest',
+                'Speichern Sie mit "Speichern"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Kategori Sıralama</h3>
-            <p className="text-gray-700">
-              Kategorilerin web sitesinde görünme sırasını "Sortierung" alanı ile belirleyebilirsiniz. Küçük sayılar daha üstte görünür.
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Kategoriesortierung</h3>
+            <p className="text-sm md:text-base text-gray-700">
+              Sie können die Reihenfolge, in der Kategorien auf der Website angezeigt werden, mit dem Feld "Sortierung" festlegen. Kleinere Zahlen erscheinen weiter oben.
             </p>
           </div>
 
           <InfoBox type="warning">
-            Bir kategoriyi silmeden önce, o kategoriye ait ürünleri başka bir kategoriye taşıyın veya silin.
+            Bevor Sie eine Kategorie löschen, verschieben oder löschen Sie die Produkte in dieser Kategorie in eine andere Kategorie.
           </InfoBox>
         </div>
       ),
@@ -271,38 +271,38 @@ function Help() {
     {
       key: 'campaigns',
       icon: FiTag,
-      title: 'Kampanya Yönetimi (Kampagnen)',
+      title: 'Kampagnenverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            İndirim kampanyaları oluşturun ve yönetin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Rabattkampagnen erstellen und verwalten.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yeni Kampanya Oluşturma</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Neue Kampagne erstellen</h3>
             <StepList
               steps={[
-                'Menüden "Kampagnen" seçeneğine tıklayın',
-                '"Neue Kampagne" butonuna tıklayın',
-                'Kampanya adını ve açıklamasını girin',
-                'İndirim oranını (%) belirleyin',
-                'Başlangıç ve bitiş tarihlerini seçin',
-                'Kampanyaya dahil edilecek ürünleri seçin',
-                'Kampanya görselini yükleyin',
-                '"Speichern" ile kaydedin',
+                'Klicken Sie im Menü auf "Kampagnen"',
+                'Klicken Sie auf die Schaltfläche "Neue Kampagne"',
+                'Geben Sie den Kampagnennamen und die Beschreibung ein',
+                'Legen Sie den Rabattsatz (%) fest',
+                'Wählen Sie Start- und Enddatum',
+                'Wählen Sie die Produkte aus, die in die Kampagne aufgenommen werden sollen',
+                'Laden Sie das Kampagnenbild hoch',
+                'Speichern Sie mit "Speichern"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Aktif/Pasif Durumu</h3>
-            <p className="text-gray-700">
-              Kampanyaları "Aktiv" duruma getirerek web sitesinde görünür hale getirebilirsiniz. Pasif kampanyalar görünmez.
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Aktiv/Inaktiv Status</h3>
+            <p className="text-sm md:text-base text-gray-700">
+              Sie können Kampagnen durch Setzen auf "Aktiv" auf der Website sichtbar machen. Inaktive Kampagnen sind nicht sichtbar.
             </p>
           </div>
 
           <InfoBox type="info">
-            Kampanya tarihleri otomatik olarak kontrol edilir. Süresi dolmuş kampanyalar otomatik olarak devre dışı kalır.
+            Kampagnendaten werden automatisch überprüft. Abgelaufene Kampagnen werden automatisch deaktiviert.
           </InfoBox>
         </div>
       ),
@@ -310,46 +310,46 @@ function Help() {
     {
       key: 'coupons',
       icon: FiTag,
-      title: 'Kupon Yönetimi (Gutscheine)',
+      title: 'Gutscheinverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            İndirim kuponları oluşturun ve kullanım durumlarını takip edin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Rabattgutscheine erstellen und Nutzungsstatistiken verfolgen.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yeni Kupon Oluşturma</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Neuen Gutschein erstellen</h3>
             <StepList
               steps={[
-                'Menüden "Gutscheine" seçeneğine tıklayın',
-                '"Neuer Gutschein" butonuna tıklayın',
-                'Kupon kodunu belirleyin (benzersiz olmalı)',
-                'İndirim tipini seçin (Yüzde veya Sabit tutar)',
-                'İndirim miktarını girin',
-                'Minimum sipariş tutarını belirleyin (opsiyonel)',
-                'Kullanım limitini ayarlayın',
-                'Son kullanma tarihini seçin',
-                '"Speichern" ile kaydedin',
+                'Klicken Sie im Menü auf "Gutscheine"',
+                'Klicken Sie auf die Schaltfläche "Neuer Gutschein"',
+                'Bestimmen Sie den Gutscheincode (muss eindeutig sein)',
+                'Wählen Sie den Rabatttyp (Prozent oder fester Betrag)',
+                'Geben Sie den Rabattbetrag ein',
+                'Legen Sie den Mindestbestellwert fest (optional)',
+                'Stellen Sie das Nutzungslimit ein',
+                'Wählen Sie das Ablaufdatum',
+                'Speichern Sie mit "Speichern"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Kupon Tipleri</h3>
-            <ul className="space-y-2 ml-4">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Gutscheintypen</h3>
+            <ul className="space-y-1.5 md:space-y-2 ml-2 md:ml-4">
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Percentage:</strong> Yüzdelik indirim (örn: %20)</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Percentage:</strong> Prozentualer Rabatt (z.B. 20%)</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Fixed:</strong> Sabit tutar indirimi (örn: 10€)</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Fixed:</strong> Fester Betragsrabatt (z.B. 10€)</span>
               </li>
             </ul>
           </div>
 
           <InfoBox type="success">
-            Kupon kullanım istatistiklerini takip ederek hangi kuponların daha etkili olduğunu görebilirsiniz.
+            Durch die Verfolgung der Gutscheinnutzungsstatistiken können Sie sehen, welche Gutscheine effektiver sind.
           </InfoBox>
         </div>
       ),
@@ -357,27 +357,27 @@ function Help() {
     {
       key: 'users',
       icon: FiUsers,
-      title: 'Kullanıcı Yönetimi (Benutzer)',
+      title: 'Benutzerverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Kayıtlı kullanıcıları görüntüleyin ve yönetin. (Sadece Super Admin)
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Registrierte Benutzer anzeigen und verwalten. (Nur Super Admin)
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Kullanıcı Bilgilerini Görüntüleme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Benutzerinformationen anzeigen</h3>
             <StepList
               steps={[
-                'Menüden "Benutzer" seçeneğine tıklayın',
-                'Kullanıcı listesinde arama yapabilirsiniz',
-                'Kullanıcı detaylarını görmek için satıra tıklayın',
-                'Sipariş geçmişini ve aktivitelerini inceleyebilirsiniz',
+                'Klicken Sie im Menü auf "Benutzer"',
+                'Sie können in der Benutzerliste suchen',
+                'Klicken Sie auf eine Zeile, um Benutzerdetails anzuzeigen',
+                'Sie können Bestellverlauf und Aktivitäten überprüfen',
               ]}
             />
           </div>
 
           <InfoBox type="warning">
-            Bu bölüm sadece Super Admin yetkisine sahip kullanıcılar tarafından erişilebilir.
+            Dieser Bereich ist nur für Benutzer mit Super-Admin-Berechtigung zugänglich.
           </InfoBox>
         </div>
       ),
@@ -385,42 +385,42 @@ function Help() {
     {
       key: 'admins',
       icon: FiShield,
-      title: 'Admin Yönetimi (Administratoren)',
+      title: 'Administratorenverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Admin kullanıcıları oluşturun ve yetkilendirin. (Sadece Super Admin)
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Admin-Benutzer erstellen und autorisieren. (Nur Super Admin)
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yeni Admin Ekleme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Neuen Administrator hinzufügen</h3>
             <StepList
               steps={[
-                'Menüden "Administratoren" seçeneğine tıklayın',
-                '"Neuer Administrator" butonuna tıklayın',
-                'Admin bilgilerini girin (Ad, email, şifre)',
-                'Rol seçin (Admin veya Super Admin)',
-                '"Speichern" ile kaydedin',
+                'Klicken Sie im Menü auf "Administratoren"',
+                'Klicken Sie auf die Schaltfläche "Neuer Administrator"',
+                'Geben Sie die Admin-Informationen ein (Name, E-Mail, Passwort)',
+                'Wählen Sie eine Rolle (Admin oder Super Admin)',
+                'Speichern Sie mit "Speichern"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Admin Rolleri</h3>
-            <ul className="space-y-2 ml-4">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Admin-Rollen</h3>
+            <ul className="space-y-1.5 md:space-y-2 ml-2 md:ml-4">
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Admin:</strong> Temel yönetim yetkilerine sahiptir</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Admin:</strong> Hat grundlegende Verwaltungsrechte</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Super Admin:</strong> Tüm yetkilere sahiptir, kullanıcı ve admin yönetimi yapabilir</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Super Admin:</strong> Hat alle Rechte, kann Benutzer- und Admin-Verwaltung durchführen</span>
               </li>
             </ul>
           </div>
 
           <InfoBox type="warning">
-            Super Admin yetkisini dikkatli verin. Bu yetki tüm sisteme tam erişim sağlar.
+            Vergeben Sie Super-Admin-Berechtigungen mit Vorsicht. Diese Berechtigung gewährt vollen Zugriff auf das gesamte System.
           </InfoBox>
         </div>
       ),
@@ -428,46 +428,46 @@ function Help() {
     {
       key: 'notifications',
       icon: FiBell,
-      title: 'Bildirim Yönetimi (Benachrichtigungen)',
+      title: 'Benachrichtigungsverwaltung',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Kullanıcılara bildirim gönderin ve bildirim geçmişini görüntüleyin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Benachrichtigungen an Benutzer senden und Benachrichtigungsverlauf anzeigen.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Toplu Bildirim Gönderme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Massenbenachrichtigung senden</h3>
             <StepList
               steps={[
-                'Menüden "Benachrichtigungen" seçeneğine tıklayın',
-                '"Neue Benachrichtigung" butonuna tıklayın',
-                'Bildirim başlığını ve mesajını girin',
-                'Hedef kitleyi seçin (Tüm kullanıcılar veya belirli gruplar)',
-                '"Senden" ile bildirimi gönderin',
+                'Klicken Sie im Menü auf "Benachrichtigungen"',
+                'Klicken Sie auf die Schaltfläche "Neue Benachrichtigung"',
+                'Geben Sie den Benachrichtigungstitel und die Nachricht ein',
+                'Wählen Sie die Zielgruppe (Alle Benutzer oder bestimmte Gruppen)',
+                'Senden Sie die Benachrichtigung mit "Senden"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Bildirim Tipleri</h3>
-            <ul className="space-y-2 ml-4">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Benachrichtigungstypen</h3>
+            <ul className="space-y-1.5 md:space-y-2 ml-2 md:ml-4">
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Sipariş Bildirimleri:</strong> Sipariş durum güncellemelerinde otomatik gönderilir</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Bestellbenachrichtigungen:</strong> Werden automatisch bei Bestellstatusaktualisierungen gesendet</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Kampanya Bildirimleri:</strong> Yeni kampanyalar için manuel gönderilebilir</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Kampagnenbenachrichtigungen:</strong> Können manuell für neue Kampagnen gesendet werden</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Genel Duyurular:</strong> Önemli bilgiler için kullanılır</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Allgemeine Ankündigungen:</strong> Werden für wichtige Informationen verwendet</span>
               </li>
             </ul>
           </div>
 
           <InfoBox type="info">
-            Bildirimler kullanıcıların web sitesinde ve mobil cihazlarında (eğer PWA kuruluysa) görünür.
+            Benachrichtigungen sind auf der Website der Benutzer und auf mobilen Geräten sichtbar (wenn PWA installiert ist).
           </InfoBox>
         </div>
       ),
@@ -475,35 +475,35 @@ function Help() {
     {
       key: 'barcodes',
       icon: FiPrinter,
-      title: 'Barkod Etiketleri (Barcode-Etiketten)',
+      title: 'Barcode-Etiketten',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Ürünler için barkod etiketleri oluşturun ve yazdırın.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Barcode-Etiketten für Produkte erstellen und drucken.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Barkod Etiketi Oluşturma</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Barcode-Etikett erstellen</h3>
             <StepList
               steps={[
-                'Menüden "Barcode-Etiketten" seçeneğine tıklayın',
-                'Etiket oluşturmak istediğiniz ürünleri seçin',
-                'Her ürün için etiket sayısını belirleyin',
-                '"Vorschau" ile önizlemeyi görüntüleyin',
-                '"Drucken" ile etiketleri yazdırın',
+                'Klicken Sie im Menü auf "Barcode-Etiketten"',
+                'Wählen Sie die Produkte aus, für die Sie Etiketten erstellen möchten',
+                'Bestimmen Sie die Anzahl der Etiketten für jedes Produkt',
+                'Zeigen Sie die Vorschau mit "Vorschau" an',
+                'Drucken Sie die Etiketten mit "Drucken"',
               ]}
             />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Etiket Formatı</h3>
-            <p className="text-gray-700">
-              Etiketler standart barkod yazıcıları için optimize edilmiştir. Her etikette ürün adı, fiyat ve barkod bulunur.
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Etikettenformat</h3>
+            <p className="text-sm md:text-base text-gray-700">
+              Etiketten sind für Standard-Barcodedrucker optimiert. Jedes Etikett enthält Produktname, Preis und Barcode.
             </p>
           </div>
 
           <InfoBox type="success">
-            Toplu etiket yazdırma özelliği ile aynı anda birden fazla ürün için etiket oluşturabilirsiniz.
+            Mit der Funktion zum Massendrucken von Etiketten können Sie gleichzeitig Etiketten für mehrere Produkte erstellen.
           </InfoBox>
         </div>
       ),
@@ -511,37 +511,37 @@ function Help() {
     {
       key: 'settings',
       icon: FiSettings,
-      title: 'Ayarlar (Einstellungen)',
+      title: 'Einstellungen',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Genel sistem ayarlarını yapılandırın.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Allgemeine Systemeinstellungen konfigurieren.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Yapılandırılabilir Ayarlar</h3>
-            <ul className="space-y-2 ml-4">
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Konfigurierbare Einstellungen</h3>
+            <ul className="space-y-1.5 md:space-y-2 ml-2 md:ml-4">
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Mağaza Bilgileri:</strong> İşletme adı, adres, iletişim bilgileri</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Ladengeschäftsinformationen:</strong> Geschäftsname, Adresse, Kontaktinformationen</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Email Ayarları:</strong> Bildirim email şablonları</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>E-Mail-Einstellungen:</strong> Benachrichtigungs-E-Mail-Vorlagen</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Sipariş Ayarları:</strong> Minimum sipariş tutarı, teslimat seçenekleri</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Bestelleinstellungen:</strong> Mindestbestellwert, Lieferoptionen</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-700">•</span>
-                <span className="text-gray-700"><strong>Ödeme Ayarları:</strong> Kabul edilen ödeme yöntemleri</span>
+                <span className="text-sm md:text-base text-gray-700">•</span>
+                <span className="text-sm md:text-base text-gray-700"><strong>Zahlungseinstellungen:</strong> Akzeptierte Zahlungsmethoden</span>
               </li>
             </ul>
           </div>
 
           <InfoBox type="warning">
-            Ayar değişiklikleri tüm sistemi etkileyebilir. Değişiklik yapmadan önce emin olun.
+            Einstellungsänderungen können das gesamte System beeinflussen. Stellen Sie sicher, bevor Sie Änderungen vornehmen.
           </InfoBox>
         </div>
       ),
@@ -549,29 +549,29 @@ function Help() {
     {
       key: 'homepage',
       icon: FiEdit3,
-      title: 'Ana Sayfa Ayarları (Homepage-Einstellungen)',
+      title: 'Homepage-Einstellungen',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Web sitesinin ana sayfasını özelleştirin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Die Startseite der Website anpassen.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Ana Sayfa Öğeleri</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Homepage-Elemente</h3>
             <StepList
               steps={[
-                'Menüden "Homepage-Einstellungen" seçeneğine tıklayın',
-                'Slider görselleri ekleyin veya düzenleyin',
-                'Öne çıkan ürünleri seçin',
-                'Öne çıkan kategorileri belirleyin',
-                'Hakkımızda ve iletişim bilgilerini güncelleyin',
-                '"Speichern" ile değişiklikleri kaydedin',
+                'Klicken Sie im Menü auf "Homepage-Einstellungen"',
+                'Fügen Sie Slider-Bilder hinzu oder bearbeiten Sie sie',
+                'Wählen Sie herausragende Produkte aus',
+                'Bestimmen Sie herausragende Kategorien',
+                'Aktualisieren Sie Informationen über uns und Kontaktinformationen',
+                'Speichern Sie die Änderungen mit "Speichern"',
               ]}
             />
           </div>
 
           <InfoBox type="info">
-            Ana sayfa değişiklikleri anında web sitesinde yansır.
+            Homepage-Änderungen werden sofort auf der Website widergespiegelt.
           </InfoBox>
         </div>
       ),
@@ -579,30 +579,30 @@ function Help() {
     {
       key: 'design',
       icon: FiDroplet,
-      title: 'Tasarım Ayarları (Design-Einstellungen)',
+      title: 'Design-Einstellungen',
       content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Web sitenizin renklerini ve görünümünü özelleştirin.
+        <div className="space-y-3 md:space-y-4">
+          <p className="text-sm md:text-base text-gray-600">
+            Farben und Aussehen Ihrer Website anpassen.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Renk Özelleştirme</h3>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">Farbanpassung</h3>
             <StepList
               steps={[
-                'Menüden "Design-Einstellungen" seçeneğine tıklayın',
-                'Ana renk (Primary Color) seçin',
-                'İkincil renk (Secondary Color) seçin',
-                'Buton ve bağlantı renklerini ayarlayın',
-                'Logo ve favicon yükleyin',
-                'Önizleme ile değişiklikleri kontrol edin',
-                '"Speichern" ile kaydedin',
+                'Klicken Sie im Menü auf "Design-Einstellungen"',
+                'Wählen Sie die Hauptfarbe (Primary Color)',
+                'Wählen Sie die Sekundärfarbe (Secondary Color)',
+                'Stellen Sie Button- und Linkfarben ein',
+                'Laden Sie Logo und Favicon hoch',
+                'Überprüfen Sie die Änderungen mit der Vorschau',
+                'Speichern Sie mit "Speichern"',
               ]}
             />
           </div>
 
           <InfoBox type="success">
-            Renk değişiklikleri tüm web sitesinde otomatik olarak uygulanır ve markanıza özel bir görünüm elde edersiniz.
+            Farbänderungen werden automatisch auf der gesamten Website angewendet und Sie erhalten ein markenspezifisches Aussehen.
           </InfoBox>
         </div>
       ),
@@ -616,24 +616,24 @@ function Help() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Hilfe & Dokumentation</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Hilfe & Dokumentation</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-2">
           Ausführliche Anleitung zur Verwendung des Admin-Panels
         </p>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+        <FiSearch className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg md:text-xl" />
         <input
           type="text"
           placeholder="Suche in der Dokumentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
         />
       </div>
 
@@ -652,19 +652,19 @@ function Help() {
             </HelpSection>
           ))
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Keine Ergebnisse gefunden</p>
+          <div className="text-center py-8 md:py-12">
+            <p className="text-sm md:text-base text-gray-500">Keine Ergebnisse gefunden</p>
           </div>
         )}
       </div>
 
       {/* Footer Info */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mt-8">
-        <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <FiAlertCircle className="text-green-600" />
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 md:p-6 mt-6 md:mt-8">
+        <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <FiAlertCircle className="text-green-600 text-base md:text-lg" />
           Zusätzliche Hilfe
         </h3>
-        <p className="text-gray-700">
+        <p className="text-xs md:text-sm text-gray-700">
           Wenn Sie weitere Unterstützung benötigen, wenden Sie sich bitte an Ihren Systemadministrator
           oder technischen Support.
         </p>
