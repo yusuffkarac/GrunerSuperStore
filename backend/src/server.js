@@ -23,6 +23,8 @@ import campaignRoutes, { adminCampaignRouter } from './routes/campaign.routes.js
 import couponRoutes from './routes/coupon.routes.js';
 import emailRoutes from './routes/email.routes.js';
 import barcodeLabelRoutes from './routes/barcode-label.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import adminNotificationRoutes from './routes/admin-notification.routes.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -37,21 +39,51 @@ const PORT = process.env.PORT || 5001;
 // 1 değeri sadece bir proxy'ye (nginx) güvenmek anlamına gelir
 app.set('trust proxy', 1);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 2 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100000,
-  message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Trust proxy validation'ını kapat - nginx proxy'si güvenilir
-  validate: {
-    trustProxy: false,
-  },
-});
+// CORS yapılandırması - EN BAŞTA (tüm middleware'lerden önce)
+// Development'ta tüm origin'leri kabul et
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Origin yoksa (Postman, curl gibi) tüm origin'leri kabul et
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
 
-// Middleware
+    // Development modunda localhost ve 127.0.0.1'in tüm portlarını kabul et
+    if (process.env.NODE_ENV !== 'production') {
+      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0');
+      if (isLocalhost) {
+        callback(null, true);
+        return;
+      }
+      // Development'ta diğer origin'leri de kabul et (esnek geliştirme için)
+      callback(null, true);
+      return;
+    }
+
+    // Production'da belirli origin'leri kontrol et
+    const allowedOrigins = process.env.CORS_ORIGIN 
+      ? process.env.CORS_ORIGIN.split(',')
+      : ['http://localhost:5173'];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  maxAge: 86400, // 24 saat
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+app.use(cors(corsOptions));
+
 // Helmet yapılandırması - CSP'yi görseller için ayarla
+// CORS'dan SONRA (Helmet bazı CORS ayarlarını override edebilir)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -63,28 +95,7 @@ app.use(helmet({
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
-// CORS yapılandırması - development'ta tüm origin'leri kabul et
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Development modunda veya origin yoksa (Postman gibi) tüm origin'leri kabul et
-    if (process.env.NODE_ENV !== 'production' || !origin) {
-      callback(null, true);
-    } else {
-      // Production'da belirli origin'leri kontrol et
-      const allowedOrigins = process.env.CORS_ORIGIN 
-        ? process.env.CORS_ORIGIN.split(',')
-        : ['http://localhost:5173'];
-      
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS policy violation'));
-      }
-    }
-  },
-  credentials: true
-};
-app.use(cors(corsOptions));
+
 app.use(compression()); // Response sıkıştırma
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -113,6 +124,21 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
+// Rate limiting - sadece API isteklerine (OPTIONS hariç - CORS preflight)
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 2 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100000,
+  message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Trust proxy validation'ını kapat - nginx proxy'si güvenilir
+  validate: {
+    trustProxy: false,
+  },
+  // OPTIONS request'lerini skip et (CORS preflight)
+  skip: (req) => req.method === 'OPTIONS',
+});
+
 // Rate limiting - sadece API isteklerine
 app.use('/api/', limiter);
 
@@ -122,6 +148,16 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// CORS test endpoint
+app.get('/api/test-cors', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    headers: req.headers,
   });
 });
 
@@ -140,6 +176,8 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin/email', emailRoutes);
 app.use('/api/admin/barcode-labels', barcodeLabelRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin/notifications', adminNotificationRoutes);
 
 // Test route
 app.get('/api', (req, res) => {

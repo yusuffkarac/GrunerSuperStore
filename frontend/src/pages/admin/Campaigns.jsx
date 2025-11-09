@@ -253,17 +253,17 @@ function Campaigns() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen @ pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className=" mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Kampagnen</h1>
             <button
               onClick={() => openModal()}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"
             >
-              <FiPlus className="w-5 h-5" />
+              <FiPlus className="w-4 h-4" />
               <span>Neue Kampagne</span>
             </button>
           </div>
@@ -338,7 +338,7 @@ function Campaigns() {
       </div>
 
       {/* Campaigns List */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         {campaigns.length === 0 ? (
           <EmptyState
             icon={FiTag}
@@ -350,7 +350,7 @@ function Campaigns() {
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             <AnimatePresence mode="popLayout">
               {campaigns.map((campaign) => (
                 <motion.div
@@ -359,11 +359,11 @@ function Campaigns() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full w-full min-w-0"
                 >
                   {/* Campaign Image */}
                   {campaign.imageUrl && (
-                    <div className="h-40 bg-gray-200 overflow-hidden">
+                    <div className="h-40 bg-gray-200 overflow-hidden flex-shrink-0">
                       <img
                         src={campaign.imageUrl}
                         alt={campaign.name}
@@ -372,7 +372,7 @@ function Campaigns() {
                     </div>
                   )}
 
-                  <div className="p-4">
+                  <div className="p-4 flex flex-col flex-1 min-w-0">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
@@ -411,7 +411,7 @@ function Campaigns() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-auto">
                       <button
                         onClick={() => openModal(campaign)}
                         className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors"

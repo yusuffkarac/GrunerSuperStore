@@ -6,6 +6,7 @@ import {
 } from '../utils/errors.js';
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
+import notificationService from './notification.service.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -673,6 +674,9 @@ class OrderService {
     // Status değiştiyse ve settings'te aktifse mail gönder
     if (order.status !== status) {
       await this.sendOrderStatusChangedEmail(order.status, status, updatedOrder);
+      
+      // Bildirim oluştur
+      await this.createOrderStatusNotification(order.status, status, updatedOrder);
     }
 
     return updatedOrder;
@@ -773,6 +777,62 @@ class OrderService {
       console.log(`✅ Durum değişikliği maili kuyruğa eklendi: ${order.orderNo} (${oldStatus} → ${newStatus})`);
     } catch (error) {
       console.error('Status change mail hatası:', error);
+    }
+  }
+
+  // Sipariş durumu değişikliği bildirimi
+  async createOrderStatusNotification(oldStatus, newStatus, order) {
+    try {
+      const userId = order.userId;
+      if (!userId) return;
+
+      // Durum text'leri
+      const statusTextMap = {
+        pending: 'Ausstehend',
+        accepted: 'Akzeptiert',
+        preparing: 'In Vorbereitung',
+        shipped: 'Versandt',
+        delivered: 'Geliefert',
+        cancelled: 'Storniert',
+      };
+
+      const statusMessageMap = {
+        accepted: 'Ihre Bestellung wurde bestätigt und wird bald bearbeitet.',
+        preparing: 'Wir bereiten Ihre Bestellung gerade vor.',
+        shipped: 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
+        delivered: 'Ihre Bestellung wurde erfolgreich zugestellt. Vielen Dank!',
+        cancelled: 'Ihre Bestellung wurde storniert.',
+      };
+
+      // Bildirim tipi belirleme
+      let notificationType = 'info';
+      if (newStatus === 'delivered') {
+        notificationType = 'success';
+      } else if (newStatus === 'cancelled') {
+        notificationType = 'error';
+      } else if (newStatus === 'shipped') {
+        notificationType = 'success';
+      }
+
+      const title = `Bestellung ${order.orderNo} - Status aktualisiert`;
+      const message = statusMessageMap[newStatus] || `Ihre Bestellung wurde auf "${statusTextMap[newStatus] || newStatus}" aktualisiert.`;
+
+      await notificationService.createNotification(userId, {
+        type: notificationType,
+        title,
+        message,
+        actionUrl: `/siparis/${order.id}`,
+        metadata: {
+          orderId: order.id,
+          orderNo: order.orderNo,
+          oldStatus,
+          newStatus,
+        },
+      });
+
+      console.log(`✅ Bildirim oluşturuldu: ${order.orderNo} (${oldStatus} → ${newStatus})`);
+    } catch (error) {
+      console.error('Bildirim oluşturma hatası:', error);
     }
   }
 

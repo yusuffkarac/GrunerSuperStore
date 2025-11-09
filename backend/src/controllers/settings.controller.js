@@ -16,6 +16,7 @@ class SettingsController {
   updateSettings = asyncHandler(async (req, res) => {
     const {
       guestCanViewProducts,
+      showOutOfStockProducts,
       homepageSettings,
       orderIdFormat,
       themeColors,
@@ -33,6 +34,7 @@ class SettingsController {
 
     const settings = await settingsService.updateSettings({
       guestCanViewProducts,
+      showOutOfStockProducts,
       homepageSettings,
       orderIdFormat,
       themeColors,

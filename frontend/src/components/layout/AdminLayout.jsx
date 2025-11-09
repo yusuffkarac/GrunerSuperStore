@@ -15,6 +15,7 @@ import {
   FiDroplet,
   FiPrinter,
   FiShield,
+  FiBell,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -78,7 +79,8 @@ function AdminLayout() {
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers, superAdminOnly: true },
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, superAdminOnly: true },
-    { path: '/admin/barcode-labels', label: 'Barkod Etiketleri', icon: FiPrinter },
+    { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell },
+    { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Homepage-Einstellungen', icon: FiEdit3 },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
@@ -173,7 +175,7 @@ function AdminLayout() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto">
+        <main className="flex-1 px-4 py-2 md:p-6 lg:p-8 w-full overflow-y-auto">
           <Outlet />
         </main>
       </div>

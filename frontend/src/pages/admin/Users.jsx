@@ -256,10 +256,10 @@ function Users() {
         </div>
         <button
           onClick={() => openFormModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
         >
-          <FiPlus size={18} />
-          Neuer Benutzer
+          <FiPlus className="w-4 h-4" />
+          <span>Neuer Benutzer</span>
         </button>
       </div>
 

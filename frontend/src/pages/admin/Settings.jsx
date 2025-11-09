@@ -4,7 +4,7 @@ import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 
-// Admin Ayarlar Sayfası
+// Admin-Einstellungsseite
 function Settings() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ function Settings() {
     bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
   });
 
-  // Mail ayarları
+  // E-Mail-Einstellungen
   const [smtpSettings, setSmtpSettings] = useState({
     host: '',
     port: 587,
@@ -118,10 +118,10 @@ function Settings() {
       );
       setStoreSettings(s.storeSettings ?? {
         bakimModu: false,
-        bakimModuMesaji: 'Mağazamız şu anda bakım modunda. Yakında tekrar hizmetinizde olacağız.'
-      });
+        bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.'
+      }      );
 
-      // Mail ayarları
+      // E-Mail-Einstellungen
       if (s.smtpSettings) {
         setSmtpSettings(s.smtpSettings);
       }
@@ -142,6 +142,7 @@ function Settings() {
       setSaving(true);
       const response = await settingsService.updateSettings({
         guestCanViewProducts: settings.guestCanViewProducts,
+        showOutOfStockProducts: settings.showOutOfStockProducts !== false,
         orderIdFormat: orderIdFormat,
         minOrderAmount: minOrderAmount === '' ? null : parseFloat(minOrderAmount),
         freeShippingThreshold:
@@ -182,7 +183,7 @@ function Settings() {
       setPaymentOptions(s2.paymentOptions ?? paymentOptions);
       setOrderLimits(s2.orderLimits ?? orderLimits);
       setStoreSettings(s2.storeSettings ?? storeSettings);
-      // Mail ayarları da geri oku
+      // E-Mail-Einstellungen auch zurücklesen
       if (s2.smtpSettings) setSmtpSettings(s2.smtpSettings);
       if (s2.emailNotificationSettings) setEmailNotificationSettings(s2.emailNotificationSettings);
       toast.success('Einstellungen erfolgreich gespeichert');
@@ -193,9 +194,9 @@ function Settings() {
     }
   };
 
-  // Test mail gönder
+  // Test-E-Mail senden
   const handleTestEmail = async () => {
-    // Validasyon
+    // Validierung
     if (!smtpSettings.host || !smtpSettings.user || !smtpSettings.pass || !smtpSettings.fromEmail) {
       toast.error('Bitte füllen Sie alle SMTP-Felder aus');
       return;
@@ -228,7 +229,7 @@ function Settings() {
         toast.error(data.message || 'Fehler beim Senden der Test-E-Mail');
       }
     } catch (error) {
-      console.error('Test mail hatası:', error);
+      console.error('Test-E-Mail-Fehler:', error);
       toast.error('Fehler beim Senden der Test-E-Mail');
     } finally {
       setTestingEmail(false);
@@ -243,7 +244,15 @@ function Settings() {
     });
   };
 
-  // Sipariş ID önizlemesi oluştur
+  // Toggle switch for out of stock products
+  const handleToggleOutOfStock = () => {
+    setSettings({
+      ...settings,
+      showOutOfStockProducts: !settings.showOutOfStockProducts,
+    });
+  };
+
+  // Bestellungs-ID Vorschau erstellen
   const generatePreview = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -281,11 +290,11 @@ function Settings() {
 
     let sequenceStr = '';
     if (orderIdFormat.numberFormat === 'random') {
-      // Random numara üret (örnek)
+      // Zufällige Nummer generieren (Beispiel)
       const randomNum = Math.floor(Math.random() * Math.pow(10, orderIdFormat.numberPadding || 4));
       sequenceStr = randomNum.toString().padStart(orderIdFormat.numberPadding || 4, '0');
     } else {
-      // Sequential numara
+      // Sequenzielle Nummer
       const start = parseInt(orderIdFormat.startFrom ?? 1) || 1;
       sequenceStr = start.toString().padStart(orderIdFormat.numberPadding || 4, '0');
     }
@@ -316,7 +325,7 @@ function Settings() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-0 py-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -326,9 +335,9 @@ function Settings() {
           </p>
         </div>
 
-        {/* 2 Kolonlu Grid Yapısı */}
+        {/* 2-Spalten-Grid-Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sol Kolon */}
+          {/* Linke Spalte */}
           <div className="space-y-6">
             {/* Settings Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -368,8 +377,39 @@ function Settings() {
               </div>
             </div>
 
+            {/* Toggle Option - Out of Stock Products */}
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-gray-900">
+                  Nicht vorrätige Produkte anzeigen
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Wenn aktiviert, werden Produkte mit Stückzahl 0 oder weniger auch
+                  Kunden angezeigt. Wenn deaktiviert, werden nur Produkte mit verfügbarem
+                  Bestand angezeigt.
+                </p>
+              </div>
+
+              <div className="ml-6">
+                <button
+                  onClick={handleToggleOutOfStock}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    settings?.showOutOfStockProducts !== false ? 'bg-primary-600' : 'bg-gray-200'
+                  }`}
+                  role="switch"
+                  aria-checked={settings?.showOutOfStockProducts !== false}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      settings?.showOutOfStockProducts !== false ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Current Status */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-2">
               <div className="flex items-center">
                 <div
                   className={`flex-shrink-0 w-2 h-2 rounded-full ${
@@ -382,6 +422,21 @@ function Settings() {
                     {settings?.guestCanViewProducts
                       ? 'Gäste können Produkte sehen'
                       : 'Gäste können keine Produkte sehen'}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center">
+                <div
+                  className={`flex-shrink-0 w-2 h-2 rounded-full ${
+                    settings?.showOutOfStockProducts !== false ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                />
+                <p className="ml-3 text-sm text-gray-700">
+                  Bestandsstatus:{' '}
+                  <span className="font-medium">
+                    {settings?.showOutOfStockProducts !== false
+                      ? 'Nicht vorrätige Produkte werden angezeigt'
+                      : 'Nur vorrätige Produkte werden angezeigt'}
                   </span>
                 </p>
               </div>
@@ -400,7 +455,7 @@ function Settings() {
           </div>
         </div>
 
-            {/* Sipariş ID Format Ayarları */}
+            {/* Bestellungs-ID Format-Einstellungen */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -408,15 +463,15 @@ function Settings() {
                 </h2>
 
             {/* Önizleme */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
+            <div className="mb-6 p-4 bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-600 mb-1">Vorschau</p>
-                  <p className="text-2xl font-mono font-bold text-primary-700">
+                  <p className="text-2xl font-mono font-bold text-primary-700 break-all">
                     {generatePreview()}
                   </p>
                 </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="bg-white p-3 rounded-lg shadow-sm flex-shrink-0">
                   <svg
                     className="w-8 h-8 text-primary-600"
                     fill="none"
@@ -550,7 +605,7 @@ function Settings() {
                 </p>
               </div>
 
-              {/* Reset Period - sadece sequential seçiliyse göster */}
+              {/* Reset Period - nur anzeigen wenn sequential ausgewählt */}
               {orderIdFormat.numberFormat === 'sequential' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -637,16 +692,16 @@ function Settings() {
             </div>
           </div>
 
-          {/* Sağ Kolon */}
+          {/* Rechte Spalte */}
           <div className="space-y-6">
-            {/* İş Kuralları: Min/Ücretsiz Kargo ve Kargo Kuralları */}
+            {/* Geschäftsregeln: Min./Kostenloser Versand und Versandregeln */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Kargo ve Limitler</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Versand und Limits</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Sipariş Tutarı</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mindestbestellbetrag</label>
                 <input
                   type="number"
                   min="0"
@@ -654,11 +709,11 @@ function Settings() {
                   value={minOrderAmount}
                   onChange={(e) => setMinOrderAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="örn. 20.00"
+                  placeholder="z.B. 20.00"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ücretsiz Kargo Eşiği</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kostenloser Versand-Schwellenwert</label>
                 <input
                   type="number"
                   min="0"
@@ -666,19 +721,19 @@ function Settings() {
                   value={freeShippingThreshold}
                   onChange={(e) => setFreeShippingThreshold(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="örn. 100.00"
+                  placeholder="z.B. 100.00"
                 />
               </div>
             </div>
 
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-900">Kargo Kuralları</h3>
+                <h3 className="text-sm font-medium text-gray-900">Versandregeln</h3>
                 <button
                   type="button"
                   onClick={() => setShippingRules([...(shippingRules || []), { min: 0, max: null, fee: 0, type: 'flat' }])}
                   className="px-3 py-1 text-sm bg-primary-600 text-white rounded"
-                >Kural Ekle</button>
+                >Regel hinzufügen</button>
               </div>
               <div className="space-y-3">
                 {(shippingRules || []).map((r, idx) => (
@@ -698,17 +753,17 @@ function Settings() {
                       }} className="w-full px-2 py-2 border rounded" />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Tip</label>
+                      <label className="block text-xs text-gray-600 mb-1">Typ</label>
                       <select value={r.type || 'flat'} onChange={(e)=>{
                         const copy = [...shippingRules]; copy[idx] = { ...copy[idx], type: e.target.value };
                         setShippingRules(copy);
                       }} className="w-full px-2 py-2 border rounded">
-                        <option value="flat">Sabit</option>
-                        <option value="percent">Yüzde</option>
+                        <option value="flat">Fest</option>
+                        <option value="percent">Prozent</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-600 mb-1">Değer</label>
+                      <label className="block text-xs text-gray-600 mb-1">Wert</label>
                       <input type="number" step="0.01" value={r.type==='percent' ? (r.percent ?? r.value ?? 0) : (r.fee ?? r.value ?? 0)} onChange={(e)=>{
                         const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
                         const copy = [...shippingRules];
@@ -719,7 +774,7 @@ function Settings() {
                     <div className="flex justify-end">
                       <button type="button" onClick={()=>{
                         const copy = [...shippingRules]; copy.splice(idx,1); setShippingRules(copy);
-                      }} className="px-3 py-2 text-sm bg-red-100 text-red-700 rounded">Sil</button>
+                      }} className="px-3 py-2 text-sm bg-red-100 text-red-700 rounded">Löschen</button>
                     </div>
                   </div>
                 ))}
@@ -733,15 +788,15 @@ function Settings() {
           </div>
         </div>
 
-            {/* Teslimat ve Ödeme */}
+            {/* Lieferung und Zahlung */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Teslimat ve Ödeme</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Lieferung und Zahlung</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Teslimat</h3>
+                <h3 className="text-sm font-medium text-gray-900">Lieferung</h3>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Teslimat Açık</span>
+                  <span className="text-sm text-gray-700">Lieferung aktiviert</span>
                   <button 
                     onClick={()=>setDeliverySettings({ ...deliverySettings, teslimatAcik: !deliverySettings.teslimatAcik })} 
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
@@ -756,7 +811,7 @@ function Settings() {
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Mağazadan Teslim Açık</span>
+                  <span className="text-sm text-gray-700">Abholung im Geschäft aktiviert</span>
                   <button 
                     onClick={()=>setDeliverySettings({ ...deliverySettings, magazadanTeslimAcik: !deliverySettings.magazadanTeslimAcik })} 
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
@@ -771,17 +826,17 @@ function Settings() {
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sipariş Kapanış Saati</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bestellschluss</label>
                   <input type="time" value={deliverySettings.siparisKapanisSaati || ''} onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisKapanisSaati: e.target.value })} className="w-full px-3 py-2 border rounded" />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Ödeme</h3>
+                <h3 className="text-sm font-medium text-gray-900">Zahlung</h3>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Kart Kapıda</span>
+                  <span className="text-sm text-gray-700">Karte bei Lieferung</span>
                   <button 
-                    onClick={()=>setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} 
+                    onClick={() => setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} 
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                       paymentOptions.kartKapida ? 'bg-primary-600' : 'bg-gray-200'
                     }`}
@@ -794,9 +849,9 @@ function Settings() {
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Nakit</span>
+                  <span className="text-sm text-gray-700">Barzahlung</span>
                   <button 
-                    onClick={()=>setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} 
+                    onClick={() => setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} 
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                       paymentOptions.nakit ? 'bg-primary-600' : 'bg-gray-200'
                     }`}
@@ -809,9 +864,9 @@ function Settings() {
                   </button>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Online (devre dışı bırakılabilir)</span>
+                  <span className="text-sm text-gray-700">Online (deaktivierbar)</span>
                   <button 
-                    onClick={()=>setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} 
+                    onClick={() => setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} 
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                       paymentOptions.online ? 'bg-primary-600' : 'bg-gray-200'
                     }`}
@@ -825,14 +880,14 @@ function Settings() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Kapıda Ücret Tipi</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsart an der Tür</label>
                     <select value={paymentOptions.kapidaOdemeUcreti?.type || 'flat'} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), type: e.target.value } })} className="w-full px-3 py-2 border rounded">
-                      <option value="flat">Sabit</option>
-                      <option value="percent">Yüzde</option>
+                      <option value="flat">Fest</option>
+                      <option value="percent">Prozent</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Kapıda Ücret Değeri</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Zahlungsbetrag an der Tür</label>
                     <input type="number" step="0.01" value={paymentOptions.kapidaOdemeUcreti?.value ?? 0} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), value: parseFloat(e.target.value||'0') } })} className="w-full px-3 py-2 border rounded" />
                   </div>
                 </div>
@@ -846,29 +901,29 @@ function Settings() {
           </div>
         </div>
 
-            {/* Limitler ve Mağaza */}
+            {/* Limits und Geschäft */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Limitler ve Mağaza</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Limits und Geschäft</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Sipariş Tutarı</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Bestellbetrag</label>
                 <input type="number" step="0.01" value={orderLimits.maxSiparisTutari ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSiparisTutari: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Ürün Adedi</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Produktanzahl</label>
                 <input type="number" value={orderLimits.maxUrunAdedi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxUrunAdedi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Maks. Sepet Kalemi</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max. Warenkorbartikel</label>
                 <input type="number" value={orderLimits.maxSepetKalemi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSepetKalemi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
             </div>
 
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Mağaza</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Geschäft</h3>
               <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-700">Bakım Modu</span>
+                <span className="text-sm text-gray-700">Wartungsmodus</span>
                 <button 
                   onClick={()=>setStoreSettings({ ...storeSettings, bakimModu: !storeSettings.bakimModu })} 
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
@@ -885,17 +940,17 @@ function Settings() {
               {storeSettings.bakimModu && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bakım Modu Mesajı
+                    Wartungsmodus-Nachricht
                   </label>
                   <textarea
                     value={storeSettings.bakimModuMesaji || ''}
                     onChange={(e) => setStoreSettings({ ...storeSettings, bakimModuMesaji: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     rows={3}
-                    placeholder="Bakım modu mesajınızı buraya yazın..."
+                    placeholder="Geben Sie hier Ihre Wartungsmodus-Nachricht ein..."
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    Bu mesaj bakım modu açıkken müşterilere gösterilecektir.
+                    Diese Nachricht wird Kunden angezeigt, wenn der Wartungsmodus aktiviert ist.
                   </p>
                 </div>
               )}

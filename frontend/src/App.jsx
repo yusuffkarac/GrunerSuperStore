@@ -9,6 +9,7 @@ import { BARCODE_ONLY_MODE } from './config/appConfig';
 // Context
 import { AlertProvider } from './contexts/AlertContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -54,6 +55,7 @@ import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
+import Notifications from './pages/admin/Notifications';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -218,6 +220,7 @@ function AppContent() {
                 } 
               />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
@@ -238,23 +241,25 @@ function App() {
       <AlertProvider>
         <ErrorBoundary>
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AppContent />
-            <ToastContainer
-            position="bottom-center"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-            limit={2}
-          />
+            <NotificationProvider>
+              <AppContent />
+              <ToastContainer
+              position="bottom-center"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+              limit={2}
+            />
 
-            {/* PWA Install Prompt */}
-            <InstallPrompt />
+              {/* PWA Install Prompt */}
+              <InstallPrompt />
+            </NotificationProvider>
           </Router>
         </ErrorBoundary>
       </AlertProvider>

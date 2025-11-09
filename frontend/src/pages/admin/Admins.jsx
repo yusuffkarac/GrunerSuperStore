@@ -232,11 +232,10 @@ function Admins() {
         </div>
         <button
           onClick={() => openFormModal()}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
         >
-          <FiPlus size={16} className="md:w-[18px] md:h-[18px]" />
-          <span className="hidden sm:inline">Neuer Administrator</span>
-          <span className="sm:hidden">Neu</span>
+          <FiPlus className="w-4 h-4" />
+          <span>Neuer Administrator</span>
         </button>
       </div>
 

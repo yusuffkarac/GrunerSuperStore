@@ -65,6 +65,15 @@ enum EmailStatus {
   @@map("email_status")
 }
 
+enum NotificationType {
+  info
+  success
+  warning
+  error
+
+  @@map("notification_type")
+}
+
 // ===================================
 // MODELS
 // ===================================
@@ -89,6 +98,7 @@ model User {
   orders       Order[]
   favorites    Favorite[]
   couponUsages CouponUsage[]
+  notifications Notification[]
 
   @@index([email])
   @@index([isActive])
@@ -391,6 +401,7 @@ model Admin {
 model Settings {
   id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   guestCanViewProducts      Boolean  @default(true) @map("guest_can_view_products")
+  showOutOfStockProducts    Boolean  @default(true) @map("show_out_of_stock_products")
   homepageSettings          Json?    @map("homepage_settings")
   orderIdFormat             Json?    @map("order_id_format")
   themeColors               Json?    @map("theme_colors")
@@ -566,4 +577,32 @@ model EmailLog {
   @@index([template])
   @@index([createdAt(sort: Desc)])
   @@map("email_logs")
+}
+
+// ===================================
+// NOTIFICATION SYSTEM
+// ===================================
+
+model Notification {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  type      NotificationType @default(info)
+  title     String
+  message   String
+  actionUrl String?         @map("action_url")
+  isRead    Boolean         @default(false) @map("is_read")
+  readAt    DateTime?       @map("read_at")
+  metadata  Json?           // orderId, campaignId vb. ek bilgiler
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
 }

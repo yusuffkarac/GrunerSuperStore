@@ -65,6 +65,18 @@ class ProductController {
       data: { products },
     });
   });
+
+  // GET /api/products/bestsellers
+  getBestSellers = asyncHandler(async (req, res) => {
+    const { limit } = req.query;
+
+    const products = await productService.getBestSellers(limit);
+
+    res.status(200).json({
+      success: true,
+      data: { products },
+    });
+  });
 }
 
 export default new ProductController();

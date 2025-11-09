@@ -1,11 +1,26 @@
 import { adminApi } from './adminService.js';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
+  // Development modunda Vite proxy kullan
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // Production'da tam URL kullan
+  return 'http://localhost:5001/api';
+};
+
+const API_URL = getApiUrl();
 
 // Public API instance (auth gerektirmeyen)
 const publicApi = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // CORS credentials için gerekli
 });
 
 const campaignService = {

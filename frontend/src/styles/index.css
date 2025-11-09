@@ -232,6 +232,7 @@
     /* iOS Safari için güvenli alan desteği */
     padding-bottom: env(safe-area-inset-bottom);
   }
+  
 
   /* Aktif item için animasyonlu arka plan */
   .nav-active-indicator {
@@ -709,5 +710,10 @@
     100% {
       transform: rotate(360deg) scale(1);
     }
+  }
+}
+@media (max-width: 767px) {
+  .Toastify__toast-container {
+    margin-bottom: 16% !important;
   }
 }

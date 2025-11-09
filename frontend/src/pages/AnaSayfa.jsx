@@ -84,6 +84,11 @@ function AnaSayfa() {
   const sliderRef = useRef(null);
   const campaignSliderRef = useRef(null);
   const [currentCampaignIndex, setCurrentCampaignIndex] = useState(0);
+  
+  // Touch/swipe için state'ler
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const minSwipeDistance = 50; // Minimum kaydırma mesafesi (px)
 
   // Verileri yükle
   useEffect(() => {
@@ -119,7 +124,7 @@ function AnaSayfa() {
         const [categoriesRes, featuredRes, bestSellersRes, campaignsRes] = await Promise.all([
           categoryService.getCategories(),
           productService.getFeaturedProducts(10),
-          productService.getProducts({ limit: 8}),
+          productService.getBestSellers(8),
           campaignService.getActiveCampaigns(),
         ]);
 
@@ -163,6 +168,35 @@ function AnaSayfa() {
       left: newScrollLeft,
       behavior: 'smooth',
     });
+  };
+
+  // Touch/swipe handler fonksiyonları
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && campaigns.length > 0) {
+      // Sola kaydırma - sonraki kampanya
+      setCurrentCampaignIndex((prev) => (prev + 1) % campaigns.length);
+    } else if (isRightSwipe && campaigns.length > 0) {
+      // Sağa kaydırma - önceki kampanya
+      setCurrentCampaignIndex((prev) => (prev - 1 + campaigns.length) % campaigns.length);
+    }
+
+    // Reset
+    touchStartX.current = 0;
+    touchEndX.current = 0;
   };
 
   // Kampanya otomatik döndürme
@@ -367,7 +401,12 @@ function AnaSayfa() {
             </div>
 
             {/* Otomatik dönen kampanya banner - Tek satır */}
-            <div className="relative overflow-hidden rounded-2xl">
+            <div 
+              className="relative overflow-hidden rounded-2xl"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <div 
                 ref={campaignSliderRef}
                 className="flex transition-transform duration-500 ease-in-out"
@@ -436,7 +475,7 @@ function AnaSayfa() {
 
               {/* İndikatör noktaları */}
               {campaigns.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                   {campaigns.map((_, index) => (
                     <button
                       key={index}
@@ -444,10 +483,11 @@ function AnaSayfa() {
                         e.preventDefault();
                         setCurrentCampaignIndex(index);
                       }}
-                      className={`h-2 rounded-full transition-all duration-300 ${
+                      style={{ minWidth: '12px', minHeight: '12px' }}
+                      className={`rounded-full transition-all duration-300 ${
                         index === currentCampaignIndex
-                          ? 'w-8 bg-white'
-                          : 'w-2 bg-white/50 hover:bg-white/75'
+                          ? 'bg-white'
+                          : 'bg-white/50 hover:bg-white/75'
                       }`}
                       aria-label={`Kampanya ${index + 1}`}
                     />
@@ -466,7 +506,7 @@ function AnaSayfa() {
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Kategorien</h2>
 
             {/* Kategori kartları - Grid düzeni */}
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 md:gap-4">
+            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3 md:gap-4">
               {categories.map((category, index) => (
                 <Link
                   key={category.id}
@@ -516,12 +556,12 @@ function AnaSayfa() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {featuredProducts.slice(0, 6).map((product, index) => (
+                {featuredProducts.slice(0, 10).map((product, index) => (
                   <UrunKarti 
                     key={product.id} 
                     product={product} 
                     campaign={getCampaignForProduct(product)}
-                    priority={index < 6} // İlk 6 ürün için eager loading
+                    priority={index < 10} // İlk 6 ürün için eager loading
                   />
                 ))}
               </div>

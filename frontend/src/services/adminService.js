@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
+  // Development modunda Vite proxy kullan
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // Production'da tam URL kullan
+  return 'http://localhost:5001/api';
+};
+
+const API_URL = getApiUrl();
 
 // Admin token'ı al
 const getAdminToken = () => localStorage.getItem('adminToken');
@@ -8,6 +22,7 @@ const getAdminToken = () => localStorage.getItem('adminToken');
 // Admin API instance
 const adminApi = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // CORS credentials için gerekli
 });
 
 // Request interceptor - token ekle
@@ -252,6 +267,22 @@ const adminService = {
 
   deleteAdmin: async (id) => {
     const response = await adminApi.delete(`/admin/admins/${id}`);
+    return response.data;
+  },
+
+  // Bildirim yönetimi
+  createNotification: async (data) => {
+    const response = await adminApi.post('/admin/notifications', data);
+    return response.data;
+  },
+
+  getAllNotifications: async (params) => {
+    const response = await adminApi.get('/admin/notifications', { params });
+    return response.data;
+  },
+
+  deleteNotification: async (id) => {
+    const response = await adminApi.delete(`/admin/notifications/${id}`);
     return response.data;
   },
 };

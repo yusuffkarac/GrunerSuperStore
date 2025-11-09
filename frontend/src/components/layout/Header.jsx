@@ -5,6 +5,7 @@ import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import productService from '../../services/productService';
 import { normalizeImageUrls } from '../../utils/imageUtils';
+import NotificationBell from '../common/NotificationBell';
 
 // Header Componenti - Sticky
 function Header() {
@@ -140,6 +141,7 @@ function Header() {
 
           {/* Sağ Taraf - Sepet ve Profil */}
           <div className="flex items-center gap-3">
+            {isAuthenticated && <NotificationBell />}
             <Link
               to="/sepet"
               className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"

@@ -2,6 +2,15 @@ import { AppError } from '../utils/errors.js';
 
 // Global error handler middleware
 export const errorHandler = (err, req, res, next) => {
+  // CORS başlıklarını error handler'da da ekle
+  const origin = req.headers.origin;
+  if (origin && (process.env.NODE_ENV !== 'production' || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  }
+
   // Log hatayı
   const isProduction = process.env.NODE_ENV === 'production';
   if (!isProduction) {
@@ -103,6 +112,15 @@ const handlePrismaError = (err, res) => {
 
 // 404 handler
 export const notFoundHandler = (req, res) => {
+  // CORS başlıklarını 404 handler'da da ekle
+  const origin = req.headers.origin;
+  if (origin && (process.env.NODE_ENV !== 'production' || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  }
+
   res.status(404).json({
     success: false,
     message: 'Endpoint nicht gefunden',

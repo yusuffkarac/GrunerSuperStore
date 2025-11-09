@@ -10,6 +10,7 @@ class SettingsService {
       settings = await prisma.settings.create({
         data: {
           guestCanViewProducts: true,
+          showOutOfStockProducts: true,
           orderIdFormat: {
             prefix: 'GS',
             separator: '-',
@@ -85,6 +86,9 @@ class SettingsService {
     if (data.guestCanViewProducts !== undefined) {
       updateData.guestCanViewProducts = data.guestCanViewProducts;
     }
+    if (data.showOutOfStockProducts !== undefined) {
+      updateData.showOutOfStockProducts = data.showOutOfStockProducts;
+    }
     if (data.homepageSettings !== undefined) {
       updateData.homepageSettings = data.homepageSettings;
     }
@@ -130,6 +134,7 @@ class SettingsService {
       settings = await prisma.settings.create({
         data: {
           guestCanViewProducts: data.guestCanViewProducts ?? true,
+          showOutOfStockProducts: data.showOutOfStockProducts ?? true,
           homepageSettings: data.homepageSettings ?? null,
           orderIdFormat: data.orderIdFormat ?? {
             prefix: 'GS',

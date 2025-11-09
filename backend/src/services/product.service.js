@@ -232,6 +232,95 @@ class ProductService {
     return products;
   }
 
+  // En çok satan ürünleri getir (OrderItem'lardan satış sayısına göre)
+  async getBestSellers(limit = 10) {
+    // OrderItem'lardan her ürün için toplam satış miktarını hesapla
+    const salesData = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: {
+        quantity: true,
+      },
+      where: {
+        order: {
+          status: {
+            not: 'cancelled', // İptal edilen siparişler hariç
+          },
+        },
+      },
+    });
+
+    // Satış sayısına göre sırala (en yüksekten en düşüğe)
+    const sortedSales = salesData
+      .map((item) => ({
+        productId: item.productId,
+        totalSales: item._sum.quantity || 0,
+      }))
+      .sort((a, b) => b.totalSales - a.totalSales)
+      .slice(0, parseInt(limit));
+
+    // Product ID'leri al
+    const productIds = sortedSales.map((item) => item.productId);
+
+    // Ürünleri getir (sıralama korunmalı)
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+        isActive: true,
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        variants: {
+          where: { isActive: true },
+          take: 1, // İlk varyantı göster (varsayılan)
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    // Sıralamayı koru (productIds sırasına göre)
+    const productsMap = new Map(products.map((p) => [p.id, p]));
+    const orderedProducts = productIds
+      .map((id) => productsMap.get(id))
+      .filter(Boolean); // undefined'ları filtrele
+
+    // Eğer yeterli ürün yoksa, aktif ürünlerle tamamla
+    if (orderedProducts.length < parseInt(limit)) {
+      const existingIds = new Set(productIds);
+      const additionalProducts = await prisma.product.findMany({
+        where: {
+          id: { notIn: Array.from(existingIds) },
+          isActive: true,
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          variants: {
+            where: { isActive: true },
+            take: 1,
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+        take: parseInt(limit) - orderedProducts.length,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      orderedProducts.push(...additionalProducts);
+    }
+
+    return orderedProducts.slice(0, parseInt(limit));
+  }
+
   // ===============================
   // ADMIN METHODS
   // ===============================

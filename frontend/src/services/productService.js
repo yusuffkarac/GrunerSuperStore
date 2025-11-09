@@ -21,6 +21,11 @@ const productService = {
     return await api.get('/products/featured', { params: { limit } });
   },
 
+  // En çok satan ürünler
+  getBestSellers: async (limit = 10) => {
+    return await api.get('/products/bestsellers', { params: { limit } });
+  },
+
   // Kategoriye göre ürünler
   getProductsByCategory: async (categoryId, params = {}) => {
     return await api.get('/products', {

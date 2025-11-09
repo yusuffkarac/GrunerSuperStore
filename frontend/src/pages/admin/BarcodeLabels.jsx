@@ -356,7 +356,7 @@ function BarcodeLabels() {
   if (loading) return <Loading />;
 
   return (
-    <div className="p-3 md:p-6">
+    <div className=" md:p-6">
       {/* Header */}
       <div className="mb-4 md:mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900">Barcode-Etiketten</h1>
@@ -395,11 +395,10 @@ function BarcodeLabels() {
           </button>
           <button
             onClick={() => openModal()}
-            className="flex items-center justify-center gap-1 px-2.5 py-2 text-xs md:text-sm md:px-4 md:py-2 md:text-base bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm whitespace-nowrap"
           >
-            <FiPlus className="w-3.5 h-3.5 md:w-5 md:h-5 flex-shrink-0" />
-            <span className="ml-1 hidden sm:inline">Neues Etikett</span>
-            <span className="ml-1 sm:hidden">Neu</span>
+            <FiPlus className="w-4 h-4" />
+            <span>Neues Etikett</span>
           </button>
 
           {selectedLabels.length > 0 && (

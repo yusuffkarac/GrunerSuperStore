@@ -186,40 +186,13 @@ function Categories() {
             {categories.length} {categories.length === 1 ? 'Kategorie' : 'Kategorien'} insgesamt
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-white text-green-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Kartenansicht"
-            >
-              <FiGrid size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white text-green-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Listenansicht"
-            >
-              <FiList size={18} />
-            </button>
-          </div>
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <FiPlus size={20} />
-            Neue Kategorie
-          </button>
-        </div>
+        <button
+          onClick={() => openModal()}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+        >
+          <FiPlus className="w-4 h-4" />
+          <span>Neue Kategorie</span>
+        </button>
       </div>
 
       {/* Search & Filters */}
@@ -236,7 +209,7 @@ function Categories() {
           />
         </div>
 
-        {/* Filter Toggle */}
+        {/* Filter Toggle & View Mode */}
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -249,14 +222,33 @@ function Categories() {
               </span>
             )}
           </button>
-          {activeFilterCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-700"
-            >
-              Filter zurücksetzen
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Kartenansicht"
+              >
+                <FiGrid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Listenansicht"
+              >
+                <FiList size={18} />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Expanded Filters */}

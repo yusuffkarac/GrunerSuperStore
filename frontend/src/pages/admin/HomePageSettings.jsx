@@ -138,7 +138,7 @@ function HomePageSettings() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-0 py-6">
       <div className="max-w-5xl mx-auto w-full">
         {/* Header */}
         <div className="mb-6">

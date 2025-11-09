@@ -264,43 +264,16 @@ function Coupons() {
     <div className="min-h-screen bg-gray-50 pb-20 overflow-x-hidden">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className=" mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Gutscheine</h1>
-            <div className="flex items-center gap-2">
-              {/* View Mode Toggle */}
-              <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  title="Kartenansicht"
-                >
-                  <FiGrid className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  title="Listenansicht"
-                >
-                  <FiList className="w-5 h-5" />
-                </button>
-              </div>
-              <button
-                onClick={() => openModal()}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <FiPlus className="w-5 h-5" />
-                <span className="hidden sm:inline">Neuer Gutschein</span>
-              </button>
-            </div>
+            <button
+              onClick={() => openModal()}
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"
+            >
+              <FiPlus className="w-4 h-4" />
+              <span>Neuer Gutschein</span>
+            </button>
           </div>
 
           {/* Search & Filters */}
@@ -317,14 +290,43 @@ function Coupons() {
               />
             </div>
 
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
-            >
-              <FiFilter className="w-4 h-4" />
-              <span>Filter {(typeFilter || isActiveFilter) && `(${[typeFilter, isActiveFilter].filter(Boolean).length})`}</span>
-            </button>
+            {/* Filter Toggle & View Mode */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
+              >
+                <FiFilter className="w-4 h-4" />
+                <span>Filter {(typeFilter || isActiveFilter) && `(${[typeFilter, isActiveFilter].filter(Boolean).length})`}</span>
+              </button>
+              <div className="flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded transition-colors ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Kartenansicht"
+                  >
+                    <FiGrid className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded transition-colors ${
+                      viewMode === 'list'
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Listenansicht"
+                  >
+                    <FiList className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* Filters */}
             <AnimatePresence>
@@ -371,7 +373,7 @@ function Coupons() {
       </div>
 
       {/* Coupons List */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className=" mx-auto px-4 py-6">
         {coupons.length === 0 ? (
           <EmptyState
             icon={FiTag}

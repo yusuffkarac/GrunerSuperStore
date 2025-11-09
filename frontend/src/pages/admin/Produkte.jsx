@@ -558,13 +558,20 @@ function Produkte() {
   // Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // HTML5 validasyonunu kontrol et
+    const form = e.target;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    
     try {
       const submitData = {
         name: formData.name,
         description: formData.description || null,
         categoryId: formData.categoryId || null,
         price: parseFloat(formData.price),
-        stock: parseInt(formData.stock) || 0,
         lowStockLevel: formData.lowStockLevel ? parseInt(formData.lowStockLevel) : null,
         unit: formData.unit || null,
         barcode: formData.barcode || null,
@@ -580,6 +587,14 @@ function Produkte() {
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
       };
+
+      // Stock alanını sadece geçerli bir değer varsa ekle
+      if (formData.stock !== undefined && formData.stock !== null && formData.stock !== '') {
+        const stockValue = parseInt(formData.stock);
+        if (!isNaN(stockValue) && stockValue >= 0) {
+          submitData.stock = stockValue;
+        }
+      }
 
       // Boş string'leri, null ve undefined değerleri temizle
       const cleanedData = cleanRequestData(submitData);
@@ -921,10 +936,10 @@ function Produkte() {
         </div>
         <button
           onClick={() => openModal()}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
         >
-          <FiPlus size={20} />
-          Neues Produkt
+          <FiPlus className="w-4 h-4" />
+          <span>Neues Produkt</span>
         </button>
       </div>
 
@@ -984,14 +999,6 @@ function Produkte() {
                 <FiGrid size={18} />
               </button>
             </div>
-          {activeFilterCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-700 transition-colors"
-            >
-              Filter zurücksetzen
-            </button>
-          )}
           </div>
         </div>
 
@@ -1304,10 +1311,18 @@ function Produkte() {
                       </label>
                       <input
                         type="number"
-                        required
+                        name="stock"
+                        
                         min="0"
+                        step="1"
                         value={formData.stock}
                         onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                        onInvalid={(e) => {
+                          e.target.setCustomValidity('Lagerbestand ist ein Pflichtfeld');
+                        }}
+                        onInput={(e) => {
+                          e.target.setCustomValidity('');
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
                       <label className="flex items-center gap-2 mt-2 cursor-pointer">

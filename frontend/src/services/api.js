@@ -1,20 +1,26 @@
 import axios from 'axios';
 
 // API base URL - dinamik olarak hostname'i kullan
-// Development'ta: window.location.hostname kullan (PC'nin IP'si veya localhost)
-// Production'da: environment variable veya sabit URL kullan
+// Development'ta: Vite proxy kullan (sadece /api)
+// Production'da: environment variable veya tam URL kullan
 const getApiBaseUrl = () => {
   // Eğer environment variable varsa onu kullan
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    // Eğer /api ile bitmiyorsa ekle
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : `${url}/api`;
   }
   
-  // Development'ta dinamik olarak hostname'i kullan
+  // Development modunda Vite proxy kullan (sadece /api)
+  // Vite proxy'si /api isteklerini otomatik olarak backend'e yönlendirir
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  
+  // Production'da tam URL kullan
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
   const port = '5001';
-  
-  // localhost ise localhost kullan, değilse hostname'i kullan (PC'nin IP'si)
   return `${protocol}//${hostname}:${port}/api`;
 };
 
@@ -24,6 +30,7 @@ const API_BASE_URL = getApiBaseUrl();
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
+  withCredentials: true, // CORS credentials için gerekli
   headers: {
     'Content-Type': 'application/json',
     // 304 Not Modified yanıtlarını engellemek için istemci tarafı cache'i kapat

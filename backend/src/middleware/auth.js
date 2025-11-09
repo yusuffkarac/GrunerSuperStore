@@ -77,3 +77,53 @@ export const optionalAuth = async (req, res, next) => {
     next();
   }
 };
+
+// SSE için authentication (query parameter'dan token alır)
+export const authenticateSSE = async (req, res, next) => {
+  try {
+    // Önce header'dan dene
+    let token = null;
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      // Query parameter'dan al (EventSource için)
+      token = req.query.token;
+    }
+
+    if (!token) {
+      throw new UnauthorizedError('Kein Token bereitgestellt');
+    }
+
+    // Token'ı doğrula
+    const decoded = verifyToken(token);
+
+    // Kullanıcıyı veritabanından bul
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError('Benutzer nicht gefunden');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedError('Benutzer ist nicht aktiv');
+    }
+
+    // Kullanıcıyı req'e ekle
+    req.user = user;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

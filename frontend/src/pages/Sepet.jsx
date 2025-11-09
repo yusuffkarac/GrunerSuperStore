@@ -9,6 +9,7 @@ import useAuthStore from '../store/authStore';
 import useFavoriteStore from '../store/favoriteStore';
 import campaignService from '../services/campaignService';
 import { useAlert } from '../contexts/AlertContext';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Sepet Item Component
 function CartItem({ item, onRemove, onUpdateQuantity }) {
@@ -216,9 +217,20 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
         <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
           {item.imageUrl ? (
             <img
-              src={item.imageUrl}
+              src={normalizeImageUrl(item.imageUrl)}
               alt={item.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+                const parent = e.target.parentElement;
+                if (parent && !parent.querySelector('.fallback-icon')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'w-full h-full flex items-center justify-center fallback-icon';
+                  fallback.innerHTML = '<svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>';
+                  parent.appendChild(fallback);
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -285,9 +297,10 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
           </p>
           <button
             onClick={() => onRemove(item.productId, item.variantId)}
-            className="text-red-500 text-xs mt-1 hover:text-red-700"
+            className="text-red-500 mt-1 hover:text-red-700 p-1.5 rounded-full hover:bg-red-50 transition-colors"
+            aria-label="Entfernen"
           >
-            Entfernen
+            <FiTrash2 className="w-4 h-4" />
           </button>
         </div>
       </motion.div>
@@ -449,6 +462,12 @@ function Sepet() {
 
   // Ürün silme
   const handleRemoveItem = async (productId, variantId = null) => {
+    const item = items.find(i => i.productId === productId && (variantId ? i.variantId === variantId : !i.variantId));
+    const itemName = item?.name || 'Produkt';
+    
+    const confirmed = await showConfirm(`Möchten Sie "${itemName}" wirklich aus dem Warenkorb entfernen?`);
+    if (!confirmed) return;
+    
     try {
       await removeItem(productId, variantId);
       toast.success('Produkt entfernt');
