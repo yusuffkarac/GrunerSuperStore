@@ -105,7 +105,9 @@ app.use(cookieParser());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // __dirname = backend/src, uploads klasörü = backend/uploads
-app.use('/uploads', express.static(join(__dirname, '../uploads'), {
+
+// Statik dosya servisi için header ayarları
+const staticOptions = {
   setHeaders: (res, path, stat) => {
     // CORS header'larını statik dosyalar için de ekle - development'ta tüm origin'leri kabul et
     if (process.env.NODE_ENV !== 'production') {
@@ -114,8 +116,19 @@ app.use('/uploads', express.static(join(__dirname, '../uploads'), {
       res.set('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:5173');
     }
     res.set('Access-Control-Allow-Credentials', 'true');
+    // Cache control headers - production'da cache'le
+    if (process.env.NODE_ENV === 'production') {
+      res.set('Cache-Control', 'public, max-age=31536000'); // 1 yıl cache
+    }
   }
-}));
+};
+
+// /uploads için static file serving (direkt erişim)
+app.use('/uploads', express.static(join(__dirname, '../uploads'), staticOptions));
+
+// /api/uploads için static file serving (frontend'den gelen istekler için)
+// Frontend normalizeImageUrl fonksiyonu VITE_API_URL eklediği için /api/uploads oluyor
+app.use('/api/uploads', express.static(join(__dirname, '../uploads'), staticOptions));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
