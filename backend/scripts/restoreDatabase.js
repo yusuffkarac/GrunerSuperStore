@@ -12,15 +12,12 @@
  * Eğer dosya adı belirtilmezse, en son dump dosyası kullanılır.
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { readdirSync, statSync, readFileSync } from 'fs';
+import { spawn } from 'child_process';
+import { readdirSync, statSync, createReadStream } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import readline from 'readline';
-
-const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -113,32 +110,87 @@ async function restoreDatabase(dumpFile) {
       env.PGPASSWORD = DB_PASSWORD;
     }
     
-    // Dump dosyasını oku
-    console.log('\n⏳ Dump dosyası okunuyor...');
-    const dumpContent = readFileSync(dumpFile, 'utf8');
-    
     // psql komutu ile restore et
     // --single-transaction: Tüm işlemi tek transaction'da yapar (hata durumunda rollback)
     // --quiet: Gereksiz çıktıları bastırır
-    console.log('⏳ Veritabanı restore ediliyor...');
-    const restoreCommand = `psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} --single-transaction --quiet`;
+    console.log('\n⏳ Veritabanı restore ediliyor...');
+    console.log('   (Bu işlem büyük dosyalar için birkaç dakika sürebilir)');
     
-    const { stdout, stderr } = await execAsync(restoreCommand, {
-      env,
-      input: dumpContent,
-      maxBuffer: 1024 * 1024 * 100 // 100MB buffer
+    return new Promise((resolve, reject) => {
+      // psql process'i başlat
+      const psql = spawn('psql', [
+        '-h', DB_HOST,
+        '-p', String(DB_PORT),
+        '-U', DB_USER,
+        '-d', DB_NAME,
+        '--single-transaction',
+        '--quiet'
+      ], {
+        env,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      // Dump dosyasını stdin'e pipe et
+      const fileStream = createReadStream(dumpFile);
+      fileStream.pipe(psql.stdin);
+      
+      let stdout = '';
+      let stderr = '';
+      
+      // Progress göstergesi için timer
+      const progressInterval = setInterval(() => {
+        process.stdout.write('.');
+      }, 1000);
+      
+      psql.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      psql.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
+      psql.on('close', (code) => {
+        clearInterval(progressInterval);
+        console.log(''); // Yeni satır
+        
+        if (code !== 0) {
+          // Hata durumu
+          if (stderr && !stderr.includes('WARNING') && !stderr.includes('NOTICE')) {
+            console.error('❌ HATA: Restore işlemi başarısız oldu!');
+            console.error('   Hata:', stderr);
+            reject(new Error(`psql exited with code ${code}: ${stderr}`));
+            return;
+          }
+        }
+        
+        // Uyarıları göster (ama hata olarak sayma)
+        if (stderr && !stderr.includes('WARNING') && !stderr.includes('NOTICE')) {
+          console.warn('⚠️  Uyarı:', stderr);
+        }
+        
+        if (stdout) {
+          console.log(stdout);
+        }
+        
+        console.log('\n✅ Veritabanı başarıyla restore edildi!');
+        console.log(`   Database: ${DB_NAME}`);
+        resolve();
+      });
+      
+      psql.on('error', (error) => {
+        clearInterval(progressInterval);
+        console.log(''); // Yeni satır
+        reject(error);
+      });
+      
+      fileStream.on('error', (error) => {
+        clearInterval(progressInterval);
+        console.log(''); // Yeni satır
+        psql.kill();
+        reject(error);
+      });
     });
-    
-    if (stderr && !stderr.includes('WARNING') && !stderr.includes('NOTICE')) {
-      console.warn('⚠️  Uyarı:', stderr);
-    }
-    
-    if (stdout) {
-      console.log(stdout);
-    }
-    
-    console.log('\n✅ Veritabanı başarıyla restore edildi!');
-    console.log(`   Database: ${DB_NAME}`);
     
   } catch (error) {
     console.error('\n❌ HATA: Restore işlemi sırasında bir hata oluştu!');
