@@ -5,5 +5,5 @@
  * false yapıldığında tüm admin sayfaları normal şekilde çalışır.
  */
 
-export const BARCODE_ONLY_MODE = false; // true yaparak sadece barkod etiketleri sayfasını göster
+export const BARCODE_ONLY_MODE = true; // true yaparak sadece barkod etiketleri sayfasını göster
 
