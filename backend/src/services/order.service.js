@@ -923,6 +923,77 @@ class OrderService {
     };
   }
 
+  // Sipariş için review oluştur
+  async createReview(orderId, userId, reviewData) {
+    const { rating, comment } = reviewData;
+
+    // Siparişin varlığını ve kullanıcıya ait olduğunu kontrol et
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { review: true },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    if (order.userId !== userId) {
+      throw new ForbiddenError('Zugriff auf diese Bestellung verweigert');
+    }
+
+    // Sadece teslim edilmiş siparişlere review yazılabilir
+    if (order.status !== 'delivered') {
+      throw new ValidationError(
+        'Sie können nur gelieferte Bestellungen bewerten'
+      );
+    }
+
+    // Daha önce review yapılmış mı kontrol et
+    if (order.review) {
+      throw new ValidationError('Sie haben diese Bestellung bereits bewertet');
+    }
+
+    // Review oluştur
+    const review = await prisma.orderReview.create({
+      data: {
+        orderId,
+        userId,
+        rating: parseInt(rating),
+        comment: comment?.trim() || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return review;
+  }
+
+  // Sipariş review'ını getir
+  async getReview(orderId) {
+    const review = await prisma.orderReview.findUnique({
+      where: { orderId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    // Review yoksa null döner (hata vermez)
+    return review;
+  }
+
   // Sipariş numarası oluştur (örnek: GS-20250105-0001)
   async generateOrderNumber() {
     // Settings'ten format ayarlarını al

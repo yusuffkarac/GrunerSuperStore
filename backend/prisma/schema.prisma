@@ -99,6 +99,7 @@ model User {
   favorites    Favorite[]
   couponUsages CouponUsage[]
   notifications Notification[]
+  orderReviews OrderReview[]
 
   @@index([email])
   @@index([isActive])
@@ -240,10 +241,11 @@ model Order {
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  address    Address?    @relation(fields: [addressId], references: [id], onDelete: Restrict)
-  coupon     Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  address    Address?     @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  coupon     Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
+  review     OrderReview?
 
   @@index([orderNo])
   @@index([userId, createdAt(sort: Desc)])
@@ -284,6 +286,26 @@ model OrderItem {
   @@index([variantId])
   @@index([campaignId])
   @@map("order_items")
+}
+
+model OrderReview {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String   @unique @map("order_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  rating    Int // 1-5 arası yıldız
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([rating])
+  @@index([createdAt(sort: Desc)])
+  @@map("order_reviews")
 }
 
 model Favorite {

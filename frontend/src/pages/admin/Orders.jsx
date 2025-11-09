@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -15,6 +15,8 @@ function Orders() {
   const [showModal, setShowModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null); // orderId
+  const [orderReview, setOrderReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,14 +100,35 @@ function Orders() {
   };
 
   // Sipariş detayını aç
-  const openOrderDetail = (order) => {
+  const openOrderDetail = async (order) => {
     setSelectedOrder(order);
     setShowModal(true);
+    setOrderReview(null);
+
+    // Eğer sipariş delivered ise review'ı yükle
+    if (order.status === 'delivered') {
+      loadOrderReview(order.id);
+    }
+  };
+
+  const loadOrderReview = async (orderId) => {
+    try {
+      setReviewLoading(true);
+      const response = await adminService.getOrderReview(orderId);
+      if (response.data.review) {
+        setOrderReview(response.data.review);
+      }
+    } catch (error) {
+      console.log('Review yok veya yüklenemedi');
+    } finally {
+      setReviewLoading(false);
+    }
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedOrder(null);
+    setOrderReview(null);
   };
 
   // Status badge rengi
@@ -663,6 +686,50 @@ function Orders() {
                       <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
                         <p className="whitespace-pre-wrap">{selectedOrder.note}</p>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Customer Review - Only for Delivered Orders */}
+                  {selectedOrder.status === 'delivered' && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 mb-2">Kundenbewertung</h3>
+                      {reviewLoading ? (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-500">Wird geladen...</p>
+                        </div>
+                      ) : orderReview ? (
+                        <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <FiStar
+                                  key={star}
+                                  className={`w-5 h-5 ${
+                                    star <= orderReview.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {orderReview.rating}/5 Sterne
+                            </span>
+                          </div>
+                          {orderReview.comment && (
+                            <p className="text-sm text-gray-700 mt-2 leading-relaxed">
+                              "{orderReview.comment}"
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-2">
+                            Bewertet von {orderReview.user?.firstName} {orderReview.user?.lastName}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs text-gray-500">Noch keine Bewertung</p>
+                        </div>
+                      )}
                     </div>
                   )}
 

@@ -11,20 +11,57 @@ import {
   FiMapPin,
   FiCreditCard,
   FiFileText,
+  FiStar,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 
 // OrderStatusBadge'i Siparislerim'den kopyalayabilirsiniz veya ortak bir component yapabilirsiniz
 import { OrderStatusBadge } from './Siparislerim';
 
+// Yıldız Rating Bileşeni
+function StarRating({ rating, onRatingChange, readonly = false }) {
+  const [hoverRating, setHoverRating] = useState(0);
+
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={readonly}
+          onClick={() => !readonly && onRatingChange && onRatingChange(star)}
+          onMouseEnter={() => !readonly && setHoverRating(star)}
+          onMouseLeave={() => !readonly && setHoverRating(0)}
+          className={`transition-all ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'}`}
+        >
+          <FiStar
+            className={`w-8 h-8 transition-colors ${
+              star <= (hoverRating || rating)
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SiparisDetay() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [review, setReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadOrderDetails();
+    loadReview();
   }, [id]);
 
   const loadOrderDetails = async () => {
@@ -36,6 +73,49 @@ function SiparisDetay() {
       toast.error('Bestellung konnte nicht geladen werden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReview = async () => {
+    try {
+      setReviewLoading(true);
+      const response = await orderService.getReview(id);
+      if (response.data.review) {
+        setReview(response.data.review);
+      }
+    } catch (error) {
+      // Review yoksa hata vermez, sadece null döner
+      console.log('Review yok veya yüklenemedi');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+
+    if (rating === 0) {
+      toast.error('Bitte wählen Sie eine Bewertung');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await orderService.createReview(id, {
+        rating,
+        comment: comment.trim() || undefined,
+      });
+
+      toast.success('Bewertung erfolgreich abgegeben!');
+      setShowReviewForm(false);
+      setRating(0);
+      setComment('');
+      loadReview(); // Review'ı yeniden yükle
+    } catch (error) {
+      console.error('Review hatası:', error);
+      toast.error(error.response?.data?.message || 'Bewertung konnte nicht gespeichert werden');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -203,6 +283,94 @@ function SiparisDetay() {
           </div>
         </div>
       </div>
+
+      {/* Review Bölümü - Sadece Delivered Siparişler İçin */}
+      {order.status === 'delivered' && (
+        <div className="bg-white rounded-lg shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 text-base">Bewertung</h2>
+
+          {reviewLoading ? (
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-48 mb-3"></div>
+              <div className="h-20 bg-gray-200 rounded"></div>
+            </div>
+          ) : review ? (
+            // Mevcut Review Göster
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Ihre Bewertung</p>
+                <StarRating rating={review.rating} readonly />
+              </div>
+              {review.comment && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1.5">Ihr Kommentar</p>
+                  <p className="text-sm text-gray-800 bg-gray-50 p-3 rounded-lg leading-relaxed">
+                    {review.comment}
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 pt-2">
+                Bewertet am {format(new Date(review.createdAt), 'dd. MMMM yyyy, HH:mm', { locale: de })}
+              </p>
+            </div>
+          ) : showReviewForm ? (
+            // Review Form
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">
+                  Wie zufrieden sind Sie mit dieser Bestellung? *
+                </label>
+                <StarRating rating={rating} onRatingChange={setRating} />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">
+                  Kommentar (optional)
+                </label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="Teilen Sie Ihre Erfahrungen mit dieser Bestellung..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">{comment.length}/1000</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting || rating === 0}
+                  className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                >
+                  {submitting ? 'Wird gesendet...' : 'Bewertung abgeben'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReviewForm(false);
+                    setRating(0);
+                    setComment('');
+                  }}
+                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </form>
+          ) : (
+            // Review Butonu
+            <button
+              onClick={() => setShowReviewForm(true)}
+              className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              <FiStar className="text-lg" />
+              Diese Bestellung bewerten
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
