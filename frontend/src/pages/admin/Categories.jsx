@@ -8,6 +8,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Categories() {
   const { showConfirm } = useAlert();
@@ -181,7 +182,10 @@ function Categories() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Kategorien</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            Kategorien
+            <HelpTooltip content="Organisieren Sie Ihr Produktsortiment mit Kategorien. Erstellen, bearbeiten und ordnen Sie Kategorien nach Ihren Bedürfnissen." />
+          </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
             {categories.length} {categories.length === 1 ? 'Kategorie' : 'Kategorien'} insgesamt
           </p>

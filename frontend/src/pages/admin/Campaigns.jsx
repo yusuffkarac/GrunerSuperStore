@@ -9,6 +9,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Campaigns() {
   const { showConfirm } = useAlert();
@@ -258,7 +259,10 @@ function Campaigns() {
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className=" mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Kampagnen</h1>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Kampagnen
+              <HelpTooltip content="Erstellen und verwalten Sie zeitlich begrenzte Rabattaktionen für Ihre Produkte." />
+            </h1>
             <button
               onClick={() => openModal()}
               className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"

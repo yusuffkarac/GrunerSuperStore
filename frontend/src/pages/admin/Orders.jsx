@@ -6,6 +6,7 @@ import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Orders() {
   const { showConfirm } = useAlert();
@@ -194,7 +195,10 @@ function Orders() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Bestellungen</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            Bestellungen
+            <HelpTooltip content="Verwalten Sie alle Bestellungen, aktualisieren Sie den Status und senden Sie Benachrichtigungen an Kunden." />
+          </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
             {total} {total === 1 ? 'Bestellung' : 'Bestellungen'} insgesamt
           </p>

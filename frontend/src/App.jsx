@@ -56,6 +56,7 @@ import DesignSettings from './pages/admin/DesignSettings';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 import Notifications from './pages/admin/Notifications';
+import Help from './pages/admin/Help';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -175,22 +176,23 @@ function AppContent() {
             <>
               <Route index element={<Navigate to="/admin/barcode-labels" replace />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
-              <Route 
-                path="admins" 
+              <Route
+                path="admins"
                 element={
                   <SuperAdminRoute>
                     <Admins />
                   </SuperAdminRoute>
-                } 
+                }
               />
-              <Route 
-                path="users" 
+              <Route
+                path="users"
                 element={
                   <SuperAdminRoute>
                     <Users />
                   </SuperAdminRoute>
-                } 
+                }
               />
+              <Route path="help" element={<Help />} />
               <Route path="*" element={<Navigate to="/admin/barcode-labels" replace />} />
             </>
           ) : (
@@ -224,6 +226,7 @@ function AppContent() {
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
+              <Route path="help" element={<Help />} />
             </>
           )}
         </Route>

@@ -7,6 +7,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Users() {
   const { showConfirm } = useAlert();
@@ -249,7 +250,10 @@ function Users() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Benutzer</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            Benutzer
+            <HelpTooltip content="Verwalten Sie registrierte Kunden: Benutzerdetails ansehen, Bestellhistorie prüfen. Nur für Super-Administratoren." />
+          </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
             {total} {total === 1 ? 'Benutzer' : 'Benutzer'} insgesamt
           </p>

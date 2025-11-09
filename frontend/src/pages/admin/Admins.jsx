@@ -7,6 +7,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Admins() {
   const { showConfirm } = useAlert();
@@ -225,7 +226,10 @@ function Admins() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900">Administratoren</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            Administratoren
+            <HelpTooltip content="Verwalten Sie Admin-Benutzer und deren Berechtigungen. Nur für Super-Administratoren zugänglich." />
+          </h1>
           <p className="text-gray-600 mt-0.5 md:mt-1 text-xs md:text-base">
             {total} {total === 1 ? 'Administrator' : 'Administratoren'} insgesamt
           </p>

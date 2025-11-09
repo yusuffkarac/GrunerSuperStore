@@ -6,6 +6,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import HelpTooltip from '../../components/common/HelpTooltip';
 
 function Notifications() {
   const { showConfirm } = useAlert();
@@ -175,7 +176,10 @@ function Notifications() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Benachrichtigungen</h1>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          Benachrichtigungen
+          <HelpTooltip content="Senden Sie Push-Benachrichtigungen an alle Benutzer oder bestimmte Gruppen. Perfekt für Ankündigungen und Updates." />
+        </h1>
         <p className="text-gray-600 mt-1">Benachrichtigungen an Benutzer senden</p>
       </div>
 
