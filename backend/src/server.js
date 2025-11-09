@@ -134,10 +134,71 @@ app.use('/uploads', express.static(join(__dirname, '../uploads'), staticOptions)
 app.use('/api/uploads', express.static(join(__dirname, '../uploads'), staticOptions));
 
 // Logging
+// Morgan için Almanya saatine göre özel format
+morgan.token('date-germany', (req, res) => {
+  const now = new Date();
+  
+  // Almanya saatine göre zamanı al
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+  
+  const day = parts.find(p => p.type === 'day').value.padStart(2, '0');
+  const month = parts.find(p => p.type === 'month').value;
+  const year = parts.find(p => p.type === 'year').value;
+  const hour = parts.find(p => p.type === 'hour').value.padStart(2, '0');
+  const minute = parts.find(p => p.type === 'minute').value.padStart(2, '0');
+  const second = parts.find(p => p.type === 'second').value.padStart(2, '0');
+  
+  // Timezone offset'ini hesapla (CET: +0100, CEST: +0200)
+  // Almanya'da yaz saati (CEST) genellikle Mart sonu - Ekim sonu arasındadır
+  let offset = '+0100'; // Varsayılan CET (kış saati)
+  
+  try {
+    // Ay ve gün bilgisini al
+    const dayNum = parseInt(day);
+    
+    // Ay ismini sayıya çevir
+    const monthMap = {
+      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+      'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+    };
+    const monthNum = monthMap[month] || 1;
+    
+    // Yaz saati kontrolü (basitleştirilmiş - gerçekte her yıl değişir)
+    // Genellikle Mart sonu - Ekim sonu arası CEST
+    if (monthNum > 3 && monthNum < 10) {
+      offset = '+0200'; // Yaz saati (CEST)
+    } else if (monthNum === 3 && dayNum >= 25) {
+      // Mart sonu (yaklaşık)
+      offset = '+0200';
+    } else if (monthNum === 10 && dayNum <= 25) {
+      // Ekim sonu (yaklaşık)
+      offset = '+0200';
+    } else {
+      offset = '+0100'; // Kış saati (CET)
+    }
+  } catch (e) {
+    // Hata durumunda varsayılan değeri kullan
+    offset = '+0100';
+  }
+  
+  return `[${day}/${month}/${year}:${hour}:${minute}:${second} ${offset}]`;
+});
+
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+  // Development modunda da Almanya saatini kullan
+  app.use(morgan(':method :url :status :response-time ms - :date-germany'));
 } else {
-  app.use(morgan('combined'));
+  // Combined format'ı Almanya saatine göre özelleştir
+  app.use(morgan(':remote-addr - - :date-germany ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 }
 
 // Rate limiting - sadece API isteklerine (OPTIONS hariç - CORS preflight)
