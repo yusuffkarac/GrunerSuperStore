@@ -12,7 +12,9 @@
     "import-barcodes": "node src/scripts/importBarcodeLabels.js",
     "import-products": "node src/scripts/importProducts.js",
     "update-product-images": "node src/scripts/updateProductImages.js",
-    "remove-openfoodfacts-images": "node src/scripts/removeOpenFoodFactsImages.js"
+    "remove-openfoodfacts-images": "node src/scripts/removeOpenFoodFactsImages.js",
+    "db:dump": "node scripts/dumpDatabase.js",
+    "db:restore": "node scripts/restoreDatabase.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

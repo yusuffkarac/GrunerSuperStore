@@ -51,5 +51,10 @@ temp/
 *.db
 *.sqlite
 
+# Database dumps klasörü commit edilebilir (GitHub üzerinden aktarım için)
+# Ancak büyük dosyalar için dikkatli olun
+!backend/database-dumps/
+!backend/database-dumps/*.sql
+
 # Uploads (if storing locally during development)
 #uploads/
