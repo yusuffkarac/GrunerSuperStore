@@ -290,7 +290,7 @@ function UrunListesi() {
   const selectedCampaignData = campaigns.find((c) => c.id === selectedCampaign);
 
   return (
-    <div className="pb-20 bg-white">
+    <div className="pb-20 bg-white pt-0">
       {/* Kampanya Filtresi Aktifken Bilgi Banner'ı */}
       {selectedCampaign && selectedCampaignData && (
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-4">
@@ -324,7 +324,7 @@ function UrunListesi() {
       )}
 
       {/* Filtreleme/Sıralama Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
+      <div className="bg-white border-b border-primary-600  top-[73px] md:top-[105px] z-40">
         <div className="container-mobile">
           <div className="flex items-center">
             {/* Filtrele butonu */}

@@ -6,6 +6,7 @@ import { defaultThemeColors } from '../../config/themeColors';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import FileUpload from '../../components/common/FileUpload';
 
 // Tasarım Ayarları Sayfası
 function DesignSettings() {
@@ -15,6 +16,9 @@ function DesignSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [logo, setLogo] = useState('');
+  const [favicon, setFavicon] = useState('');
+  const [settings, setSettings] = useState(null);
 
   // Ayarları yükle
   useEffect(() => {
@@ -26,12 +30,34 @@ function DesignSettings() {
       setLoading(true);
       setError(null);
       const response = await settingsService.getSettings();
-      const settings = response.data.settings;
+      const loadedSettings = response.data.settings;
+      setSettings(loadedSettings);
 
-      if (settings?.themeColors) {
-        setColors(settings.themeColors);
+      if (loadedSettings?.themeColors) {
+        setColors(loadedSettings.themeColors);
       } else {
         setColors(defaultThemeColors);
+      }
+
+      // Logo ve favicon'u yükle
+      if (loadedSettings?.storeSettings?.logo) {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const logoUrl = loadedSettings.storeSettings.logo.startsWith('http')
+          ? loadedSettings.storeSettings.logo
+          : `${API_BASE}${loadedSettings.storeSettings.logo}`;
+        setLogo(logoUrl);
+      } else {
+        setLogo('');
+      }
+
+      if (loadedSettings?.storeSettings?.favicon) {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const faviconUrl = loadedSettings.storeSettings.favicon.startsWith('http')
+          ? loadedSettings.storeSettings.favicon
+          : `${API_BASE}${loadedSettings.storeSettings.favicon}`;
+        setFavicon(faviconUrl);
+      } else {
+        setFavicon('');
       }
     } catch (err) {
       setError(err.message || 'Fehler beim Laden der Einstellungen');
@@ -79,8 +105,22 @@ function DesignSettings() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      
+      // Logo ve favicon URL'lerini normalize et (sadece path kısmını sakla)
+      const logoPath = logo ? (logo.startsWith('http') ? logo.replace(/^https?:\/\/[^/]+/, '') : logo) : null;
+      const faviconPath = favicon ? (favicon.startsWith('http') ? favicon.replace(/^https?:\/\/[^/]+/, '') : favicon) : null;
+
+      // Mevcut storeSettings'i koru ve logo/favicon ekle
+      const currentStoreSettings = settings?.storeSettings || {};
+      const updatedStoreSettings = {
+        ...currentStoreSettings,
+        logo: logoPath || null,
+        favicon: faviconPath || null,
+      };
+
       await settingsService.updateSettings({
         themeColors: colors,
+        storeSettings: updatedStoreSettings,
       });
 
       // Tema renklerini güncelle
@@ -88,6 +128,9 @@ function DesignSettings() {
 
       toast.success('Design-Einstellungen erfolgreich gespeichert');
       setPreviewMode(false);
+      
+      // Ayarları yeniden yükle
+      await fetchSettings();
     } catch (err) {
       toast.error(err.message || 'Fehler beim Speichern der Einstellungen');
     } finally {
@@ -222,6 +265,127 @@ function DesignSettings() {
           </div>
         )}
 
+        {/* Logo & Favicon Section */}
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Logo & Favicon
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Laden Sie Ihr Logo und Favicon hoch, um Ihre Markenidentität zu stärken
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Logo Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Logo
+                  <HelpTooltip content="Das Logo wird im Header der Website angezeigt. Empfohlene Größe: Mindestens 200x50px, optimal 400x100px oder höher. Format: PNG, SVG (mit transparentem Hintergrund) oder JPG." />
+                </label>
+                <FileUpload
+                  value={logo}
+                  onChange={setLogo}
+                  multiple={false}
+                  folder="general"
+                  maxSize={5 * 1024 * 1024} // 5MB
+                  accept="image/*"
+                  enableCrop={true}
+                  aspectRatio={null}
+                  className="mt-2"
+                />
+                {logo && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-2">Vorschau:</p>
+                    <div className="flex items-center justify-center p-4 bg-white rounded border border-gray-200">
+                      <img
+                        src={logo}
+                        alt="Logo Vorschau"
+                        className="max-h-20 max-w-full object-contain"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<p class="text-xs text-gray-500">Logo konnte nicht geladen werden</p>';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Favicon Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Favicon
+                  <HelpTooltip content="Das Favicon wird im Browser-Tab angezeigt. Empfohlene Größe: 32x32px oder 64x64px. Format: ICO, PNG (16x16, 32x32) oder SVG. Quadratisches Format wird empfohlen." />
+                </label>
+                <FileUpload
+                  value={favicon}
+                  onChange={setFavicon}
+                  multiple={false}
+                  folder="general"
+                  maxSize={1 * 1024 * 1024} // 1MB
+                  accept="image/*"
+                  enableCrop={true}
+                  aspectRatio={1} // Favicon genellikle kare olmalı
+                  minWidth={32}
+                  minHeight={32}
+                  className="mt-2"
+                />
+                {favicon && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-2">Vorschau:</p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 bg-white rounded border border-gray-200 flex items-center justify-center p-2">
+                          <img
+                            src={favicon}
+                            alt="Favicon Vorschau"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<p class="text-xs text-gray-500">Favicon konnte nicht geladen werden</p>';
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">64x64px</p>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-8 h-8 bg-white rounded border border-gray-200 flex items-center justify-center p-1">
+                          <img
+                            src={favicon}
+                            alt="Favicon Vorschau"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">32x32px</p>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-4 h-4 bg-white rounded border border-gray-200 flex items-center justify-center">
+                          <img
+                            src={favicon}
+                            alt="Favicon Vorschau"
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">16x16px</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Color Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Primary Colors */}
@@ -248,102 +412,105 @@ function DesignSettings() {
             </div>
           </div>
 
-          {/* Header Colors */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200" style={{ backgroundColor: colors.header.background }}>
-              <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: colors.header.text }}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                </svg>
-                Header-Farben
-              </h2>
-              <p className="text-sm mt-1 opacity-90" style={{ color: colors.header.text }}>
-                Farben für den Kopfbereich der Anwendung
-              </p>
+          {/* Right Column - Header, Button, Text Colors */}
+          <div className="flex flex-col gap-6">
+            {/* Header Colors */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-4 border-b border-gray-200" style={{ backgroundColor: colors.header.background }}>
+                <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: colors.header.text }}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                  </svg>
+                  Header-Farben
+                </h2>
+                <p className="text-sm mt-1 opacity-90" style={{ color: colors.header.text }}>
+                  Farben für den Kopfbereich der Anwendung
+                </p>
+              </div>
+              <div className="p-4">
+                <ColorInput
+                  label="Header Hintergrund"
+                  value={colors.header.background}
+                  onChange={(newValue) => handleColorChange('header', 'background', newValue)}
+                  description="Hintergrundfarbe des Headers"
+                />
+                <ColorInput
+                  label="Header Text"
+                  value={colors.header.text}
+                  onChange={(newValue) => handleColorChange('header', 'text', newValue)}
+                  description="Textfarbe im Header"
+                />
+              </div>
             </div>
-            <div className="p-6">
-              <ColorInput
-                label="Header Hintergrund"
-                value={colors.header.background}
-                onChange={(newValue) => handleColorChange('header', 'background', newValue)}
-                description="Hintergrundfarbe des Headers"
-              />
-              <ColorInput
-                label="Header Text"
-                value={colors.header.text}
-                onChange={(newValue) => handleColorChange('header', 'text', newValue)}
-                description="Textfarbe im Header"
-              />
-            </div>
-          </div>
 
-          {/* Button Colors */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                </svg>
-                Button-Farben
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Farben für Aktions-Buttons
-              </p>
+            {/* Button Colors */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                  </svg>
+                  Button-Farben
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Farben für Aktions-Buttons
+                </p>
+              </div>
+              <div className="p-6">
+                <ColorInput
+                  label="Warenkorb-Button"
+                  value={colors.buttons.addToCart}
+                  onChange={(newValue) => handleColorChange('buttons', 'addToCart', newValue)}
+                  description="'In den Warenkorb' Button"
+                />
+                <ColorInput
+                  label="Favoriten-Button"
+                  value={colors.buttons.favorite}
+                  onChange={(newValue) => handleColorChange('buttons', 'favorite', newValue)}
+                  description="Favoriten-Icon (nicht aktiv)"
+                />
+                <ColorInput
+                  label="Favoriten-Button Aktiv"
+                  value={colors.buttons.favoriteActive}
+                  onChange={(newValue) => handleColorChange('buttons', 'favoriteActive', newValue)}
+                  description="Favoriten-Icon (aktiv)"
+                />
+              </div>
             </div>
-            <div className="p-6">
-              <ColorInput
-                label="Warenkorb-Button"
-                value={colors.buttons.addToCart}
-                onChange={(newValue) => handleColorChange('buttons', 'addToCart', newValue)}
-                description="'In den Warenkorb' Button"
-              />
-              <ColorInput
-                label="Favoriten-Button"
-                value={colors.buttons.favorite}
-                onChange={(newValue) => handleColorChange('buttons', 'favorite', newValue)}
-                description="Favoriten-Icon (nicht aktiv)"
-              />
-              <ColorInput
-                label="Favoriten-Button Aktiv"
-                value={colors.buttons.favoriteActive}
-                onChange={(newValue) => handleColorChange('buttons', 'favoriteActive', newValue)}
-                description="Favoriten-Icon (aktiv)"
-              />
-            </div>
-          </div>
 
-          {/* Text Colors */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-                Text-Farben
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Farben für Textelemente
-              </p>
-            </div>
-            <div className="p-6">
-              <ColorInput
-                label="Preis-Text"
-                value={colors.text.price}
-                onChange={(newValue) => handleColorChange('text', 'price', newValue)}
-                description="Produktpreise"
-              />
-              <ColorInput
-                label="Primärer Text"
-                value={colors.text.primary}
-                onChange={(newValue) => handleColorChange('text', 'primary', newValue)}
-                description="Haupttext"
-              />
-              <ColorInput
-                label="Sekundärer Text"
-                value={colors.text.secondary}
-                onChange={(newValue) => handleColorChange('text', 'secondary', newValue)}
-                description="Beschreibungen, Untertitel"
-              />
+            {/* Text Colors */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                  Text-Farben
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Farben für Textelemente
+                </p>
+              </div>
+              <div className="p-6">
+                <ColorInput
+                  label="Preis-Text"
+                  value={colors.text.price}
+                  onChange={(newValue) => handleColorChange('text', 'price', newValue)}
+                  description="Produktpreise"
+                />
+                <ColorInput
+                  label="Primärer Text"
+                  value={colors.text.primary}
+                  onChange={(newValue) => handleColorChange('text', 'primary', newValue)}
+                  description="Haupttext"
+                />
+                <ColorInput
+                  label="Sekundärer Text"
+                  value={colors.text.secondary}
+                  onChange={(newValue) => handleColorChange('text', 'secondary', newValue)}
+                  description="Beschreibungen, Untertitel"
+                />
+              </div>
             </div>
           </div>
 

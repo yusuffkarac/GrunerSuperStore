@@ -10,6 +10,8 @@ import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
+import MultipleSelect from '../../components/common/MultipleSelect';
 
 function Campaigns() {
   const { showConfirm } = useAlert();
@@ -456,7 +458,7 @@ function Campaigns() {
               className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                 <h2 className="text-xl font-bold text-gray-900">
                   {editingCampaign ? 'Kampagne bearbeiten' : 'Neue Kampagne'}
                 </h2>
@@ -647,12 +649,11 @@ function Campaigns() {
                   <h3 className="font-semibold text-gray-900">Zielgruppe</h3>
 
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="applyToAll"
                       checked={formData.applyToAll}
                       onChange={(e) => setFormData({ ...formData, applyToAll: e.target.checked })}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      color="green"
                     />
                     <label htmlFor="applyToAll" className="text-sm font-medium text-gray-700">
                       Für den gesamten Shop anwenden
@@ -661,47 +662,33 @@ function Campaigns() {
 
                   {!formData.applyToAll && (
                     <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Kategorien (Optional)
-                        </label>
-                        <select
-                          multiple
-                          value={formData.categoryIds}
-                          onChange={(e) => {
-                            const options = Array.from(e.target.selectedOptions, option => option.value);
-                            setFormData({ ...formData, categoryIds: options });
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                          size="4"
-                        >
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">Strg+Klick für mehrere Auswahl</p>
-                      </div>
+                      <MultipleSelect
+                        label="Kategorien"
+                        options={categories}
+                        value={formData.categoryIds}
+                        onChange={(selectedIds) => {
+                          setFormData({ ...formData, categoryIds: selectedIds });
+                        }}
+                        placeholder="Kategorien suchen..."
+                        optional={true}
+                        maxHeight={200}
+                      />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Produkte (Optional)
-                        </label>
-                        <select
-                          multiple
-                          value={formData.productIds}
-                          onChange={(e) => {
-                            const options = Array.from(e.target.selectedOptions, option => option.value);
-                            setFormData({ ...formData, productIds: options });
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                          size="4"
-                        >
-                          {products.map(prod => (
-                            <option key={prod.id} value={prod.id}>{prod.name}</option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">Strg+Klick für mehrere Auswahl</p>
-                      </div>
+                      <MultipleSelect
+                        label="Produkte"
+                        options={products}
+                        value={formData.productIds}
+                        onChange={(selectedIds) => {
+                          setFormData({ ...formData, productIds: selectedIds });
+                        }}
+                        placeholder="Produkte suchen..."
+                        optional={true}
+                        maxHeight={200}
+                        getOptionLabel={(product) => {
+                          const barcodeText = product.barcode ? ` [${product.barcode}]` : '';
+                          return `${product.name}${barcodeText}`;
+                        }}
+                      />
                     </>
                   )}
                 </div>
@@ -766,12 +753,11 @@ function Campaigns() {
                 {/* Status */}
                 <div className="border-t pt-4">
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="isActive"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      color="green"
                     />
                     <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                       Aktiv

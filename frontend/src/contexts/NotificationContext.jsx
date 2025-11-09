@@ -18,15 +18,12 @@ export function NotificationProvider({ children }) {
 
   // Admin sayfalarında bildirim sistemi çalışmasın
   const isAdminPage = location.pathname.startsWith('/admin');
-  
-  // Admin token kontrolü - admin sayfalarında kullanıcı token'ı olmamalı
-  const hasAdminToken = typeof window !== 'undefined' && !!localStorage.getItem('adminToken');
 
   // Bildirimleri yükle
   const loadData = useCallback(async () => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || hasAdminToken || !isAuthenticated || !token || !tokenFromStorage) {
+    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
       return;
     }
 
@@ -70,13 +67,13 @@ export function NotificationProvider({ children }) {
       }
       console.error('Bildirimler yüklenemedi:', error);
     }
-  }, [isAdminPage, hasAdminToken, isAuthenticated, token]);
+  }, [isAdminPage, isAuthenticated, token]);
 
     // SSE bağlantısı kur
   const setupSSE = useCallback(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || hasAdminToken || !isAuthenticated || !token || !tokenFromStorage) {
+    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
       return;
     }
 
@@ -134,13 +131,13 @@ export function NotificationProvider({ children }) {
       
         // Yeniden bağlanmayı dene (5 saniye sonra)
       const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!isAdminPage && !hasAdminToken && isAuthenticated && token && tokenFromStorage) {
+      if (!isAdminPage && isAuthenticated && token && tokenFromStorage) {
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
           reconnectTimeoutRef.current = setTimeout(() => {
           const tokenCheck = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-          if (!isAdminPage && !hasAdminToken && isAuthenticated && token && tokenCheck && !eventSourceRef.current) {
+          if (!isAdminPage && isAuthenticated && token && tokenCheck && !eventSourceRef.current) {
               setupSSE();
           }
         }, 5000);
@@ -149,13 +146,13 @@ export function NotificationProvider({ children }) {
     } catch (error) {
       console.error('SSE bağlantısı kurulamadı:', error);
     }
-  }, [isAdminPage, hasAdminToken, isAuthenticated, token]);
+  }, [isAdminPage, isAuthenticated, token]);
 
   // Polling mekanizması (SSE yedek olarak)
   const setupPolling = useCallback(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || hasAdminToken || !isAuthenticated || !token || !tokenFromStorage) {
+    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
       return;
     }
 
@@ -168,14 +165,14 @@ export function NotificationProvider({ children }) {
     pollingIntervalRef.current = setInterval(() => {
       loadData();
     }, 10000);
-  }, [isAdminPage, hasAdminToken, isAuthenticated, token, loadData]);
+  }, [isAdminPage, isAuthenticated, token, loadData]);
 
   // Ana effect - SSE ve polling kurulumu
   useEffect(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    // Admin sayfalarında, admin token varsa veya authenticated değilse çalışma
-    if (isAdminPage || hasAdminToken || !isAuthenticated || !token || !tokenFromStorage) {
+    // Admin sayfalarında veya authenticated değilse çalışma
+    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
       // Bağlantıları kapat
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -223,7 +220,7 @@ export function NotificationProvider({ children }) {
         reconnectTimeoutRef.current = null;
       }
     };
-  }, [isAuthenticated, token, location.pathname, isAdminPage, hasAdminToken, loadData, setupSSE, setupPolling]);
+  }, [isAuthenticated, token, location.pathname, isAdminPage, loadData, setupSSE, setupPolling]);
 
   // Bildirimi okundu işaretle
   const markAsRead = async (notificationId) => {
@@ -270,7 +267,7 @@ export function NotificationProvider({ children }) {
   // Bildirimleri yeniden yükle
   const refreshNotifications = async () => {
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || hasAdminToken || !isAuthenticated || !tokenFromStorage) return;
+    if (isAdminPage || !isAuthenticated || !tokenFromStorage) return;
     
     try {
       setLoading(true);

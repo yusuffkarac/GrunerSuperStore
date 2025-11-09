@@ -8,6 +8,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import SwitchListItem from '../../components/common/SwitchListItem';
 
 function BarcodeLabels() {
   const { showConfirm } = useAlert();
@@ -514,16 +515,12 @@ function BarcodeLabels() {
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleSelectLabel(label.id)}
-                        className="text-gray-600 hover:text-gray-900"
-                      >
-                        {selectedLabels.includes(label.id) ? (
-                          <FiCheckSquare className="w-5 h-5 text-emerald-600" />
-                        ) : (
-                          <FiSquare className="w-5 h-5" />
-                        )}
-                      </button>
+                      <SwitchListItem
+                        id={`label-${label.id}`}
+                        checked={selectedLabels.includes(label.id)}
+                        onChange={() => toggleSelectLabel(label.id)}
+                        color="green"
+                      />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{label.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 font-semibold">€{parseFloat(label.price).toFixed(2)}</td>
@@ -580,16 +577,13 @@ function BarcodeLabels() {
               >
                 <div className="flex items-center gap-2">
                   {/* Checkbox */}
-                  <button
-                    onClick={() => toggleSelectLabel(label.id)}
-                    className="text-gray-600 hover:text-gray-900 flex-shrink-0"
-                  >
-                    {selectedLabels.includes(label.id) ? (
-                      <FiCheckSquare className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <FiSquare className="w-4 h-4" />
-                    )}
-                  </button>
+                  <SwitchListItem
+                    id={`label-mobile-${label.id}`}
+                    checked={selectedLabels.includes(label.id)}
+                    onChange={() => toggleSelectLabel(label.id)}
+                    color="green"
+                    className="flex-shrink-0"
+                  />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">

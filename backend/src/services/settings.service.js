@@ -56,6 +56,8 @@ class SettingsService {
             faturaBilgileri: null,
             bannerlar: [],
             seoAyarları: null,
+            logo: null,
+            favicon: null,
             storeLocation: {
               latitude: null,
               longitude: null,
@@ -136,6 +138,9 @@ class SettingsService {
     }
     if (data.barcodeLabelSettings !== undefined) {
       updateData.barcodeLabelSettings = data.barcodeLabelSettings;
+    }
+    if (data.emailTemplates !== undefined) {
+      updateData.emailTemplates = data.emailTemplates;
     }
 
     // Eğer ayarlar yoksa önce oluştur

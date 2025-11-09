@@ -17,6 +17,8 @@ import {
   FiShield,
   FiBell,
   FiHelpCircle,
+  FiMail,
+  FiMessageSquare,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -81,6 +83,8 @@ function AdminLayout() {
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers, superAdminOnly: true },
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, superAdminOnly: true },
     { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell },
+    { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail },
+    { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3 },

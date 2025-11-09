@@ -9,6 +9,7 @@ import { validateDistance } from '../utils/distance.js';
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
+import notificationTemplateService from './notification-template.service.js';
 import invoiceService from './invoice.service.js';
 
 class OrderService {
@@ -937,23 +938,51 @@ class OrderService {
         notificationType = 'success';
       }
 
-      const title = `Bestellung ${order.orderNo} - Status aktualisiert`;
-      const message = statusMessageMap[newStatus] || `Ihre Bestellung wurde auf "${statusTextMap[newStatus] || newStatus}" aktualisiert.`;
-
-      await notificationService.createNotification(userId, {
-        type: notificationType,
-        title,
-        message,
-        actionUrl: `/siparis/${order.id}`,
-        metadata: {
-          orderId: order.id,
+      // Template'den title ve message al
+      try {
+        const templateData = await notificationTemplateService.renderTemplate('order-status-changed', {
+          firstName: order.user?.firstName || '',
+          lastName: order.user?.lastName || '',
           orderNo: order.orderNo,
-          oldStatus,
-          newStatus,
-        },
-      });
+          oldStatusText: statusTextMap[oldStatus] || oldStatus,
+          newStatusText: statusTextMap[newStatus] || newStatus,
+          statusMessage: statusMessageMap[newStatus] || `Ihre Bestellung wurde auf "${statusTextMap[newStatus] || newStatus}" aktualisiert.`,
+          total: order.total?.toFixed(2) || '0.00',
+        });
 
-      console.log(`✅ Bildirim oluşturuldu: ${order.orderNo} (${oldStatus} → ${newStatus})`);
+        await notificationService.createNotification(userId, {
+          type: notificationType,
+          title: templateData.title,
+          message: templateData.message,
+          actionUrl: `/siparis/${order.id}`,
+          metadata: {
+            orderId: order.id,
+            orderNo: order.orderNo,
+            oldStatus,
+            newStatus,
+          },
+        });
+
+        console.log(`✅ Bildirim oluşturuldu: ${order.orderNo} (${oldStatus} → ${newStatus})`);
+      } catch (templateError) {
+        // Template hatası durumunda fallback kullan
+        console.error('Notification template hatası:', templateError);
+        const title = `Bestellung ${order.orderNo} - Status aktualisiert`;
+        const message = statusMessageMap[newStatus] || `Ihre Bestellung wurde auf "${statusTextMap[newStatus] || newStatus}" aktualisiert.`;
+
+        await notificationService.createNotification(userId, {
+          type: notificationType,
+          title,
+          message,
+          actionUrl: `/siparis/${order.id}`,
+          metadata: {
+            orderId: order.id,
+            orderNo: order.orderNo,
+            oldStatus,
+            newStatus,
+          },
+        });
+      }
     } catch (error) {
       console.error('Bildirim oluşturma hatası:', error);
     }
@@ -1114,7 +1143,48 @@ class OrderService {
     await this.sendAdminCancellationEmail(updatedOrder);
 
     // Bildirim oluştur
-    await this.createOrderStatusNotification(order.status, 'cancelled', updatedOrder);
+    try {
+      // Template'den title ve message al
+      const templateData = await notificationTemplateService.renderTemplate('order-cancelled', {
+        firstName: updatedOrder.user?.firstName || '',
+        lastName: updatedOrder.user?.lastName || '',
+        orderNo: updatedOrder.orderNo,
+        cancelDate: new Date().toLocaleString('de-DE'),
+        cancelReason: cancellationReason || null,
+        total: updatedOrder.total?.toFixed(2) || '0.00',
+      });
+
+      await notificationService.createNotification(updatedOrder.userId, {
+        type: 'error',
+        title: templateData.title,
+        message: templateData.message,
+        actionUrl: `/siparis/${updatedOrder.id}`,
+        metadata: {
+          orderId: updatedOrder.id,
+          orderNo: updatedOrder.orderNo,
+          cancellationReason,
+        },
+      });
+    } catch (templateError) {
+      // Template hatası durumunda fallback kullan
+      console.error('Notification template hatası:', templateError);
+      const title = `Bestellung ${updatedOrder.orderNo} storniert`;
+      const message = cancellationReason 
+        ? `Ihre Bestellung wurde storniert. Grund: ${cancellationReason}`
+        : 'Ihre Bestellung wurde storniert.';
+
+      await notificationService.createNotification(updatedOrder.userId, {
+        type: 'error',
+        title,
+        message,
+        actionUrl: `/siparis/${updatedOrder.id}`,
+        metadata: {
+          orderId: updatedOrder.id,
+          orderNo: updatedOrder.orderNo,
+          cancellationReason,
+        },
+      });
+    }
 
     return updatedOrder;
   }

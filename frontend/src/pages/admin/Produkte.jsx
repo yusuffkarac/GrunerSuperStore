@@ -11,6 +11,7 @@ import FileUpload from '../../components/common/FileUpload';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
 
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
@@ -426,7 +427,11 @@ function Produkte() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem('produkteItemsPerPage');
+    return saved ? parseInt(saved) : 20;
+  });
+  const [pageInput, setPageInput] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -908,6 +913,46 @@ function Produkte() {
     localStorage.setItem('produkteViewMode', mode);
   }, []);
 
+  // Items per page handler
+  const handleItemsPerPageChange = useCallback((value) => {
+    const newItemsPerPage = parseInt(value);
+    setItemsPerPage(newItemsPerPage);
+    localStorage.setItem('produkteItemsPerPage', newItemsPerPage.toString());
+    setCurrentPage(1); // Sayfa başına ürün sayısı değiştiğinde ilk sayfaya dön
+  }, []);
+
+  // Sayfa numarası input handler
+  const handlePageInputChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || (/^\d+$/.test(value) && parseInt(value) >= 1 && parseInt(value) <= totalPages)) {
+      setPageInput(value);
+    }
+  };
+
+  const handlePageInputSubmit = (e) => {
+    e.preventDefault();
+    if (pageInput && pageInput !== '') {
+      const page = parseInt(pageInput);
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+        setPageInput('');
+      }
+    }
+  };
+
+  // Sayfa numarasına git
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      setPageInput('');
+    }
+  };
+
+  // Sayfa değiştiğinde input'u temizle
+  useEffect(() => {
+    setPageInput('');
+  }, [currentPage]);
+
   // Memoized product handlers
   const handleEditProduct = useCallback((product) => {
     openModal(product);
@@ -1186,25 +1231,145 @@ function Produkte() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Seite {currentPage} von {totalPages}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Zurück
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Weiter
-              </button>
+          <div className="px-4 py-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Sol taraf - Sayfa bilgisi ve items per page */}
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="text-sm text-gray-700">
+                  Seite {currentPage} von {totalPages} ({total} {total === 1 ? 'Produkt' : 'Produkte'})
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-700 whitespace-nowrap">
+                    Pro Seite:
+                  </label>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => handleItemsPerPageChange(e.target.value)}
+                    className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Sağ taraf - Sayfa navigasyonu */}
+              <div className="flex items-center gap-2">
+                {/* Geri butonu */}
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Zurück
+                </button>
+
+                {/* Sayfa numaraları */}
+                <div className="flex items-center gap-1">
+                  {/* Mevcut sayfa etrafındaki sayfalar */}
+                  {(() => {
+                    const pages = [];
+                    if (totalPages <= 7) {
+                      // 7 veya daha az sayfa varsa hepsini göster
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      // Daha fazla sayfa varsa akıllı gösterim
+                      // İlk sayfa her zaman gösterilir
+                      pages.push(1);
+                      
+                      // Mevcut sayfa etrafındaki sayfaları belirle
+                      let start = Math.max(2, currentPage - 1);
+                      let end = Math.min(totalPages - 1, currentPage + 1);
+                      
+                      // Eğer mevcut sayfa 1 veya 2 ise, başlangıcı ayarla
+                      if (currentPage <= 2) {
+                        start = 2;
+                        end = Math.min(4, totalPages - 1);
+                      }
+                      
+                      // Eğer mevcut sayfa son sayfaya yakınsa, bitişi ayarla
+                      if (currentPage >= totalPages - 1) {
+                        start = Math.max(2, totalPages - 3);
+                        end = totalPages - 1;
+                      }
+                      
+                      // Eğer başlangıç 1'den uzaksa ellipsis ekle
+                      if (start > 2) {
+                        pages.push('...');
+                      }
+                      
+                      // Mevcut sayfa etrafındaki sayfalar (1 ve totalPages hariç)
+                      for (let i = start; i <= end; i++) {
+                        if (i !== 1 && i !== totalPages) {
+                          pages.push(i);
+                        }
+                      }
+                      
+                      // Eğer bitiş son sayfadan uzaksa ellipsis ekle
+                      if (end < totalPages - 1) {
+                        pages.push('...');
+                      }
+                      
+                      // Son sayfa her zaman gösterilir
+                      pages.push(totalPages);
+                    }
+                    
+                    return pages.map((page, index) => {
+                      if (page === '...') {
+                        return (
+                          <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                            ...
+                          </span>
+                        );
+                      }
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => goToPage(page)}
+                          className={`px-3 py-1 border rounded-lg text-sm transition-colors ${
+                            currentPage === page
+                              ? 'bg-green-600 text-white border-green-600'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* İleri butonu */}
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Weiter
+                </button>
+
+                {/* Sayfa numarası input */}
+                <form onSubmit={handlePageInputSubmit} className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={pageInput}
+                    onChange={handlePageInputChange}
+                    placeholder="Sayfa"
+                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    type="submit"
+                    className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    title="Sayfaya git"
+                  >
+                    →
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}
@@ -1230,7 +1395,7 @@ function Produkte() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <h2 className="text-xl font-bold text-gray-900">
                     {editingProduct ? 'Produkt bearbeiten' : 'Neues Produkt'}
                   </h2>
@@ -1329,24 +1494,15 @@ function Produkte() {
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                          type="checkbox"
+                      <div className="mt-2">
+                        <Switch
+                          id="showStock"
                           checked={formData.showStock}
                           onChange={(e) => setFormData({ ...formData, showStock: e.target.checked })}
-                          className="sr-only"
+                          label="Lagerbestand für Nutzer anzeigen"
+                          color="green"
                         />
-                        <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          formData.showStock ? 'bg-green-600' : 'bg-gray-300'
-                        }`}>
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              formData.showStock ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </div>
-                        <span className="text-sm text-gray-700">Lagerbestand für Nutzer anzeigen</span>
-                      </label>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1596,42 +1752,20 @@ function Produkte() {
 
                   {/* Switches */}
                   <div className="flex gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.isActive}
-                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="sr-only"
-                      />
-                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        formData.isActive ? 'bg-green-600' : 'bg-gray-300'
-                      }`}>
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.isActive ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-700">Aktiv</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.isFeatured}
-                        onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                        className="sr-only"
-                      />
-                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        formData.isFeatured ? 'bg-green-600' : 'bg-gray-300'
-                      }`}>
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.isFeatured ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-700">Featured</span>
-                    </label>
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      label="Aktiv"
+                      color="green"
+                    />
+                    <Switch
+                      id="isFeatured"
+                      checked={formData.isFeatured}
+                      onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                      label="Featured"
+                      color="green"
+                    />
                   </div>
 
                   {/* Actions */}

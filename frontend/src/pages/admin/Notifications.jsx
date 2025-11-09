@@ -7,6 +7,7 @@ import Loading from '../../components/common/Loading';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import SwitchListItem from '../../components/common/SwitchListItem';
 
 function Notifications() {
   const { showConfirm } = useAlert();
@@ -316,20 +317,15 @@ function Notifications() {
                     ) : (
                       <div className="space-y-2">
                         {users.map((user) => (
-                          <label
+                          <SwitchListItem
                             key={user.id}
-                            className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedUsers.includes(user.id)}
-                              onChange={() => toggleUserSelection(user.id)}
-                              className="mr-2"
-                            />
-                            <span className="text-sm">
-                              {user.firstName} {user.lastName} ({user.email})
-                            </span>
-                          </label>
+                            id={`user-${user.id}`}
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={() => toggleUserSelection(user.id)}
+                            label={`${user.firstName} ${user.lastName} (${user.email})`}
+                            color="green"
+                            className="p-2 hover:bg-gray-50 rounded cursor-pointer"
+                          />
                         ))}
                       </div>
                     )}

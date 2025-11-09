@@ -9,6 +9,9 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
+import SwitchListItem from '../../components/common/SwitchListItem';
+import MultipleSelect from '../../components/common/MultipleSelect';
 
 function Coupons() {
   const { showConfirm } = useAlert();
@@ -723,7 +726,7 @@ function Coupons() {
               className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                 <h2 className="text-xl font-bold text-gray-900">
                   {editingCoupon ? 'Gutschein bearbeiten' : 'Neuer Gutschein'}
                 </h2>
@@ -950,12 +953,11 @@ function Coupons() {
                   </h3>
 
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="applyToAll"
                       checked={formData.applyToAll}
                       onChange={(e) => setFormData({ ...formData, applyToAll: e.target.checked })}
-                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                      color="green"
                     />
                     <label htmlFor="applyToAll" className="text-sm text-gray-700 flex items-center gap-2">
                       Auf gesamten Shop anwenden
@@ -964,70 +966,34 @@ function Coupons() {
                   </div>
 
                   {!formData.applyToAll && (
-                    <div className="space-y-3 pl-6 border-l-2 border-gray-200">
+                    <div className="space-y-4 pl-6 border-l-2 border-gray-200">
                       {/* Categories */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Kategoriler
-                        </label>
-                        <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
-                          {categories.map((cat) => (
-                            <label key={cat.id} className="flex items-center gap-2 py-1">
-                              <input
-                                type="checkbox"
-                                checked={formData.categoryIds.includes(cat.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setFormData({
-                                      ...formData,
-                                      categoryIds: [...formData.categoryIds, cat.id],
-                                    });
-                                  } else {
-                                    setFormData({
-                                      ...formData,
-                                      categoryIds: formData.categoryIds.filter((id) => id !== cat.id),
-                                    });
-                                  }
-                                }}
-                                className="w-4 h-4 text-green-600 rounded"
-                              />
-                              <span className="text-sm text-gray-700">{cat.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                      <MultipleSelect
+                        label="Kategoriler"
+                        options={categories}
+                        value={formData.categoryIds}
+                        onChange={(selectedIds) => {
+                          setFormData({ ...formData, categoryIds: selectedIds });
+                        }}
+                        placeholder="Kategorien suchen..."
+                        maxHeight={200}
+                      />
 
                       {/* Products */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Produkte
-                        </label>
-                        <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
-                          {products.map((prod) => (
-                            <label key={prod.id} className="flex items-center gap-2 py-1">
-                              <input
-                                type="checkbox"
-                                checked={formData.productIds.includes(prod.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setFormData({
-                                      ...formData,
-                                      productIds: [...formData.productIds, prod.id],
-                                    });
-                                  } else {
-                                    setFormData({
-                                      ...formData,
-                                      productIds: formData.productIds.filter((id) => id !== prod.id),
-                                    });
-                                  }
-                                }}
-                                className="w-4 h-4 text-green-600 rounded"
-                              />
-                              <span className="text-sm text-gray-700">{prod.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                      <MultipleSelect
+                        label="Produkte"
+                        options={products}
+                        value={formData.productIds}
+                        onChange={(selectedIds) => {
+                          setFormData({ ...formData, productIds: selectedIds });
+                        }}
+                        placeholder="Produkte suchen..."
+                        maxHeight={200}
+                        getOptionLabel={(product) => {
+                          const barcodeText = product.barcode ? ` [${product.barcode}]` : '';
+                          return `${product.name}${barcodeText}`;
+                        }}
+                      />
                     </div>
                   )}
 
@@ -1038,29 +1004,26 @@ function Coupons() {
                     </label>
                     <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
                       {users.map((user) => (
-                        <label key={user.id} className="flex items-center gap-2 py-1">
-                          <input
-                            type="checkbox"
-                            checked={formData.userIds.includes(user.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  userIds: [...formData.userIds, user.id],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  userIds: formData.userIds.filter((id) => id !== user.id),
-                                });
-                              }
-                            }}
-                            className="w-4 h-4 text-green-600 rounded"
-                          />
-                          <span className="text-sm text-gray-700">
-                            {user.firstName} {user.lastName} ({user.email})
-                          </span>
-                        </label>
+                        <SwitchListItem
+                          key={user.id}
+                          id={`user-${user.id}`}
+                          checked={formData.userIds.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                userIds: [...formData.userIds, user.id],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                userIds: formData.userIds.filter((id) => id !== user.id),
+                              });
+                            }
+                          }}
+                          label={`${user.firstName} ${user.lastName} (${user.email})`}
+                          color="green"
+                        />
                       ))}
                     </div>
                   </div>
@@ -1068,12 +1031,11 @@ function Coupons() {
 
                 {/* Status */}
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                  <Switch
                     id="isActive"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    color="green"
                   />
                   <label htmlFor="isActive" className="text-sm text-gray-700 flex items-center gap-2">
                     Aktiv

@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError } from '../utils/errors.js';
 import { getGermanyDate } from '../utils/date.js';
+import settingsService from './settings.service.js';
 
 class ProductService {
   // Ürünleri listele (filtreleme, arama, sayfalama)
@@ -16,10 +17,19 @@ class ProductService {
   }) {
     const skip = (page - 1) * limit;
 
+    // Settings'ten stok kontrolü ayarını al
+    const settings = await settingsService.getSettings();
+    const showOutOfStockProducts = settings?.showOutOfStockProducts !== false;
+
     // Where koşulları
     const where = {
       isActive: true,
     };
+
+    // Stok kontrolü - eğer ayar kapalıysa stokta olmayan ürünleri filtrele
+    if (!showOutOfStockProducts) {
+      where.stock = { gt: 0 };
+    }
 
     // Kampanya filtresi
     if (campaignId) {
@@ -267,6 +277,20 @@ class ProductService {
 
   // Kategorileri listele
   async getCategories() {
+    // Settings'ten stok kontrolü ayarını al
+    const settings = await settingsService.getSettings();
+    const showOutOfStockProducts = settings?.showOutOfStockProducts !== false;
+
+    // Kategori sayısı için where koşulu
+    const productCountWhere = {
+      isActive: true,
+    };
+
+    // Stok kontrolü - eğer ayar kapalıysa stokta olmayan ürünleri filtrele
+    if (!showOutOfStockProducts) {
+      productCountWhere.stock = { gt: 0 };
+    }
+
     const categories = await prisma.category.findMany({
       where: { isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -279,7 +303,7 @@ class ProductService {
         _count: {
           select: {
             products: {
-              where: { isActive: true },
+              where: productCountWhere,
             },
           },
         },
@@ -291,11 +315,22 @@ class ProductService {
 
   // Öne çıkan ürünleri getir
   async getFeaturedProducts(limit = 10) {
+    // Settings'ten stok kontrolü ayarını al
+    const settings = await settingsService.getSettings();
+    const showOutOfStockProducts = settings?.showOutOfStockProducts !== false;
+
+    const where = {
+      isActive: true,
+      isFeatured: true,
+    };
+
+    // Stok kontrolü - eğer ayar kapalıysa stokta olmayan ürünleri filtrele
+    if (!showOutOfStockProducts) {
+      where.stock = { gt: 0 };
+    }
+
     const products = await prisma.product.findMany({
-      where: {
-        isActive: true,
-        isFeatured: true,
-      },
+      where,
       include: {
         category: {
           select: {
@@ -319,6 +354,10 @@ class ProductService {
 
   // En çok satan ürünleri getir (OrderItem'lardan satış sayısına göre)
   async getBestSellers(limit = 10) {
+    // Settings'ten stok kontrolü ayarını al
+    const settings = await settingsService.getSettings();
+    const showOutOfStockProducts = settings?.showOutOfStockProducts !== false;
+
     // OrderItem'lardan her ürün için toplam satış miktarını hesapla
     const salesData = await prisma.orderItem.groupBy({
       by: ['productId'],
@@ -346,12 +385,20 @@ class ProductService {
     // Product ID'leri al
     const productIds = sortedSales.map((item) => item.productId);
 
+    // Where koşulları
+    const where = {
+      id: { in: productIds },
+      isActive: true,
+    };
+
+    // Stok kontrolü - eğer ayar kapalıysa stokta olmayan ürünleri filtrele
+    if (!showOutOfStockProducts) {
+      where.stock = { gt: 0 };
+    }
+
     // Ürünleri getir (sıralama korunmalı)
     const products = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-        isActive: true,
-      },
+      where,
       include: {
         category: {
           select: {
@@ -377,11 +424,18 @@ class ProductService {
     // Eğer yeterli ürün yoksa, aktif ürünlerle tamamla
     if (orderedProducts.length < parseInt(limit)) {
       const existingIds = new Set(productIds);
+      const additionalWhere = {
+        id: { notIn: Array.from(existingIds) },
+        isActive: true,
+      };
+
+      // Stok kontrolü - eğer ayar kapalıysa stokta olmayan ürünleri filtrele
+      if (!showOutOfStockProducts) {
+        additionalWhere.stock = { gt: 0 };
+      }
+
       const additionalProducts = await prisma.product.findMany({
-        where: {
-          id: { notIn: Array.from(existingIds) },
-          isActive: true,
-        },
+        where: additionalWhere,
         include: {
           category: {
             select: {

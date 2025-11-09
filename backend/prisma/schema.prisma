@@ -445,6 +445,8 @@ model Settings {
   // Mail ayarları
   smtpSettings              Json?    @map("smtp_settings")
   emailNotificationSettings Json?    @map("email_notification_settings")
+  emailTemplates            Json?    @map("email_templates")
+  notificationTemplates      Json?    @map("notification_templates")
   // Barkod etiket ayarları
   barcodeLabelSettings      Json?    @map("barcode_label_settings")
   createdAt                 DateTime @default(now()) @map("created_at")

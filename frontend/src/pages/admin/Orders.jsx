@@ -7,6 +7,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 
 // Order Item Component with image placeholder
@@ -889,7 +890,7 @@ function Orders() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       Bestellung #{selectedOrder.orderNo}
@@ -1354,12 +1355,11 @@ function Orders() {
                 {/* İptal sebebini müşteriye göster */}
                 {cancelFormData.cancellationReason && (
                   <div className="flex items-center">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="showReason"
                       checked={cancelFormData.showCancellationReasonToCustomer}
                       onChange={(e) => setCancelFormData({ ...cancelFormData, showCancellationReasonToCustomer: e.target.checked })}
-                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                      color="green"
                     />
                     <label htmlFor="showReason" className="ml-2 text-sm text-gray-700">
                       Stornierungsgrund dem Kunden anzeigen

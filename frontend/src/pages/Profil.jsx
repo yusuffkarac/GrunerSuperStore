@@ -10,6 +10,7 @@ import { useAlert } from '../contexts/AlertContext';
 import { cleanRequestData } from '../utils/requestUtils';
 import { calculateDistance } from '../utils/distance';
 import addressSearchService from '../services/addressSearch.service';
+import Switch from '../components/common/Switch';
 
 function Profil() {
   const navigate = useNavigate();
@@ -890,13 +891,12 @@ function Profil() {
 
                 {/* Als Standard festlegen */}
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="isDefault"
+                  <Switch
                     id="isDefault"
+                    name="isDefault"
                     checked={formData.isDefault}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    color="green"
                   />
                   <label htmlFor="isDefault" className="text-sm text-gray-700">
                     Als Standard-Adresse festlegen

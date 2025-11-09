@@ -36,6 +36,7 @@ function SiparisVer() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const subtotal = getTotal();
   const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
@@ -121,8 +122,8 @@ function SiparisVer() {
     setCouponDiscount(0);
   };
 
-  // Sipariş ver
-  const handlePlaceOrder = async () => {
+  // Onay modalını göster
+  const handleOrderButtonClick = () => {
     // Validasyon
     if (orderType === 'delivery' && !selectedAddressId) {
       toast.error('Bitte wählen Sie eine Lieferadresse');
@@ -134,6 +135,12 @@ function SiparisVer() {
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  // Sipariş ver
+  const handlePlaceOrder = async () => {
+    setShowConfirmModal(false);
     setLoading(true);
 
     try {
@@ -462,9 +469,9 @@ function SiparisVer() {
         className="fixed bottom-14 left-0 right-0 bg-white border-t border-gray-200 p-2 shadow-lg max-w-[600px] mx-auto"
       >
         <button
-          onClick={handlePlaceOrder}
+          onClick={handleOrderButtonClick}
           disabled={loading || orderSuccess || (orderType === 'delivery' && !selectedAddressId)}
-          className={`w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs btn-press ${
+          className={`w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm btn-press ${
             loading ? 'animate-pulse' : ''
           } ${orderSuccess ? 'animate-success-pulse' : ''}`}
         >
@@ -480,6 +487,38 @@ function SiparisVer() {
           )}
         </button>
       </motion.div>
+
+      {/* Onay Modalı */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-4"
+          >
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              Bestellung bestätigen
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Möchten Sie die Bestellung wirklich aufgeben?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handlePlaceOrder}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Bestätigen
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

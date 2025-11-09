@@ -8,6 +8,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
 
 function Users() {
   const { showConfirm } = useAlert();
@@ -652,7 +653,7 @@ function Users() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       {selectedUser.firstName} {selectedUser.lastName}
@@ -818,7 +819,7 @@ function Users() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <h2 className="text-xl font-bold text-gray-900">
                     {editingUser ? 'Benutzer bearbeiten' : 'Neuer Benutzer'}
                   </h2>
@@ -934,12 +935,11 @@ function Users() {
 
                   {/* Active Status */}
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="isActive"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      color="green"
                     />
                     <label htmlFor="isActive" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       Benutzer ist aktiv
@@ -949,12 +949,11 @@ function Users() {
 
                   {/* Email Verified Status */}
                   <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="isEmailVerified"
                       checked={formData.isEmailVerified}
                       onChange={(e) => setFormData({ ...formData, isEmailVerified: e.target.checked })}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      color="green"
                     />
                     <label htmlFor="isEmailVerified" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       E-Mail bestätigt

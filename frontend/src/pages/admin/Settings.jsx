@@ -4,6 +4,7 @@ import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
 
 // Admin-Einstellungsseite
 function Settings() {
@@ -1400,7 +1401,7 @@ function Settings() {
         </div>
 
         {/* E-Mail Ayarları */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mt-6">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h3 className="text-lg font-semibold text-gray-900">📧 E-Mail Einstellungen</h3>
             <p className="text-sm text-gray-500 mt-1">
@@ -1491,15 +1492,13 @@ function Settings() {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={smtpSettings.secure}
-                    onChange={(e) => setSmtpSettings({ ...smtpSettings, secure: e.target.checked })}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700">SSL/TLS verwenden (Port 465)</span>
-                </label>
+                <Switch
+                  id="secure"
+                  checked={smtpSettings.secure}
+                  onChange={(e) => setSmtpSettings({ ...smtpSettings, secure: e.target.checked })}
+                  label="SSL/TLS verwenden (Port 465)"
+                  color="primary"
+                />
               </div>
             </div>
 
@@ -1535,23 +1534,22 @@ function Settings() {
                     { key: 'delivered', label: 'Zugestellt' },
                     { key: 'cancelled', label: 'Storniert' },
                   ].map(({ key, label }) => (
-                    <label key={key} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={emailNotificationSettings.notifyOnOrderStatus[key]}
-                        onChange={(e) =>
-                          setEmailNotificationSettings({
-                            ...emailNotificationSettings,
-                            notifyOnOrderStatus: {
-                              ...emailNotificationSettings.notifyOnOrderStatus,
-                              [key]: e.target.checked,
-                            },
-                          })
-                        }
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700">{label}</span>
-                    </label>
+                    <Switch
+                      key={key}
+                      id={`notifyOnOrderStatus-${key}`}
+                      checked={emailNotificationSettings.notifyOnOrderStatus[key]}
+                      onChange={(e) =>
+                        setEmailNotificationSettings({
+                          ...emailNotificationSettings,
+                          notifyOnOrderStatus: {
+                            ...emailNotificationSettings.notifyOnOrderStatus,
+                            [key]: e.target.checked,
+                          },
+                        })
+                      }
+                      label={label}
+                      color="primary"
+                    />
                   ))}
                 </div>
                 <p className="mt-2 text-sm text-gray-500">

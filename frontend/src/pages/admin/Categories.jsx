@@ -9,6 +9,7 @@ import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import Switch from '../../components/common/Switch';
 
 function Categories() {
   const { showConfirm } = useAlert();
@@ -640,7 +641,7 @@ function Categories() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <h2 className="text-xl font-bold text-gray-900">
                     {editingCategory ? 'Kategorie bearbeiten' : 'Neue Kategorie'}
                   </h2>
@@ -734,18 +735,18 @@ function Categories() {
 
                   {/* Active Checkbox */}
                   <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="isActive"
                         checked={formData.isActive}
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                        color="green"
                       />
                       <span className="text-sm text-gray-700 flex items-center gap-2">
                         Aktiv
                         <HelpTooltip content="Nur aktive Kategorien werden den Kunden angezeigt. Inaktive Kategorien sind für Administratoren sichtbar, aber nicht im Shop verfügbar." />
                       </span>
-                    </label>
+                    </div>
                   </div>
 
                   {/* Actions */}

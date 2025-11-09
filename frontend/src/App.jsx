@@ -57,6 +57,8 @@ import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 import Notifications from './pages/admin/Notifications';
 import Help from './pages/admin/Help';
+import EmailTemplates from './pages/admin/EmailTemplates';
+import NotificationTemplates from './pages/admin/NotificationTemplates';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -223,6 +225,8 @@ function AppContent() {
               />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
               <Route path="notifications" element={<Notifications />} />
+              <Route path="email-templates" element={<EmailTemplates />} />
+              <Route path="notification-templates" element={<NotificationTemplates />} />
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />

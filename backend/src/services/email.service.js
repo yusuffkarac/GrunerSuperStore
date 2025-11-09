@@ -62,14 +62,57 @@ class EmailService {
 
   /**
    * Template'i yükle ve cache'le
+   * Önce DB'den oku, yoksa dosyadan oku (fallback)
    */
   async loadTemplate(templateName) {
-    if (!this.templates[templateName]) {
-      const templatePath = path.join(__dirname, '../../templates/emails', `${templateName}.hbs`);
-      const templateContent = await fs.readFile(templatePath, 'utf-8');
-      this.templates[templateName] = handlebars.compile(templateContent);
+    // Cache'de varsa direkt döndür
+    if (this.templates[templateName]) {
+      return this.templates[templateName];
     }
+
+    let templateContent = null;
+
+    try {
+      // Önce DB'den oku
+      const settings = await prisma.settings.findFirst();
+      const dbTemplates = settings?.emailTemplates || {};
+      const dbTemplate = dbTemplates[templateName];
+
+      if (dbTemplate && dbTemplate.body) {
+        templateContent = dbTemplate.body;
+        console.log(`📧 Template DB'den yüklendi: ${templateName}`);
+      } else {
+        // DB'de yoksa dosyadan oku (fallback)
+        const templatePath = path.join(__dirname, '../../templates/emails', `${templateName}.hbs`);
+        templateContent = await fs.readFile(templatePath, 'utf-8');
+        console.log(`📧 Template dosyadan yüklendi: ${templateName}`);
+      }
+    } catch (error) {
+      console.error(`⚠️  Template yükleme hatası (${templateName}):`, error.message);
+      // Hata durumunda dosyadan tekrar dene
+      try {
+        const templatePath = path.join(__dirname, '../../templates/emails', `${templateName}.hbs`);
+        templateContent = await fs.readFile(templatePath, 'utf-8');
+        console.log(`📧 Template fallback dosyadan yüklendi: ${templateName}`);
+      } catch (fallbackError) {
+        throw new Error(`Template yüklenemedi: ${templateName} - ${fallbackError.message}`);
+      }
+    }
+
+    // Template'i compile et ve cache'le
+    this.templates[templateName] = handlebars.compile(templateContent);
     return this.templates[templateName];
+  }
+
+  /**
+   * Template cache'ini temizle
+   */
+  clearTemplateCache(templateName = null) {
+    if (templateName) {
+      delete this.templates[templateName];
+    } else {
+      this.templates = {};
+    }
   }
 
   /**
@@ -208,6 +251,49 @@ class EmailService {
   }
 
   /**
+   * Direkt HTML ile mail gönder (test için)
+   */
+  async sendEmail({ to, subject, html }) {
+    try {
+      // Settings'den SMTP ayarlarını al
+      const settings = await prisma.settings.findFirst();
+      if (!settings || !settings.smtpSettings) {
+        throw new Error('SMTP ayarları yapılandırılmamış');
+      }
+
+      const smtpSettings = settings.smtpSettings;
+
+      // Transporter oluştur (cache'lenmiş değilse)
+      if (!this.transporter) {
+        await this.createTransporter(smtpSettings);
+      }
+
+      // Mail gönder
+      const mailOptions = {
+        from: `"${smtpSettings.fromName || 'Gruner SuperStore'}" <${smtpSettings.fromEmail}>`,
+        to,
+        subject,
+        html,
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+
+      console.log(`✅ Test-Mail gönderildi: ${to} - ${subject}`);
+
+      return {
+        success: true,
+        messageId: info.messageId,
+      };
+    } catch (error) {
+      console.error('❌ Test-Mail gönderim hatası:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Test mail gönder
    */
   async sendTestMail(to, smtpSettings) {
@@ -294,6 +380,8 @@ class EmailService {
    */
   resetTransporter() {
     this.transporter = null;
+    // Template cache'ini de temizle
+    this.clearTemplateCache();
   }
 }
 
