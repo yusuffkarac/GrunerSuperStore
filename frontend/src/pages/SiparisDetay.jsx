@@ -13,8 +13,10 @@ import {
   FiFileText,
   FiStar,
   FiDownload,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
+import useCartStore from '../store/cartStore';
 
 // OrderStatusBadge'i Siparislerim'den kopyalayabilirsiniz veya ortak bir component yapabilirsiniz
 import { OrderStatusBadge } from './Siparislerim';
@@ -60,6 +62,8 @@ function SiparisDetay() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const { reorderFromOrder } = useCartStore();
 
   useEffect(() => {
     loadOrderDetails();
@@ -128,6 +132,26 @@ function SiparisDetay() {
     window.open(`${apiUrl}/orders/${id}/invoice?token=${token}`, '_blank');
   };
 
+  // Siparişi tekrar et
+  const handleReorder = async () => {
+    if (!order || !order.orderItems) return;
+
+    setReordering(true);
+    try {
+      await reorderFromOrder(order.orderItems);
+      toast.success('Produkte wurden zum Warenkorb hinzugefügt!');
+      // Kısa bir gecikme sonra sepete yönlendir
+      setTimeout(() => {
+        navigate('/sepet');
+      }, 500);
+    } catch (error) {
+      console.error('Reorder hatası:', error);
+      toast.error('Fehler beim Hinzufügen der Produkte');
+    } finally {
+      setReordering(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container-mobile py-6">
@@ -168,7 +192,15 @@ function SiparisDetay() {
               {format(new Date(order.createdAt), 'dd. MMMM yyyy, HH:mm', { locale: de })}
             </p>
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex items-center gap-2">
+            <button
+              onClick={handleReorder}
+              disabled={reordering}
+              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+              title="Erneut bestellen"
+            >
+              <FiRefreshCw className={`w-5 h-5 ${reordering ? 'animate-spin' : ''}`} />
+            </button>
             <OrderStatusBadge status={order.status} />
           </div>
         </div>
