@@ -816,144 +816,294 @@ function Settings() {
 
             {/* Lieferung und Zahlung */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Lieferung und Zahlung</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Lieferung</h3>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Lieferung aktiviert</span>
-                  <button 
-                    onClick={()=>setDeliverySettings({ ...deliverySettings, teslimatAcik: !deliverySettings.teslimatAcik })} 
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      deliverySettings.teslimatAcik ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={deliverySettings.teslimatAcik}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      deliverySettings.teslimatAcik ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Abholung im Geschäft aktiviert</span>
-                  <button 
-                    onClick={()=>setDeliverySettings({ ...deliverySettings, magazadanTeslimAcik: !deliverySettings.magazadanTeslimAcik })} 
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      deliverySettings.magazadanTeslimAcik ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={deliverySettings.magazadanTeslimAcik}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      deliverySettings.magazadanTeslimAcik ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      Bestellbeginn
-                      <HelpTooltip content="Die Uhrzeit, ab der neue Bestellungen angenommen werden. Beispiel: 09:00 bedeutet, dass Bestellungen ab 09:00 Uhr möglich sind." />
-                    </label>
-                    <input 
-                      type="time" 
-                      value={deliverySettings.siparisBaslangicSaati || ''} 
-                      onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisBaslangicSaati: e.target.value })} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
-                    />
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Lieferung und Zahlung</h2>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Lieferung Bölümü */}
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        Lieferung
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {/* Toggle: Lieferung aktiviert */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">Lieferung aktiviert</span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              setDeliverySettings({
+                                ...deliverySettings,
+                                teslimatAcik: !deliverySettings.teslimatAcik,
+                              })
+                            }
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                              deliverySettings.teslimatAcik
+                                ? 'bg-primary-600'
+                                : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={deliverySettings.teslimatAcik}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                deliverySettings.teslimatAcik
+                                  ? 'translate-x-5'
+                                  : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Toggle: Abholung im Geschäft aktiviert */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              Abholung im Geschäft aktiviert
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              setDeliverySettings({
+                                ...deliverySettings,
+                                magazadanTeslimAcik:
+                                  !deliverySettings.magazadanTeslimAcik,
+                              })
+                            }
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                              deliverySettings.magazadanTeslimAcik
+                                ? 'bg-primary-600'
+                                : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={deliverySettings.magazadanTeslimAcik}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                deliverySettings.magazadanTeslimAcik
+                                  ? 'translate-x-5'
+                                  : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Bestellzeiten */}
+                        <div className="pt-2 space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Bestellbeginn
+                                <HelpTooltip content="Die Uhrzeit, ab der neue Bestellungen angenommen werden. Beispiel: 09:00 bedeutet, dass Bestellungen ab 09:00 Uhr möglich sind." />
+                              </label>
+                              <input
+                                type="time"
+                                value={deliverySettings.siparisBaslangicSaati || ''}
+                                onChange={(e) =>
+                                  setDeliverySettings({
+                                    ...deliverySettings,
+                                    siparisBaslangicSaati: e.target.value,
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Bestellschluss
+                                <HelpTooltip content="Die Uhrzeit, nach der keine neuen Bestellungen mehr angenommen werden. Beispiel: 19:30 bedeutet, dass Bestellungen nach 19:30 Uhr nicht mehr möglich sind." />
+                              </label>
+                              <input
+                                type="time"
+                                value={deliverySettings.siparisKapanisSaati || ''}
+                                onChange={(e) =>
+                                  setDeliverySettings({
+                                    ...deliverySettings,
+                                    siparisKapanisSaati: e.target.value,
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      Bestellschluss
-                      <HelpTooltip content="Die Uhrzeit, nach der keine neuen Bestellungen mehr angenommen werden. Beispiel: 19:30 bedeutet, dass Bestellungen nach 19:30 Uhr nicht mehr möglich sind." />
-                    </label>
-                    <input 
-                      type="time" 
-                      value={deliverySettings.siparisKapanisSaati || ''} 
-                      onChange={(e)=>setDeliverySettings({ ...deliverySettings, siparisKapanisSaati: e.target.value })} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
-                    />
+
+                  {/* Zahlung Bölümü */}
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        Zahlung
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {/* Toggle: Karte bei Lieferung */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              Karte bei Lieferung
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              setPaymentOptions({
+                                ...paymentOptions,
+                                kartKapida: !paymentOptions.kartKapida,
+                              })
+                            }
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                              paymentOptions.kartKapida
+                                ? 'bg-primary-600'
+                                : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={paymentOptions.kartKapida}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                paymentOptions.kartKapida
+                                  ? 'translate-x-5'
+                                  : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Toggle: Barzahlung */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              Barzahlung
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              setPaymentOptions({
+                                ...paymentOptions,
+                                nakit: !paymentOptions.nakit,
+                              })
+                            }
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                              paymentOptions.nakit
+                                ? 'bg-primary-600'
+                                : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={paymentOptions.nakit}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                paymentOptions.nakit
+                                  ? 'translate-x-5'
+                                  : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Toggle: Online */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              Online (deaktivierbar)
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              setPaymentOptions({
+                                ...paymentOptions,
+                                online: !paymentOptions.online,
+                              })
+                            }
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                              paymentOptions.online
+                                ? 'bg-primary-600'
+                                : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={paymentOptions.online}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                paymentOptions.online
+                                  ? 'translate-x-5'
+                                  : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Kapıda Ödeme Ayarları */}
+                        <div className="pt-2 space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Zahlungsart an der Tür
+                                <HelpTooltip content="Typ der zusätzlichen Gebühr für Zahlung an der Tür. Fest: Fester Betrag (z.B. 2€). Prozent: Prozentsatz vom Bestellbetrag (z.B. 2%)." />
+                              </label>
+                              <select
+                                value={
+                                  paymentOptions.kapidaOdemeUcreti?.type || 'flat'
+                                }
+                                onChange={(e) =>
+                                  setPaymentOptions({
+                                    ...paymentOptions,
+                                    kapidaOdemeUcreti: {
+                                      ...(paymentOptions.kapidaOdemeUcreti || {}),
+                                      type: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                              >
+                                <option value="flat">Fest</option>
+                                <option value="percent">Prozent</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                Zahlungsbetrag an der Tür
+                                <HelpTooltip content="Der Betrag oder Prozentsatz, der für Zahlung an der Tür zusätzlich berechnet wird. Beispiel: Bei 'Fest' und 2.00 werden 2€ zusätzlich berechnet." />
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={paymentOptions.kapidaOdemeUcreti?.value ?? 0}
+                                onChange={(e) =>
+                                  setPaymentOptions({
+                                    ...paymentOptions,
+                                    kapidaOdemeUcreti: {
+                                      ...(paymentOptions.kapidaOdemeUcreti || {}),
+                                      value: parseFloat(e.target.value || '0'),
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Zahlung</h3>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Karte bei Lieferung</span>
-                  <button 
-                    onClick={() => setPaymentOptions({ ...paymentOptions, kartKapida: !paymentOptions.kartKapida })} 
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      paymentOptions.kartKapida ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={paymentOptions.kartKapida}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      paymentOptions.kartKapida ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Barzahlung</span>
-                  <button 
-                    onClick={() => setPaymentOptions({ ...paymentOptions, nakit: !paymentOptions.nakit })} 
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      paymentOptions.nakit ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={paymentOptions.nakit}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      paymentOptions.nakit ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-700">Online (deaktivierbar)</span>
-                  <button 
-                    onClick={() => setPaymentOptions({ ...paymentOptions, online: !paymentOptions.online })} 
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      paymentOptions.online ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={paymentOptions.online}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      paymentOptions.online ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      Zahlungsart an der Tür
-                      <HelpTooltip content="Typ der zusätzlichen Gebühr für Zahlung an der Tür. Fest: Fester Betrag (z.B. 2€). Prozent: Prozentsatz vom Bestellbetrag (z.B. 2%)." />
-                    </label>
-                    <select value={paymentOptions.kapidaOdemeUcreti?.type || 'flat'} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), type: e.target.value } })} className="w-full px-3 py-2 border rounded">
-                      <option value="flat">Fest</option>
-                      <option value="percent">Prozent</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      Zahlungsbetrag an der Tür
-                      <HelpTooltip content="Der Betrag oder Prozentsatz, der für Zahlung an der Tür zusätzlich berechnet wird. Beispiel: Bei 'Fest' und 2.00 werden 2€ zusätzlich berechnet." />
-                    </label>
-                    <input type="number" step="0.01" value={paymentOptions.kapidaOdemeUcreti?.value ?? 0} onChange={(e)=>setPaymentOptions({ ...paymentOptions, kapidaOdemeUcreti: { ...(paymentOptions.kapidaOdemeUcreti||{}), value: parseFloat(e.target.value||'0') } })} className="w-full px-3 py-2 border rounded" />
-                  </div>
-                </div>
+              
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+                </button>
               </div>
             </div>
-          </div>
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
-            </button>
-          </div>
-        </div>
 
             {/* Limits und Geschäft */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
