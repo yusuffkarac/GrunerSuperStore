@@ -6,6 +6,7 @@ import {
   createOrderValidation,
   updateOrderStatusValidation,
   orderIdValidation,
+  createReviewValidation,
 } from '../validators/order.validators.js';
 
 const router = express.Router();
@@ -28,5 +29,11 @@ router.get('/:id', orderIdValidation, validate, orderController.getOrderById);
 
 // PUT /api/orders/:id/cancel - Sipariş iptal et
 router.put('/:id/cancel', orderIdValidation, validate, orderController.cancelOrder);
+
+// POST /api/orders/:id/review - Sipariş için review oluştur
+router.post('/:id/review', createReviewValidation, validate, orderController.createReview);
+
+// GET /api/orders/:id/review - Sipariş review'ını getir
+router.get('/:id/review', orderIdValidation, validate, orderController.getReview);
 
 export default router;

@@ -116,6 +116,11 @@ const adminService = {
     return response.data;
   },
 
+  getOrderReview: async (orderId) => {
+    const response = await adminApi.get(`/orders/${orderId}/review`);
+    return response.data;
+  },
+
   // Kullanıcı yönetimi
   getUsers: async (params) => {
     const response = await adminApi.get('/admin/users', { params });

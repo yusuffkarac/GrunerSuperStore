@@ -20,6 +20,16 @@ const orderService = {
   cancelOrder: async (id) => {
     return await api.put(`/orders/${id}/cancel`);
   },
+
+  // Sipariş için review oluştur
+  createReview: async (id, reviewData) => {
+    return await api.post(`/orders/${id}/review`, reviewData);
+  },
+
+  // Sipariş review'ını getir
+  getReview: async (id) => {
+    return await api.get(`/orders/${id}/review`);
+  },
 };
 
 export default orderService;
