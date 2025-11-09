@@ -36,7 +36,7 @@ function Profil() {
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // Desktop kontrolü
+  // Desktop-Prüfung
   useEffect(() => {
     const checkDesktop = () => {
       setIsDesktop(window.innerWidth >= 768);
@@ -46,7 +46,7 @@ function Profil() {
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
-  // Adres form state
+  // Adressformular-State
   const [formData, setFormData] = useState({
     title: '',
     street: '',
@@ -69,7 +69,7 @@ function Profil() {
     }
   }, [activeTab]);
 
-  // Market konumunu yükle
+  // Marktstandort laden
   const loadStoreLocation = async () => {
     try {
       const response = await settingsService.getSettings();
@@ -80,19 +80,19 @@ function Profil() {
           longitude: storeLoc.longitude,
         });
       }
-    } catch (error) {
-      console.error('Market konumu yüklenemedi:', error);
-    }
+      } catch (error) {
+        console.error('Marktstandort konnte nicht geladen werden:', error);
+      }
   };
 
-  // Modal açıldığında market konumunu yükle
+  // Marktstandort laden, wenn Modal geöffnet wird
   useEffect(() => {
     if (showAddressModal && !storeLocation) {
       loadStoreLocation();
     }
   }, [showAddressModal]);
 
-  // Yol mesafesini hesapla
+  // Straßenentfernung berechnen
   const calculateRoadDistance = useCallback(async () => {
     if (
       !storeLocation ||
@@ -113,28 +113,28 @@ function Profil() {
         destLon: storeLocation.longitude,
       });
       
-      console.log('[Profil] calculateRoadDistance yanıtı:', response);
+      console.log('[Profil] calculateRoadDistance Antwort:', response);
       console.log('[Profil] response:', response);
       console.log('[Profil] response.data:', response?.data);
       console.log('[Profil] response.data?.distance:', response?.data?.distance);
       
       // api interceptor zaten response.data döndürüyor, bu yüzden response = { success: true, data: { distance: ... } }
       if (response?.success && response?.data?.distance !== null && response?.data?.distance !== undefined) {
-        console.log('[Profil] roadDistance set ediliyor:', response.data.distance);
+        console.log('[Profil] roadDistance wird gesetzt:', response.data.distance);
         setRoadDistance(response.data.distance);
       } else {
-        console.warn('[Profil] roadDistance null - yanıt:', response);
+        console.warn('[Profil] roadDistance null - Antwort:', response);
         setRoadDistance(null);
       }
     } catch (error) {
-      console.error('[Profil] Yol mesafesi hesaplanamadı:', error);
+      console.error('[Profil] Straßenentfernung konnte nicht berechnet werden:', error);
       setRoadDistance(null);
     } finally {
       setLoadingDistance(false);
     }
   }, [storeLocation, formData.latitude, formData.longitude]);
 
-  // Mesafe hesapla (latitude/longitude değiştiğinde)
+  // Entfernung berechnen (wenn latitude/longitude sich ändern)
   useEffect(() => {
     if (
       storeLocation &&
@@ -143,16 +143,16 @@ function Profil() {
       formData.longitude !== null &&
       formData.longitude !== undefined
     ) {
-      // Havadan mesafe hesapla (anında)
+      // Luftlinie berechnen (sofort)
       const distance = calculateDistance(
         formData.latitude,
         formData.longitude,
         storeLocation.latitude,
         storeLocation.longitude
       );
-      setDistanceToStore(Math.round(distance * 100) / 100); // 2 ondalık basamağa yuvarla
+      setDistanceToStore(Math.round(distance * 100) / 100); // Auf 2 Dezimalstellen runden
 
-      // Yol mesafesini hesapla (OpenRouteService ile)
+      // Straßenentfernung berechnen (mit OpenRouteService)
       calculateRoadDistance();
     } else {
       setDistanceToStore(null);
@@ -160,10 +160,10 @@ function Profil() {
     }
   }, [formData.latitude, formData.longitude, storeLocation, calculateRoadDistance]);
 
-  // Modal kapandığında adresleri yeniden yükle
+  // Adressen neu laden, wenn Modal geschlossen wird
   useEffect(() => {
     if (!showAddressModal && activeTab === 'addresses') {
-      // Modal kapandıktan sonra adresleri yeniden yükle
+      // Adressen nach dem Schließen des Modals neu laden
       const timer = setTimeout(() => {
         loadAddresses();
       }, 100);
@@ -175,19 +175,19 @@ function Profil() {
     setLoading(true);
     try {
       const response = await userService.getAddresses();
-      console.log('Adres response:', response);
+      console.log('Adress-Response:', response);
       // API interceptor response.data döndüğü için direkt response'u kontrol et
       const addressesList = response?.data?.addresses || response?.addresses || [];
-      console.log('Adres listesi:', addressesList);
+      console.log('Adressliste:', addressesList);
       setAddresses(addressesList);
       if (addressesList.length === 0) {
         console.log('Keine Adressen gefunden');
       }
     } catch (error) {
-      console.error('Adres yükleme hatası:', error);
+      console.error('Fehler beim Laden der Adressen:', error);
       const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Laden der Adressen';
       toast.error(errorMessage);
-      setAddresses([]); // Hata durumunda listeyi temizle
+      setAddresses([]); // Liste bei Fehler leeren
     } finally {
       setLoading(false);
     }
@@ -225,7 +225,7 @@ function Profil() {
     }
   };
 
-  // Modal aç/kapat
+  // Modal öffnen/schließen
   const openAddModal = () => {
     setEditingAddress(null);
     setFormData({
@@ -277,7 +277,7 @@ function Profil() {
     }
   };
 
-  // Form değişiklikleri
+  // Formularänderungen
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -285,7 +285,7 @@ function Profil() {
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // Sokak adı değiştiğinde otomatik arama yap
+    // Automatische Suche, wenn Straßenname geändert wird
     if (name === 'street' && value.length >= 3) {
       handleStreetSearch(value);
     } else if (name === 'street' && value.length < 3) {
@@ -294,14 +294,14 @@ function Profil() {
     }
   };
 
-  // Sokak adı arama (debounce ile)
+  // Straßenname-Suche (mit Debounce)
   const handleStreetSearch = async (query) => {
-    // Önceki timeout'u temizle
+    // Vorherigen Timeout löschen
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // Yeni timeout oluştur (500ms debounce)
+    // Neuen Timeout erstellen (500ms Debounce)
     const timeout = setTimeout(async () => {
       if (!query || query.trim().length < 3) {
         setAddressSuggestions([]);
@@ -326,7 +326,7 @@ function Profil() {
     setSearchTimeout(timeout);
   };
 
-  // Adres önerisini seç
+  // Adressvorschlag auswählen
   const handleSelectAddress = (suggestion) => {
     setFormData((prev) => ({
       ...prev,
@@ -343,7 +343,7 @@ function Profil() {
     setShowSuggestions(false);
   };
 
-  // Konum alma fonksiyonu
+  // Standort abrufen
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Geolocation wird von Ihrem Browser nicht unterstützt');
@@ -361,16 +361,16 @@ function Profil() {
       },
       (error) => {
         console.error('Geolocation error:', error);
-        let errorMessage = 'Konum alınamadı';
+        let errorMessage = 'Standort konnte nicht abgerufen werden';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Konum izni reddedildi';
+            errorMessage = 'Standortberechtigung wurde verweigert';
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Konum bilgisi alınamadı';
+            errorMessage = 'Standortinformationen nicht verfügbar';
             break;
           case error.TIMEOUT:
-            errorMessage = 'Konum alma zaman aşımına uğradı';
+            errorMessage = 'Zeitüberschreitung beim Abrufen des Standorts';
             break;
         }
         toast.error(errorMessage);
@@ -383,9 +383,9 @@ function Profil() {
     );
   };
 
-  // Adres kaydet
+  // Adresse speichern
   const handleSaveAddress = async () => {
-    // Validasyon
+    // Validierung
     if (!formData.title.trim()) {
       toast.error('Adresstitel ist erforderlich');
       return;
@@ -414,31 +414,31 @@ function Profil() {
     setSaving(true);
 
     try {
-      // Boş string'leri, null ve undefined değerleri temizle
+      // Leere Strings, null und undefined Werte bereinigen
       const cleanedData = cleanRequestData(formData);
 
       if (editingAddress) {
-        // Güncelle
+        // Aktualisieren
         const response = await userService.updateAddress(editingAddress.id, cleanedData);
-        console.log('Adres güncellendi:', response);
+        console.log('Adresse aktualisiert:', response);
         toast.success('Adresse aktualisiert');
       } else {
-        // Yeni ekle
+        // Neu hinzufügen
         const response = await userService.createAddress(cleanedData);
-        console.log('Adres eklendi:', response);
+        console.log('Adresse hinzugefügt:', response);
         toast.success('Adresse hinzugefügt');
       }
       closeModal();
-      // Modal kapandıktan sonra kısa bir gecikme ile adresleri yükle
+      // Adressen nach kurzer Verzögerung neu laden, nachdem Modal geschlossen wurde
       setTimeout(() => {
         loadAddresses();
-        // Eğer returnTo varsa (SiparisVer'den geldiyse), geri dön
+        // Wenn returnTo vorhanden ist (von SiparisVer gekommen), zurückkehren
         if (returnTo) {
           navigate(returnTo, { state: { refreshAddresses: true } });
         }
       }, 300);
     } catch (error) {
-      console.error('Adres kaydetme hatası:', error);
+      console.error('Fehler beim Speichern der Adresse:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Fehler beim Speichern';
       toast.error(errorMessage);
     } finally {
@@ -450,7 +450,7 @@ function Profil() {
     <div className="container-mobile py-6 pb-20">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Mein Profil</h1>
 
-      {/* Siparişlerim kısayolu */}
+      {/* Schnellzugriff auf Bestellungen */}
       <button
         onClick={() => navigate('/siparislerim')}
         className="w-full mb-4 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
@@ -659,7 +659,7 @@ function Profil() {
                         }
                       }}
                       onBlur={() => {
-                        // Dropdown'un kapanması için küçük bir gecikme
+                        // Kurze Verzögerung, damit Dropdown geschlossen wird
                         setTimeout(() => setShowSuggestions(false), 200);
                       }}
                       placeholder="Straßenname eingeben..."
@@ -703,7 +703,7 @@ function Profil() {
                   )}
                 </div>
 
-                {/* Hausnummer ve Adresszeile 2 */}
+                {/* Hausnummer und Adresszeile 2 */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -821,7 +821,7 @@ function Profil() {
                   </button>
                 </div>
 
-                {/* Konum Bilgisi */}
+                {/* Standortinformationen */}
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
@@ -902,7 +902,7 @@ function Profil() {
                   </label>
                 </div>
 
-                {/* Butonlar */}
+                {/* Buttons */}
                 <div className="flex gap-3 pt-2 pb-4">
                   <button
                     onClick={closeModal}
