@@ -17,6 +17,14 @@ export const authenticate = async (req, res, next) => {
     // Token'ı doğrula
     const decoded = verifyToken(token);
 
+    // userId kontrolü - admin token'ları kabul etme
+    if (!decoded || !decoded.userId) {
+      if (decoded && decoded.adminId) {
+        throw new UnauthorizedError('Admin-Token kann nicht für Benutzer-Endpunkte verwendet werden');
+      }
+      throw new UnauthorizedError('Ungültiger Token');
+    }
+
     // Kullanıcıyı veritabanından bul
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -55,6 +63,7 @@ export const optionalAuth = async (req, res, next) => {
       const token = authHeader.split(' ')[1];
       const decoded = verifyToken(token);
 
+      if (decoded && decoded.userId) {
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: {
@@ -68,6 +77,7 @@ export const optionalAuth = async (req, res, next) => {
 
       if (user && user.isActive) {
         req.user = user;
+        }
       }
     }
 
@@ -98,6 +108,14 @@ export const authenticateSSE = async (req, res, next) => {
 
     // Token'ı doğrula
     const decoded = verifyToken(token);
+
+    // userId kontrolü - admin token'ları kabul etme
+    if (!decoded || !decoded.userId) {
+      if (decoded && decoded.adminId) {
+        throw new UnauthorizedError('Admin-Token kann nicht für Benutzer-Endpunkte verwendet werden');
+      }
+      throw new UnauthorizedError('Ungültiger Token');
+    }
 
     // Kullanıcıyı veritabanından bul
     const user = await prisma.user.findUnique({

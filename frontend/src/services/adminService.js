@@ -132,7 +132,7 @@ const adminService = {
   },
 
   getOrderReview: async (orderId) => {
-    const response = await adminApi.get(`/orders/${orderId}/review`);
+    const response = await adminApi.get(`/admin/orders/${orderId}/review`);
     return response.data;
   },
 

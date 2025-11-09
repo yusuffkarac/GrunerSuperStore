@@ -386,11 +386,11 @@ function Notifications() {
                         <h3 className="font-medium text-gray-900">{notification.title}</h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(notification.createdAt), {
-                              addSuffix: true,
-                              locale: de,
-                            })}
-                          </span>
+                          {formatDistanceToNow(new Date(notification.createdAt), {
+                            addSuffix: true,
+                            locale: de,
+                          })}
+                        </span>
                           <button
                             onClick={() => handleDeleteNotification(notification.id)}
                             className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"

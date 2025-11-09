@@ -369,6 +369,23 @@ function Orders() {
                           <div className="font-medium text-gray-900">
                             #{order.orderNo}
                           </div>
+                          {order.review && (
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <FiStar
+                                  key={star}
+                                  className={`w-2.5 h-2.5 ${
+                                    star <= order.review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                              <span className="text-[9px] text-gray-500 ml-0.5">
+                                {order.review.rating}/5
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           <div className="text-sm">
@@ -402,8 +419,24 @@ function Orders() {
                             </button>
                             {openStatusDropdown === order.id && (
                               <div className="absolute left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
-                                {statusOptions.filter(opt => opt.value && opt.value !== order.status).map((option) => {
+                                {statusOptions.filter(opt => opt.value).map((option, index) => {
                                   const OptionIcon = getStatusIcon(option.value);
+                                  const isSelected = option.value === order.status;
+                                  const isFirst = index === 0;
+                                  const isLast = index === statusOptions.filter(opt => opt.value).length - 1;
+                                  
+                                  if (isSelected) {
+                                    return (
+                                      <div
+                                        key={option.value}
+                                        className={`px-3 py-2 text-sm flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} ${getStatusColor(order.status)}`}
+                                      >
+                                        <OptionIcon size={14} />
+                                        {option.label}
+                                      </div>
+                                    );
+                                  }
+                                  
                                   return (
                                     <button
                                       key={option.value}
@@ -411,7 +444,7 @@ function Orders() {
                                         e.stopPropagation();
                                         handleStatusUpdate(order.id, option.value);
                                       }}
-                                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} transition-colors`}
                                     >
                                       <OptionIcon size={14} />
                                       {option.label}
@@ -460,6 +493,23 @@ function Orders() {
                         <div className="font-medium text-gray-900 mb-1">
                           #{order.orderNo}
                         </div>
+                        {order.review && (
+                          <div className="flex items-center gap-0.5 mb-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <FiStar
+                                key={star}
+                                className={`w-2.5 h-2.5 ${
+                                  star <= order.review.rating
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                            <span className="text-[9px] text-gray-500 ml-0.5">
+                              {order.review.rating}/5
+                            </span>
+                          </div>
+                        )}
                         <div className="text-sm text-gray-600">
                           {order.user?.firstName} {order.user?.lastName}
                         </div>
@@ -476,8 +526,24 @@ function Orders() {
                         </button>
                         {openStatusDropdown === order.id && (
                           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
-                            {statusOptions.filter(opt => opt.value && opt.value !== order.status).map((option) => {
+                            {statusOptions.filter(opt => opt.value).map((option, index) => {
                               const OptionIcon = getStatusIcon(option.value);
+                              const isSelected = option.value === order.status;
+                              const isFirst = index === 0;
+                              const isLast = index === statusOptions.filter(opt => opt.value).length - 1;
+                              
+                              if (isSelected) {
+                                return (
+                                  <div
+                                    key={option.value}
+                                    className={`px-3 py-2 text-sm flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} ${getStatusColor(order.status)}`}
+                                  >
+                                    <OptionIcon size={14} />
+                                    {option.label}
+                                  </div>
+                                );
+                              }
+                              
                               return (
                                 <button
                                   key={option.value}
@@ -485,7 +551,7 @@ function Orders() {
                                     e.stopPropagation();
                                     handleStatusUpdate(order.id, option.value);
                                   }}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} transition-colors`}
                                 >
                                   <OptionIcon size={14} />
                                   {option.label}

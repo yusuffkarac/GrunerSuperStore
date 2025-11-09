@@ -28,11 +28,11 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    try {
-      const [notificationsRes, unreadRes] = await Promise.all([
-        notificationService.getNotifications({ limit: 20 }),
-        notificationService.getUnreadCount(),
-      ]);
+      try {
+        const [notificationsRes, unreadRes] = await Promise.all([
+          notificationService.getNotifications({ limit: 20 }),
+          notificationService.getUnreadCount(),
+        ]);
       
       const newNotifications = notificationsRes.data.notifications || [];
       const newUnreadCount = unreadRes.data.count || 0;
@@ -66,7 +66,7 @@ export function NotificationProvider({ children }) {
     }
   }, [isAdminPage, hasAdminToken, isAuthenticated, token]);
 
-  // SSE bağlantısı kur
+    // SSE bağlantısı kur
   const setupSSE = useCallback(() => {
     if (isAdminPage || hasAdminToken || !isAuthenticated || !token) {
       return;
@@ -80,58 +80,58 @@ export function NotificationProvider({ children }) {
 
     try {
       // SSE bağlantısı kur
-      const eventSource = notificationService.createEventSource(token);
-      eventSourceRef.current = eventSource;
+    const eventSource = notificationService.createEventSource(token);
+    eventSourceRef.current = eventSource;
 
-      // Yeni bildirim geldiğinde
-      eventSource.onmessage = (event) => {
-        try {
+    // Yeni bildirim geldiğinde
+    eventSource.onmessage = (event) => {
+      try {
           // Heartbeat mesajlarını yok say
           if (event.data.trim() === '' || event.data.startsWith(':')) {
             return;
           }
 
-          const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
 
-          if (data.type === 'notification') {
+        if (data.type === 'notification') {
             // Yeni bildirimi ekle (zaten listede yoksa)
             setNotifications((prev) => {
               const exists = prev.some(n => n.id === data.data.id);
               if (exists) return prev;
               return [data.data, ...prev];
             });
-            // Okunmamış sayıyı artır
-            setUnreadCount((prev) => prev + 1);
+          // Okunmamış sayıyı artır
+          setUnreadCount((prev) => prev + 1);
             lastNotificationIdRef.current = data.data.id;
-          } else if (data.type === 'unread_count') {
-            // Okunmamış sayıyı güncelle
-            setUnreadCount(data.data.count);
-          }
-        } catch (error) {
-          console.error('SSE mesaj parse hatası:', error);
+        } else if (data.type === 'unread_count') {
+          // Okunmamış sayıyı güncelle
+          setUnreadCount(data.data.count);
         }
-      };
+      } catch (error) {
+        console.error('SSE mesaj parse hatası:', error);
+      }
+    };
 
-      // Hata durumunda
+    // Hata durumunda
       eventSource.onerror = () => {
-        // Bağlantıyı kapat
+      // Bağlantıyı kapat
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
-          eventSourceRef.current = null;
+      eventSourceRef.current = null;
         }
-        
+      
         // Yeniden bağlanmayı dene (5 saniye sonra)
-        if (!isAdminPage && !hasAdminToken && isAuthenticated && token) {
+      if (!isAdminPage && !hasAdminToken && isAuthenticated && token) {
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
           reconnectTimeoutRef.current = setTimeout(() => {
-            if (!isAdminPage && !hasAdminToken && isAuthenticated && token && !eventSourceRef.current) {
+          if (!isAdminPage && !hasAdminToken && isAuthenticated && token && !eventSourceRef.current) {
               setupSSE();
-            }
-          }, 5000);
-        }
-      };
+          }
+        }, 5000);
+      }
+    };
     } catch (error) {
       console.error('SSE bağlantısı kurulamadı:', error);
     }

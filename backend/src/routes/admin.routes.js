@@ -1,5 +1,6 @@
 import express from 'express';
 import adminController from '../controllers/admin.controller.js';
+import orderController from '../controllers/order.controller.js';
 import settingsController from '../controllers/settings.controller.js';
 import uploadController from '../controllers/upload.controller.js';
 import { authenticateAdmin, requireSuperAdmin } from '../middleware/admin.js';
@@ -66,6 +67,9 @@ router.put(
   validate,
   adminController.updateOrderStatus
 );
+
+// GET /api/admin/orders/:id/review - Sipariş review'ını getir (admin)
+router.get('/orders/:id/review', orderIdValidation, validate, orderController.getReview);
 
 // ===============================
 // PRODUCT MANAGEMENT

@@ -574,6 +574,13 @@ class OrderService {
             },
           },
           address: true,
+          review: {
+            select: {
+              id: true,
+              rating: true,
+              comment: true,
+            },
+          },
         },
       }),
       prisma.order.count({ where }),
