@@ -71,6 +71,9 @@ router.put(
 // GET /api/admin/orders/:id/review - Sipariş review'ını getir (admin)
 router.get('/orders/:id/review', orderIdValidation, validate, orderController.getReview);
 
+// POST /api/admin/orders/:id/send-invoice - Müşteriye fatura gönder
+router.post('/orders/:id/send-invoice', orderIdValidation, validate, orderController.sendInvoice);
+
 // ===============================
 // PRODUCT MANAGEMENT
 // ===============================

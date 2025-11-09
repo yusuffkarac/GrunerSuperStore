@@ -101,11 +101,11 @@ class EmailService {
 
   /**
    * Mail gönder
-   * @param {Object} options - { to, subject, template, data }
+   * @param {Object} options - { to, subject, template, data, attachments }
    * @returns {Object} - { success, messageId, error }
    */
   async sendMail(options) {
-    const { to, subject, template, data = {}, metadata = {} } = options;
+    const { to, subject, template, data = {}, metadata = {}, attachments = [] } = options;
 
     // Email log oluştur
     const emailLog = await prisma.emailLog.create({
@@ -140,12 +140,19 @@ class EmailService {
       });
 
       // Mail gönder
-      const info = await this.transporter.sendMail({
+      const mailOptions = {
         from: `"${smtpSettings.fromName || 'Gruner SuperStore'}" <${smtpSettings.fromEmail}>`,
         to,
         subject,
         html,
-      });
+      };
+
+      // Attachments varsa ekle
+      if (attachments && attachments.length > 0) {
+        mailOptions.attachments = attachments;
+      }
+
+      const info = await this.transporter.sendMail(mailOptions);
 
       // Log'u güncelle
       await prisma.emailLog.update({

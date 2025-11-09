@@ -1,5 +1,9 @@
 import orderService from '../services/order.service.js';
+import invoiceService from '../services/invoice.service.js';
+import queueService from '../services/queue.service.js';
+import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { NotFoundError } from '../utils/errors.js';
 
 class OrderController {
   // POST /api/orders - Sipariş oluştur
@@ -140,6 +144,90 @@ class OrderController {
     res.status(200).json({
       success: true,
       data: { review },
+    });
+  });
+
+  // ===============================
+  // INVOICE ENDPOINTS
+  // ===============================
+
+  // GET /api/orders/:id/invoice - Fatura PDF'ini indir
+  getInvoicePDF = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    // Sipariş kontrolü - kullanıcı kendi siparişini veya admin tüm siparişleri görebilir
+    const order = await orderService.getOrderById(id, userId, isAdmin);
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // PDF oluştur
+    const pdfBuffer = await invoiceService.generateInvoicePDF(id);
+
+    // PDF response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="Rechnung-${order.orderNo}.pdf"`
+    );
+    res.send(pdfBuffer);
+  });
+
+  // POST /api/orders/admin/:id/send-invoice - Müşteriye fatura gönder (Admin)
+  sendInvoice = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Sipariş bilgilerini getir
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Bestellung nicht gefunden');
+    }
+
+    // PDF oluştur
+    const pdfBuffer = await invoiceService.generateInvoicePDF(id);
+
+    // Mail gönder (attachment ile)
+    await queueService.addEmailJob({
+      to: order.user.email,
+      subject: `Rechnung für Bestellung ${order.orderNo}`,
+      template: 'invoice',
+      data: {
+        firstName: order.user.firstName,
+        lastName: order.user.lastName,
+        orderNo: order.orderNo,
+        orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+        total: parseFloat(order.total).toFixed(2),
+      },
+      attachments: [
+        {
+          filename: `Rechnung-${order.orderNo}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
+      metadata: { orderId: order.id, type: 'invoice' },
+      priority: 2,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Rechnung wurde erfolgreich per E-Mail versendet',
     });
   });
 }

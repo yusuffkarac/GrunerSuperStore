@@ -12,6 +12,7 @@ import {
   FiCreditCard,
   FiFileText,
   FiStar,
+  FiDownload,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 
@@ -119,6 +120,13 @@ function SiparisDetay() {
     }
   };
 
+  // Fatura PDF indir
+  const handleDownloadInvoice = () => {
+    const token = localStorage.getItem('token');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    window.open(`${apiUrl}/orders/${id}/invoice?token=${token}`, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="container-mobile py-6">
@@ -213,6 +221,17 @@ function SiparisDetay() {
             </div>
           </div>
         )}
+
+        {/* Fatura İndir */}
+        <div className="pt-4 border-t border-gray-100">
+          <button
+            onClick={handleDownloadInvoice}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <FiDownload size={18} />
+            Rechnung als PDF herunterladen
+          </button>
+        </div>
 
         {/* Not */}
         {order.note && (

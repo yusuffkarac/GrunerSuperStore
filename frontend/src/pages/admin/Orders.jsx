@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -18,6 +18,7 @@ function Orders() {
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null); // orderId
   const [orderReview, setOrderReview] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [sendingInvoice, setSendingInvoice] = useState(false);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,6 +131,34 @@ function Orders() {
     setShowModal(false);
     setSelectedOrder(null);
     setOrderReview(null);
+  };
+
+  // Fatura gönder
+  const handleSendInvoice = async (orderId) => {
+    const confirmed = await showConfirm(
+      'Rechnung senden',
+      'Möchten Sie die Rechnung wirklich per E-Mail an den Kunden senden?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setSendingInvoice(true);
+      await adminService.sendInvoice(orderId);
+      toast.success('Rechnung wurde erfolgreich per E-Mail versendet');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Fehler beim Senden der Rechnung');
+      console.error('Fatura gönderim hatası:', error);
+    } finally {
+      setSendingInvoice(false);
+    }
+  };
+
+  // Fatura PDF indir
+  const handleDownloadInvoice = (orderId, orderNo) => {
+    const token = localStorage.getItem('adminToken');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    window.open(`${apiUrl}/orders/${orderId}/invoice?token=${token}`, '_blank');
   };
 
   // Status badge rengi
@@ -875,6 +904,28 @@ function Orders() {
                           {option.label}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Fatura İşlemleri */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Rechnungsaktionen</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleDownloadInvoice(selectedOrder.id, selectedOrder.orderNo)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        <FiDownload size={16} />
+                        PDF herunterladen
+                      </button>
+                      <button
+                        onClick={() => handleSendInvoice(selectedOrder.id)}
+                        disabled={sendingInvoice}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <FiMail size={16} />
+                        {sendingInvoice ? 'Wird gesendet...' : 'Per E-Mail senden'}
+                      </button>
                     </div>
                   </div>
                 </div>
