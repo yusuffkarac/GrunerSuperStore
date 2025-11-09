@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -12,6 +12,7 @@ import { normalizeImageUrl } from '../../utils/imageUtils';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
+import BulkPriceUpdateModal from '../../components/admin/BulkPriceUpdateModal';
 
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
@@ -400,6 +401,7 @@ function Produkte() {
   const [loadingGlobalOptions, setLoadingGlobalOptions] = useState(false);
   const [optionFormMode, setOptionFormMode] = useState('select'); // 'select' veya 'create'
   const [variantOptionValues, setVariantOptionValues] = useState({}); // { optionName: [values] }
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [variantFormData, setVariantFormData] = useState({
     name: '',
     price: '',
@@ -983,13 +985,22 @@ function Produkte() {
             {total} {total === 1 ? 'Produkt' : 'Produkte'} insgesamt
           </p>
         </div>
-        <button
-          onClick={() => openModal()}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
-        >
-          <FiPlus className="w-4 h-4" />
-          <span>Neues Produkt</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkPriceModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+          >
+            <FiTrendingUp className="w-4 h-4" />
+            <span>Preise aktualisieren</span>
+          </button>
+          <button
+            onClick={() => openModal()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Neues Produkt</span>
+          </button>
+        </div>
       </div>
 
       {/* Search & Filters */}
@@ -2320,6 +2331,13 @@ function Produkte() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Toplu Fiyat Güncelleme Modal */}
+      <BulkPriceUpdateModal
+        isOpen={showBulkPriceModal}
+        onClose={() => setShowBulkPriceModal(false)}
+        onSuccess={loadProducts}
+      />
     </div>
   );
 }

@@ -622,6 +622,43 @@ class AdminController {
       data: result,
     });
   });
+
+  // POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
+  bulkUpdatePrices = asyncHandler(async (req, res) => {
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue, includeVariants } = req.body;
+
+    // Ürün fiyatlarını güncelle
+    const productResult = await productService.bulkUpdatePrices({
+      type,
+      categoryId,
+      productIds,
+      adjustmentType,
+      adjustmentValue,
+    });
+
+    let variantResult = { updatedCount: 0 };
+
+    // Varyant fiyatlarını da güncelle (eğer istenmişse)
+    if (includeVariants) {
+      variantResult = await productService.bulkUpdateVariantPrices({
+        type,
+        categoryId,
+        productIds,
+        adjustmentType,
+        adjustmentValue,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Preise erfolgreich aktualisiert',
+      data: {
+        products: productResult,
+        variants: variantResult,
+        totalUpdated: productResult.updatedCount + variantResult.updatedCount,
+      },
+    });
+  });
 }
 
 export default new AdminController();

@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag, FiHeart } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag, FiHeart, FiTruck } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useFavoriteStore from '../store/favoriteStore';
 import campaignService from '../services/campaignService';
+import settingsService from '../services/settingsService';
 import { useAlert } from '../contexts/AlertContext';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
@@ -317,9 +318,23 @@ function Sepet() {
   const [isClearing, setIsClearing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
+  const [settings, setSettings] = useState(null);
 
   const total = getTotal();
   const itemCount = getItemCount();
+
+  // Settings bilgisini çek
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        setSettings(response?.data?.settings || null);
+      } catch (error) {
+        console.error('Settings yükleme hatası:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Kampanya bilgisini çek
   useEffect(() => {
@@ -450,6 +465,80 @@ function Sepet() {
   const discount = discountResult.discount;
   const discountDetails = discountResult.details;
   const finalTotal = total - discount;
+
+  // Teslimat ücreti uyarısını hesapla
+  const getDeliveryFeeWarning = () => {
+    if (!settings) return null;
+
+    const freeShippingThreshold = settings.freeShippingThreshold ? parseFloat(settings.freeShippingThreshold) : null;
+    const shippingRules = Array.isArray(settings.shippingRules) ? settings.shippingRules : [];
+
+    // Ücretsiz kargo eşiği varsa ve henüz ulaşılmadıysa
+    if (freeShippingThreshold && finalTotal < freeShippingThreshold) {
+      const remaining = freeShippingThreshold - finalTotal;
+      const progress = (finalTotal / freeShippingThreshold) * 100;
+      return {
+        type: 'free',
+        message: `Noch ${remaining.toFixed(2)} € bis zur kostenlosen Lieferung!`,
+        progress: progress,
+        target: freeShippingThreshold,
+      };
+    }
+
+    // Ücretsiz kargo eşiğine ulaşıldıysa
+    if (freeShippingThreshold && finalTotal >= freeShippingThreshold) {
+      return {
+        type: 'achieved',
+        message: 'Kostenlose Lieferung!',
+        progress: 100,
+      };
+    }
+
+    // Teslimat kurallarını kontrol et - daha düşük ücreti olan bir sonraki aralığı bul
+    if (shippingRules.length > 0) {
+      // Mevcut kurala göre teslimat ücretini bul
+      const currentRule = shippingRules.find((r) => {
+        const minOk = r.min == null || finalTotal >= parseFloat(r.min);
+        const maxOk = r.max == null || finalTotal <= parseFloat(r.max);
+        return minOk && maxOk;
+      });
+
+      if (currentRule) {
+        const currentFee = parseFloat(currentRule.fee);
+
+        // Daha düşük ücretli bir sonraki kuralı bul
+        const lowerFeeRules = shippingRules.filter((r) => {
+          const ruleMinAmount = r.min ? parseFloat(r.min) : 0;
+          const ruleFee = parseFloat(r.fee);
+          return ruleMinAmount > finalTotal && ruleFee < currentFee;
+        });
+
+        if (lowerFeeRules.length > 0) {
+          // En yakın ve en düşük ücretli kuralı bul
+          const nextRule = lowerFeeRules.reduce((closest, rule) => {
+            const ruleMin = parseFloat(rule.min);
+            const closestMin = parseFloat(closest.min);
+            return ruleMin < closestMin ? rule : closest;
+          });
+
+          const remaining = parseFloat(nextRule.min) - finalTotal;
+          const feeDifference = currentFee - parseFloat(nextRule.fee);
+          const progress = (finalTotal / parseFloat(nextRule.min)) * 100;
+
+          return {
+            type: 'reduced',
+            message: `Noch ${remaining.toFixed(2)} € und Sie sparen ${feeDifference.toFixed(2)} € Versandkosten!`,
+            progress: progress,
+            target: parseFloat(nextRule.min),
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const deliveryWarning = getDeliveryFeeWarning();
 
   // Miktar güncelleme
   const handleUpdateQuantity = async (productId, newQuantity, variantId = null) => {
@@ -589,6 +678,38 @@ function Sepet() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white border border-gray-200 rounded-lg p-2 shadow-md mt-2 mb-4"
         >
+        {/* Teslimat Ücreti Uyarısı */}
+        {deliveryWarning && (
+          <div className={`mb-3 p-2.5 rounded-lg ${
+            deliveryWarning.type === 'achieved'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-blue-50 border border-blue-200'
+          }`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <FiTruck className={`w-4 h-4 ${
+                deliveryWarning.type === 'achieved' ? 'text-green-600' : 'text-blue-600'
+              }`} />
+              <p className={`text-xs font-semibold ${
+                deliveryWarning.type === 'achieved' ? 'text-green-800' : 'text-blue-800'
+              }`}>
+                {deliveryWarning.message}
+              </p>
+            </div>
+            {deliveryWarning.progress < 100 && (
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${deliveryWarning.progress}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className={`h-full rounded-full ${
+                    deliveryWarning.type === 'free' ? 'bg-green-500' : 'bg-blue-500'
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Toplam */}
         <div className="space-y-1.5 mb-2">
           <div className="flex items-center justify-between">

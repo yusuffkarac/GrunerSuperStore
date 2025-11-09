@@ -166,6 +166,39 @@ const useCartStore = create(
 
       // Error'u temizle
       clearError: () => set({ error: null }),
+
+      // Siparişi tekrar et - Sipariş ürünlerini sepete ekle
+      reorderFromOrder: async (orderItems) => {
+        try {
+          // Her ürünü sepete ekle
+          for (const item of orderItems) {
+            // Ürün nesnesini oluştur (addItem'ın beklediği formatta)
+            const product = {
+              id: item.productId,
+              name: item.productName,
+              price: item.price,
+              unit: item.unit,
+              stock: 999, // Stok bilgisini varsayılan yüksek bir değer olarak ayarla
+              imageUrls: item.imageUrl ? [item.imageUrl] : [],
+              variants: item.variantId ? [{
+                id: item.variantId,
+                name: item.variantName,
+                price: item.price,
+                stock: 999,
+                imageUrls: item.imageUrl ? [item.imageUrl] : [],
+              }] : null
+            };
+
+            // Sepete ekle
+            await get().addItem(product, item.quantity, item.variantId);
+          }
+
+          return true;
+        } catch (error) {
+          console.error('Reorder error:', error);
+          throw error;
+        }
+      },
     }),
     {
       name: 'cart-storage', // localStorage key

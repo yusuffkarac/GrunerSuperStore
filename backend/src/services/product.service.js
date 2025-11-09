@@ -730,6 +730,163 @@ class ProductService {
 
     return { message: 'Produkt wurde gelöscht' };
   }
+
+  /**
+   * Toplu fiyat güncelleme
+   * @param {Object} params - { type: 'all' | 'category' | 'products', categoryId?, productIds?, adjustmentType: 'percentage' | 'fixed', adjustmentValue: number }
+   * @returns {Object} { updatedCount, message }
+   */
+  async bulkUpdatePrices(params) {
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue } = params;
+
+    if (!type || !adjustmentType || adjustmentValue === undefined) {
+      throw new Error('Fehlende erforderliche Parameter');
+    }
+
+    const value = parseFloat(adjustmentValue);
+    if (isNaN(value)) {
+      throw new Error('Ungültiger Anpassungswert');
+    }
+
+    // Where koşulunu oluştur
+    let where = {};
+
+    if (type === 'category') {
+      if (!categoryId) {
+        throw new Error('Kategorie-ID ist erforderlich');
+      }
+      where.categoryId = categoryId;
+    } else if (type === 'products') {
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('Mindestens eine Produkt-ID ist erforderlich');
+      }
+      where.id = { in: productIds };
+    }
+    // type === 'all' ise where boş kalır, tüm ürünler güncellenir
+
+    // Önce güncellencek ürünleri çek (fiyat hesaplaması için)
+    const products = await prisma.product.findMany({
+      where,
+      select: { id: true, price: true, name: true },
+    });
+
+    if (products.length === 0) {
+      return {
+        updatedCount: 0,
+        message: 'Keine Produkte gefunden',
+      };
+    }
+
+    // Her ürün için yeni fiyatı hesapla ve güncelle
+    const updatePromises = products.map(async (product) => {
+      let newPrice;
+
+      if (adjustmentType === 'percentage') {
+        // Yüzde artış/azalış
+        newPrice = parseFloat(product.price) * (1 + value / 100);
+      } else {
+        // Sabit miktar artış/azalış
+        newPrice = parseFloat(product.price) + value;
+      }
+
+      // Negatif fiyat olmaması için kontrol
+      if (newPrice < 0) {
+        newPrice = 0;
+      }
+
+      // Fiyatı 2 ondalık basamağa yuvarla
+      newPrice = Math.round(newPrice * 100) / 100;
+
+      return prisma.product.update({
+        where: { id: product.id },
+        data: { price: newPrice },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return {
+      updatedCount: products.length,
+      message: `${products.length} Produkt(e) erfolgreich aktualisiert`,
+    };
+  }
+
+  /**
+   * Toplu varyant fiyat güncelleme
+   * @param {Object} params - { type: 'all' | 'category' | 'products', categoryId?, productIds?, adjustmentType: 'percentage' | 'fixed', adjustmentValue: number }
+   * @returns {Object} { updatedCount, message }
+   */
+  async bulkUpdateVariantPrices(params) {
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue } = params;
+
+    if (!type || !adjustmentType || adjustmentValue === undefined) {
+      throw new Error('Fehlende erforderliche Parameter');
+    }
+
+    const value = parseFloat(adjustmentValue);
+    if (isNaN(value)) {
+      throw new Error('Ungültiger Anpassungswert');
+    }
+
+    // Where koşulunu oluştur
+    let productWhere = {};
+
+    if (type === 'category') {
+      if (!categoryId) {
+        throw new Error('Kategorie-ID ist erforderlich');
+      }
+      productWhere.categoryId = categoryId;
+    } else if (type === 'products') {
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('Mindestens eine Produkt-ID ist erforderlich');
+      }
+      productWhere.id = { in: productIds };
+    }
+
+    // İlgili ürünlerin varyantlarını çek
+    const variants = await prisma.variant.findMany({
+      where: {
+        product: productWhere,
+      },
+      select: { id: true, price: true },
+    });
+
+    if (variants.length === 0) {
+      return {
+        updatedCount: 0,
+        message: 'Keine Varianten gefunden',
+      };
+    }
+
+    // Her varyant için yeni fiyatı hesapla ve güncelle
+    const updatePromises = variants.map(async (variant) => {
+      let newPrice;
+
+      if (adjustmentType === 'percentage') {
+        newPrice = parseFloat(variant.price) * (1 + value / 100);
+      } else {
+        newPrice = parseFloat(variant.price) + value;
+      }
+
+      if (newPrice < 0) {
+        newPrice = 0;
+      }
+
+      newPrice = Math.round(newPrice * 100) / 100;
+
+      return prisma.variant.update({
+        where: { id: variant.id },
+        data: { price: newPrice },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return {
+      updatedCount: variants.length,
+      message: `${variants.length} Variante(n) erfolgreich aktualisiert`,
+    };
+  }
 }
 
 export default new ProductService();
