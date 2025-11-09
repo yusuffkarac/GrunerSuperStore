@@ -67,9 +67,8 @@ async function createDump() {
     // --column-inserts: Kolon isimleriyle birlikte INSERT (daha güvenli)
     // --no-owner: Owner bilgilerini dahil etme (sunucuda farklı user olabilir)
     // --no-privileges: Privilege bilgilerini dahil etme
-    // --clean: Önce DROP statements ekler
-    // --if-exists: IF EXISTS kullanır (daha güvenli)
-    const dumpCommand = `pg_dump -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} --inserts --column-inserts --no-owner --no-privileges --clean --if-exists`;
+    // Not: --clean kullanmıyoruz çünkü restore scripti zaten veritabanını temizliyor
+    const dumpCommand = `pg_dump -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} --inserts --column-inserts --no-owner --no-privileges`;
     
     console.log('\n⏳ Dump alınıyor...');
     const { stdout, stderr } = await execAsync(dumpCommand, { 

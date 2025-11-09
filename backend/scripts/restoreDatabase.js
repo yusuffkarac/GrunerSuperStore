@@ -68,6 +68,51 @@ function findLatestDump() {
   }
 }
 
+// Veritabanını temizle (tüm tabloları CASCADE ile drop et)
+function cleanDatabase(env) {
+  return new Promise((resolve, reject) => {
+    // En basit ve güvenli yöntem: public schema'yı CASCADE ile drop edip yeniden oluştur
+    const cleanSQL = 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;';
+    
+    const psql = spawn('psql', [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-c', cleanSQL,
+      '--quiet'
+    ], {
+      env,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    let stderr = '';
+    
+    psql.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+    
+    psql.on('close', (code) => {
+      if (code !== 0 && stderr && !stderr.includes('WARNING') && !stderr.includes('NOTICE')) {
+        // Eğer veritabanı zaten boşsa veya schema yoksa, bu normal
+        if (!stderr.includes('does not exist') && !stderr.includes('FATAL')) {
+          console.warn('⚠️  Temizleme sırasında uyarı:', stderr);
+        }
+      }
+      resolve();
+    });
+    
+    psql.on('error', (error) => {
+      // Eğer veritabanı bağlantı hatası varsa, devam et (belki veritabanı yok)
+      if (error.message.includes('does not exist') || error.message.includes('FATAL')) {
+        resolve();
+      } else {
+        reject(error);
+      }
+    });
+  });
+}
+
 async function restoreDatabase(dumpFile) {
   try {
     console.log('🔄 Veritabanı restore işlemi başlatılıyor...');
@@ -109,6 +154,10 @@ async function restoreDatabase(dumpFile) {
     if (DB_PASSWORD) {
       env.PGPASSWORD = DB_PASSWORD;
     }
+    
+    // Önce veritabanını temizle (CASCADE ile tüm bağımlılıkları sil)
+    console.log('\n🧹 Mevcut veritabanı temizleniyor...');
+    await cleanDatabase(env);
     
     // psql komutu ile restore et
     // --single-transaction: Tüm işlemi tek transaction'da yapar (hata durumunda rollback)
