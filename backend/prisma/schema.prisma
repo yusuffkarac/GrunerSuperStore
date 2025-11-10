@@ -513,6 +513,8 @@ model Settings {
   notificationTemplates      Json?    @map("notification_templates")
   // Barkod etiket ayarları
   barcodeLabelSettings      Json?    @map("barcode_label_settings")
+  // Kunden Stornierung Einstellungen
+  customerCancellationSettings Json? @map("customer_cancellation_settings")
   // SKT yönetim ayarları
   expiryManagementSettings  Json?    @map("expiry_management_settings")
   // Örnek: { "enabled": true, "warningDays": 3, "criticalDays": 0 }

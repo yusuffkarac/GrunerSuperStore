@@ -30,6 +30,7 @@ class SettingsController {
       smtpSettings,
       emailNotificationSettings,
       barcodeLabelSettings,
+      customerCancellationSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -48,6 +49,7 @@ class SettingsController {
       smtpSettings,
       emailNotificationSettings,
       barcodeLabelSettings,
+      customerCancellationSettings,
     });
 
     res.status(200).json({
