@@ -671,6 +671,28 @@ function Profil() {
                   />
                 </div>
 
+                {/* Aktuelle Position Butonu */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleGetLocation}
+                    disabled={searchingAddress}
+                    className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {searchingAddress ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Standort wird abgerufen...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiMapPin className="w-4 h-4" />
+                        Aktuelle Position verwenden
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 {/* Straße - Autocomplete */}
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -836,18 +858,6 @@ function Profil() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
                   />
-                </div>
-
-                {/* Aktuelle Position Butonu */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <FiMapPin className="w-4 h-4" />
-                    Aktuelle Position verwenden
-                  </button>
                 </div>
 
                 {/* Standortinformationen */}
