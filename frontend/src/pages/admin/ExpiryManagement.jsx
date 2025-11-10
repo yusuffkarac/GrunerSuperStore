@@ -58,8 +58,19 @@ function ExpiryManagement() {
         axios.get(`${API_URL}/admin/expiry/settings`, config),
       ]);
 
-      setCriticalProducts(criticalRes.data || []);
-      setWarningProducts(warningRes.data || []);
+      const criticalData = criticalRes.data || [];
+      const warningData = warningRes.data || [];
+      
+      // Kalan gün değeri 0 olan ürünleri warning'den critical'e taşı
+      const zeroDayProducts = warningData.filter(product => product.daysUntilExpiry === 0);
+      const remainingWarningProducts = warningData.filter(product => product.daysUntilExpiry !== 0);
+      
+      // Critical listesine ekle (duplicate kontrolü yaparak)
+      const criticalProductIds = new Set(criticalData.map(p => p.id));
+      const newCriticalProducts = [...criticalData, ...zeroDayProducts.filter(p => !criticalProductIds.has(p.id))];
+      
+      setCriticalProducts(newCriticalProducts);
+      setWarningProducts(remainingWarningProducts);
       setHistory(historyRes.data?.actions || []);
       setSettings(settingsRes.data || { enabled: true, warningDays: 3, criticalDays: 0 });
       setError(null);
@@ -80,14 +91,14 @@ function ExpiryManagement() {
     }
   };
 
-  const handleRemoveProduct = async () => {
+  const handleRemoveProduct = async (excludeFromExpiryCheck = false) => {
     if (!removeDialog.product) return;
 
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
         `${API_URL}/admin/expiry/remove/${removeDialog.product.id}`,
-        { excludeFromCheck, note },
+        { excludeFromCheck: excludeFromExpiryCheck, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -593,51 +604,46 @@ function ExpiryManagement() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Ürünü Raftan Kaldır</h3>
+              <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full">
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">Ürünü Raftan Kaldır</h3>
                   <button
                     onClick={() => setRemoveDialog({ open: false, product: null })}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <FiX size={20} />
+                    <FiX size={18} />
                   </button>
                 </div>
-                <div className="px-6 py-4 space-y-4">
-                  <p className="text-gray-700">
+                <div className="px-4 py-3 space-y-3">
+                  <p className="text-sm text-gray-700">
                     <strong>{removeDialog.product?.name}</strong> ürününü raftan kaldırdığınızı onaylıyor musunuz?
                   </p>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={excludeFromCheck}
-                      onChange={(e) => setExcludeFromCheck(e.target.checked)}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      Bu ürünü SKT kontrollerinden muaf tut (deaktif et)
-                    </span>
-                  </label>
                   <textarea
                     placeholder="Not (İsteğe bağlı)"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    rows={2}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                   />
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2">
                   <button
                     onClick={() => setRemoveDialog({ open: false, product: null })}
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     İptal
                   </button>
                   <button
-                    onClick={handleRemoveProduct}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    onClick={() => handleRemoveProduct(false)}
+                    className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                   >
                     Kaldırdım
+                  </button>
+                  <button
+                    onClick={() => handleRemoveProduct(true)}
+                    className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                  >
+                    Kaldırdım ve Muaf Tut
                   </button>
                 </div>
               </div>
