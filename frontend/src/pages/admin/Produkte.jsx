@@ -79,7 +79,7 @@ const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
           )}
           {product.isFeatured && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-              Featured
+              Empfohlen
             </span>
           )}
         </div>
@@ -160,7 +160,7 @@ const ProductCardDesktop = memo(({ product, onEdit, onDelete, onOpenVariants }) 
             )}
             {product.isFeatured && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                Featured
+                Empfohlen
               </span>
             )}
           </div>
@@ -252,7 +252,7 @@ const ProductCardMobile = memo(({ product, onEdit, onDelete, onOpenVariants }) =
             )}
             {product.isFeatured && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded">
-                Featured
+                Empfohlen
               </span>
             )}
           </div>
@@ -332,7 +332,7 @@ const ProductMobileRow = memo(({ product, onEdit, onDelete }) => {
             )}
             {product.isFeatured && (
               <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded flex-shrink-0">
-                F
+                E
               </span>
             )}
           </div>
@@ -546,6 +546,7 @@ function Produkte() {
         openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
         expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
         excludeFromExpiryCheck: product.excludeFromExpiryCheck || false,
+        taxRate: product.taxRate ? parseFloat(product.taxRate) : '',
       });
     } else {
       setEditingProduct(null);
@@ -571,6 +572,7 @@ function Produkte() {
         openfoodfactsCategories: [],
         expiryDate: '',
         excludeFromExpiryCheck: false,
+        taxRate: '',
       });
     }
     setShowModal(true);
@@ -616,6 +618,7 @@ function Produkte() {
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
         expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
         excludeFromExpiryCheck: formData.excludeFromExpiryCheck,
+        taxRate: formData.taxRate ? parseFloat(formData.taxRate) : null,
       };
 
       // Stock alanını sadece geçerli bir değer varsa ekle
@@ -1155,7 +1158,7 @@ function Produkte() {
             {/* Featured */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Featured
+                Empfohlen
               </label>
               <select
                 value={isFeaturedFilter}
@@ -1163,8 +1166,8 @@ function Produkte() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 transition-all"
               >
                 <option value="">Alle</option>
-                <option value="true">Featured</option>
-                <option value="false">Nicht Featured</option>
+                <option value="true">Empfohlen</option>
+                <option value="false">Nicht empfohlen</option>
               </select>
             </div>
 
@@ -1677,13 +1680,33 @@ function Produkte() {
                     />
                   </div>
 
+                  {/* Mehrwertsteuersatz */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mehrwertsteuersatz (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.taxRate}
+                      onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
+                      placeholder="z.B. 19.00 (für 19%)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Geben Sie den Mehrwertsteuersatz in Prozent an (z.B. 19.00 = 19%)
+                    </p>
+                  </div>
+
                   {/* Son Kullanma Tarihi (SKT) */}
                   <div className="border-t border-gray-200 pt-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Son Kullanma Tarihi (SKT)</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Mindesthaltbarkeitsdatum (MHD)</h3>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          SKT Tarihi
+                          MHD-Datum
                         </label>
                         <input
                           type="date"
@@ -1692,7 +1715,7 @@ function Produkte() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Ürünün son kullanma tarihini girin (isteğe bağlı)
+                          Geben Sie das Mindesthaltbarkeitsdatum des Produkts ein (optional)
                         </p>
                       </div>
                       <div>
@@ -1700,11 +1723,11 @@ function Produkte() {
                           id="excludeFromExpiryCheck"
                           checked={formData.excludeFromExpiryCheck}
                           onChange={(e) => setFormData({ ...formData, excludeFromExpiryCheck: e.target.checked })}
-                          label="SKT kontrollerinden muaf tut"
+                          label="Von MHD-Kontrollen ausnehmen"
                           color="green"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Bu ürün SKT yönetimi kontrollerinden muaf tutulacak
+                          Dieses Produkt wird von den MHD-Management-Kontrollen ausgenommen
                         </p>
                       </div>
                     </div>
@@ -1913,7 +1936,7 @@ function Produkte() {
                       id="isFeatured"
                       checked={formData.isFeatured}
                       onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                      label="Featured"
+                      label="Empfohlen"
                       color="green"
                     />
                   </div>

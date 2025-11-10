@@ -614,7 +614,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck', 'taxRate'
     ];
     
     const createData = {};
@@ -636,6 +636,15 @@ class ProductService {
     createData.price = parseFloat(data.price);
     createData.stock = parseInt(data.stock) || 0;
     createData.lowStockLevel = data.lowStockLevel ? parseInt(data.lowStockLevel) : null;
+    
+    // taxRate'i parse et
+    if (createData.taxRate !== undefined) {
+      if (createData.taxRate === null || createData.taxRate === '') {
+        createData.taxRate = null;
+      } else {
+        createData.taxRate = parseFloat(createData.taxRate);
+      }
+    }
     
     // expiryDate'i parse et
     if (createData.expiryDate !== undefined) {
@@ -708,7 +717,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck', 'taxRate'
     ];
     
     const updateData = {};
@@ -744,6 +753,15 @@ class ProductService {
     }
     if (updateData.imageUrls !== undefined) {
       updateData.imageUrls = Array.isArray(updateData.imageUrls) ? updateData.imageUrls : [];
+    }
+    
+    // taxRate'i parse et
+    if (updateData.taxRate !== undefined) {
+      if (updateData.taxRate === null || updateData.taxRate === '') {
+        updateData.taxRate = null;
+      } else {
+        updateData.taxRate = parseFloat(updateData.taxRate);
+      }
     }
     
     // expiryDate'i parse et
