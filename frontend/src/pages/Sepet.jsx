@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
-import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag, FiHeart, FiTruck } from 'react-icons/fi';
+import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiPackage, FiTag, FiHeart, FiTruck, FiX } from 'react-icons/fi';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useFavoriteStore from '../store/favoriteStore';
@@ -319,6 +319,9 @@ function Sepet() {
   const [hasError, setHasError] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [applicableCampaigns, setApplicableCampaigns] = useState([]);
 
   const total = getTotal();
   const itemCount = getItemCount();
@@ -336,6 +339,114 @@ function Sepet() {
     fetchSettings();
   }, []);
 
+  // Tüm uygun kampanyaları bul
+  const getAllApplicableCampaigns = () => {
+    if (campaigns.length === 0 || items.length === 0) return [];
+
+    const subtotal = items.reduce((sum, item) => {
+      return sum + (parseFloat(item.price) * parseInt(item.quantity));
+    }, 0);
+
+    const applicableCampaigns = [];
+
+    // Global kampanyalar
+    campaigns.filter(c => c.applyToAll).forEach((campaign) => {
+      let discount = 0;
+      const { type, discountPercent, discountAmount, maxDiscount } = campaign;
+
+      switch (type) {
+        case 'PERCENTAGE':
+          discount = subtotal * (parseFloat(discountPercent) / 100);
+          break;
+        case 'FIXED_AMOUNT':
+          discount = Math.min(parseFloat(discountAmount), subtotal);
+          break;
+        default:
+          discount = 0;
+      }
+
+      if (maxDiscount && discount > parseFloat(maxDiscount)) {
+        discount = parseFloat(maxDiscount);
+      }
+
+      if (discount > 0) {
+        applicableCampaigns.push({
+          ...campaign,
+          calculatedDiscount: discount,
+          scope: 'global',
+        });
+      }
+    });
+
+    // Ürün bazlı kampanyalar
+    const productCampaignMap = new Map(); // Kampanya ID -> toplam indirim
+
+    items.forEach((item) => {
+      const itemPrice = parseFloat(item.price);
+      const quantity = parseInt(item.quantity);
+
+      const productSpecificCampaigns = campaigns.filter((campaign) => {
+        if (campaign.applyToAll || campaign.type === 'FREE_SHIPPING') return false;
+
+        if (item.categoryId && campaign.categoryIds) {
+          const categoryIds = Array.isArray(campaign.categoryIds) ? campaign.categoryIds : [];
+          const normalizedItemCategoryId = String(item.categoryId).toLowerCase().trim();
+          const hasMatchingCategory = categoryIds.some(catId => 
+            String(catId).toLowerCase().trim() === normalizedItemCategoryId
+          );
+          if (hasMatchingCategory) return true;
+        }
+
+        if (campaign.productIds) {
+          const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+          const normalizedItemProductId = String(item.productId).toLowerCase().trim();
+          const hasMatchingProduct = productIds.some(prodId => 
+            String(prodId).toLowerCase().trim() === normalizedItemProductId
+          );
+          if (hasMatchingProduct) return true;
+        }
+
+        return false;
+      });
+
+      productSpecificCampaigns.forEach((campaign) => {
+        const discount = calculateSingleCampaignDiscount(itemPrice, quantity, campaign);
+        if (discount > 0) {
+          // Aynı kampanya için toplam indirimi biriktir
+          const currentTotal = productCampaignMap.get(campaign.id) || 0;
+          productCampaignMap.set(campaign.id, currentTotal + discount);
+          
+          // İlk kez görüyorsak kampanya bilgilerini ekle
+          if (!applicableCampaigns.find(c => c.id === campaign.id)) {
+            applicableCampaigns.push({
+              ...campaign,
+              calculatedDiscount: discount, // İlk ürün için indirim
+              scope: 'product',
+              productName: item.name,
+            });
+          }
+        }
+      });
+    });
+
+    // Ürün bazlı kampanyaların toplam indirimini güncelle
+    applicableCampaigns.forEach((campaign) => {
+      if (campaign.scope === 'product' && productCampaignMap.has(campaign.id)) {
+        campaign.calculatedDiscount = productCampaignMap.get(campaign.id);
+      }
+    });
+
+    // Önceliğe göre sırala
+    applicableCampaigns.sort((a, b) => {
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityB !== priorityA) return priorityB - priorityA;
+      return b.calculatedDiscount - a.calculatedDiscount;
+    });
+
+    return applicableCampaigns;
+  };
+
   // Kampanya bilgisini çek
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -343,58 +454,87 @@ function Sepet() {
         try {
           const response = await campaignService.getActiveCampaigns();
           const activeCampaigns = response.data.campaigns || [];
-          // Minimum tutar kontrolü
-          const applicableCampaigns = activeCampaigns.filter(c => {
+          // Minimum tutar ve kullanım limiti kontrolü
+          const filteredCampaigns = activeCampaigns.filter(c => {
+            // Minimum tutar kontrolü
             if (c.minPurchase && parseFloat(c.minPurchase) > total) return false;
+            // Kullanım limiti kontrolü
+            if (c.usageLimit !== null && c.usageLimit !== undefined) {
+              if (c.usageCount >= c.usageLimit) return false;
+            }
             return true;
           });
-          setCampaigns(applicableCampaigns);
+          // Önceliğe göre sırala (yüksek öncelik önce)
+          filteredCampaigns.sort((a, b) => {
+            const priorityA = a.priority || 0;
+            const priorityB = b.priority || 0;
+            return priorityB - priorityA; // Yüksek öncelik önce
+          });
+          setCampaigns(filteredCampaigns);
         } catch (error) {
           console.error('Kampanya yükleme hatası:', error);
         }
+      } else {
+        setCampaigns([]);
+        setSelectedCampaignId(null);
       }
     };
     fetchCampaigns();
   }, [total]);
 
-  // Ürün için geçerli kampanyaları filtrele
-  const getApplicableCampaignsForItem = (item) => {
-    return campaigns.filter((campaign) => {
-      // FREE_SHIPPING kampanyaları ürün bazında değil
-      if (campaign.type === 'FREE_SHIPPING') return false;
+  // Uygun kampanyaları kontrol et ve modal göster
+  useEffect(() => {
+    if (campaigns.length === 0 || items.length === 0) {
+      setApplicableCampaigns([]);
+      setSelectedCampaignId(null);
+      return;
+    }
 
-      // Tüm mağazaya uygulanan kampanyalar
-      if (campaign.applyToAll) return true;
+    const applicable = getAllApplicableCampaigns();
+    setApplicableCampaigns(applicable);
 
-      // Kategoriye özgü kampanyalar
-      if (item.categoryId && campaign.categoryIds) {
-        const categoryIds = Array.isArray(campaign.categoryIds) ? campaign.categoryIds : [];
-        if (categoryIds.includes(item.categoryId)) return true;
+    // Eğer birden fazla kampanya varsa ve henüz seçilmemişse modal göster
+    if (applicable.length > 1 && !selectedCampaignId) {
+      // LocalStorage'dan kontrol et
+      const savedCampaignId = localStorage.getItem('selectedCampaignId');
+      if (savedCampaignId && applicable.some(c => c.id === savedCampaignId)) {
+        setSelectedCampaignId(savedCampaignId);
+      } else {
+        setShowCampaignModal(true);
       }
-
-      // Ürüne özgü kampanyalar
-      if (campaign.productIds) {
-        const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
-        if (productIds.includes(item.productId)) return true;
+    } else if (applicable.length === 1 && !selectedCampaignId) {
+      // Tek kampanya varsa otomatik seç
+      setSelectedCampaignId(applicable[0].id);
+      localStorage.setItem('selectedCampaignId', applicable[0].id);
+    } else if (applicable.length === 0) {
+      setSelectedCampaignId(null);
+      localStorage.removeItem('selectedCampaignId');
+    } else if (selectedCampaignId && !applicable.some(c => c.id === selectedCampaignId)) {
+      // Seçilen kampanya artık uygun değilse temizle
+      setSelectedCampaignId(null);
+      localStorage.removeItem('selectedCampaignId');
+      if (applicable.length > 1) {
+        setShowCampaignModal(true);
       }
-
-      return false;
-    });
-  };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaigns, items, total]);
 
   // Tek kampanya için indirim hesapla
   const calculateSingleCampaignDiscount = (price, quantity, campaign) => {
     const { type, discountPercent, discountAmount, buyQuantity, getQuantity, maxDiscount } = campaign;
     let discount = 0;
+    const totalPrice = price * quantity; // Toplam fiyat (birim fiyat * miktar)
 
     switch (type) {
       case 'PERCENTAGE':
-        discount = price * (parseFloat(discountPercent) / 100);
+        // İndirimi toplam fiyat üzerinden hesapla
+        discount = totalPrice * (parseFloat(discountPercent) / 100);
         break;
 
       case 'FIXED_AMOUNT':
-        discount = parseFloat(discountAmount);
-        discount = Math.min(discount, price);
+        // Sabit tutar için: min(amount, totalPrice) - ama genelde toplam fiyat üzerinden
+        discount = Math.min(parseFloat(discountAmount), totalPrice);
         break;
 
       case 'BUY_X_GET_Y':
@@ -419,46 +559,89 @@ function Sepet() {
     return discount;
   };
 
-  // Kampanya indirimi hesapla
+  // Kampanya indirimi hesapla (sadece seçilen kampanyayı kullan)
   const calculateDiscount = () => {
-    if (campaigns.length === 0 || items.length === 0) return { discount: 0, details: [] };
+    if (!selectedCampaignId || applicableCampaigns.length === 0) {
+      return { discount: 0, details: [] };
+    }
 
-    let totalDiscount = 0;
-    const discountDetails = [];
+    const selectedCampaign = applicableCampaigns.find(c => c.id === selectedCampaignId);
+    if (!selectedCampaign) {
+      return { discount: 0, details: [] };
+    }
 
-    // Her ürün için ayrı ayrı indirim hesapla
-    items.forEach((item) => {
-      const itemPrice = parseFloat(item.price);
-      const quantity = parseInt(item.quantity);
+    let discount = selectedCampaign.calculatedDiscount || 0;
+    const details = [];
 
-      // Bu ürün için geçerli kampanyaları bul
-      const applicableCampaigns = getApplicableCampaignsForItem(item);
+    if (selectedCampaign.scope === 'global') {
+      details.push({
+        productName: 'Gesamter Warenkorb',
+        campaignName: selectedCampaign.name,
+        discount: discount,
+      });
+    } else {
+      // Ürün bazlı kampanya için hangi ürünlere uygulandığını bul
+      items.forEach((item) => {
+        const itemPrice = parseFloat(item.price);
+        const quantity = parseInt(item.quantity);
+        
+        // Bu kampanya bu ürüne uygulanıyor mu?
+        let appliesToItem = false;
+        
+        if (item.categoryId && selectedCampaign.categoryIds) {
+          const categoryIds = Array.isArray(selectedCampaign.categoryIds) ? selectedCampaign.categoryIds : [];
+          const normalizedItemCategoryId = String(item.categoryId).toLowerCase().trim();
+          if (categoryIds.some(catId => String(catId).toLowerCase().trim() === normalizedItemCategoryId)) {
+            appliesToItem = true;
+          }
+        }
+        
+        if (selectedCampaign.productIds) {
+          const productIds = Array.isArray(selectedCampaign.productIds) ? selectedCampaign.productIds : [];
+          const normalizedItemProductId = String(item.productId).toLowerCase().trim();
+          if (productIds.some(prodId => String(prodId).toLowerCase().trim() === normalizedItemProductId)) {
+            appliesToItem = true;
+          }
+        }
 
-      if (applicableCampaigns.length === 0) return;
-
-      // En yüksek indirimi veren kampanyayı bul
-      let bestDiscount = 0;
-      let bestCampaign = null;
-
-      applicableCampaigns.forEach((campaign) => {
-        const discount = calculateSingleCampaignDiscount(itemPrice, quantity, campaign);
-        if (discount > bestDiscount) {
-          bestDiscount = discount;
-          bestCampaign = campaign;
+        if (appliesToItem) {
+          const itemDiscount = calculateSingleCampaignDiscount(itemPrice, quantity, selectedCampaign);
+          if (itemDiscount > 0) {
+            details.push({
+              productName: item.name,
+              campaignName: selectedCampaign.name,
+              discount: itemDiscount,
+            });
+          }
         }
       });
+      
+      // Toplam indirimi hesapla
+      discount = details.reduce((sum, detail) => sum + detail.discount, 0);
+    }
 
-      if (bestDiscount > 0 && bestCampaign) {
-        totalDiscount += bestDiscount;
-        discountDetails.push({
-          productName: item.name,
-          campaignName: bestCampaign.name,
-          discount: bestDiscount,
-        });
-      }
+    return { discount, details };
+  };
+
+  // Kampanya seçimini yap
+  const handleSelectCampaign = (campaignId) => {
+    setSelectedCampaignId(campaignId);
+    localStorage.setItem('selectedCampaignId', campaignId);
+    setShowCampaignModal(false);
+    toast.success('Kampanya ausgewählt', {
+      position: 'bottom-center',
+      autoClose: 2000,
     });
+  };
 
-    return { discount: totalDiscount, details: discountDetails };
+  // Kampanya seçimini iptal et
+  const handleCancelCampaignSelection = () => {
+    // En yüksek öncelikli kampanyayı otomatik seç
+    if (applicableCampaigns.length > 0) {
+      handleSelectCampaign(applicableCampaigns[0].id);
+    } else {
+      setShowCampaignModal(false);
+    }
   };
 
   const discountResult = calculateDiscount();
@@ -783,6 +966,14 @@ function Sepet() {
                   <div className="flex items-center gap-1">
                     <FiTag className="w-3 h-3" />
                     <span className="text-xs">{detail.campaignName}</span>
+                    {applicableCampaigns.length > 1 && (
+                      <button
+                        onClick={() => setShowCampaignModal(true)}
+                        className="ml-2 text-xs text-primary-600 hover:text-primary-700 underline"
+                      >
+                        Ändern
+                      </button>
+                    )}
                   </div>
                   <span className="text-xs font-semibold">-{detail.discount.toFixed(2)} €</span>
                 </div>
@@ -819,6 +1010,102 @@ function Sepet() {
         </button>
       </motion.div>
       </div>
+
+      {/* Kampanya Seçim Modalı */}
+      <AnimatePresence>
+        {showCampaignModal && applicableCampaigns.length > 1 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelCampaignSelection}
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+                {/* Modal Header */}
+                <div className="bg-primary-600 text-white px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">Kampanya auswählen</h2>
+                    <p className="text-sm text-primary-100 mt-1">
+                      Mehrere Kampagnen verfügbar
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCancelCampaignSelection}
+                    className="p-2 hover:bg-primary-700 rounded-lg transition-colors"
+                  >
+                    <FiX className="text-white" size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Bitte wählen Sie eine Kampagne aus, die auf Ihren Warenkorb angewendet werden soll:
+                  </p>
+                  <div className="space-y-3">
+                    {applicableCampaigns.map((campaign) => {
+                      const totalDiscount = campaign.calculatedDiscount || 0;
+                      // İndirim metnini oluştur - her zaman Euro cinsinden göster
+                      const discountText = `${totalDiscount.toFixed(2)} €`;
+                      
+                      return (
+                        <button
+                          key={campaign.id}
+                          onClick={() => handleSelectCampaign(campaign.id)}
+                          className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FiTag className="text-primary-600" />
+                                <h3 className="font-semibold text-gray-900">{campaign.name}</h3>
+                              </div>
+                              {campaign.description && (
+                                <p className="text-sm text-gray-600 mb-2">{campaign.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                {campaign.scope === 'global' ? (
+                                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                    Gesamter Warenkorb
+                                  </span>
+                                ) : (
+                                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+                                    {campaign.productName || 'Produkt'}
+                                  </span>
+                                )}
+                                {campaign.priority > 0 && (
+                                  <span className="text-gray-400">Priorität: {campaign.priority}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <div className="text-2xl font-bold text-primary-600">
+                                -{discountText}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Rabatt
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -42,6 +42,7 @@ const useCartStore = create(
             imageUrl: item.variant?.imageUrls?.[0] || item.product?.imageUrls?.[0] || item.imageUrl || null,
             stock: item.variant ? item.variant.stock : (item.product?.stock || item.stock),
             unit: item.product?.unit || item.unit,
+            categoryId: item.product?.category?.id || item.product?.categoryId || item.categoryId || null,
           }));
           set({ items: formattedItems, loading: false });
         } catch (error) {
@@ -87,6 +88,7 @@ const useCartStore = create(
             imageUrl: imageUrl,
             stock: stock,
             unit: product.unit,
+            categoryId: product.categoryId || product.category?.id || null,
           };
 
           set({ items: [...items, newItem] });
