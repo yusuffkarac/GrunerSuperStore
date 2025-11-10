@@ -11,7 +11,7 @@ function PageLoading() {
         
         {/* Nokta animasyonu */}
         <div className="flex items-center gap-2">
-          <span className="text-primary-700 font-semibold text-lg">Lädelt</span>
+          <span className="text-primary-700 font-semibold text-lg">Wird geladen</span>
           <div className="flex gap-1">
             <div className="w-2 h-2 bg-primary-700 rounded-full animate-bounce" style={{ animationDelay: '0s', animationDuration: '1.4s' }}></div>
             <div className="w-2 h-2 bg-primary-700 rounded-full animate-bounce" style={{ animationDelay: '0.2s', animationDuration: '1.4s' }}></div>
