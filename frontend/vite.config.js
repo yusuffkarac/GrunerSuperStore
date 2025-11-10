@@ -4,6 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   appType: 'spa',
+  optimizeDeps: {
+    include: ['@mui/material', '@mui/icons-material'],
+    exclude: ['jsbarcode']
+  },
   plugins: [
     react(),
     VitePWA({

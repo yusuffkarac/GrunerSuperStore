@@ -1,43 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Alert,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControlGroup,
-  FormControlLabel,
-  Checkbox,
-  Tabs,
-  Tab,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  Warning,
-  Error,
-  Label,
-  Delete,
-  Undo,
-  History,
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import axios from 'axios';
+import Loading from '../../components/common/Loading';
+import EmptyState from '../../components/common/EmptyState';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    const url = import.meta.env.VITE_API_URL;
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
+  // Development modunda Vite proxy kullan
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // Production'da tam URL kullan
+  return 'http://localhost:5001/api';
+};
+
+const API_URL = getApiUrl();
 
 function ExpiryManagement() {
   const [criticalProducts, setCriticalProducts] = useState([]);
@@ -69,19 +52,29 @@ function ExpiryManagement() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const [criticalRes, warningRes, historyRes, settingsRes] = await Promise.all([
-        axios.get(`${API_URL}/api/admin/expiry/critical`, config),
-        axios.get(`${API_URL}/api/admin/expiry/warning`, config),
-        axios.get(`${API_URL}/api/admin/expiry/history?limit=50`, config),
-        axios.get(`${API_URL}/api/admin/expiry/settings`, config),
+        axios.get(`${API_URL}/admin/expiry/critical`, config),
+        axios.get(`${API_URL}/admin/expiry/warning`, config),
+        axios.get(`${API_URL}/admin/expiry/history?limit=50`, config),
+        axios.get(`${API_URL}/admin/expiry/settings`, config),
       ]);
 
-      setCriticalProducts(criticalRes.data);
-      setWarningProducts(warningRes.data);
-      setHistory(historyRes.data.actions || []);
-      setSettings(settingsRes.data);
+      setCriticalProducts(criticalRes.data || []);
+      setWarningProducts(warningRes.data || []);
+      setHistory(historyRes.data?.actions || []);
+      setSettings(settingsRes.data || { enabled: true, warningDays: 3, criticalDays: 0 });
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Veriler yüklenirken hata oluştu');
+      // Hata mesajını string'e çevir
+      let errorMessage = 'Veriler yüklenirken hata oluştu';
+      if (err.response?.data?.error) {
+        errorMessage = typeof err.response.data.error === 'string' 
+          ? err.response.data.error 
+          : err.response.data.error?.message || JSON.stringify(err.response.data.error);
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -93,18 +86,21 @@ function ExpiryManagement() {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/api/admin/expiry/remove/${removeDialog.product.id}`,
+        `${API_URL}/admin/expiry/remove/${removeDialog.product.id}`,
         { excludeFromCheck, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSuccess('Ürün başarıyla raftan kaldırıldı');
+      toast.success('Ürün başarıyla raftan kaldırıldı');
       setRemoveDialog({ open: false, product: null });
       setExcludeFromCheck(false);
       setNote('');
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'İşlem sırasında hata oluştu');
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+      toast.error(errorMessage);
     }
   };
 
@@ -114,17 +110,20 @@ function ExpiryManagement() {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/api/admin/expiry/label/${labelDialog.product.id}`,
+        `${API_URL}/admin/expiry/label/${labelDialog.product.id}`,
         { note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSuccess('Ürün başarıyla etiketlendi');
+      toast.success('Ürün başarıyla etiketlendi');
       setLabelDialog({ open: false, product: null });
       setNote('');
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'İşlem sırasında hata oluştu');
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+      toast.error(errorMessage);
     }
   };
 
@@ -132,15 +131,18 @@ function ExpiryManagement() {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/api/admin/expiry/undo/${actionId}`,
+        `${API_URL}/admin/expiry/undo/${actionId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSuccess('İşlem başarıyla geri alındı');
+      toast.success('İşlem başarıyla geri alındı');
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Geri alma sırasında hata oluştu');
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Geri alma sırasında hata oluştu';
+      toast.error(errorMessage);
     }
   };
 
@@ -148,20 +150,24 @@ function ExpiryManagement() {
     try {
       const token = localStorage.getItem('adminToken');
       await axios.put(
-        `${API_URL}/api/admin/expiry/settings`,
+        `${API_URL}/admin/expiry/settings`,
         settings,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSuccess('Ayarlar başarıyla güncellendi');
+      toast.success('Ayarlar başarıyla güncellendi');
       setSettingsDialog(false);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Ayarlar güncellenirken hata oluştu');
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Ayarlar güncellenirken hata oluştu';
+      toast.error(errorMessage);
     }
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
@@ -174,362 +180,613 @@ function ExpiryManagement() {
     return types[type] || type;
   };
 
-  const getActionTypeColor = (type) => {
-    const colors = {
-      labeled: 'warning',
-      removed: 'error',
-      undone: 'info',
+  const getActionTypeBadgeClass = (type) => {
+    const classes = {
+      labeled: 'bg-amber-100 text-amber-800',
+      removed: 'bg-red-100 text-red-800',
+      undone: 'bg-blue-100 text-blue-800',
     };
-    return colors[type] || 'default';
+    return classes[type] || 'bg-gray-100 text-gray-800';
   };
 
-  return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Son Kullanma Tarihi (SKT) Yönetimi
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<SettingsIcon />}
-          onClick={() => setSettingsDialog(true)}
-        >
-          Ayarlar
-        </Button>
-      </Box>
+  if (loading && criticalProducts.length === 0 && warningProducts.length === 0) {
+    return <Loading />;
+  }
 
+  return (
+    <div className="space-y-3 md:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
+        <div>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900">
+            Son Kullanma Tarihi (SKT) Yönetimi
+          </h1>
+          <p className="text-gray-600 mt-0.5 md:mt-1 text-xs md:text-base">
+            Kritik ve uyarı seviyesindeki ürünleri yönetin
+          </p>
+        </div>
+        <button
+          onClick={() => setSettingsDialog(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+        >
+          <FiSettings className="w-4 h-4" />
+          <span>Ayarlar</span>
+        </button>
+      </div>
+
+      {/* Error/Success Messages */}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+            <FiX size={18} />
+          </button>
+        </div>
       )}
 
       {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>
-          {success}
-        </Alert>
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{success}</span>
+          <button onClick={() => setSuccess(null)} className="text-green-600 hover:text-green-800">
+            <FiX size={18} />
+          </button>
+        </div>
       )}
 
-      <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} sx={{ mb: 3 }}>
-        <Tab label={`Kritik Ürünler (${criticalProducts.length})`} icon={<Error />} />
-        <Tab label={`Uyarı Ürünleri (${warningProducts.length})`} icon={<Warning />} />
-        <Tab label="İşlem Geçmişi" icon={<History />} />
-      </Tabs>
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow-sm border-b border-gray-200">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab(0)}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              activeTab === 0
+                ? 'text-red-600 border-b-2 border-red-600 bg-red-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <FiAlertCircle className="w-4 h-4" />
+            Kritik Ürünler ({criticalProducts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab(1)}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              activeTab === 1
+                ? 'text-amber-600 border-b-2 border-amber-600 bg-amber-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <FiAlertTriangle className="w-4 h-4" />
+            Uyarı Ürünleri ({warningProducts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab(2)}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              activeTab === 2
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <FiClock className="w-4 h-4" />
+            İşlem Geçmişi
+          </button>
+        </div>
+      </div>
 
-      {/* KRİTİK ÜRÜNLER TABLOSU (KIRMIZI) */}
+      {/* KRİTİK ÜRÜNLER TABLOSU */}
       {activeTab === 0 && (
-        <Paper sx={{ p: 3, border: '3px solid #d32f2f' }}>
-          <Typography variant="h6" gutterBottom color="error" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Error /> Son Günü Gelen Ürünler (Raftan Kaldırılmalı)
-          </Typography>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-red-600">
+          <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+            <h2 className="text-lg font-semibold text-red-900 flex items-center gap-2">
+              <FiAlertCircle className="w-5 h-5" />
+              Son Günü Gelen Ürünler (Raftan Kaldırılmalı)
+            </h2>
+          </div>
 
           {criticalProducts.length === 0 ? (
-            <Alert severity="info">Kritik seviyede ürün bulunmuyor.</Alert>
+            <EmptyState
+              icon={FiAlertCircle}
+              title="Kritik seviyede ürün bulunmuyor"
+              message="Son günü gelen ürün bulunmuyor."
+            />
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Ürün Adı</TableCell>
-                    <TableCell>Barkod</TableCell>
-                    <TableCell>Kategori</TableCell>
-                    <TableCell>SKT</TableCell>
-                    <TableCell>Kalan Gün</TableCell>
-                    <TableCell>Stok</TableCell>
-                    <TableCell>Son İşlem</TableCell>
-                    <TableCell align="right">İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Ürün Adı
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Barkod
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kategori
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      SKT
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kalan Gün
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Stok
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Son İşlem
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      İşlemler
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {criticalProducts.map((product) => (
-                    <TableRow key={product.id} sx={{ bgcolor: '#ffebee' }}>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.barcode || '-'}</TableCell>
-                      <TableCell>{product.category?.name}</TableCell>
-                      <TableCell>{formatDate(product.expiryDate)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${product.daysUntilExpiry} gün`}
-                          color="error"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                      <TableCell>
+                    <tr key={product.id} className="hover:bg-red-50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {product.barcode || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {product.category?.name || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(product.expiryDate)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          {product.daysUntilExpiry} gün
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {product.stock}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
                         {product.lastAction ? (
-                          <Chip
-                            label={getActionTypeLabel(product.lastAction.actionType)}
-                            color={getActionTypeColor(product.lastAction.actionType)}
-                            size="small"
-                          />
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
+                            {getActionTypeLabel(product.lastAction.actionType)}
+                          </span>
                         ) : (
-                          '-'
+                          <span className="text-gray-400">-</span>
                         )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="contained"
-                          color="error"
-                          size="small"
-                          startIcon={<Delete />}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
                           onClick={() => setRemoveDialog({ open: true, product })}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                         >
+                          <FiTrash2 className="w-4 h-4" />
                           Kaldırdım
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
           )}
-        </Paper>
+        </div>
       )}
 
-      {/* UYARI ÜRÜNLERİ TABLOSU (TURUNCU) */}
+      {/* UYARI ÜRÜNLERİ TABLOSU */}
       {activeTab === 1 && (
-        <Paper sx={{ p: 3, border: '3px solid #ed6c02' }}>
-          <Typography variant="h6" gutterBottom color="warning.main" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Warning /> İndirim Etiketi Yapıştırılmalı
-          </Typography>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-amber-500">
+          <div className="bg-amber-50 px-4 py-3 border-b border-amber-200">
+            <h2 className="text-lg font-semibold text-amber-900 flex items-center gap-2">
+              <FiAlertTriangle className="w-5 h-5" />
+              İndirim Etiketi Yapıştırılmalı
+            </h2>
+          </div>
 
           {warningProducts.length === 0 ? (
-            <Alert severity="info">Uyarı seviyesinde ürün bulunmuyor.</Alert>
+            <EmptyState
+              icon={FiAlertTriangle}
+              title="Uyarı seviyesinde ürün bulunmuyor"
+              message="Etiket yapıştırılması gereken ürün bulunmuyor."
+            />
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Ürün Adı</TableCell>
-                    <TableCell>Barkod</TableCell>
-                    <TableCell>Kategori</TableCell>
-                    <TableCell>SKT</TableCell>
-                    <TableCell>Kalan Gün</TableCell>
-                    <TableCell>Stok</TableCell>
-                    <TableCell>Son İşlem</TableCell>
-                    <TableCell align="right">İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Ürün Adı
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Barkod
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kategori
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      SKT
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kalan Gün
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Stok
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Son İşlem
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      İşlemler
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {warningProducts.map((product) => (
-                    <TableRow key={product.id} sx={{ bgcolor: '#fff3e0' }}>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.barcode || '-'}</TableCell>
-                      <TableCell>{product.category?.name}</TableCell>
-                      <TableCell>{formatDate(product.expiryDate)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${product.daysUntilExpiry} gün`}
-                          color="warning"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                      <TableCell>
+                    <tr key={product.id} className="hover:bg-amber-50 transition-colors">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {product.barcode || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {product.category?.name || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(product.expiryDate)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          {product.daysUntilExpiry} gün
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {product.stock}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
                         {product.lastAction ? (
-                          <Chip
-                            label={getActionTypeLabel(product.lastAction.actionType)}
-                            color={getActionTypeColor(product.lastAction.actionType)}
-                            size="small"
-                          />
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
+                            {getActionTypeLabel(product.lastAction.actionType)}
+                          </span>
                         ) : (
-                          '-'
+                          <span className="text-gray-400">-</span>
                         )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="contained"
-                          color="warning"
-                          size="small"
-                          startIcon={<Label />}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
                           onClick={() => setLabelDialog({ open: true, product })}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
                         >
+                          <FiTag className="w-4 h-4" />
                           Etiketledim
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
           )}
-        </Paper>
+        </div>
       )}
 
       {/* İŞLEM GEÇMİŞİ */}
       {activeTab === 2 && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            İşlem Geçmişi
-          </Typography>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FiClock className="w-5 h-5" />
+              İşlem Geçmişi
+            </h2>
+          </div>
 
           {history.length === 0 ? (
-            <Alert severity="info">Henüz işlem kaydı bulunmuyor.</Alert>
+            <EmptyState
+              icon={FiClock}
+              title="Henüz işlem kaydı bulunmuyor"
+              message="SKT yönetimi işlemleri burada görüntülenecek."
+            />
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Tarih</TableCell>
-                    <TableCell>İşlem</TableCell>
-                    <TableCell>Ürün</TableCell>
-                    <TableCell>SKT</TableCell>
-                    <TableCell>Kalan Gün</TableCell>
-                    <TableCell>Admin</TableCell>
-                    <TableCell>Not</TableCell>
-                    <TableCell>Durum</TableCell>
-                    <TableCell align="right">İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Tarih
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      İşlem
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Ürün
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      SKT
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Kalan Gün
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Admin
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Not
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Durum
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      İşlemler
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {history.map((action) => (
-                    <TableRow key={action.id} sx={{ opacity: action.isUndone ? 0.5 : 1 }}>
-                      <TableCell>{formatDate(action.createdAt)}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getActionTypeLabel(action.actionType)}
-                          color={getActionTypeColor(action.actionType)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{action.product?.name}</TableCell>
-                      <TableCell>{formatDate(action.expiryDate)}</TableCell>
-                      <TableCell>{action.daysUntilExpiry} gün</TableCell>
-                      <TableCell>{action.admin?.firstName}</TableCell>
-                      <TableCell>{action.note || '-'}</TableCell>
-                      <TableCell>
+                    <tr key={action.id} className={`hover:bg-gray-50 transition-colors ${action.isUndone ? 'opacity-50' : ''}`}>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(action.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(action.actionType)}`}>
+                          {getActionTypeLabel(action.actionType)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {action.product?.name || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(action.expiryDate)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {action.daysUntilExpiry} gün
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {action.admin?.firstName || '-'}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {action.note || '-'}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
                         {action.isUndone ? (
-                          <Chip label="Geri Alındı" color="default" size="small" />
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Geri Alındı
+                          </span>
                         ) : action.excludedFromCheck ? (
-                          <Chip label="SKT Muaf" color="info" size="small" />
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            SKT Muaf
+                          </span>
                         ) : (
-                          '-'
+                          <span className="text-gray-400">-</span>
                         )}
-                      </TableCell>
-                      <TableCell align="right">
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {!action.isUndone && action.actionType !== 'undone' && (
-                          <Tooltip title="Geri Al">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleUndoAction(action.id)}
-                            >
-                              <Undo />
-                            </IconButton>
-                          </Tooltip>
+                          <button
+                            onClick={() => handleUndoAction(action.id)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Geri Al"
+                          >
+                            <FiRotateCcw className="w-4 h-4" />
+                          </button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
           )}
-        </Paper>
+        </div>
       )}
 
       {/* KALDIRMA DİALOGU */}
-      <Dialog open={removeDialog.open} onClose={() => setRemoveDialog({ open: false, product: null })} maxWidth="sm" fullWidth>
-        <DialogTitle>Ürünü Raftan Kaldır</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" gutterBottom>
-            <strong>{removeDialog.product?.name}</strong> ürününü raftan kaldırdığınızı onaylıyor musunuz?
-          </Typography>
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={excludeFromCheck}
-                onChange={(e) => setExcludeFromCheck(e.target.checked)}
-              />
-            }
-            label="Bu ürünü SKT kontrollerinden muaf tut (deaktif et)"
-            sx={{ mt: 2, mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            label="Not (İsteğe bağlı)"
-            multiline
-            rows={3}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRemoveDialog({ open: false, product: null })}>İptal</Button>
-          <Button variant="contained" color="error" onClick={handleRemoveProduct}>
-            Kaldırdım
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AnimatePresence>
+        {removeDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRemoveDialog({ open: false, product: null })}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Ürünü Raftan Kaldır</h3>
+                  <button
+                    onClick={() => setRemoveDialog({ open: false, product: null })}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <p className="text-gray-700">
+                    <strong>{removeDialog.product?.name}</strong> ürününü raftan kaldırdığınızı onaylıyor musunuz?
+                  </p>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={excludeFromCheck}
+                      onChange={(e) => setExcludeFromCheck(e.target.checked)}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Bu ürünü SKT kontrollerinden muaf tut (deaktif et)
+                    </span>
+                  </label>
+                  <textarea
+                    placeholder="Not (İsteğe bağlı)"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setRemoveDialog({ open: false, product: null })}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={handleRemoveProduct}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Kaldırdım
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ETİKETLEME DİALOGU */}
-      <Dialog open={labelDialog.open} onClose={() => setLabelDialog({ open: false, product: null })} maxWidth="sm" fullWidth>
-        <DialogTitle>Ürünü Etiketle</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" gutterBottom>
-            <strong>{labelDialog.product?.name}</strong> ürününe indirim etiketi yapıştırdığınızı onaylıyor musunuz?
-          </Typography>
-
-          <TextField
-            fullWidth
-            label="Not (İsteğe bağlı)"
-            multiline
-            rows={3}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLabelDialog({ open: false, product: null })}>İptal</Button>
-          <Button variant="contained" color="warning" onClick={handleLabelProduct}>
-            Etiketledim
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AnimatePresence>
+        {labelDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLabelDialog({ open: false, product: null })}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Ürünü Etiketle</h3>
+                  <button
+                    onClick={() => setLabelDialog({ open: false, product: null })}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <p className="text-gray-700">
+                    <strong>{labelDialog.product?.name}</strong> ürününe indirim etiketi yapıştırdığınızı onaylıyor musunuz?
+                  </p>
+                  <textarea
+                    placeholder="Not (İsteğe bağlı)"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setLabelDialog({ open: false, product: null })}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={handleLabelProduct}
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                  >
+                    Etiketledim
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* AYARLAR DİALOGU */}
-      <Dialog open={settingsDialog} onClose={() => setSettingsDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>SKT Yönetim Ayarları</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            type="number"
-            label="Turuncu Uyarı (Kaç gün kala etiket yapıştırılsın?)"
-            value={settings.warningDays}
-            onChange={(e) => setSettings({ ...settings, warningDays: parseInt(e.target.value) })}
-            sx={{ mt: 2, mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            type="number"
-            label="Kırmızı Kritik (Kaç gün kala raftan kaldırılsın?)"
-            value={settings.criticalDays}
-            onChange={(e) => setSettings({ ...settings, criticalDays: parseInt(e.target.value) })}
-            sx={{ mb: 2 }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={settings.enabled}
-                onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
-              />
-            }
-            label="SKT Yönetimi Aktif"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSettingsDialog(false)}>İptal</Button>
-          <Button variant="contained" onClick={handleUpdateSettings}>
-            Kaydet
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+      <AnimatePresence>
+        {settingsDialog && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSettingsDialog(false)}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">SKT Yönetim Ayarları</h3>
+                  <button
+                    onClick={() => setSettingsDialog(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Turuncu Uyarı (Kaç gün kala etiket yapıştırılsın?)
+                    </label>
+                    <input
+                      type="number"
+                      value={settings.warningDays}
+                      onChange={(e) => setSettings({ ...settings, warningDays: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kırmızı Kritik (Kaç gün kala raftan kaldırılsın?)
+                    </label>
+                    <input
+                      type="number"
+                      value={settings.criticalDays}
+                      onChange={(e) => setSettings({ ...settings, criticalDays: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.enabled}
+                      onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm text-gray-700">SKT Yönetimi Aktif</span>
+                  </label>
+                </div>
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setSettingsDialog(false)}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={handleUpdateSettings}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Kaydet
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

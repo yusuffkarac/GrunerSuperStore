@@ -11,9 +11,27 @@ class AdminService {
     
     console.log('🔐 [Admin Service] Login attempt for:', normalizedEmail);
 
-    // Admin'i bul
+    // Admin'i bul (role ve permissions ile birlikte)
     const admin = await prisma.admin.findUnique({
       where: { email: normalizedEmail },
+      include: {
+        adminRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayName: true,
+                    category: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!admin) {
@@ -33,6 +51,9 @@ class AdminService {
 
     console.log('✅ [Admin Service] Şifre doğru');
 
+    // İzinleri düz array'e dönüştür
+    const permissions = admin.adminRole?.permissions?.map(rp => rp.permission) || [];
+
     // Admin token oluştur (type: 'admin' ile)
     const token = generateToken({
       adminId: admin.id,
@@ -42,25 +63,39 @@ class AdminService {
 
     console.log('✅ [Admin Service] Token oluşturuldu:', token.substring(0, 20) + '...');
 
-    // Admin bilgilerini döndür (passwordHash olmadan)
+    // Admin bilgilerini döndür (passwordHash olmadan, permissions ile)
     const { passwordHash, ...adminWithoutPassword } = admin;
+    const adminData = {
+      ...adminWithoutPassword,
+      permissions,
+    };
 
-    console.log('✅ [Admin Service] Response hazırlandı:', { admin: adminWithoutPassword.email, token: 'generated' });
+    console.log('✅ [Admin Service] Response hazırlandı:', { admin: adminData.email, token: 'generated', permissionsCount: permissions.length });
 
-    return { admin: adminWithoutPassword, token };
+    return { admin: adminData, token };
   }
 
   // Admin bilgilerini getir (token'dan)
   async getMe(adminId) {
     const admin = await prisma.admin.findUnique({
       where: { id: adminId },
-      select: {
-        id: true,
-        firstName: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        adminRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayName: true,
+                    category: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -68,7 +103,20 @@ class AdminService {
       throw new NotFoundError('Administrator nicht gefunden');
     }
 
-    return admin;
+    // İzinleri düz array'e dönüştür
+    const permissions = admin.adminRole?.permissions?.map(rp => rp.permission) || [];
+
+    return {
+      id: admin.id,
+      firstName: admin.firstName,
+      email: admin.email,
+      role: admin.role,
+      roleId: admin.roleId,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt,
+      adminRole: admin.adminRole,
+      permissions,
+    };
   }
 
   // Dashboard istatistikleri
@@ -578,8 +626,16 @@ class AdminService {
         firstName: true,
         email: true,
         role: true,
+        roleId: true,
         createdAt: true,
         updatedAt: true,
+        adminRole: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
       },
       orderBy: { [sortBy]: sortOrder },
       skip,
@@ -606,8 +662,28 @@ class AdminService {
         firstName: true,
         email: true,
         role: true,
+        roleId: true,
         createdAt: true,
         updatedAt: true,
+        adminRole: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            permissions: {
+              include: {
+                permission: {
+                  select: {
+                    id: true,
+                    name: true,
+                    displayName: true,
+                    category: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -620,7 +696,7 @@ class AdminService {
 
   // Admin oluştur
   async createAdminForAdmin(data) {
-    const { firstName, email, password, role = 'admin' } = data;
+    const { firstName, email, password, role = 'admin', roleId } = data;
 
     // Email kontrolü
     const existingAdmin = await prisma.admin.findUnique({
@@ -629,6 +705,17 @@ class AdminService {
 
     if (existingAdmin) {
       throw new ConflictError('E-Mail bereits registriert');
+    }
+
+    // roleId varsa rol kontrolü yap
+    if (roleId) {
+      const roleExists = await prisma.adminRole.findUnique({
+        where: { id: roleId },
+      });
+
+      if (!roleExists) {
+        throw new NotFoundError('Rol bulunamadı');
+      }
     }
 
     // Şifreyi hash'le
@@ -640,15 +727,19 @@ class AdminService {
         firstName,
         email: email.toLowerCase().trim(),
         passwordHash,
-        role,
+        role, // Eski sistem için fallback
+        ...(roleId && { roleId }), // Yeni rol sistemi
       },
-      select: {
-        id: true,
-        firstName: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        adminRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -657,7 +748,7 @@ class AdminService {
 
   // Admin güncelle
   async updateAdminForAdmin(adminId, data) {
-    const { firstName, email, password, role } = data;
+    const { firstName, email, password, role, roleId } = data;
 
     // Admin'i bul
     const existingAdmin = await prisma.admin.findUnique({
@@ -679,12 +770,26 @@ class AdminService {
       }
     }
 
+    // roleId varsa rol kontrolü yap
+    if (roleId !== undefined) {
+      if (roleId) {
+        const roleExists = await prisma.adminRole.findUnique({
+          where: { id: roleId },
+        });
+
+        if (!roleExists) {
+          throw new NotFoundError('Rol bulunamadı');
+        }
+      }
+    }
+
     // Güncelleme verilerini hazırla
     const updateData = {};
 
     if (firstName !== undefined) updateData.firstName = firstName;
     if (email !== undefined) updateData.email = email.toLowerCase().trim();
-    if (role !== undefined) updateData.role = role;
+    if (role !== undefined) updateData.role = role; // Eski sistem için fallback
+    if (roleId !== undefined) updateData.roleId = roleId || null; // Yeni rol sistemi (null = rol kaldır)
     if (password !== undefined) {
       updateData.passwordHash = await hashPassword(password);
     }
@@ -693,13 +798,16 @@ class AdminService {
     const admin = await prisma.admin.update({
       where: { id: adminId },
       data: updateData,
-      select: {
-        id: true,
-        firstName: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        adminRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
       },
     });
 

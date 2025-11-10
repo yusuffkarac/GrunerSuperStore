@@ -118,7 +118,7 @@ model Address {
   district     String?
   postalCode   String   @map("postal_code")
   city         String
-  state        String
+  state        String?
   description  String?
   latitude     Decimal? @db.Decimal(10, 8)
   longitude    Decimal? @db.Decimal(11, 8)

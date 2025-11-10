@@ -560,7 +560,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck'
     ];
     
     const createData = {};
@@ -582,6 +582,16 @@ class ProductService {
     createData.price = parseFloat(data.price);
     createData.stock = parseInt(data.stock) || 0;
     createData.lowStockLevel = data.lowStockLevel ? parseInt(data.lowStockLevel) : null;
+    
+    // expiryDate'i parse et
+    if (createData.expiryDate !== undefined) {
+      if (createData.expiryDate === null || createData.expiryDate === '') {
+        createData.expiryDate = null;
+      } else {
+        // String ise Date'e çevir
+        createData.expiryDate = new Date(createData.expiryDate);
+      }
+    }
 
     // Category ilişkisini doğru formatta ekle
     if (categoryId) {
@@ -644,7 +654,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck'
     ];
     
     const updateData = {};
@@ -680,6 +690,16 @@ class ProductService {
     }
     if (updateData.imageUrls !== undefined) {
       updateData.imageUrls = Array.isArray(updateData.imageUrls) ? updateData.imageUrls : [];
+    }
+    
+    // expiryDate'i parse et
+    if (updateData.expiryDate !== undefined) {
+      if (updateData.expiryDate === null || updateData.expiryDate === '') {
+        updateData.expiryDate = null;
+      } else {
+        // String ise Date'e çevir
+        updateData.expiryDate = new Date(updateData.expiryDate);
+      }
     }
 
     const product = await prisma.product.update({

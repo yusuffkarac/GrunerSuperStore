@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FiHome,
@@ -24,90 +24,220 @@ import {
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
 import { BARCODE_ONLY_MODE } from '../../config/appConfig';
+import adminService from '../../services/adminService';
 
 function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showConfirm } = useAlert();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Admin rolünü kontrol et
-  const getAdminRole = () => {
+  // Admin bilgilerini al
+  const getAdminData = () => {
     try {
       const adminData = localStorage.getItem('admin');
       if (!adminData) return null;
-      const admin = JSON.parse(adminData);
-      return admin.role?.toString().trim().toLowerCase();
+      return JSON.parse(adminData);
     } catch (error) {
       return null;
     }
   };
 
-  const isSuperAdmin = getAdminRole() === 'superadmin';
+  // Admin'in izinlerini al
+  const getAdminPermissions = (adminData) => {
+    if (!adminData) return [];
+    // permissions array'i varsa kullan, yoksa adminRole.permissions'dan al
+    if (adminData.permissions && Array.isArray(adminData.permissions)) {
+      return adminData.permissions.map(p => p.name || p);
+    }
+    if (adminData.adminRole?.permissions) {
+      return adminData.adminRole.permissions.map(rp => rp.permission?.name || rp.permission);
+    }
+    return [];
+  };
 
-  // Admin authentication kontrolü
-  useEffect(() => {
+  // Sayfa erişim kontrolü
+  const checkPageAccess = useCallback((adminData, pathname) => {
+    if (!adminData) return false;
+
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
       navigate('/admin/login');
       toast.error('Bitte melden Sie sich an');
-    } else {
-      // Süper admin olmayanların "Benutzer" ve "Administratoren" sayfalarına erişimini engelle
-      const restrictedPaths = ['/admin/users', '/admin/admins'];
-      if (restrictedPaths.includes(location.pathname) && !isSuperAdmin) {
-        navigate('/admin/dashboard');
-        toast.error('Zugriff verweigert - Nur für Super-Administratoren');
+      return false;
+    }
+
+    const currentIsSuperAdmin = adminData?.role?.toString().trim().toLowerCase() === 'superadmin';
+    const currentPermissions = getAdminPermissions(adminData);
+
+    // Süper admin kontrolü (sadece admin ve rol yönetimi için)
+    const restrictedPaths = ['/admin/admins', '/admin/roles'];
+    if (restrictedPaths.includes(pathname) && !currentIsSuperAdmin) {
+      navigate('/admin/dashboard');
+      toast.error('Zugriff verweigert - Nur für Super-Administratoren');
+      return false;
+    }
+
+    // İzin kontrolü - sayfa bazlı
+    const pathPermissionMap = {
+      '/admin/products': 'product_management_view',
+      '/admin/expiry-management': 'expiry_management_view',
+      '/admin/orders': 'order_management_view',
+      '/admin/categories': 'product_management_view',
+      '/admin/campaigns': 'marketing_campaigns',
+      '/admin/coupons': 'marketing_coupons',
+      '/admin/users': 'user_management_view',
+      '/admin/settings': 'settings_view',
+      '/admin/homepage-settings': 'settings_view',
+      '/admin/design-settings': 'settings_view',
+      '/admin/notifications': 'notification_management_view',
+      '/admin/email-templates': 'email_template_management_view',
+      '/admin/notification-templates': 'notification_template_management_view',
+      '/admin/barcode-labels': 'barcode_label_view',
+    };
+
+    const requiredPermission = pathPermissionMap[pathname];
+    if (requiredPermission && !currentIsSuperAdmin && !currentPermissions.includes(requiredPermission)) {
+      navigate('/admin/dashboard');
+      toast.error('Sie haben keine Berechtigung für diese Seite');
+      return false;
+    }
+
+    // Barkod-only modunda izin verilen sayfalar (süper adminler hariç)
+    const allowedPathsInBarcodeMode = [
+      '/admin/barcode-labels',
+      '/admin/admins',
+      '/admin/users'
+    ];
+    
+    // Barkod-only modunda ve izin verilen sayfalardan biri değilsek yönlendir (süper adminler hariç)
+    if (BARCODE_ONLY_MODE && !currentIsSuperAdmin && !allowedPathsInBarcodeMode.includes(pathname)) {
+      navigate('/admin/barcode-labels');
+      return false;
+    }
+
+    return true;
+  }, [navigate]);
+
+  // Admin bilgilerini yeniden yükle (permissions dahil)
+  const loadAdminData = useCallback(async () => {
+    setLoading(true);
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin/login');
+      toast.error('Bitte melden Sie sich an');
+      setLoading(false);
+      return;
+    }
+
+    // Önce localStorage'dan yükle (hızlı render için)
+    const localAdmin = getAdminData();
+    if (localAdmin) {
+      setAdmin(localAdmin);
+      // Sayfa erişim kontrolü yap
+      if (!checkPageAccess(localAdmin, location.pathname)) {
+        setLoading(false);
         return;
       }
+    }
 
-      // Barkod-only modunda izin verilen sayfalar (süper adminler hariç)
-      const allowedPathsInBarcodeMode = [
-        '/admin/barcode-labels',
-        '/admin/admins',
-        '/admin/users'
-      ];
-      
-      // Barkod-only modunda ve izin verilen sayfalardan biri değilsek yönlendir (süper adminler hariç)
-      if (BARCODE_ONLY_MODE && !isSuperAdmin && !allowedPathsInBarcodeMode.includes(location.pathname)) {
-        navigate('/admin/barcode-labels');
+    try {
+      // Admin bilgilerini API'den al (permissions dahil)
+      const response = await adminService.getMe();
+      if (response.data?.admin) {
+        localStorage.setItem('admin', JSON.stringify(response.data.admin));
+        setAdmin(response.data.admin);
+        // Sayfa erişim kontrolü yap
+        if (!checkPageAccess(response.data.admin, location.pathname)) {
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Admin bilgileri yüklenirken hata:', error);
+      // Hata durumunda mevcut localStorage verisini kullanmaya devam et
+      if (localAdmin && !checkPageAccess(localAdmin, location.pathname)) {
+        setLoading(false);
+        return;
       }
     }
-  }, [navigate, location.pathname, isSuperAdmin]);
+
+    setLoading(false);
+  }, [navigate, location.pathname, checkPageAccess]);
+
+  useEffect(() => {
+    loadAdminData();
+
+    // Rol güncellendiğinde admin bilgilerini yeniden yükle
+    const handlePermissionsUpdate = () => {
+      loadAdminData();
+    };
+
+    window.addEventListener('adminPermissionsUpdated', handlePermissionsUpdate);
+
+    return () => {
+      window.removeEventListener('adminPermissionsUpdated', handlePermissionsUpdate);
+    };
+  }, [loadAdminData]);
+
+  // Sayfa değiştiğinde erişim kontrolü yap
+  useEffect(() => {
+    if (!admin || loading) return;
+
+    checkPageAccess(admin, location.pathname);
+  }, [location.pathname, admin, loading, checkPageAccess]);
 
   const allMenuItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome },
-    { path: '/admin/products', label: 'Produkte', icon: FiPackage },
-    { path: '/admin/expiry-management', label: 'SKT Yönetimi', icon: FiClock },
-    { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag },
-    { path: '/admin/categories', label: 'Kategorien', icon: FiGrid },
-    { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
-    { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
-    { path: '/admin/users', label: 'Benutzer', icon: FiUsers, superAdminOnly: true },
-    { path: '/admin/admins', label: 'Administratoren', icon: FiShield, superAdminOnly: true },
-    { path: '/admin/roles', label: 'Roller ve İzinler', icon: FiShield, superAdminOnly: true },
-    { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell },
-    { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail },
-    { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare },
-    { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter },
-    { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings },
-    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3 },
-    { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet },
-    { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle },
+    { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome, permission: null }, // Dashboard herkese açık
+    { path: '/admin/products', label: 'Produkte', icon: FiPackage, permission: 'product_management_view' },
+    { path: '/admin/expiry-management', label: 'SKT Yönetimi', icon: FiClock, permission: 'expiry_management_view' },
+    { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag, permission: 'order_management_view' },
+    { path: '/admin/categories', label: 'Kategorien', icon: FiGrid, permission: 'product_management_view' },
+    { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag, permission: 'marketing_campaigns' },
+    { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag, permission: 'marketing_coupons' },
+    { path: '/admin/users', label: 'Benutzer', icon: FiUsers, permission: 'user_management_view' },
+    { path: '/admin/admins', label: 'Administratoren', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
+    { path: '/admin/roles', label: 'Roller ve İzinler', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
+    { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell, permission: 'notification_management_view' },
+    { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
+    { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
+    { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
+    { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view' },
+    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
+    { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
+    { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle, permission: null }, // Help herkese açık
   ];
 
-  // Barkod-only modunda sadece izin verilen menü öğelerini göster (süper adminler hariç)
-  // Normal modda veya süper admin ise tüm menü öğeleri gösterilir
-  const menuItems = (BARCODE_ONLY_MODE && !isSuperAdmin)
-    ? allMenuItems.filter(item => {
-        // Barkod-only modunda sadece belirli sayfalar gösterilir
-        // Ancak "Benutzer" ve "Administratoren" sadece superadmin'ler için
+  // Menü öğelerini filtrele (güncel admin bilgileriyle)
+  const menuItems = admin ? (() => {
+    const currentIsSuperAdmin = admin?.role?.toString().trim().toLowerCase() === 'superadmin';
+    const currentPermissions = getAdminPermissions(admin);
+
+    return allMenuItems.filter(item => {
+      // Barkod-only modunda sadece izin verilen menü öğelerini göster (süper adminler hariç)
+      if (BARCODE_ONLY_MODE && !currentIsSuperAdmin) {
         if (item.path === '/admin/barcode-labels') return true;
-        if (item.superAdminOnly) return isSuperAdmin;
+        if (item.superAdminOnly) return currentIsSuperAdmin;
         return false;
-      })
-    : allMenuItems.filter(item => 
-        !item.superAdminOnly || isSuperAdmin
-      );
+      }
+
+      // Super admin kontrolü
+      if (item.superAdminOnly && !currentIsSuperAdmin) {
+        return false;
+      }
+
+      // İzin kontrolü
+      if (item.permission === null) {
+        // İzin gerektirmeyen sayfalar (dashboard, help, vb.)
+        return true;
+      }
+
+      // İzin kontrolü yap
+      return currentIsSuperAdmin || currentPermissions.includes(item.permission);
+    });
+  })() : [];
 
   const handleLogout = async () => {
     const confirmed = await showConfirm('Möchten Sie sich wirklich abmelden?');
@@ -118,6 +248,23 @@ function AdminLayout() {
       navigate('/admin/login');
     }
   };
+
+  // Loading durumunda göster
+  if (loading) {
+    return (
+      <div className="h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin yoksa veya erişim yoksa göster
+  if (!admin) {
+    return null;
+  }
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col lg:flex-row overflow-hidden">

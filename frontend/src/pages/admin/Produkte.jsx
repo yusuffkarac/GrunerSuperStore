@@ -411,6 +411,14 @@ function Produkte() {
     values: {},
   });
   
+  // Özel birimler için state (localStorage'dan yükle)
+  const [customUnits, setCustomUnits] = useState(() => {
+    const saved = localStorage.getItem('produkteCustomUnits');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showCustomUnitInput, setShowCustomUnitInput] = useState(false);
+  const [newCustomUnit, setNewCustomUnit] = useState('');
+  
   // View mode: 'list' or 'card', stored in localStorage
   const [viewMode, setViewMode] = useState(() => {
     const saved = localStorage.getItem('produkteViewMode');
@@ -456,6 +464,8 @@ function Produkte() {
     ecoscoreGrade: '',
     nutritionData: null,
     openfoodfactsCategories: [],
+    expiryDate: '',
+    excludeFromExpiryCheck: false,
   });
 
   // Verileri yükle fonksiyonları
@@ -506,6 +516,8 @@ function Produkte() {
 
   // Modal aç/kapat
   const openModal = useCallback((product = null) => {
+    setShowCustomUnitInput(false);
+    setNewCustomUnit('');
     if (product) {
       setEditingProduct(product);
       // ingredientsText varsa description'a da kopyala (eğer description boşsa)
@@ -530,6 +542,8 @@ function Produkte() {
         ecoscoreGrade: product.ecoscoreGrade || '',
         nutritionData: product.nutritionData || null,
         openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
+        expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
+        excludeFromExpiryCheck: product.excludeFromExpiryCheck || false,
       });
     } else {
       setEditingProduct(null);
@@ -553,6 +567,8 @@ function Produkte() {
         ecoscoreGrade: '',
         nutritionData: null,
         openfoodfactsCategories: [],
+        expiryDate: '',
+        excludeFromExpiryCheck: false,
       });
     }
     setShowModal(true);
@@ -561,6 +577,8 @@ function Produkte() {
   const closeModal = useCallback(() => {
     setShowModal(false);
     setEditingProduct(null);
+    setShowCustomUnitInput(false);
+    setNewCustomUnit('');
   }, []);
 
   // Form submit
@@ -594,6 +612,8 @@ function Produkte() {
         ecoscoreGrade: formData.ecoscoreGrade || null,
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
+        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
+        excludeFromExpiryCheck: formData.excludeFromExpiryCheck,
       };
 
       // Stock alanını sadece geçerli bir değer varsa ekle
@@ -954,6 +974,33 @@ function Produkte() {
   useEffect(() => {
     setPageInput('');
   }, [currentPage]);
+
+  // Özel birim ekleme fonksiyonu
+  const handleAddCustomUnit = useCallback(() => {
+    if (newCustomUnit.trim() && !customUnits.includes(newCustomUnit.trim())) {
+      const updatedUnits = [...customUnits, newCustomUnit.trim()];
+      setCustomUnits(updatedUnits);
+      localStorage.setItem('produkteCustomUnits', JSON.stringify(updatedUnits));
+      setFormData({ ...formData, unit: newCustomUnit.trim() });
+      setNewCustomUnit('');
+      setShowCustomUnitInput(false);
+      toast.success('Özel birim eklendi');
+    } else if (customUnits.includes(newCustomUnit.trim())) {
+      toast.error('Bu birim zaten mevcut');
+    }
+  }, [customUnits, newCustomUnit, formData]);
+
+  // Birim değişikliği handler'ı
+  const handleUnitChange = useCallback((e) => {
+    const value = e.target.value;
+    if (value === '__custom__') {
+      setShowCustomUnitInput(true);
+      setNewCustomUnit('');
+    } else {
+      setFormData({ ...formData, unit: value });
+      setShowCustomUnitInput(false);
+    }
+  }, [formData]);
 
   // Memoized product handlers
   const handleEditProduct = useCallback((product) => {
@@ -1519,13 +1566,65 @@ function Produkte() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Einheit
                       </label>
-                      <input
-                        type="text"
-                        placeholder="z.B. kg, Stück"
-                        value={formData.unit}
-                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      <select
+                        value={formData.unit || ''}
+                        onChange={handleUnitChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                      />
+                      >
+                        <option value="">Keine Einheit</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Gr">Gr</option>
+                        <option value="Stk">Stk</option>
+                        <option value="L">L</option>
+                        <option value="ml">ml</option>
+                        {customUnits.length > 0 && (
+                          <>
+                            <option disabled>--- Benutzerdefinierte Einheiten ---</option>
+                            {customUnits.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {unit}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                        <option value="__custom__">+ Neue Einheit hinzufügen</option>
+                      </select>
+                      {showCustomUnitInput && (
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            type="text"
+                            value={newCustomUnit}
+                            onChange={(e) => setNewCustomUnit(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomUnit();
+                              }
+                            }}
+                            placeholder="Neue Einheit eingeben"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddCustomUnit}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            Hinzufügen
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCustomUnitInput(false);
+                              setNewCustomUnit('');
+                              setFormData({ ...formData, unit: '' });
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1567,6 +1666,39 @@ function Produkte() {
                       onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
+                  </div>
+
+                  {/* Son Kullanma Tarihi (SKT) */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Son Kullanma Tarihi (SKT)</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          SKT Tarihi
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.expiryDate}
+                          onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Ürünün son kullanma tarihini girin (isteğe bağlı)
+                        </p>
+                      </div>
+                      <div>
+                        <Switch
+                          id="excludeFromExpiryCheck"
+                          checked={formData.excludeFromExpiryCheck}
+                          onChange={(e) => setFormData({ ...formData, excludeFromExpiryCheck: e.target.checked })}
+                          label="SKT kontrollerinden muaf tut"
+                          color="green"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Bu ürün SKT yönetimi kontrollerinden muaf tutulacak
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Ingredients Text */}
@@ -1615,70 +1747,68 @@ function Produkte() {
                   )}
 
                   {/* Nutri-Score & Eco-Score */}
-                  {(formData.nutriscoreGrade || formData.ecoscoreGrade) && (
-                    <div className="grid grid-cols-2 gap-4">
-                      {formData.nutriscoreGrade && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nutri-Score
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${
-                              formData.nutriscoreGrade === 'a' ? 'text-green-600' :
-                              formData.nutriscoreGrade === 'b' ? 'text-lime-600' :
-                              formData.nutriscoreGrade === 'c' ? 'text-yellow-600' :
-                              formData.nutriscoreGrade === 'd' ? 'text-orange-600' :
-                              'text-red-600'
-                            }`}>
-                              {formData.nutriscoreGrade.toUpperCase()}
-                            </span>
-                            <select
-                              value={formData.nutriscoreGrade}
-                              onChange={(e) => setFormData({ ...formData, nutriscoreGrade: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            >
-                              <option value="">-</option>
-                              <option value="a">A</option>
-                              <option value="b">B</option>
-                              <option value="c">C</option>
-                              <option value="d">D</option>
-                              <option value="e">E</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-                      {formData.ecoscoreGrade && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Eco-Score
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${
-                              formData.ecoscoreGrade === 'a' ? 'text-green-600' :
-                              formData.ecoscoreGrade === 'b' ? 'text-lime-600' :
-                              formData.ecoscoreGrade === 'c' ? 'text-yellow-600' :
-                              formData.ecoscoreGrade === 'd' ? 'text-orange-600' :
-                              'text-red-600'
-                            }`}>
-                              {formData.ecoscoreGrade.toUpperCase()}
-                            </span>
-                            <select
-                              value={formData.ecoscoreGrade}
-                              onChange={(e) => setFormData({ ...formData, ecoscoreGrade: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            >
-                              <option value="">-</option>
-                              <option value="a">A</option>
-                              <option value="b">B</option>
-                              <option value="c">C</option>
-                              <option value="d">D</option>
-                              <option value="e">E</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nutri-Score
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {formData.nutriscoreGrade && (
+                          <span className={`text-2xl font-bold ${
+                            formData.nutriscoreGrade === 'a' ? 'text-green-600' :
+                            formData.nutriscoreGrade === 'b' ? 'text-lime-600' :
+                            formData.nutriscoreGrade === 'c' ? 'text-yellow-600' :
+                            formData.nutriscoreGrade === 'd' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {formData.nutriscoreGrade.toUpperCase()}
+                          </span>
+                        )}
+                        <select
+                          value={formData.nutriscoreGrade || ''}
+                          onChange={(e) => setFormData({ ...formData, nutriscoreGrade: e.target.value || null })}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="">Keine Auswahl</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                          <option value="c">C</option>
+                          <option value="d">D</option>
+                          <option value="e">E</option>
+                        </select>
+                      </div>
                     </div>
-                  )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Eco-Score
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {formData.ecoscoreGrade && (
+                          <span className={`text-2xl font-bold ${
+                            formData.ecoscoreGrade === 'a' ? 'text-green-600' :
+                            formData.ecoscoreGrade === 'b' ? 'text-lime-600' :
+                            formData.ecoscoreGrade === 'c' ? 'text-yellow-600' :
+                            formData.ecoscoreGrade === 'd' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {formData.ecoscoreGrade.toUpperCase()}
+                          </span>
+                        )}
+                        <select
+                          value={formData.ecoscoreGrade || ''}
+                          onChange={(e) => setFormData({ ...formData, ecoscoreGrade: e.target.value || null })}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="">Keine Auswahl</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                          <option value="c">C</option>
+                          <option value="d">D</option>
+                          <option value="e">E</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Nutrition Data */}
                   {formData.nutritionData && (
