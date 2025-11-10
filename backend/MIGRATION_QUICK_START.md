@@ -40,9 +40,24 @@ npm run migrate:status
 
 ### 4. Production'a Geç
 
+**ÖNCE:** Sunucudaki kodu güncelle (package.json güncel olmalı)
+
+```bash
+# Sunucuda:
+cd /var/www/gruner-superstore
+git pull origin main  # veya ilgili branch
+
+# Backend dizinine git
+cd backend
+npm install  # Yeni script'ler için gerekli olabilir
+```
+
+**SONRA:**
+
 ```bash
 # 1. Backup al (ZORUNLU!)
 npm run db:dump
+# Eğer script yoksa: node scripts/dumpDatabase.js
 
 # 2. Durumu kontrol et
 npm run migrate:status
