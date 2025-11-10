@@ -16,7 +16,7 @@ import productService from './product.service.js';
 class OrderService {
   // Sipariş oluştur
   async createOrder(userId, orderData) {
-    const { type, addressId, paymentType, note, items, couponCode } = orderData;
+    const { type, addressId, billingAddressId, paymentType, note, items, couponCode } = orderData;
 
     // Validation: items kontrolü
     if (!items || items.length === 0) {
@@ -40,6 +40,21 @@ class OrderService {
 
       if (!address) {
         throw new NotFoundError('Adresse nicht gefunden');
+      }
+    }
+
+    // Fatura adresi kontrolü (varsa)
+    let billingAddress = null;
+    if (billingAddressId) {
+      billingAddress = await prisma.address.findFirst({
+        where: {
+          id: billingAddressId,
+          userId: userId,
+        },
+      });
+
+      if (!billingAddress) {
+        throw new NotFoundError('Rechnungsadresse nicht gefunden');
       }
     }
 
@@ -336,6 +351,7 @@ class OrderService {
           type,
           status: 'pending',
           addressId: addressId || null,
+          billingAddressId: billingAddressId || null,
           deliveryFee,
           subtotal,
           discount,
@@ -360,6 +376,7 @@ class OrderService {
             },
           },
           address: true,
+          billingAddress: true,
           user: {
             select: {
               id: true,
@@ -612,6 +629,7 @@ class OrderService {
           },
         },
         address: true,
+        billingAddress: true,
         user: {
           select: {
             id: true,

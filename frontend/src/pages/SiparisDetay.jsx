@@ -308,6 +308,28 @@ function SiparisDetay() {
           </div>
         )}
 
+        {/* Fatura Adresi - Sadece farklıysa veya pickup ise göster */}
+        {order.billingAddress && 
+         ((order.address && order.billingAddress.id !== order.address.id) || 
+          (!order.address && order.type === 'pickup')) && (
+          <div className="py-4 border-t border-gray-100 flex items-start gap-2.5">
+            <div className="mt-0.5">
+              <FiFileText className="text-gray-400 text-lg" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 mb-1.5">Rechnungsadresse</p>
+              {order.billingAddress.title && (
+                <p className="text-sm font-semibold text-gray-900 mb-1">{order.billingAddress.title}</p>
+              )}
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {order.billingAddress.street} {order.billingAddress.houseNumber}
+                <br />
+                {order.billingAddress.postalCode} {order.billingAddress.city}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Fatura İndir - Sadece admin gönderdiyse göster */}
         {order.invoiceSent && (
           <div className="pt-4 border-t border-gray-100">

@@ -34,6 +34,7 @@ class InvoiceService {
           },
         },
         address: true,
+        billingAddress: true,
         user: {
           select: {
             id: true,
@@ -169,10 +170,12 @@ class InvoiceService {
             customerY + 18
           );
 
-        if (order.address) {
+        // Fatura adresi varsa onu kullan, yoksa teslimat adresini kullan
+        const invoiceAddress = order.billingAddress || order.address;
+        if (invoiceAddress) {
           doc
-            .text(`${order.address.street} ${order.address.houseNumber}`, 50, customerY + 32)
-            .text(`${order.address.postalCode} ${order.address.city}`, 50, customerY + 46);
+            .text(`${invoiceAddress.street} ${invoiceAddress.houseNumber}`, 50, customerY + 32)
+            .text(`${invoiceAddress.postalCode} ${invoiceAddress.city}`, 50, customerY + 46);
         }
 
         doc

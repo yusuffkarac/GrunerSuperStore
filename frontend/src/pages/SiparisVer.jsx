@@ -7,6 +7,7 @@ import {
   FiTruck,
   FiShoppingBag,
   FiCreditCard,
+  FiFileText,
   FiPlus,
   FiCheck,
   FiTag,
@@ -26,6 +27,8 @@ function SiparisVer() {
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [selectedBillingAddressId, setSelectedBillingAddressId] = useState(null);
+  const [useDifferentBillingAddress, setUseDifferentBillingAddress] = useState(false);
   const [orderType, setOrderType] = useState('delivery'); // delivery | pickup
   const [paymentType, setPaymentType] = useState('cash'); // cash | card_on_delivery
   const [note, setNote] = useState('');
@@ -70,9 +73,13 @@ function SiparisVer() {
       const defaultAddress = loadedAddresses.find((addr) => addr.isDefault);
       if (defaultAddress) {
         setSelectedAddressId(defaultAddress.id);
+        setSelectedBillingAddressId(defaultAddress.id); // Fatura adresi için de varsayılan adresi seç
       } else if (loadedAddresses.length > 0) {
         setSelectedAddressId(loadedAddresses[0].id);
+        setSelectedBillingAddressId(loadedAddresses[0].id); // Fatura adresi için de ilk adresi seç
       }
+      // Switch'i kapalı başlat (varsayılan olarak aynı adres)
+      setUseDifferentBillingAddress(false);
     } catch (error) {
       console.error('Adres yükleme hatası:', error);
       setAddresses([]);
@@ -156,6 +163,13 @@ function SiparisVer() {
         paymentType,
         items: orderItems,
         ...(orderType === 'delivery' && { addressId: selectedAddressId }),
+        // Switch açıksa ve farklı bir fatura adresi seçildiyse gönder
+        // Delivery için: switch açıksa ve farklı adres seçildiyse gönder
+        // Pickup için: switch açıksa fatura adresi gönder (pickup'ta teslimat adresi yok)
+        ...(useDifferentBillingAddress && selectedBillingAddressId && 
+            ((orderType === 'delivery' && selectedBillingAddressId !== selectedAddressId) || 
+             (orderType === 'pickup')) && 
+            { billingAddressId: selectedBillingAddressId }),
         ...(appliedCoupon && { couponCode: appliedCoupon.code }),
         ...(note && note.trim() && { note: note.trim() }),
       };
@@ -287,7 +301,13 @@ function SiparisVer() {
               {addresses.map((address) => (
                 <button
                   key={address.id}
-                  onClick={() => setSelectedAddressId(address.id)}
+                  onClick={() => {
+                    setSelectedAddressId(address.id);
+                    // Switch kapalıysa fatura adresini de güncelle
+                    if (!useDifferentBillingAddress) {
+                      setSelectedBillingAddressId(address.id);
+                    }
+                  }}
                   className={`w-full text-left p-2 rounded-lg border transition-all ${
                     selectedAddressId === address.id
                       ? 'border-green-600 bg-green-50'
@@ -312,6 +332,89 @@ function SiparisVer() {
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Fatura Adresi Switch ve Seçimi */}
+      {addresses.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+                <FiFileText className="w-4 h-4" />
+                <span>Rechnungsadresse</span>
+              </h2>
+            </div>
+            {/* Switch */}
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useDifferentBillingAddress}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setUseDifferentBillingAddress(checked);
+                  // Switch kapatılırsa fatura adresini teslimat adresiyle aynı yap
+                  if (!checked && selectedAddressId) {
+                    setSelectedBillingAddressId(selectedAddressId);
+                  }
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+
+          {/* Switch açıksa fatura adresi seçimi göster */}
+          {useDifferentBillingAddress && (
+            <>
+              {loadingAddresses ? (
+                <div className="animate-pulse">
+                  <div className="h-12 bg-gray-200 rounded-lg"></div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {addresses.map((address) => (
+                    <button
+                      key={address.id}
+                      onClick={() => setSelectedBillingAddressId(address.id)}
+                      className={`w-full text-left p-2 rounded-lg border transition-all ${
+                        selectedBillingAddressId === address.id
+                          ? 'border-green-600 bg-green-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-gray-900">{address.title}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            {address.street} {address.houseNumber}
+                            {address.addressLine2 && `, ${address.addressLine2}`}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {address.postalCode} {address.city}, {address.state}
+                          </p>
+                        </div>
+                        {selectedBillingAddressId === address.id && (
+                          <FiCheck className="text-green-600 text-base flex-shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Switch kapalıysa bilgi mesajı göster */}
+          {!useDifferentBillingAddress && (
+            <p className="text-xs text-gray-500 italic">
+              {orderType === 'delivery' 
+                ? 'Rechnungsadresse ist identisch mit der Lieferadresse'
+                : selectedAddressId 
+                  ? 'Rechnungsadresse ist identisch mit der ausgewählten Adresse'
+                  : 'Rechnungsadresse wird aus Ihren gespeicherten Adressen verwendet'}
+            </p>
           )}
         </div>
       )}

@@ -127,8 +127,9 @@ model Address {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryOrders Order[] @relation("OrderDeliveryAddress")
+  billingOrders  Order[] @relation("OrderBillingAddress")
 
   @@index([userId])
   @@index([postalCode])
@@ -240,6 +241,7 @@ model Order {
   type        OrderType
   status      OrderStatus @default(pending)
   addressId   String?     @map("address_id") @db.Uuid
+  billingAddressId String? @map("billing_address_id") @db.Uuid // Fatura adresi
   deliveryFee Decimal     @default(0) @map("delivery_fee") @db.Decimal(12, 2)
   subtotal    Decimal     @map("subtotal") @db.Decimal(12, 2)
   discount    Decimal     @default(0) @db.Decimal(12, 2) // Kupon indirimi
@@ -257,11 +259,12 @@ model Order {
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  user       User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  address    Address?     @relation(fields: [addressId], references: [id], onDelete: Restrict)
-  coupon     Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  orderItems OrderItem[]
-  review     OrderReview?
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  address        Address?     @relation("OrderDeliveryAddress", fields: [addressId], references: [id], onDelete: Restrict)
+  billingAddress Address?     @relation("OrderBillingAddress", fields: [billingAddressId], references: [id], onDelete: Restrict)
+  coupon         Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  orderItems     OrderItem[]
+  review         OrderReview?
 
   @@index([orderNo])
   @@index([userId, createdAt(sort: Desc)])
@@ -269,6 +272,7 @@ model Order {
   @@index([type])
   @@index([createdAt(sort: Desc)])
   @@index([addressId])
+  @@index([billingAddressId])
   @@index([couponId])
   @@index([userId, status, createdAt(sort: Desc)])
   @@map("orders")
