@@ -9,6 +9,8 @@ import { normalizeGermanChars, denormalizeGermanChars } from '../utils/stringNor
 class AddressSearchService {
   constructor() {
     this.baseUrl = 'https://nominatim.openstreetmap.org';
+    // Varsayılan şehir filtresi
+    this.defaultCities = ['Waiblingen', 'Stuttgart'];
   }
 
   /**
@@ -154,10 +156,19 @@ class AddressSearchService {
 
     try {
       // Şehir filtresi: string, array veya null olabilir
-      // null = şehir filtresi yok, tüm sonuçlar gösterilir
-      const allowedCities = options.city === null || options.city === undefined
-        ? [] // null/undefined ise boş array = filtre yok
-        : (Array.isArray(options.city) ? options.city : [options.city]);
+      // null = şehir filtresi yok, varsayılan şehirler kullanılır
+      // undefined = varsayılan şehirler kullanılır
+      let allowedCities;
+      if (options.city === null) {
+        // Explicit null = filtre yok, tüm sonuçlar gösterilir
+        allowedCities = [];
+      } else if (options.city === undefined) {
+        // Undefined = varsayılan şehirler kullanılır
+        allowedCities = this.defaultCities;
+      } else {
+        // Belirtilmiş şehir(ler) kullanılır
+        allowedCities = Array.isArray(options.city) ? options.city : [options.city];
+      }
 
       // Şehir bilgisini sorguya ekle (varsa ve tek şehir ise)
       // Bu Nominatim'in daha iyi sonuç bulmasını sağlar
