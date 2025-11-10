@@ -8,183 +8,183 @@ async function seedPermissions() {
   console.log('🔐 İzinler oluşturuluyor...');
 
   const permissions = [
-    // SKT Yönetimi İzinleri
+    // Verfallsdatum Verwaltung Berechtigungen
     {
       name: 'expiry_management_view',
-      displayName: 'SKT Yönetimi Görüntüleme',
-      description: 'Son kullanma tarihi yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'MHD-Verwaltung anzeigen',
+      description: 'Berechtigung zum Anzeigen der Seite für die Verwaltung des Mindesthaltbarkeitsdatums',
       category: 'expiry',
     },
     {
       name: 'expiry_management_settings',
-      displayName: 'SKT Ayarları',
-      description: 'Son kullanma tarihi ayarlarını değiştirme yetkisi',
+      displayName: 'MHD-Einstellungen',
+      description: 'Berechtigung zum Ändern der Einstellungen für das Mindesthaltbarkeitsdatum',
       category: 'expiry',
     },
     {
       name: 'expiry_management_action',
-      displayName: 'SKT İşlemleri',
-      description: 'Ürünleri etiketleme ve kaldırma işlemleri yapma yetkisi',
+      displayName: 'MHD-Aktionen',
+      description: 'Berechtigung zum Etikettieren und Entfernen von Produkten',
       category: 'expiry',
     },
-    // Ürün Yönetimi İzinleri
+    // Produktverwaltung Berechtigungen
     {
       name: 'product_management_view',
-      displayName: 'Ürün Yönetimi Görüntüleme',
-      description: 'Ürün yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Produktverwaltung anzeigen',
+      description: 'Berechtigung zum Anzeigen der Produktverwaltungsseite',
       category: 'products',
     },
     {
       name: 'product_management_create',
-      displayName: 'Ürün Oluşturma',
-      description: 'Yeni ürün oluşturma yetkisi',
+      displayName: 'Produkt erstellen',
+      description: 'Berechtigung zum Erstellen eines neuen Produkts',
       category: 'products',
     },
     {
       name: 'product_management_edit',
-      displayName: 'Ürün Düzenleme',
-      description: 'Mevcut ürünleri düzenleme yetkisi',
+      displayName: 'Produkt bearbeiten',
+      description: 'Berechtigung zum Bearbeiten vorhandener Produkte',
       category: 'products',
     },
     {
       name: 'product_management_delete',
-      displayName: 'Ürün Silme',
-      description: 'Ürün silme yetkisi',
+      displayName: 'Produkt löschen',
+      description: 'Berechtigung zum Löschen von Produkten',
       category: 'products',
     },
-    // Sipariş Yönetimi İzinleri
+    // Bestellverwaltung Berechtigungen
     {
       name: 'order_management_view',
-      displayName: 'Sipariş Yönetimi Görüntüleme',
-      description: 'Sipariş yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Bestellverwaltung anzeigen',
+      description: 'Berechtigung zum Anzeigen der Bestellverwaltungsseite',
       category: 'orders',
     },
     {
       name: 'order_management_edit',
-      displayName: 'Sipariş Düzenleme',
-      description: 'Sipariş durumunu değiştirme yetkisi',
+      displayName: 'Bestellung bearbeiten',
+      description: 'Berechtigung zum Ändern des Bestellstatus',
       category: 'orders',
     },
     {
       name: 'order_management_cancel',
-      displayName: 'Sipariş İptal Etme',
-      description: 'Siparişleri iptal etme yetkisi',
+      displayName: 'Bestellung stornieren',
+      description: 'Berechtigung zum Stornieren von Bestellungen',
       category: 'orders',
     },
-    // Kullanıcı Yönetimi İzinleri
+    // Benutzerverwaltung Berechtigungen
     {
       name: 'user_management_view',
-      displayName: 'Kullanıcı Yönetimi Görüntüleme',
-      description: 'Kullanıcı yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Benutzerverwaltung anzeigen',
+      description: 'Berechtigung zum Anzeigen der Benutzerverwaltungsseite',
       category: 'users',
     },
     {
       name: 'user_management_edit',
-      displayName: 'Kullanıcı Düzenleme',
-      description: 'Kullanıcı bilgilerini düzenleme yetkisi',
+      displayName: 'Benutzer bearbeiten',
+      description: 'Berechtigung zum Bearbeiten von Benutzerdaten',
       category: 'users',
     },
-    // Pazarlama İzinleri
+    // Marketing Berechtigungen
     {
       name: 'marketing_campaigns',
-      displayName: 'Kampanya Yönetimi',
-      description: 'Kampanya oluşturma ve düzenleme yetkisi',
+      displayName: 'Kampagnenverwaltung',
+      description: 'Berechtigung zum Erstellen und Bearbeiten von Kampagnen',
       category: 'marketing',
     },
     {
       name: 'marketing_coupons',
-      displayName: 'Kupon Yönetimi',
-      description: 'Kupon oluşturma ve düzenleme yetkisi',
+      displayName: 'Couponverwaltung',
+      description: 'Berechtigung zum Erstellen und Bearbeiten von Coupons',
       category: 'marketing',
     },
-    // Ayarlar İzinleri
+    // Einstellungen Berechtigungen
     {
       name: 'settings_view',
-      displayName: 'Ayarları Görüntüleme',
-      description: 'Sistem ayarlarını görüntüleme yetkisi',
+      displayName: 'Einstellungen anzeigen',
+      description: 'Berechtigung zum Anzeigen der Systemeinstellungen',
       category: 'settings',
     },
     {
       name: 'settings_edit',
-      displayName: 'Ayarları Düzenleme',
-      description: 'Sistem ayarlarını değiştirme yetkisi',
+      displayName: 'Einstellungen bearbeiten',
+      description: 'Berechtigung zum Ändern der Systemeinstellungen',
       category: 'settings',
     },
-    // Admin Yönetimi İzinleri (Super Admin'e özel, ama yine de tanımlı)
+    // Adminverwaltung Berechtigungen (nur für Super Admin, aber trotzdem angelegt)
     {
       name: 'admin_management',
-      displayName: 'Admin Yönetimi',
-      description: 'Admin kullanıcılarını yönetme yetkisi (Super Admin)',
+      displayName: 'Adminverwaltung',
+      description: 'Berechtigung zur Verwaltung von Admin-Benutzern (Super Admin)',
       category: 'admin',
     },
-    // Bildirim Yönetimi İzinleri
+    // Benachrichtigungsverwaltung Berechtigungen
     {
       name: 'notification_management_view',
-      displayName: 'Bildirim Yönetimi Görüntüleme',
-      description: 'Bildirim yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Benachrichtigungsverwaltung anzeigen',
+      description: 'Berechtigung zum Anzeigen der Benachrichtigungsverwaltungsseite',
       category: 'notifications',
     },
     {
       name: 'notification_management_create',
-      displayName: 'Bildirim Oluşturma',
-      description: 'Yeni bildirim oluşturma yetkisi',
+      displayName: 'Benachrichtigung erstellen',
+      description: 'Berechtigung zum Erstellen einer neuen Benachrichtigung',
       category: 'notifications',
     },
     {
       name: 'notification_management_delete',
-      displayName: 'Bildirim Silme',
-      description: 'Bildirim silme yetkisi',
+      displayName: 'Benachrichtigung löschen',
+      description: 'Berechtigung zum Löschen von Benachrichtigungen',
       category: 'notifications',
     },
-    // E-Mail Template Yönetimi İzinleri
+    // E-Mail-Vorlagenverwaltung Berechtigungen
     {
       name: 'email_template_management_view',
-      displayName: 'E-Mail Template Görüntüleme',
-      description: 'E-Mail template yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'E-Mail-Vorlagen anzeigen',
+      description: 'Berechtigung zum Anzeigen der E-Mail-Vorlagenverwaltungsseite',
       category: 'templates',
     },
     {
       name: 'email_template_management_edit',
-      displayName: 'E-Mail Template Düzenleme',
-      description: 'E-Mail template\'lerini düzenleme yetkisi',
+      displayName: 'E-Mail-Vorlagen bearbeiten',
+      description: 'Berechtigung zum Bearbeiten von E-Mail-Vorlagen',
       category: 'templates',
     },
-    // Bildirim Template Yönetimi İzinleri
+    // Benachrichtigungsvorlagenverwaltung Berechtigungen
     {
       name: 'notification_template_management_view',
-      displayName: 'Bildirim Template Görüntüleme',
-      description: 'Bildirim template yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Benachrichtigungsvorlagen anzeigen',
+      description: 'Berechtigung zum Anzeigen der Benachrichtigungsvorlagenverwaltungsseite',
       category: 'templates',
     },
     {
       name: 'notification_template_management_edit',
-      displayName: 'Bildirim Template Düzenleme',
-      description: 'Bildirim template\'lerini düzenleme yetkisi',
+      displayName: 'Benachrichtigungsvorlagen bearbeiten',
+      description: 'Berechtigung zum Bearbeiten von Benachrichtigungsvorlagen',
       category: 'templates',
     },
-    // Barcode Label Yönetimi İzinleri
+    // Barcode-Etikettenverwaltung Berechtigungen
     {
       name: 'barcode_label_view',
-      displayName: 'Barcode Etiket Görüntüleme',
-      description: 'Barcode etiket yönetimi sayfasını görüntüleme yetkisi',
+      displayName: 'Barcode-Etiketten anzeigen',
+      description: 'Berechtigung zum Anzeigen der Barcode-Etikettenverwaltungsseite',
       category: 'barcode',
     },
     {
       name: 'barcode_label_create',
-      displayName: 'Barcode Etiket Oluşturma',
-      description: 'Yeni barcode etiket oluşturma yetkisi',
+      displayName: 'Barcode-Etikett erstellen',
+      description: 'Berechtigung zum Erstellen eines neuen Barcode-Etiketts',
       category: 'barcode',
     },
     {
       name: 'barcode_label_edit',
-      displayName: 'Barcode Etiket Düzenleme',
-      description: 'Barcode etiket düzenleme yetkisi',
+      displayName: 'Barcode-Etikett bearbeiten',
+      description: 'Berechtigung zum Bearbeiten von Barcode-Etiketten',
       category: 'barcode',
     },
     {
       name: 'barcode_label_delete',
-      displayName: 'Barcode Etiket Silme',
-      description: 'Barcode etiket silme yetkisi',
+      displayName: 'Barcode-Etikett löschen',
+      description: 'Berechtigung zum Löschen von Barcode-Etiketten',
       category: 'barcode',
     },
   ];

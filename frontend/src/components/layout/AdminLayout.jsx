@@ -227,13 +227,13 @@ function AdminLayout() {
   const allMenuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome, permission: null }, // Dashboard herkese açık
     { path: '/admin/products', label: 'Produkte', icon: FiPackage, permission: 'product_management_view' },
-    { path: '/admin/expiry-management', label: 'SKT Yönetimi', icon: FiClock, permission: 'expiry_management_view' },
+    { path: '/admin/expiry-management', label: 'MHD Verwaltung', icon: FiClock, permission: 'expiry_management_view' },
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag, permission: 'order_management_view' },
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid, permission: 'product_management_view' },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag, permission: 'marketing_campaigns' },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag, permission: 'marketing_coupons' },
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
-    { path: '/admin/roles', label: 'Roller ve İzinler', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
+    { path: '/admin/roles', label: 'Rollen & Berechtigungen', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
     { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },

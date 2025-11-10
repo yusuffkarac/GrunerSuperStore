@@ -98,7 +98,7 @@ export const removeProduct = async (req, res, next) => {
  */
 export const getHistory = async (req, res, next) => {
   try {
-    const { adminId, productId, actionType, limit, offset } = req.query;
+    const { adminId, productId, actionType, limit, offset, date } = req.query;
 
     const filters = {
       ...(adminId && { adminId }),
@@ -106,6 +106,7 @@ export const getHistory = async (req, res, next) => {
       ...(actionType && { actionType }),
       ...(limit && { limit: parseInt(limit) }),
       ...(offset && { offset: parseInt(offset) }),
+      ...(date && { date }),
     };
 
     const history = await expiryService.getActionHistory(filters);

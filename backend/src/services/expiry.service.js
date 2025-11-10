@@ -341,13 +341,26 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
  * İşlem geçmişini getir
  */
 export const getActionHistory = async (filters = {}) => {
-  const { adminId, productId, actionType, limit = 100, offset = 0 } = filters;
+  const { adminId, productId, actionType, limit = 100, offset = 0, date } = filters;
 
   const where = {
     ...(adminId && { adminId }),
     ...(productId && { productId }),
     ...(actionType && { actionType }),
   };
+
+  // Tarih filtresi ekle (belirli bir günün işlemlerini getir)
+  if (date) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    
+    where.createdAt = {
+      gte: startDate,
+      lte: endDate,
+    };
+  }
 
   const [actions, total] = await Promise.all([
     prisma.expiryAction.findMany({

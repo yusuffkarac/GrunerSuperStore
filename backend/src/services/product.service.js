@@ -1316,6 +1316,9 @@ class ProductService {
         where.expiryDate = null;
         where.excludeFromExpiryCheck = false;
         break;
+      case 'taxRate':
+        where.taxRate = null;
+        break;
       default:
         throw new Error(`Geçersiz eksiklik tipi: ${missingType}`);
     }
@@ -1459,12 +1462,12 @@ class ProductService {
   /**
    * Ürünü belirli bir görev tipinden muaf tut
    * @param {String} productId - Ürün ID
-   * @param {String} category - Görev tipi ('image', 'barcode', 'category', 'price', 'expiryDate')
+   * @param {String} category - Görev tipi ('image', 'barcode', 'category', 'price', 'expiryDate', 'taxRate')
    * @returns {Object} ProductTaskIgnore kaydı
    */
   async ignoreProductTask(productId, category) {
     // Geçerli görev tiplerini kontrol et
-    const validCategories = ['image', 'barcode', 'category', 'price', 'expiryDate'];
+    const validCategories = ['image', 'barcode', 'category', 'price', 'expiryDate', 'taxRate'];
     if (!validCategories.includes(category)) {
       throw new Error(`Geçersiz görev tipi: ${category}`);
     }

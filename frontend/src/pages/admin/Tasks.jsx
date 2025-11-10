@@ -15,6 +15,7 @@ const TASK_TYPES = [
   { id: 'category', label: 'Kategorie', icon: FiTag, color: 'purple', colorClass: 'purple' },
   { id: 'price', label: 'Preis', icon: FiDollarSign, color: 'yellow', colorClass: 'yellow' },
   { id: 'expiryDate', label: 'MHD', icon: FiClock, color: 'red', colorClass: 'red' },
+  { id: 'taxRate', label: 'Vergi Oranı', icon: FiDollarSign, color: 'orange', colorClass: 'yellow' },
 ];
 
 const getColorClasses = (colorClass, isActive) => {
@@ -198,6 +199,7 @@ const Tasks = () => {
     if (activeTab === 'price') currentValues.price = product.price ? parseFloat(product.price) : '';
     if (activeTab === 'expiryDate') currentValues.expiryDate = product.expiryDate || '';
     if (activeTab === 'image') currentValues.imageUrls = Array.isArray(product.imageUrls) ? product.imageUrls : [];
+    if (activeTab === 'taxRate') currentValues.taxRate = product.taxRate ? parseFloat(product.taxRate) : '';
     setEditValues(currentValues);
   };
 
@@ -235,6 +237,13 @@ const Tasks = () => {
         case 'expiryDate':
           if (editValues.expiryDate) {
             updateData.expiryDate = editValues.expiryDate;
+          }
+          break;
+        case 'taxRate':
+          if (editValues.taxRate !== undefined && editValues.taxRate !== '') {
+            updateData.taxRate = parseFloat(editValues.taxRate);
+          } else if (editValues.taxRate === '') {
+            updateData.taxRate = null;
           }
           break;
       }
@@ -277,7 +286,7 @@ const Tasks = () => {
 
       {/* Tab'lar */}
       <div className="mb-4 md:mb-6 border-b border-gray-200">
-        <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
+        <div className="flex flex-wrap gap-2 pb-0 -mb-px md:flex-nowrap">
           {TASK_TYPES.map((type) => {
             const Icon = type.icon;
             const count = counts[type.id] || 0;
@@ -290,13 +299,13 @@ const Tasks = () => {
                   setActiveTab(type.id);
                   setPage(1);
                 }}
-                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap ${getColorClasses(type.colorClass, isActive)}`}
+                className={`flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap flex-1 md:flex-initial min-w-0 ${getColorClasses(type.colorClass, isActive)}`}
                 title={type.label}
               >
-                <Icon size={16} className="md:w-[18px] md:h-[18px]" />
+                <Icon size={18} className="flex-shrink-0" />
                 <span className="hidden md:inline">{type.label}</span>
                 {count > 0 && (
-                  <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? getBadgeColorClasses(type.colorClass) : 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`px-1 md:px-1.5 py-0.5 rounded-full text-[10px] md:text-xs font-medium ${isActive ? getBadgeColorClasses(type.colorClass) : 'bg-gray-100 text-gray-600'}`}>
                     {count}
                   </span>
                 )}
@@ -309,13 +318,13 @@ const Tasks = () => {
               setActiveTab('ignored');
               setPage(1);
             }}
-            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap ${getColorClasses('gray', activeTab === 'ignored')}`}
+            className={`flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap flex-1 md:flex-initial min-w-0 ${getColorClasses('gray', activeTab === 'ignored')}`}
             title="Ignorierte"
           >
-            <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" />
+            <FiEyeOff size={18} className="flex-shrink-0" />
               <span className="hidden md:inline">Ignorierte</span>
             {counts['ignored'] > 0 && (
-              <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${activeTab === 'ignored' ? getBadgeColorClasses('gray') : 'bg-gray-100 text-gray-600'}`}>
+              <span className={`px-1 md:px-1.5 py-0.5 rounded-full text-[10px] md:text-xs font-medium ${activeTab === 'ignored' ? getBadgeColorClasses('gray') : 'bg-gray-100 text-gray-600'}`}>
                 {counts['ignored']}
               </span>
             )}
@@ -505,6 +514,22 @@ const Tasks = () => {
                                 autoFocus
                               />
                             )}
+                            {activeTab === 'taxRate' && (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  value={editValues.taxRate || ''}
+                                  onChange={(e) => setEditValues({ ...editValues, taxRate: e.target.value })}
+                                  placeholder="Vergi oranı (örn: 19.00)"
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  autoFocus
+                                />
+                                <span className="text-gray-500">%</span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleSave(product.id)}
@@ -677,6 +702,22 @@ const Tasks = () => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                           autoFocus
                         />
+                      )}
+                      {activeTab === 'taxRate' && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            value={editValues.taxRate || ''}
+                            onChange={(e) => setEditValues({ ...editValues, taxRate: e.target.value })}
+                            placeholder="Vergi oranı (örn: 19.00)"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            autoFocus
+                          />
+                          <span className="text-gray-500">%</span>
+                        </div>
                       )}
                       <div className="flex items-center gap-2">
                         <button

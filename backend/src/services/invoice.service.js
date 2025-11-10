@@ -29,6 +29,7 @@ class InvoiceService {
               select: {
                 name: true,
                 unit: true,
+                taxRate: true, // Vergi oranını al
               },
             },
           },
@@ -226,7 +227,8 @@ class InvoiceService {
           .fontSize(10)
           .font('Helvetica-Bold')
           .fillColor('#111827')
-          .text('Produkt', 50, tableTop)
+          .text('Pos', 50, tableTop)
+          .text('Produkt', 75, tableTop)
           .text('Menge', 280, tableTop, { width: 60, align: 'right' })
           .text('Preis', 360, tableTop, { width: 80, align: 'right' })
           .text('Gesamt', 460, tableTop, { width: 90, align: 'right' });
@@ -241,12 +243,37 @@ class InvoiceService {
         let currentY = tableTop + 25;
         doc.fontSize(9).font('Helvetica').fillColor('#374151');
 
+        // Vergi gruplarını toplamak için
+        const taxGroups = {}; // { "19": { total: 0, netTotal: 0 }, "7": { total: 0, netTotal: 0 } }
+        let totalNet = 0; // Toplam NET tutar
+
         order.orderItems.forEach((item, index) => {
           const productName = item.variantName
             ? `${item.productName} - ${item.variantName}`
             : item.productName;
 
-          const itemTotal = parseFloat(item.price) * item.quantity;
+          // Vergi oranını al (product'tan)
+          const taxRate = item.product?.taxRate ? parseFloat(item.product.taxRate) : null;
+          
+          // NET fiyatı hesapla: NET = BRÜT / (1 + vergi/100)
+          let netPrice = parseFloat(item.price);
+          let netTotal = netPrice * item.quantity;
+          
+          if (taxRate && taxRate > 0) {
+            // Brüt fiyattan NET'e çevir
+            netPrice = parseFloat(item.price) / (1 + taxRate / 100);
+            netTotal = netPrice * item.quantity;
+            
+            // Vergi grubuna ekle
+            const taxKey = taxRate.toFixed(0); // "19" veya "7" gibi
+            if (!taxGroups[taxKey]) {
+              taxGroups[taxKey] = { total: 0, netTotal: 0, rate: taxRate };
+            }
+            taxGroups[taxKey].total += parseFloat(item.price) * item.quantity;
+            taxGroups[taxKey].netTotal += netTotal;
+          }
+          
+          totalNet += netTotal;
 
           // Sıra numarası
           doc.text(`${index + 1}.`, 50, currentY, { width: 25 });
@@ -255,11 +282,13 @@ class InvoiceService {
           const maxWidth = 195;
           doc.text(productName, 75, currentY, { width: maxWidth, lineBreak: false, ellipsis: true });
           doc.text(`${item.quantity}x`, 280, currentY, { width: 60, align: 'right' });
-          doc.text(`€${parseFloat(item.price).toFixed(2)}`, 360, currentY, {
+          // NET fiyatı göster
+          doc.text(`€${netPrice.toFixed(2)}`, 360, currentY, {
             width: 80,
             align: 'right',
           });
-          doc.text(`€${itemTotal.toFixed(2)}`, 460, currentY, {
+          // NET toplamı göster
+          doc.text(`€${netTotal.toFixed(2)}`, 460, currentY, {
             width: 90,
             align: 'right',
           });
@@ -285,15 +314,15 @@ class InvoiceService {
         currentY += 15;
         doc.fontSize(10).font('Helvetica').fillColor('#374151');
 
-        // Ara toplam
-        doc.text('Zwischensumme:', 360, currentY, { width: 100, align: 'right' });
-        doc.text(`€${parseFloat(order.subtotal).toFixed(2)}`, 460, currentY, {
+        // NET Ara toplam (ürünlerin NET toplamı)
+        doc.text('Zwischensumme ', 360, currentY, { width: 100, align: 'right' });
+        doc.text(`€${totalNet.toFixed(2)}`, 460, currentY, {
           width: 90,
           align: 'right',
         });
         currentY += 18;
 
-        // Kargo ücreti
+        // Kargo ücreti (vergi dahil değil, direkt göster)
         if (parseFloat(order.deliveryFee) > 0) {
           doc.text('Liefergebühr:', 360, currentY, { width: 100, align: 'right' });
           doc.text(`€${parseFloat(order.deliveryFee).toFixed(2)}`, 460, currentY, {
@@ -312,9 +341,32 @@ class InvoiceService {
             align: 'right',
           });
           currentY += 18;
+          doc.fillColor('#374151');
+        }
+
+        // Vergi detayları
+        const taxKeys = Object.keys(taxGroups).sort((a, b) => parseFloat(b) - parseFloat(a));
+        if (taxKeys.length > 0) {
+          currentY += 10;
+          doc
+            .fontSize(10)
+            .font('Helvetica')
+            .fillColor('#374151')
+            .text('Mehrwertsteuer:', 360, currentY, { width: 100, align: 'right' });
+          currentY += 18;
+          
+          taxKeys.forEach((taxKey) => {
+            const taxGroup = taxGroups[taxKey];
+            const taxAmount = taxGroup.total - taxGroup.netTotal;
+            // Vergi oranı ve tutarı tek satırda, daha yakın göster
+            const taxText = `${taxGroup.rate.toFixed(0)}%: €${taxAmount.toFixed(2)}`;
+            doc.text(taxText, 360, currentY, { width: 190, align: 'right' });
+            currentY += 18;
+          });
         }
 
         // Toplam çizgi
+        currentY += 5;
         doc
           .strokeColor('#111827')
           .lineWidth(1.5)
@@ -324,12 +376,12 @@ class InvoiceService {
 
         currentY += 10;
 
-        // TOPLAM
+        // TOPLAM (Brüt - vergi dahil)
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
           .fillColor('#111827')
-          .text('Gesamt:', 360, currentY, { width: 100, align: 'right' });
+          .text('Gesamt (brutto):', 360, currentY, { width: 100, align: 'right' });
         doc
           .fillColor('#059669')
           .text(`€${parseFloat(order.total).toFixed(2)}`, 460, currentY, {

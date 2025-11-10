@@ -282,17 +282,17 @@ function RoleManagement() {
   });
 
   const categoryNames = {
-    products: 'Ürün Yönetimi',
-    orders: 'Sipariş Yönetimi',
-    users: 'Kullanıcı Yönetimi',
-    expiry: 'SKT Yönetimi',
-    marketing: 'Pazarlama',
-    settings: 'Ayarlar',
-    admin: 'Admin Yönetimi',
-    notifications: 'Bildirim Yönetimi',
-    templates: 'Template Yönetimi',
-    barcode: 'Barcode Etiket Yönetimi',
-    other: 'Diğer',
+    products: 'Produktverwaltung',
+    orders: 'Bestellverwaltung',
+    users: 'Benutzerverwaltung',
+    expiry: 'MHD-Verwaltung',
+    marketing: 'Marketing',
+    settings: 'Einstellungen',
+    admin: 'Admin-Verwaltung',
+    notifications: 'Benachrichtigungsverwaltung',
+    templates: 'Vorlagenverwaltung',
+    barcode: 'Barcode-Etikettenverwaltung',
+    other: 'Sonstiges',
   };
 
   if (loading && roles.length === 0) {

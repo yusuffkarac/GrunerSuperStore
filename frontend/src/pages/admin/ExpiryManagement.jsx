@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX, FiCamera, FiMail } from 'react-icons/fi';
+import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX, FiCamera, FiMail, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
@@ -34,6 +34,11 @@ function ExpiryManagement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // localStorage'dan seçili tarihi oku, yoksa bugün
+    const savedDate = localStorage.getItem('expiryManagement_selectedDate');
+    return savedDate ? new Date(savedDate) : new Date();
+  });
   const [activeTab, setActiveTab] = useState(() => {
     // localStorage'dan aktif tab'ı oku, yoksa varsayılan olarak 0 (Critical)
     const savedTab = localStorage.getItem('expiryManagement_activeTab');
@@ -58,7 +63,9 @@ function ExpiryManagement() {
 
   useEffect(() => {
     fetchData();
-    
+  }, [selectedDate, activeTab]);
+  
+  useEffect(() => {
     // Günlük bildirimi tetikle (sayfaya giren ilk kişi)
     const triggerDailyReminder = async () => {
       try {
@@ -153,16 +160,28 @@ function ExpiryManagement() {
     localStorage.setItem('expiryManagement_activeTab', activeTab.toString());
   }, [activeTab]);
 
+  // Seçili tarih değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    if (selectedDate) {
+      localStorage.setItem('expiryManagement_selectedDate', selectedDate.toISOString());
+    }
+  }, [selectedDate]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
+      // Tarih filtresi için date parametresi ekle (sadece history için)
+      const dateParam = activeTab === 2 && selectedDate 
+        ? `&date=${selectedDate.toISOString().split('T')[0]}` 
+        : '';
+
       const [criticalRes, warningRes, historyRes, settingsRes] = await Promise.all([
         axios.get(`${API_URL}/admin/expiry/critical`, config),
         axios.get(`${API_URL}/admin/expiry/warning`, config),
-        axios.get(`${API_URL}/admin/expiry/history?limit=50`, config),
+        axios.get(`${API_URL}/admin/expiry/history?limit=1000${dateParam}`, config),
         axios.get(`${API_URL}/admin/expiry/settings`, config),
       ]);
 
@@ -437,6 +456,33 @@ function ExpiryManagement() {
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('de-DE');
+  };
+
+  // Tarih navigasyon fonksiyonları
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    // Geleceğe gitmeyi engelle
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (newDate <= today) {
+      setSelectedDate(newDate);
+    }
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
   };
 
   const getActionTypeLabel = (type) => {
@@ -1071,10 +1117,60 @@ function ExpiryManagement() {
       {activeTab === 2 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-200">
-            <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FiClock className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-sm md:text-base">Vorgangsverlauf</span>
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FiClock className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">Vorgangsverlauf</span>
+              </h2>
+              
+              {/* Tarih Filtresi */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={goToPreviousDay}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Vorheriger Tag"
+                >
+                  <FiChevronLeft className="w-4 h-4" />
+                </button>
+                
+                <div className="relative">
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    dateFormat="dd.MM.yyyy"
+                    maxDate={new Date()}
+                    locale={de}
+                    className="w-36 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+                    wrapperClassName="w-auto"
+                    popperClassName="!z-[9999]"
+                    popperPlacement="bottom-end"
+                  />
+                </div>
+                
+                <button
+                  onClick={goToNextDay}
+                  disabled={isToday()}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isToday() 
+                      ? 'text-gray-300 cursor-not-allowed' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Nächster Tag"
+                >
+                  <FiChevronRight className="w-4 h-4" />
+                </button>
+                
+                {!isToday() && (
+                  <button
+                    onClick={goToToday}
+                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                    title="Heute"
+                  >
+                    Heute
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {history.length === 0 ? (
