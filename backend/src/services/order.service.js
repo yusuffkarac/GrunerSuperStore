@@ -11,6 +11,7 @@ import queueService from './queue.service.js';
 import notificationService from './notification.service.js';
 import notificationTemplateService from './notification-template.service.js';
 import invoiceService from './invoice.service.js';
+import productService from './product.service.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -180,7 +181,14 @@ class OrderService {
         }
 
         // Fiyat: varyant varsa varyant fiyatını, yoksa ürün fiyatını kullan
-        const originalPrice = variant ? variant.price : product.price;
+        let originalPrice;
+        if (variant) {
+          originalPrice = variant.price;
+        } else {
+          // Temporary price kontrolü yap
+          const priceInfo = productService.getDisplayPrice(product);
+          originalPrice = priceInfo.displayPrice;
+        }
 
         // Kampanya fiyatı varsa kullan, yoksa orijinal fiyatı kullan
         const price = item.campaignPrice || originalPrice;

@@ -431,6 +431,26 @@ const adminService = {
     const response = await adminApi.post('/admin/products/bulk-update-prices', data);
     return response.data;
   },
+
+  // Toplu fiyat güncellemelerini getir
+  getBulkPriceUpdates: async (params) => {
+    const response = await adminApi.get('/admin/bulk-price-updates', { params });
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemesini geri al
+  revertBulkPriceUpdate: async (id) => {
+    const response = await adminApi.post(`/admin/bulk-price-updates/${id}/revert`);
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemesinin bitiş tarihini güncelle
+  updateBulkPriceUpdateEndDate: async (id, temporaryPriceEndDate) => {
+    const response = await adminApi.put(`/admin/bulk-price-updates/${id}/end-date`, {
+      temporaryPriceEndDate,
+    });
+    return response.data;
+  },
 };
 
 export default adminService;

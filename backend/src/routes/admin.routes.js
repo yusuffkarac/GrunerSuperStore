@@ -112,6 +112,15 @@ router.delete('/products/:id', requirePermission('product_management_delete'), a
 // POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
 router.post('/products/bulk-update-prices', requirePermission('product_management_edit'), adminController.bulkUpdatePrices);
 
+// GET /api/admin/bulk-price-updates - Toplu fiyat güncellemelerini getir
+router.get('/bulk-price-updates', requirePermission('product_management_view'), adminController.getBulkPriceUpdates);
+
+// POST /api/admin/bulk-price-updates/:id/revert - Toplu fiyat güncellemesini geri al
+router.post('/bulk-price-updates/:id/revert', requirePermission('product_management_edit'), adminController.revertBulkPriceUpdate);
+
+// PUT /api/admin/bulk-price-updates/:id/end-date - Toplu fiyat güncellemesinin bitiş tarihini güncelle
+router.put('/bulk-price-updates/:id/end-date', requirePermission('product_management_edit'), adminController.updateBulkPriceUpdateEndDate);
+
 // ===============================
 // PRODUCT VARIANT MANAGEMENT
 // ===============================

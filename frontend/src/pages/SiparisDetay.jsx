@@ -14,15 +14,18 @@ import {
   FiStar,
   FiDownload,
   FiRefreshCw,
+  FiXCircle,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 import useCartStore from '../store/cartStore';
+import settingsService from '../services/settingsService';
+import { useAlert } from '../contexts/AlertContext';
 
-// OrderStatusBadge'i Siparislerim'den kopyalayabilirsiniz veya ortak bir component yapabilirsiniz
+// OrderStatusBadge von Siparislerim importieren oder gemeinsame Komponente erstellen
 import { OrderStatusBadge } from './Siparislerim';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
-// Yıldız Rating Bileşeni
+// Sternbewertungskomponente
 function StarRating({ rating, onRatingChange, readonly = false }) {
   const [hoverRating, setHoverRating] = useState(0);
 
@@ -63,11 +66,15 @@ function SiparisDetay() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [reordering, setReordering] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [settings, setSettings] = useState(null);
   const { reorderFromOrder } = useCartStore();
+  const { showConfirm } = useAlert();
 
   useEffect(() => {
     loadOrderDetails();
     loadReview();
+    loadSettings();
   }, [id]);
 
   const loadOrderDetails = async () => {
@@ -75,7 +82,7 @@ function SiparisDetay() {
       const response = await orderService.getOrderById(id);
       setOrder(response.data.order);
     } catch (error) {
-      console.error('Sipariş detay hatası:', error);
+      console.error('Fehler beim Laden der Bestelldetails:', error);
       toast.error('Bestellung konnte nicht geladen werden');
     } finally {
       setLoading(false);
@@ -90,8 +97,8 @@ function SiparisDetay() {
         setReview(response.data.review);
       }
     } catch (error) {
-      // Review yoksa hata vermez, sadece null döner
-      console.log('Review yok veya yüklenemedi');
+      // Wenn kein Review vorhanden ist, wird kein Fehler ausgegeben, nur null zurückgegeben
+      console.log('Kein Review vorhanden oder konnte nicht geladen werden');
     } finally {
       setReviewLoading(false);
     }

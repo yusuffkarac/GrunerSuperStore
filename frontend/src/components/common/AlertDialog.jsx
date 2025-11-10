@@ -76,7 +76,7 @@ function AlertDialog({ isOpen, onClose, title, message, type = 'confirm', onConf
                   className={`px-4 py-2.5 rounded-lg font-medium text-white transition-colors flex-1 flex items-center justify-center gap-2 ${
                     isAlert 
                       ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
                   {isAlert ? (

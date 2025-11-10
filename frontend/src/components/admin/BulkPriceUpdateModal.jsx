@@ -15,6 +15,8 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
     adjustmentType: 'percentage', // 'percentage' | 'fixed'
     adjustmentValue: '',
     includeVariants: true,
+    updateType: 'permanent', // 'permanent' | 'temporary'
+    temporaryPriceEndDate: '',
   });
 
   // Kategorileri yükle
@@ -47,6 +49,20 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    if (formData.updateType === 'temporary' && !formData.temporaryPriceEndDate) {
+      toast.error('Bitte geben Sie ein Enddatum für die temporäre Preisaktualisierung ein');
+      return;
+    }
+
+    if (formData.updateType === 'temporary') {
+      const endDate = new Date(formData.temporaryPriceEndDate);
+      const now = new Date();
+      if (endDate <= now) {
+        toast.error('Das Enddatum muss in der Zukunft liegen');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -55,10 +71,15 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
         adjustmentType: formData.adjustmentType,
         adjustmentValue: parseFloat(formData.adjustmentValue),
         includeVariants: formData.includeVariants,
+        updateType: formData.updateType,
       };
 
       if (formData.type === 'category') {
         payload.categoryId = formData.categoryId;
+      }
+
+      if (formData.updateType === 'temporary') {
+        payload.temporaryPriceEndDate = formData.temporaryPriceEndDate;
       }
 
       const response = await adminService.bulkUpdatePrices(payload);
@@ -91,6 +112,8 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
       adjustmentType: 'percentage',
       adjustmentValue: '',
       includeVariants: true,
+      updateType: 'permanent',
+      temporaryPriceEndDate: '',
     });
     onClose();
   };
@@ -242,11 +265,80 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
                   checked={formData.includeVariants}
                   onChange={(e) => setFormData({ ...formData, includeVariants: e.target.checked })}
                   className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  disabled={formData.updateType === 'temporary'}
                 />
                 <label htmlFor="includeVariants" className="text-sm text-gray-700">
                   Auch Produktvarianten aktualisieren
+                  {formData.updateType === 'temporary' && (
+                    <span className="text-xs text-gray-500 ml-1">(nur bei permanenten Aktualisierungen)</span>
+                  )}
                 </label>
               </div>
+
+              {/* Güncelleme Tipi */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Aktualisierungstyp
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, updateType: 'permanent' })}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      formData.updateType === 'permanent'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-300 hover:border-green-300'
+                    }`}
+                  >
+                    <div className={`text-sm font-medium ${
+                      formData.updateType === 'permanent' ? 'text-green-600' : 'text-gray-700'
+                    }`}>
+                      Permanent
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Preis wird dauerhaft geändert
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, updateType: 'temporary' })}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      formData.updateType === 'temporary'
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-300 hover:border-yellow-300'
+                    }`}
+                  >
+                    <div className={`text-sm font-medium ${
+                      formData.updateType === 'temporary' ? 'text-yellow-600' : 'text-gray-700'
+                    }`}>
+                      Temporär
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Preis nur bis zum Enddatum
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Geçici fiyat bitiş tarihi */}
+              {formData.updateType === 'temporary' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Enddatum für temporäre Preisaktualisierung
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.temporaryPriceEndDate}
+                    onChange={(e) => setFormData({ ...formData, temporaryPriceEndDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required={formData.updateType === 'temporary'}
+                    min={new Date().toISOString().slice(0, 16)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Nach diesem Datum wird der ursprüngliche Preis wieder angezeigt
+                  </p>
+                </div>
+              )}
 
               {/* Önizleme */}
               {formData.adjustmentValue && (

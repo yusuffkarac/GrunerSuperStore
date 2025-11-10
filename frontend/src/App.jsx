@@ -61,6 +61,7 @@ import EmailTemplates from './pages/admin/EmailTemplates';
 import NotificationTemplates from './pages/admin/NotificationTemplates';
 import RoleManagement from './pages/admin/RoleManagement';
 import ExpiryManagement from './pages/admin/ExpiryManagement';
+import BulkPriceUpdates from './pages/admin/BulkPriceUpdates';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -234,6 +235,7 @@ function AppContent() {
                 }
               />
               <Route path="expiry-management" element={<ExpiryManagement />} />
+              <Route path="bulk-price-updates" element={<BulkPriceUpdates />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="email-templates" element={<EmailTemplates />} />

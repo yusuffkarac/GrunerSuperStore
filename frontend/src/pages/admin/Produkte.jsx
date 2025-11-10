@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp, FiArchive } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -383,6 +384,7 @@ ProductMobileRow.displayName = 'ProductMobileRow';
 
 function Produkte() {
   const { showConfirm } = useAlert();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1033,6 +1035,13 @@ function Produkte() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/admin/bulk-price-updates')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm whitespace-nowrap"
+          >
+            <FiArchive className="w-4 h-4" />
+            <span>Massenaktualisierungen</span>
+          </button>
           <button
             onClick={() => setShowBulkPriceModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
