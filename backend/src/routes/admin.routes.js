@@ -100,6 +100,9 @@ router.get('/products', requirePermission('product_management_view'), adminContr
 // GET /api/admin/products/missing-data - Eksik bilgisi olan ürünleri getir (/:id'den ÖNCE olmalı)
 router.get('/products/missing-data', requirePermission('product_management_view'), adminController.getProductsWithMissingData);
 
+// GET /api/admin/products/ignored - Gözardı edilen ürünleri getir (/:id'den ÖNCE olmalı)
+router.get('/products/ignored', requirePermission('product_management_view'), adminController.getIgnoredProducts);
+
 // GET /api/admin/products/:id - Ürün detayı
 router.get('/products/:id', requirePermission('product_management_view'), adminController.getProductById);
 

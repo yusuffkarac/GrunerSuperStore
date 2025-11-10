@@ -476,6 +476,19 @@ const adminService = {
     const response = await adminApi.delete(`/admin/products/${productId}/ignore-task/${category}`);
     return response.data;
   },
+
+  // Gözardı edilen ürünleri getir
+  getIgnoredProducts: async (taskType, filters = {}) => {
+    const params = new URLSearchParams();
+    if (taskType) params.append('taskType', taskType);
+    if (filters.page) params.append('page', filters.page);
+    if (filters.limit) params.append('limit', filters.limit);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.categoryId) params.append('categoryId', filters.categoryId);
+
+    const response = await adminApi.get(`/admin/products/ignored?${params.toString()}`);
+    return response.data;
+  },
 };
 
 export default adminService;

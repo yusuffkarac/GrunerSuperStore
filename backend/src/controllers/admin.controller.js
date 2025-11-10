@@ -768,6 +768,23 @@ class AdminController {
       message: result.message,
     });
   });
+
+  // GET /api/admin/products/ignored - Gözardı edilen ürünleri getir
+  getIgnoredProducts = asyncHandler(async (req, res) => {
+    const { taskType, page, limit, search, categoryId } = req.query;
+
+    const result = await productService.getIgnoredProducts(taskType || null, {
+      page,
+      limit,
+      search,
+      categoryId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  });
 }
 
 export default new AdminController();

@@ -64,7 +64,6 @@ export const getCriticalProducts = async () => {
         gte: today, // Geçmiş tarihli olanları hariç tut
       },
       excludeFromExpiryCheck: false,
-      isActive: true,
     },
     include: {
       category: {
@@ -133,6 +132,7 @@ export const getWarningProducts = async () => {
 
   console.log('🟠 WARNING Tarih Aralığı - Critical Date (>=):', criticalDate, 'Warning Date (<):', warningDate);
 
+  // Önce tüm warning aralığındaki ürünleri getir
   const products = await prisma.product.findMany({
     where: {
       expiryDate: {
@@ -140,7 +140,6 @@ export const getWarningProducts = async () => {
         lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
       },
       excludeFromExpiryCheck: false,
-      isActive: true,
     },
     include: {
       category: {
@@ -173,14 +172,20 @@ export const getWarningProducts = async () => {
     },
   });
 
-  // Son işlemi kontrol ederek filtrele (etiketlenmiş veya kaldırılmış olanları çıkar)
+  // Son işlemi kontrol ederek filtrele
+  // - removed olanları çıkar
+  // - labeled olanlar listede kalacak (yeşil olarak gösterilecek)
+  // Query zaten warning aralığındaki ürünleri getiriyor, bu yüzden labeled olanlar otomatik olarak listede kalacak
   const filteredProducts = products.filter(product => {
     const lastAction = product.expiryActions[0];
     if (!lastAction) return true;
-    // Son işlem labeled veya removed ise ve geri alınmamışsa listeden çıkar
-    if ((lastAction.actionType === 'labeled' || lastAction.actionType === 'removed') && !lastAction.isUndone) {
+    
+    // Son işlem removed ise ve geri alınmamışsa listeden çıkar
+    if (lastAction.actionType === 'removed' && !lastAction.isUndone) {
       return false;
     }
+    
+    // labeled olanlar listede kalacak (zaten warning aralığındalar, critical aralığına geçene kadar burada kalacaklar)
     return true;
   });
 
@@ -248,7 +253,7 @@ export const labelProduct = async (productId, adminId, note = null) => {
 /**
  * Ürünü raftan kaldır
  */
-export const removeProduct = async (productId, adminId, excludeFromCheck = false, note = null) => {
+export const removeProduct = async (productId, adminId, excludeFromCheck = false, note = null, newExpiryDate = null) => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
   });
@@ -262,13 +267,28 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
   }
 
   const today = getToday();
-  const daysUntilExpiry = getDaysDifference(product.expiryDate, today);
+  let expiryDateToUse = product.expiryDate;
+  let daysUntilExpiry = getDaysDifference(product.expiryDate, today);
+
+  // Eğer yeni tarih verilmişse, ürünün expiryDate'ini güncelle
+  const updateData = {};
+  if (newExpiryDate) {
+    const newDate = new Date(newExpiryDate);
+    updateData.expiryDate = newDate;
+    expiryDateToUse = newDate;
+    daysUntilExpiry = getDaysDifference(newDate, today);
+  }
 
   // Eğer excludeFromCheck true ise, ürünü SKT kontrolünden muaf tut
   if (excludeFromCheck) {
+    updateData.excludeFromExpiryCheck = true;
+  }
+
+  // Ürünü güncelle (yeni tarih veya excludeFromCheck varsa)
+  if (Object.keys(updateData).length > 0) {
     await prisma.product.update({
       where: { id: productId },
-      data: { excludeFromExpiryCheck: true },
+      data: updateData,
     });
   }
 
@@ -278,7 +298,7 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
       productId,
       adminId,
       actionType: 'removed',
-      expiryDate: product.expiryDate,
+      expiryDate: expiryDateToUse,
       daysUntilExpiry,
       excludedFromCheck: excludeFromCheck,
       note,
@@ -326,7 +346,7 @@ export const getActionHistory = async (filters = {}) => {
             id: true,
             name: true,
             slug: true,
-            barcode: true,
+            barcode: true
           },
         },
         admin: {
@@ -403,7 +423,7 @@ export const undoAction = async (actionId, adminId) => {
       expiryDate: action.expiryDate,
       daysUntilExpiry,
       previousActionId: actionId,
-      note: `Geri alındı: ${action.actionType}`,
+      note: `Rückgängig gemacht: ${action.actionType}`,
     },
     include: {
       product: {

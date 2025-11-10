@@ -31,11 +31,16 @@ function ExpiryManagement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(() => {
+    // localStorage'dan aktif tab'ı oku, yoksa varsayılan olarak 0 (Critical)
+    const savedTab = localStorage.getItem('expiryManagement_activeTab');
+    return savedTab ? parseInt(savedTab, 10) : 0;
+  });
 
   // Dialog states
   const [removeDialog, setRemoveDialog] = useState({ open: false, product: null });
   const [labelDialog, setLabelDialog] = useState({ open: false, product: null });
+  const [undoDialog, setUndoDialog] = useState({ open: false, actionId: null, productName: '' });
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState(null); // 'critical' veya 'warning'
@@ -43,10 +48,16 @@ function ExpiryManagement() {
   // Form states
   const [excludeFromCheck, setExcludeFromCheck] = useState(false);
   const [note, setNote] = useState('');
+  const [newExpiryDate, setNewExpiryDate] = useState('');
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Aktif tab değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('expiryManagement_activeTab', activeTab.toString());
+  }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -90,7 +101,11 @@ function ExpiryManagement() {
       const token = localStorage.getItem('adminToken');
       await axios.post(
         `${API_URL}/admin/expiry/remove/${removeDialog.product.id}`,
-        { excludeFromCheck: excludeFromExpiryCheck, note },
+        { 
+          excludeFromCheck: excludeFromExpiryCheck, 
+          note,
+          newExpiryDate: newExpiryDate || null
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -98,6 +113,7 @@ function ExpiryManagement() {
       setRemoveDialog({ open: false, product: null });
       setExcludeFromCheck(false);
       setNote('');
+      setNewExpiryDate('');
       fetchData();
     } catch (err) {
       const errorMessage = typeof err.response?.data?.error === 'string' 
@@ -207,7 +223,7 @@ function ExpiryManagement() {
       const token = localStorage.getItem('adminToken');
       await axios.post(
         `${API_URL}/admin/expiry/remove/${product.id}`,
-        { excludeFromCheck: excludeFromExpiryCheck, note: 'Durch Barcode-Scan entfernt' },
+        { excludeFromCheck: excludeFromExpiryCheck, note: 'Durch Barcode-Scan entfernt', newExpiryDate: null },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -273,7 +289,7 @@ function ExpiryManagement() {
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div >
       {/* Header */}
       <div className="mb-4 md:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
@@ -316,7 +332,7 @@ function ExpiryManagement() {
 
       {/* Tabs */}
       <div className="mb-4 md:mb-6 border-b border-gray-200">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mb-px">
+        <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
           <button
             onClick={() => setActiveTab(0)}
             className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
@@ -467,7 +483,7 @@ function ExpiryManagement() {
                           className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                         >
                           <FiTrash2 className="w-4 h-4" />
-                          Entfernt
+                          Aussortieren
                         </button>
                       </td>
                     </tr>
@@ -519,7 +535,7 @@ function ExpiryManagement() {
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                   >
                     <FiTrash2 className="w-4 h-4" />
-                    Entfernt
+                    Aussortieren
                   </button>
                 </div>
               ))}
@@ -622,13 +638,23 @@ function ExpiryManagement() {
                         )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setLabelDialog({ open: true, product })}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
-                        >
-                          <FiTag className="w-4 h-4" />
-                          Etikettiert
-                        </button>
+                        {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
+                          <button
+                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          >
+                            <FiTag className="w-4 h-4" />
+                            Erledigt!
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setLabelDialog({ open: true, product })}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
+                          >
+                            <FiTag className="w-4 h-4" />
+                            Reduziert
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -674,13 +700,23 @@ function ExpiryManagement() {
                     </div>
                   )}
 
-                  <button
-                    onClick={() => setLabelDialog({ open: true, product })}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-                  >
-                    <FiTag className="w-4 h-4" />
-                    Etikettiert
-                  </button>
+                  {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
+                    <button
+                      onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                    >
+                      <FiTag className="w-4 h-4" />
+                      Erledigt!
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setLabelDialog({ open: true, product })}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+                    >
+                      <FiTag className="w-4 h-4" />
+                      Reduziert
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -885,9 +921,12 @@ function ExpiryManagement() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4">
                 <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-sm md:text-base font-semibold text-gray-900">Produkt entfernen</h3>
+                  <h3 className="text-sm md:text-base font-semibold text-gray-900">Produkt aussortieren</h3>
                   <button
-                    onClick={() => setRemoveDialog({ open: false, product: null })}
+                    onClick={() => {
+                      setRemoveDialog({ open: false, product: null });
+                      setNewExpiryDate('');
+                    }}
                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <FiX size={18} />
@@ -895,8 +934,19 @@ function ExpiryManagement() {
                 </div>
                 <div className="px-4 py-3 space-y-3">
                   <p className="text-xs md:text-sm text-gray-700">
-                    Möchten Sie das Produkt <strong>{removeDialog.product?.name}</strong> wirklich entfernen?
+                    Möchten Sie das Produkt <strong>{removeDialog.product?.name}</strong> wirklich aussortieren?
                   </p>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                      Neues MHD (optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={newExpiryDate}
+                      onChange={(e) => setNewExpiryDate(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
                   <textarea
                     placeholder="Notiz (optional)"
                     value={note}
@@ -907,7 +957,10 @@ function ExpiryManagement() {
                 </div>
                 <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                   <button
-                    onClick={() => setRemoveDialog({ open: false, product: null })}
+                    onClick={() => {
+                      setRemoveDialog({ open: false, product: null });
+                      setNewExpiryDate('');
+                    }}
                     className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Abbrechen
@@ -916,13 +969,13 @@ function ExpiryManagement() {
                     onClick={() => handleRemoveProduct(false)}
                     className="px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                   >
-                    Entfernt
+                    Aussortieren
                   </button>
                   <button
                     onClick={() => handleRemoveProduct(true)}
                     className="px-3 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
                   >
-                    Entfernt und befreit
+                    Deaktivieren
                   </button>
                 </div>
               </div>
@@ -983,6 +1036,62 @@ function ExpiryManagement() {
                     className="px-4 py-2 text-xs md:text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
                   >
                     Etikettiert
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* UNDO DİALOGU */}
+      <AnimatePresence>
+        {undoDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4">
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Vorgang rückgängig machen</h3>
+                  <button
+                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
+                  <p className="text-xs md:text-sm text-gray-700">
+                    Möchten Sie die "Erledigt!"-Markierung für das Produkt <strong>{undoDialog.productName}</strong> wirklich rückgängig machen?
+                  </p>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 md:gap-3">
+                  <button
+                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+                    className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleUndoAction(undoDialog.actionId);
+                      setUndoDialog({ open: false, actionId: null, productName: '' });
+                    }}
+                    className="px-4 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Rückgängig machen
                   </button>
                 </div>
               </div>

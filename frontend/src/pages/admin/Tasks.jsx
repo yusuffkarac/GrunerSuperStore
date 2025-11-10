@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiEdit2, FiX, FiFilter, FiPackage, FiCheckSquare, FiImage, FiHash, FiTag, FiDollarSign, FiClock, FiUpload, FiSave, FiXCircle } from 'react-icons/fi';
+import { FiSearch, FiEdit2, FiX, FiFilter, FiPackage, FiCheckSquare, FiImage, FiHash, FiTag, FiDollarSign, FiClock, FiUpload, FiSave, FiXCircle, FiEyeOff } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -25,6 +25,7 @@ const getColorClasses = (colorClass, isActive) => {
       purple: 'border-purple-500 text-purple-600 font-medium',
       yellow: 'border-yellow-500 text-yellow-600 font-medium',
       red: 'border-red-500 text-red-600 font-medium',
+      gray: 'border-gray-500 text-gray-600 font-medium',
     };
     return activeColors[colorClass] || activeColors.blue;
   }
@@ -38,6 +39,7 @@ const getBadgeColorClasses = (colorClass) => {
     purple: 'bg-purple-100 text-purple-700',
     yellow: 'bg-yellow-100 text-yellow-700',
     red: 'bg-red-100 text-red-700',
+    gray: 'bg-gray-100 text-gray-700',
   };
   return badgeColors[colorClass] || badgeColors.blue;
 };
@@ -85,6 +87,14 @@ const Tasks = () => {
           newCounts[taskType.id] = 0;
         }
       }
+      // Gözardı edilenler sayısını yükle
+      try {
+        const response = await adminService.getIgnoredProducts(null, { page: 1, limit: 1 });
+        newCounts['ignored'] = response.data?.pagination?.total || 0;
+      } catch (error) {
+        console.error('Gözardı edilenler sayısı yüklenemedi:', error);
+        newCounts['ignored'] = 0;
+      }
       setCounts(newCounts);
     };
     loadCounts();
@@ -98,12 +108,22 @@ const Tasks = () => {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const response = await adminService.getProductsWithMissingData(activeTab, {
-        page,
-        limit,
-        search: search || undefined,
-        categoryId: selectedCategory || undefined,
-      });
+      let response;
+      if (activeTab === 'ignored') {
+        response = await adminService.getIgnoredProducts(null, {
+          page,
+          limit,
+          search: search || undefined,
+          categoryId: selectedCategory || undefined,
+        });
+      } else {
+        response = await adminService.getProductsWithMissingData(activeTab, {
+          page,
+          limit,
+          search: search || undefined,
+          categoryId: selectedCategory || undefined,
+        });
+      }
 
       if (response.success) {
         setProducts(response.data?.products || []);
@@ -129,9 +149,39 @@ const Tasks = () => {
         ...prev,
         [activeTab]: response.data?.pagination?.total || 0,
       }));
+      // Gözardı edilenler sayısını güncelle
+      const ignoredResponse = await adminService.getIgnoredProducts(null, { page: 1, limit: 1 });
+      setCounts((prev) => ({
+        ...prev,
+        ignored: ignoredResponse.data?.pagination?.total || 0,
+      }));
     } catch (error) {
       console.error('Muafiyet hatası:', error);
       toast.error(error.response?.data?.message || 'Befreiung fehlgeschlagen');
+    }
+  };
+
+  const handleUnignore = async (productId, taskType) => {
+    try {
+      await adminService.unignoreProductTask(productId, taskType);
+      toast.success('Befreiung erfolgreich aufgehoben');
+      // Listeyi yenile
+      loadProducts();
+      // Sayıları güncelle
+      const ignoredResponse = await adminService.getIgnoredProducts(null, { page: 1, limit: 1 });
+      setCounts((prev) => ({
+        ...prev,
+        ignored: ignoredResponse.data?.pagination?.total || 0,
+      }));
+      // İlgili görev tipinin sayısını güncelle
+      const response = await adminService.getProductsWithMissingData(taskType, { page: 1, limit: 1 });
+      setCounts((prev) => ({
+        ...prev,
+        [taskType]: response.data?.pagination?.total || 0,
+      }));
+    } catch (error) {
+      console.error('Muafiyet kaldırma hatası:', error);
+      toast.error(error.response?.data?.message || 'Aufhebung der Befreiung fehlgeschlagen');
     }
   };
 
@@ -210,13 +260,16 @@ const Tasks = () => {
   };
 
   const getTaskTypeInfo = (typeId) => {
+    if (typeId === 'ignored') {
+      return { id: 'ignored', label: 'Ignorierte', icon: FiEyeOff, color: 'gray', colorClass: 'gray' };
+    }
     return TASK_TYPES.find((t) => t.id === typeId) || TASK_TYPES[0];
   };
 
   const taskType = getTaskTypeInfo(activeTab);
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="">
       <div className="mb-4 md:mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Aufgaben</h1>
         <p className="text-sm md:text-base text-gray-600">Produkte mit fehlenden Informationen nach Aufgabentyp anzeigen</p>
@@ -224,7 +277,7 @@ const Tasks = () => {
 
       {/* Tab'lar */}
       <div className="mb-4 md:mb-6 border-b border-gray-200">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mb-px">
+        <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
           {TASK_TYPES.map((type) => {
             const Icon = type.icon;
             const count = counts[type.id] || 0;
@@ -250,6 +303,23 @@ const Tasks = () => {
               </button>
             );
           })}
+          {/* Gözardı Edilenler Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('ignored');
+              setPage(1);
+            }}
+            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap ${getColorClasses('gray', activeTab === 'ignored')}`}
+            title="Ignorierte"
+          >
+            <FiEyeOff size={16} className="md:w-[18px] md:h-[18px]" />
+              <span className="hidden md:inline">Ignorierte</span>
+            {counts['ignored'] > 0 && (
+              <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${activeTab === 'ignored' ? getBadgeColorClasses('gray') : 'bg-gray-100 text-gray-600'}`}>
+                {counts['ignored']}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -293,8 +363,8 @@ const Tasks = () => {
       ) : products.length === 0 ? (
         <EmptyState
           icon={taskType.icon}
-          title={`Keine Produkte mit fehlendem ${taskType.label} gefunden`}
-          description="Alle Produkte scheinen für diesen Aufgabentyp vollständig zu sein."
+          title={activeTab === 'ignored' ? 'Keine gözardı edilen Produkte gefunden' : `Keine Produkte mit fehlendem ${taskType.label} gefunden`}
+          description={activeTab === 'ignored' ? 'Es gibt derzeit keine Produkte, die von Aufgaben befreit sind.' : 'Alle Produkte scheinen für diesen Aufgabentyp vollständig zu sein.'}
         />
       ) : (
         <>
@@ -310,10 +380,10 @@ const Tasks = () => {
                     Kategorie
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hinzufügen
+                    {activeTab === 'ignored' ? 'Gözardı Edilen Görevler' : 'Hinzufügen'}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    BEFREIT
+                    {activeTab === 'ignored' ? 'Aktion' : 'BEFREIT'}
                   </th>
                 </tr>
               </thead>
@@ -356,7 +426,25 @@ const Tasks = () => {
                         {product.category?.name || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {editingProduct === product.id ? (
+                        {activeTab === 'ignored' ? (
+                          <div className="flex flex-wrap gap-1">
+                            {product.ignoredTasks && product.ignoredTasks.length > 0 ? (
+                              product.ignoredTasks.map((taskType) => {
+                                const taskInfo = TASK_TYPES.find((t) => t.id === taskType) || { label: taskType };
+                                return (
+                                  <span
+                                    key={taskType}
+                                    className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                                  >
+                                    {taskInfo.label}
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                        ) : editingProduct === product.id ? (
                           <div className="space-y-2 min-w-[300px]">
                             {activeTab === 'image' && (
                               <div>
@@ -456,7 +544,26 @@ const Tasks = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {editingProduct !== product.id && (
+                          {activeTab === 'ignored' ? (
+                            product.ignoredTasks && product.ignoredTasks.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 justify-end">
+                                {product.ignoredTasks.map((taskType) => {
+                                  const taskInfo = TASK_TYPES.find((t) => t.id === taskType) || { label: taskType };
+                                  return (
+                                    <button
+                                      key={taskType}
+                                      onClick={() => handleUnignore(product.id, taskType)}
+                                      className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                      title={`${taskInfo.label} muafiyetini kaldır`}
+                                    >
+                                      <FiX size={12} className="inline mr-1" />
+                                      {taskInfo.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null
+                          ) : editingProduct !== product.id ? (
                             <button
                               onClick={() => handleIgnore(product.id)}
                               className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
@@ -464,7 +571,7 @@ const Tasks = () => {
                             >
                               <FiCheckSquare size={18} />
                             </button>
-                          )}
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -588,6 +695,32 @@ const Tasks = () => {
                           <FiXCircle size={14} />
                           Abbrechen
                         </button>
+                      </div>
+                    </div>
+                  ) : activeTab === 'ignored' ? (
+                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 mb-2">Gözardı Edilen Görevler:</div>
+                        {product.ignoredTasks && product.ignoredTasks.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {product.ignoredTasks.map((taskType) => {
+                              const taskInfo = TASK_TYPES.find((t) => t.id === taskType) || { label: taskType };
+                              return (
+                                <button
+                                  key={taskType}
+                                  onClick={() => handleUnignore(product.id, taskType)}
+                                  className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                                  title={`${taskInfo.label} muafiyetini kaldır`}
+                                >
+                                  <FiX size={14} />
+                                  {taskInfo.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
                       </div>
                     </div>
                   ) : (

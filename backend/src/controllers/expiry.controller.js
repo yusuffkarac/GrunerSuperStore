@@ -76,14 +76,15 @@ export const labelProduct = async (req, res, next) => {
 export const removeProduct = async (req, res, next) => {
   try {
     const { productId } = req.params;
-    const { excludeFromCheck, note } = req.body;
+    const { excludeFromCheck, note, newExpiryDate } = req.body;
     const adminId = req.admin.id;
 
     const action = await expiryService.removeProduct(
       productId,
       adminId,
       excludeFromCheck || false,
-      note
+      note,
+      newExpiryDate || null
     );
     res.json(action);
   } catch (error) {

@@ -1560,6 +1560,121 @@ class ProductService {
 
     return ignores;
   }
+
+  /**
+   * Gözardı edilen ürünleri getir
+   * @param {String} taskType - Görev tipi (opsiyonel, belirtilmezse tüm görev tipleri)
+   * @param {Object} filters - { page, limit, search, categoryId }
+   * @returns {Object} { products, pagination }
+   */
+  async getIgnoredProducts(taskType, filters = {}) {
+    const { page = 1, limit = 20, search, categoryId } = filters;
+    const skip = (page - 1) * limit;
+
+    // UUID formatını kontrol eden regex
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // Gözardı edilen ürün ID'lerini al
+    const ignoreWhere = {};
+    if (taskType) {
+      ignoreWhere.category = taskType;
+    }
+
+    const ignoredProductIds = await prisma.productTaskIgnore.findMany({
+      where: ignoreWhere,
+      select: { productId: true },
+    });
+
+    // Geçerli UUID'leri filtrele
+    const ignoredIds = ignoredProductIds
+      .map((item) => item.productId)
+      .filter((id) => {
+        if (!id || typeof id !== 'string') return false;
+        return uuidRegex.test(id);
+      });
+
+    if (ignoredIds.length === 0) {
+      return {
+        products: [],
+        pagination: {
+          total: 0,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: 0,
+        },
+      };
+    }
+
+    // Where koşulunu oluştur
+    const where = {
+      id: { in: ignoredIds },
+    };
+
+    // Kategori filtresi
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    // Arama filtresi
+    if (search) {
+      where.AND = where.AND || [];
+      where.AND.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { brand: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Ürünleri getir
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: parseInt(limit),
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    // Her ürün için gözardı edilen görev tiplerini ekle
+    const productsWithIgnores = await Promise.all(
+      products.map(async (product) => {
+        const ignores = await prisma.productTaskIgnore.findMany({
+          where: { productId: product.id },
+          select: {
+            category: true,
+            createdAt: true,
+          },
+        });
+        return {
+          ...product,
+          ignoredTasks: ignores.map((ig) => ig.category),
+        };
+      })
+    );
+
+    return {
+      products: productsWithIgnores,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }
 
 export default new ProductService();
