@@ -3,7 +3,9 @@ import adminController from '../controllers/admin.controller.js';
 import orderController from '../controllers/order.controller.js';
 import settingsController from '../controllers/settings.controller.js';
 import uploadController from '../controllers/upload.controller.js';
-import { authenticateAdmin, requireSuperAdmin } from '../middleware/admin.js';
+import * as roleController from '../controllers/role.controller.js';
+import * as expiryController from '../controllers/expiry.controller.js';
+import { authenticateAdmin, requireSuperAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
 import { adminLoginValidation, createUserValidation, updateUserValidation, createAdminValidation, updateAdminValidation } from '../validators/admin.validators.js';
@@ -201,6 +203,46 @@ router.put('/admins/:id', requireSuperAdmin, updateAdminValidation, validate, ad
 
 // DELETE /api/admin/admins/:id - Admin sil
 router.delete('/admins/:id', requireSuperAdmin, adminController.deleteAdmin);
+
+// POST /api/admin/admins/:adminId/assign-role - Admin'e rol ata
+router.post('/admins/:adminId/assign-role', requireSuperAdmin, roleController.assignRole);
+
+// ===============================
+// ROLE & PERMISSION MANAGEMENT (Super Admin Only)
+// ===============================
+
+// Rol yönetimi
+router.get('/roles', requireSuperAdmin, roleController.getRoles);
+router.get('/roles/:id', requireSuperAdmin, roleController.getRole);
+router.post('/roles', requireSuperAdmin, roleController.createRole);
+router.patch('/roles/:id', requireSuperAdmin, roleController.updateRole);
+router.delete('/roles/:id', requireSuperAdmin, roleController.deleteRole);
+
+// İzin yönetimi
+router.get('/permissions', requireSuperAdmin, roleController.getPermissions);
+router.post('/permissions', requireSuperAdmin, roleController.createPermission);
+router.patch('/permissions/:id', requireSuperAdmin, roleController.updatePermission);
+router.delete('/permissions/:id', requireSuperAdmin, roleController.deletePermission);
+
+// ===============================
+// EXPIRY DATE MANAGEMENT (SKT)
+// ===============================
+
+// SKT ayarları
+router.get('/expiry/settings', requirePermission('expiry_management_view'), expiryController.getSettings);
+router.put('/expiry/settings', requirePermission('expiry_management_settings'), expiryController.updateSettings);
+
+// Kritik ve uyarı ürünleri
+router.get('/expiry/critical', requirePermission('expiry_management_view'), expiryController.getCritical);
+router.get('/expiry/warning', requirePermission('expiry_management_view'), expiryController.getWarning);
+
+// Etiketleme ve kaldırma işlemleri
+router.post('/expiry/label/:productId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.labelProduct);
+router.post('/expiry/remove/:productId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.removeProduct);
+
+// İşlem geçmişi
+router.get('/expiry/history', requirePermission('expiry_management_view'), expiryController.getHistory);
+router.post('/expiry/undo/:actionId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.undoAction);
 
 // ===============================
 // SETTINGS MANAGEMENT

@@ -19,6 +19,7 @@ import {
   FiHelpCircle,
   FiMail,
   FiMessageSquare,
+  FiClock,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -76,12 +77,14 @@ function AdminLayout() {
   const allMenuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome },
     { path: '/admin/products', label: 'Produkte', icon: FiPackage },
+    { path: '/admin/expiry-management', label: 'SKT Yönetimi', icon: FiClock },
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag },
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag },
     { path: '/admin/users', label: 'Benutzer', icon: FiUsers, superAdminOnly: true },
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, superAdminOnly: true },
+    { path: '/admin/roles', label: 'Roller ve İzinler', icon: FiShield, superAdminOnly: true },
     { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell },
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail },
     { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare },
