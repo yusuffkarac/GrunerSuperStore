@@ -11,6 +11,7 @@
     "migrate:dry-run": "node src/config/runMigrations.js run --dry-run",
     "migrate:reset": "node src/config/runMigrations.js reset",
     "migrate:validate": "node src/config/validateMigrations.js",
+    "migrate:mark-existing": "node src/config/markExistingMigrations.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "import-barcodes": "node src/scripts/importBarcodeLabels.js",
     "import-products": "node src/scripts/importProducts.js",
