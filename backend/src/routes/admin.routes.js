@@ -256,10 +256,13 @@ router.get('/expiry/warning', requirePermission('expiry_management_view'), expir
 // Etiketleme ve kaldırma işlemleri
 router.post('/expiry/label/:productId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.labelProduct);
 router.post('/expiry/remove/:productId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.removeProduct);
+router.put('/expiry/update-date/:productId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.updateExpiryDate);
 
 // İşlem geçmişi
 router.get('/expiry/history', requirePermission('expiry_management_view'), expiryController.getHistory);
 router.post('/expiry/undo/:actionId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.undoAction);
+router.post('/expiry/check-and-notify', requirePermission('expiry_management_view'), expiryController.checkAndNotifyAdmins);
+router.get('/expiry/daily-reminder', requirePermission('expiry_management_view'), expiryController.sendDailyReminder);
 
 // ===============================
 // SETTINGS MANAGEMENT

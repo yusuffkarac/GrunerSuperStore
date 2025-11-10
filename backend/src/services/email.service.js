@@ -8,6 +8,17 @@ import prisma from '../config/prisma.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Handlebars helper'ları kaydet
+handlebars.registerHelper('eq', function(a, b) {
+  return a === b;
+});
+
+handlebars.registerHelper('formatDate', function(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+});
+
 /**
  * Email Service
  * SMTP ile mail gönderimi, template rendering ve log kaydı

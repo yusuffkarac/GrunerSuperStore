@@ -66,7 +66,7 @@ function BottomNav() {
                   {/* Badge */}
                   {item.badge > 0 && (
                     <span className={`nav-badge ${active ? 'nav-badge-active' : ''}`}>
-                      {item.badge > 9 ? '9+' : item.badge}
+                      {item.badge}
                     </span>
                   )}
                 </div>

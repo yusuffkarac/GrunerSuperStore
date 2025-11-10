@@ -116,6 +116,27 @@ export const getHistory = async (req, res, next) => {
 };
 
 /**
+ * Ürünün SKT tarihini güncelle
+ * PUT /admin/expiry/update-date/:productId
+ */
+export const updateExpiryDate = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { newExpiryDate, note } = req.body;
+    const adminId = req.admin.id;
+
+    if (!newExpiryDate) {
+      return res.status(400).json({ error: 'Yeni SKT tarihi gereklidir' });
+    }
+
+    const action = await expiryService.updateExpiryDate(productId, adminId, newExpiryDate, note);
+    res.json(action);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * İşlemi geri al
  * POST /admin/expiry/undo/:actionId
  */
@@ -126,6 +147,32 @@ export const undoAction = async (req, res, next) => {
 
     const action = await expiryService.undoAction(actionId, adminId);
     res.json(action);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Günlük MHD bildirimi gönder
+ * GET /admin/expiry/daily-reminder
+ */
+export const sendDailyReminder = async (req, res, next) => {
+  try {
+    const result = await expiryService.notifyDailyExpiryProducts();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * MHD biten ürünleri kontrol et ve adminlere mail gönder
+ * POST /admin/expiry/check-and-notify
+ */
+export const checkAndNotifyAdmins = async (req, res, next) => {
+  try {
+    const result = await expiryService.checkExpiredProductsAndNotifyAdmins();
+    res.json(result);
   } catch (error) {
     next(error);
   }

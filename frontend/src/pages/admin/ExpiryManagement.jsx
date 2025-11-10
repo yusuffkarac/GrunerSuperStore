@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX, FiCamera } from 'react-icons/fi';
+import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX, FiCamera, FiMail } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import BarcodeScanner from '../../components/common/BarcodeScanner';
@@ -44,14 +47,105 @@ function ExpiryManagement() {
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState(null); // 'critical' veya 'warning'
+  const [dateUpdateDialog, setDateUpdateDialog] = useState({ open: false, product: null }); // Kırmızı alan için
+  const [warningDateUpdateDialog, setWarningDateUpdateDialog] = useState({ open: false, product: null }); // Sarı alan için
 
   // Form states
   const [excludeFromCheck, setExcludeFromCheck] = useState(false);
   const [note, setNote] = useState('');
-  const [newExpiryDate, setNewExpiryDate] = useState('');
+  const [newExpiryDate, setNewExpiryDate] = useState(null); // Date objesi olacak
+  const [updateExpiryDate, setUpdateExpiryDate] = useState(null); // Date objesi olacak
 
   useEffect(() => {
     fetchData();
+    
+    // Günlük bildirimi tetikle (sayfaya giren ilk kişi)
+    const triggerDailyReminder = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        await axios.get(
+          `${API_URL}/admin/expiry/daily-reminder`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        // Hata olsa bile sessizce devam et (önemli değil)
+        console.log('Günlük bildirim hatası (önemli değil):', err);
+      }
+    };
+    
+    triggerDailyReminder();
+    
+    // Custom styles for DatePicker
+    const datePickerStyles = `
+      .react-datepicker {
+        font-size: 1.25rem !important;
+        border-radius: 0.5rem !important;
+      }
+      .react-datepicker__header {
+        padding-top: 1rem !important;
+        background-color: #f3f4f6 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+      .react-datepicker__current-month {
+        font-size: 1.125rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 0.5rem !important;
+      }
+      .react-datepicker__day-name {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        width: 2.5rem !important;
+        line-height: 2.5rem !important;
+        margin: 0.25rem !important;
+      }
+      .react-datepicker__day {
+        font-size: 1rem !important;
+        width: 2.5rem !important;
+        line-height: 2.5rem !important;
+        margin: 0.25rem !important;
+      }
+      .react-datepicker__day--selected,
+      .react-datepicker__day--keyboard-selected {
+        background-color: #3b82f6 !important;
+        border-radius: 0.375rem !important;
+      }
+      .react-datepicker__day:hover {
+        border-radius: 0.375rem !important;
+      }
+      .react-datepicker__navigation {
+        top: 1rem !important;
+      }
+      .react-datepicker__navigation-icon::before {
+        border-color: #374151 !important;
+        border-width: 2px 2px 0 0 !important;
+      }
+      .react-datepicker-popper {
+        z-index: 9999 !important;
+        position: fixed !important;
+      }
+      .react-datepicker-popper[data-placement^="bottom"] {
+        margin-top: 8px !important;
+      }
+      .react-datepicker-popper[data-placement^="top"] {
+        margin-bottom: 8px !important;
+      }
+      .react-datepicker__portal {
+        z-index: 9999 !important;
+      }
+    `;
+    
+    const styleSheet = document.createElement('style');
+    styleSheet.type = 'text/css';
+    styleSheet.innerText = datePickerStyles;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      // Cleanup
+      const existingStyle = document.querySelector('style[data-datepicker-custom]');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
   }, []);
 
   // Aktif tab değiştiğinde localStorage'a kaydet
@@ -94,26 +188,105 @@ function ExpiryManagement() {
     }
   };
 
-  const handleRemoveProduct = async (excludeFromExpiryCheck = false) => {
+  const handleRemoveProduct = async () => {
     if (!removeDialog.product) return;
+
+    // Tarih girilmesi zorunlu
+    if (!newExpiryDate) {
+      toast.error('Bitte geben Sie ein Datum ein');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.post(
-        `${API_URL}/admin/expiry/remove/${removeDialog.product.id}`,
+      await axios.put(
+        `${API_URL}/admin/expiry/update-date/${removeDialog.product.id}`,
         { 
-          excludeFromCheck: excludeFromExpiryCheck, 
-          note,
-          newExpiryDate: newExpiryDate || null
+          newExpiryDate: newExpiryDate ? newExpiryDate.toISOString().split('T')[0] : null,
+          note: note || 'MHD aktualisiert'
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success('Produkt erfolgreich entfernt');
+      toast.success('MHD erfolgreich aktualisiert');
       setRemoveDialog({ open: false, product: null });
-      setExcludeFromCheck(false);
       setNote('');
-      setNewExpiryDate('');
+      setNewExpiryDate(null);
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Fehler während des Vorgangs';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeactivateCriticalProduct = async (productId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        `${API_URL}/admin/expiry/remove/${productId}`,
+        { 
+          excludeFromCheck: true, 
+          note: 'Produkt deaktiviert'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success('Produkt erfolgreich deaktiviert');
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Fehler beim Deaktivieren';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleUpdateExpiryDate = async (productId, isWarning = false) => {
+    if (!updateExpiryDate) {
+      toast.error('Bitte geben Sie ein Datum ein');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.put(
+        `${API_URL}/admin/expiry/update-date/${productId}`,
+        { 
+          newExpiryDate: updateExpiryDate ? updateExpiryDate.toISOString().split('T')[0] : null,
+          note: 'MHD aktualisiert'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success('MHD erfolgreich aktualisiert');
+      setDateUpdateDialog({ open: false, product: null });
+      setWarningDateUpdateDialog({ open: false, product: null });
+      setUpdateExpiryDate(null);
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Fehler beim Aktualisieren des MHD';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeactivateWarningProduct = async (productId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        `${API_URL}/admin/expiry/remove/${productId}`,
+        { 
+          excludeFromCheck: true, 
+          note: 'Deaktiviert - yeni mal yok',
+          newExpiryDate: null
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success('Produkt erfolgreich deaktiviert');
       fetchData();
     } catch (err) {
       const errorMessage = typeof err.response?.data?.error === 'string' 
@@ -141,7 +314,7 @@ function ExpiryManagement() {
     } catch (err) {
       const errorMessage = typeof err.response?.data?.error === 'string' 
         ? err.response.data.error 
-        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+        : err.response?.data?.error?.message || err.message || 'Fehler während des Vorgangs';
       toast.error(errorMessage);
     }
   };
@@ -199,9 +372,9 @@ function ExpiryManagement() {
 
       // Moda göre işlem yap
       if (scannerMode === 'critical') {
-        // Kritik ürünü kaldır
-        await handleRemoveProductByBarcode(product, false);
-        // İşlem başarılı olduğunda popup'ı kapat
+        // Kritik ürün için tarih güncelleme dialogunu aç
+        setDateUpdateDialog({ open: true, product });
+        // Popup'ı kapat
         setBarcodeScannerOpen(false);
         setScannerMode(null);
       } else if (scannerMode === 'warning') {
@@ -232,7 +405,7 @@ function ExpiryManagement() {
     } catch (err) {
       const errorMessage = typeof err.response?.data?.error === 'string' 
         ? err.response.data.error 
-        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+        : err.response?.data?.error?.message || err.message || 'Fehler während des Vorgangs';
       toast.error(errorMessage);
     }
   };
@@ -284,6 +457,76 @@ function ExpiryManagement() {
     return classes[type] || 'bg-gray-100 text-gray-800';
   };
 
+  // Bugün mail gönderilip gönderilmediğini kontrol et
+  const hasMailBeenSentToday = () => {
+    const today = new Date().toDateString();
+    const lastSentDate = localStorage.getItem('expiryManagement_mailSentDate');
+    return lastSentDate === today;
+  };
+
+  // Mail gönderme fonksiyonu
+  const handleSendCompletionMail = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        `${API_URL}/admin/expiry/check-and-notify`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Bugünün tarihini localStorage'a kaydet
+      const today = new Date().toDateString();
+      localStorage.setItem('expiryManagement_mailSentDate', today);
+
+      toast.success('E-Mail erfolgreich gesendet');
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'Fehler beim Senden der E-Mail';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Toplam işlenmemiş ürün sayısını hesapla
+  const getTotalUnprocessedCount = () => {
+    return getUnprocessedCriticalCount() + getUnprocessedWarningCount();
+  };
+
+  // Mail gönderme butonunun görünür olup olmayacağını kontrol et
+  const shouldShowMailButton = () => {
+    return getTotalUnprocessedCount() === 0 && !hasMailBeenSentToday();
+  };
+
+  // İşlem yapılmamış ürünleri say
+  const getUnprocessedCriticalCount = () => {
+    return criticalProducts.filter(product => {
+      // Deaktif edilmişse sayma
+      if (product.excludeFromExpiryCheck === true) {
+        return false;
+      }
+      // İşlem yapılmışsa ve geri alınmamışsa sayma
+      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+        return false;
+      }
+      return true;
+    }).length;
+  };
+
+  const getUnprocessedWarningCount = () => {
+    return warningProducts.filter(product => {
+      // Deaktif edilmişse sayma
+      if (product.excludeFromExpiryCheck === true) {
+        return false;
+      }
+      // İşlem yapılmışsa ve geri alınmamışsa sayma
+      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+        return false;
+      }
+      return true;
+    }).length;
+  };
+
   if (loading && criticalProducts.length === 0 && warningProducts.length === 0) {
     return <Loading />;
   }
@@ -298,13 +541,24 @@ function ExpiryManagement() {
               Verwaltung des Mindesthaltbarkeitsdatums (MHD)
             </h1>
           </div>
-          <button
-            onClick={() => setSettingsDialog(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
-          >
-            <FiSettings className="w-4 h-4" />
-            <span>Einstellungen</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {shouldShowMailButton() && (
+              <button
+                onClick={handleSendCompletionMail}
+                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap animate-pulse"
+              >
+                <FiMail className="w-4 h-4" />
+                <span>E-Mail senden</span>
+              </button>
+            )}
+            <button
+              onClick={() => setSettingsDialog(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+            >
+              <FiSettings className="w-4 h-4" />
+              <span>Einstellungen</span>
+            </button>
+          </div>
         </div>
         <p className="text-sm md:text-base text-gray-600">
           Verwalten Sie Produkte auf kritischer und Warnstufe
@@ -344,11 +598,11 @@ function ExpiryManagement() {
             <FiAlertCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Kritische Produkte</span>
             <span className="sm:hidden">Kritisch</span>
-            {criticalProducts.length > 0 && (
+            {getUnprocessedCriticalCount() > 0 && (
               <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                 activeTab === 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
               }`}>
-                {criticalProducts.length}
+                {getUnprocessedCriticalCount()}
               </span>
             )}
           </button>
@@ -363,11 +617,11 @@ function ExpiryManagement() {
             <FiAlertTriangle className="w-4 h-4" />
             <span className="hidden sm:inline">Warnprodukte</span>
             <span className="sm:hidden">Warnung</span>
-            {warningProducts.length > 0 && (
+            {getUnprocessedWarningCount() > 0 && (
               <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                 activeTab === 1 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
               }`}>
-                {warningProducts.length}
+                {getUnprocessedWarningCount()}
               </span>
             )}
           </button>
@@ -423,22 +677,7 @@ function ExpiryManagement() {
                       Produktname
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Barcode
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Kategorie
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      MHD
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Verbleibende Tage
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Lagerbestand
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Letzte Aktion
+                      MHD / Verbleibende Tage
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Aktionen
@@ -448,43 +687,63 @@ function ExpiryManagement() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {criticalProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-red-50 transition-colors">
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="mt-1 space-y-0.5">
+                          {product.category?.name && (
+                            <div className="text-xs text-gray-500">{product.category.name}</div>
+                          )}
+                          {product.barcode && (
+                            <div className="text-xs text-gray-400 font-mono">{product.barcode}</div>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {product.barcode || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {product.category?.name || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(product.expiryDate)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          {product.daysUntilExpiry} Tage
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {product.stock}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {product.lastAction ? (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
-                            {getActionTypeLabel(product.lastAction.actionType)}
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900">
+                          {formatDate(product.expiryDate)}
+                        </div>
+                        <div className="mt-1">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            {product.daysUntilExpiry} Tage
                           </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setRemoveDialog({ open: true, product })}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                          Aussortieren
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {product.excludeFromExpiryCheck === true ? (
+                            <button
+                              onClick={() => setDateUpdateDialog({ open: true, product })}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                            >
+                              Datum Eingeben
+                            </button>
+                          ) : (
+                            <>
+                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                <button
+                                  onClick={() => handleUndoAction(product.lastAction.id)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Rückgängig machen"
+                                >
+                                  <FiRotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setRemoveDialog({ open: true, product })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                                Aussortieren
+                              </button>
+                              <button
+                                onClick={() => handleDeactivateCriticalProduct(product.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                Deaktivieren
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -500,43 +759,60 @@ function ExpiryManagement() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 text-sm mb-1">{product.name}</h3>
                       {product.category?.name && (
-                        <p className="text-xs text-gray-500 mb-1">{product.category.name}</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{product.category.name}</p>
                       )}
                       {product.barcode && (
                         <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
                       )}
                     </div>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2 whitespace-nowrap">
-                      {product.daysUntilExpiry} Tage
-                    </span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                    <div>
-                      <span className="text-gray-500">MHD:</span>
-                      <span className="ml-1 text-gray-900">{formatDate(product.expiryDate)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Lagerbestand:</span>
-                      <span className="ml-1 text-gray-900">{product.stock}</span>
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-500 mb-1">MHD:</div>
+                    <div className="text-sm text-gray-900">{formatDate(product.expiryDate)}</div>
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {product.daysUntilExpiry} Tage
+                      </span>
                     </div>
                   </div>
 
-                  {product.lastAction && (
-                    <div className="mb-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
-                        {getActionTypeLabel(product.lastAction.actionType)}
-                      </span>
+                  {product.excludeFromExpiryCheck === true ? (
+                    <button
+                      onClick={() => setDateUpdateDialog({ open: true, product })}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      Datum Eingeben
+                    </button>
+                  ) : (
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                        <button
+                          onClick={() => handleUndoAction(product.lastAction.id)}
+                          className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                          title="Rückgängig machen"
+                        >
+                          <FiRotateCcw className="w-3 h-3" />
+                          <span className="hidden sm:inline">Rückgängig</span>
+                        </button>
+                      )}
+                      <div className="flex items-center gap-2 flex-1">
+                        <button
+                          onClick={() => setRemoveDialog({ open: true, product })}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+                        >
+                          <FiTrash2 className="w-3 h-3" />
+                          Aussortieren
+                        </button>
+                        <button
+                          onClick={() => handleDeactivateCriticalProduct(product.id)}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                        >
+                          Deaktivieren
+                        </button>
+                      </div>
                     </div>
                   )}
-
-                  <button
-                    onClick={() => setRemoveDialog({ open: true, product })}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                    Aussortieren
-                  </button>
                 </div>
               ))}
             </div>
@@ -583,22 +859,7 @@ function ExpiryManagement() {
                       Produktname
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Barcode
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Kategorie
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      MHD
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Verbleibende Tage
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Lagerbestand
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Letzte Aktion
+                      MHD / Verbleibende Tage
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Aktionen
@@ -608,53 +869,93 @@ function ExpiryManagement() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {warningProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-amber-50 transition-colors">
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="mt-1 space-y-0.5">
+                          {product.category?.name && (
+                            <div className="text-xs text-gray-500">{product.category.name}</div>
+                          )}
+                          {product.barcode && (
+                            <div className="text-xs text-gray-400 font-mono">{product.barcode}</div>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {product.barcode || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {product.category?.name || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(product.expiryDate)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                          {product.daysUntilExpiry} Tage
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {product.stock}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {product.lastAction ? (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
-                            {getActionTypeLabel(product.lastAction.actionType)}
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900">
+                          {formatDate(product.expiryDate)}
+                        </div>
+                        <div className="mt-1">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            {product.daysUntilExpiry} Tage
                           </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
-                          <button
-                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                          >
-                            <FiTag className="w-4 h-4" />
-                            Erledigt!
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setLabelDialog({ open: true, product })}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
-                          >
-                            <FiTag className="w-4 h-4" />
-                            Reduziert
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {product.excludeFromExpiryCheck && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Deaktiviert
+                            </span>
+                          )}
+                          {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
+                            <>
+                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                <button
+                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Rückgängig machen"
+                                >
+                                  <FiRotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm cursor-default">
+                                <FiTag className="w-4 h-4" />
+                                Erledigt!
+                              </span>
+                              <button
+                                onClick={() => setWarningDateUpdateDialog({ open: true, product })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                Neues Datum
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                <button
+                                  onClick={() => handleUndoAction(product.lastAction.id)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Rückgängig machen"
+                                >
+                                  <FiRotateCcw className="w-4 h-4" />
+                                </button>
+                              )}
+                              {!product.excludeFromExpiryCheck && (
+                                <button
+                                  onClick={() => setLabelDialog({ open: true, product })}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
+                                >
+                                  <FiTag className="w-4 h-4" />
+                                  Reduziert
+                                </button>
+                              )}
+                              {!product.excludeFromExpiryCheck && (
+                                <button
+                                  onClick={() => handleDeactivateWarningProduct(product.id)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                                >
+                                  Deaktivieren
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setWarningDateUpdateDialog({ open: true, product })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              >
+                                Neues Datum
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -670,53 +971,93 @@ function ExpiryManagement() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 text-sm mb-1">{product.name}</h3>
                       {product.category?.name && (
-                        <p className="text-xs text-gray-500 mb-1">{product.category.name}</p>
+                        <p className="text-xs text-gray-500 mb-0.5">{product.category.name}</p>
                       )}
                       {product.barcode && (
                         <p className="text-xs text-gray-400 font-mono">{product.barcode}</p>
                       )}
                     </div>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 ml-2 whitespace-nowrap">
-                      {product.daysUntilExpiry} Tage
-                    </span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                    <div>
-                      <span className="text-gray-500">MHD:</span>
-                      <span className="ml-1 text-gray-900">{formatDate(product.expiryDate)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Lagerbestand:</span>
-                      <span className="ml-1 text-gray-900">{product.stock}</span>
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-500 mb-1">MHD:</div>
+                    <div className="text-sm text-gray-900">{formatDate(product.expiryDate)}</div>
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        {product.daysUntilExpiry} Tage
+                      </span>
                     </div>
                   </div>
 
-                  {product.lastAction && (
-                    <div className="mb-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionTypeBadgeClass(product.lastAction.actionType)}`}>
-                        {getActionTypeLabel(product.lastAction.actionType)}
+                  {product.excludeFromExpiryCheck && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        Deaktiviert
                       </span>
                     </div>
                   )}
-
-                  {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
-                    <button
-                      onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                    >
-                      <FiTag className="w-4 h-4" />
-                      Erledigt!
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setLabelDialog({ open: true, product })}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-                    >
-                      <FiTag className="w-4 h-4" />
-                      Reduziert
-                    </button>
-                  )}
+                  <div className="flex flex-row gap-2 w-full">
+                    {product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone ? (
+                      <>
+                        {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                          <button
+                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                            title="Rückgängig machen"
+                          >
+                            <FiRotateCcw className="w-3 h-3" />
+                            <span className="hidden sm:inline">Rückgängig machen</span>
+                          </button>
+                        )}
+                        <span className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-medium">
+                          <FiTag className="w-3 h-3" />
+                          Erledigt!
+                        </span>
+                        <button
+                          onClick={() => setWarningDateUpdateDialog({ open: true, product })}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                        >
+                          Neues Datum
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                          <button
+                            onClick={() => handleUndoAction(product.lastAction.id)}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                            title="Rückgängig machen"
+                          >
+                            <FiRotateCcw className="w-3 h-3" />
+                            <span className="hidden sm:inline">Rückgängig</span>
+                          </button>
+                        )}
+                        {!product.excludeFromExpiryCheck && (
+                          <button
+                            onClick={() => setLabelDialog({ open: true, product })}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs font-medium"
+                          >
+                            <FiTag className="w-3 h-3" />
+                            Reduziert
+                          </button>
+                        )}
+                        {!product.excludeFromExpiryCheck && (
+                          <button
+                            onClick={() => handleDeactivateWarningProduct(product.id)}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-xs font-medium"
+                          >
+                            Deaktivieren
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setWarningDateUpdateDialog({ open: true, product })}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                        >
+                          Neues Datum
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -750,28 +1091,22 @@ function ExpiryManagement() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Produktname
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      MHD / Verbleibende Tage
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Datum
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Vorgang
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Produkt
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      MHD
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Verbleibende Tage
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Admin
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Notiz
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Status
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Aktionen
@@ -781,6 +1116,23 @@ function ExpiryManagement() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {history.map((action) => (
                     <tr key={action.id} className={`hover:bg-gray-50 transition-colors ${action.isUndone ? 'opacity-50' : ''}`}>
+                      <td className="px-4 py-4">
+                        <div className="text-sm font-medium text-gray-900">{action.product?.name || '-'}</div>
+                        <div className="mt-1 space-y-0.5">
+                          {action.product?.category?.name && (
+                            <div className="text-xs text-gray-500">{action.product.category.name}</div>
+                          )}
+                          {action.product?.barcode && (
+                            <div className="text-xs text-gray-400 font-mono">{action.product.barcode}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900">{formatDate(action.expiryDate)}</div>
+                        <div className="mt-1">
+                          <span className="text-xs text-gray-600">{action.daysUntilExpiry} Tage</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(action.createdAt)}
                       </td>
@@ -789,33 +1141,11 @@ function ExpiryManagement() {
                           {getActionTypeLabel(action.actionType)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {action.product?.name || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(action.expiryDate)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {action.daysUntilExpiry} Tage
-                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
                         {action.admin?.firstName || '-'}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {action.note || '-'}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        {action.isUndone ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Rückgängig gemacht
-                          </span>
-                        ) : action.excludedFromCheck ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            MHD-Befreiung
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {!action.isUndone && action.actionType !== 'undone' && (
@@ -843,7 +1173,12 @@ function ExpiryManagement() {
                       <h3 className="font-medium text-gray-900 text-sm mb-1">
                         {action.product?.name || '-'}
                       </h3>
-                      <p className="text-xs text-gray-500">{formatDate(action.createdAt)}</p>
+                      {action.product?.category?.name && (
+                        <p className="text-xs text-gray-500 mb-0.5">{action.product.category.name}</p>
+                      )}
+                      {action.product?.barcode && (
+                        <p className="text-xs text-gray-400 font-mono">{action.product.barcode}</p>
+                      )}
                     </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ml-2 ${getActionTypeBadgeClass(action.actionType)}`}>
                       {getActionTypeLabel(action.actionType)}
@@ -851,13 +1186,14 @@ function ExpiryManagement() {
                   </div>
                   
                   <div className="space-y-2 text-xs mb-3">
-                    <div className="flex justify-between">
+                    <div>
                       <span className="text-gray-500">MHD:</span>
-                      <span className="text-gray-900">{formatDate(action.expiryDate)}</span>
+                      <span className="ml-1 text-gray-900">{formatDate(action.expiryDate)}</span>
+                      <span className="ml-2 text-gray-600">({action.daysUntilExpiry} Tage)</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Verbleibende Tage:</span>
-                      <span className="text-gray-900">{action.daysUntilExpiry} Tage</span>
+                      <span className="text-gray-500">Datum:</span>
+                      <span className="text-gray-900">{formatDate(action.createdAt)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Admin:</span>
@@ -871,28 +1207,16 @@ function ExpiryManagement() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {action.isUndone ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Rückgängig gemacht
-                        </span>
-                      ) : action.excludedFromCheck ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          MHD-Befreiung
-                        </span>
-                      ) : null}
-                    </div>
-                    {!action.isUndone && action.actionType !== 'undone' && (
-                      <button
-                        onClick={() => handleUndoAction(action.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Rückgängig machen"
-                      >
-                        <FiRotateCcw className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  {!action.isUndone && action.actionType !== 'undone' && (
+                    <button
+                      onClick={() => handleUndoAction(action.id)}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                      title="Rückgängig machen"
+                    >
+                      <FiRotateCcw className="w-4 h-4" />
+                      Rückgängig machen
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -940,11 +1264,42 @@ function ExpiryManagement() {
                     <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
                       Neues MHD (optional)
                     </label>
-                    <input
-                      type="date"
-                      value={newExpiryDate}
-                      onChange={(e) => setNewExpiryDate(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    <DatePicker
+                      selected={newExpiryDate}
+                      onChange={(date) => setNewExpiryDate(date)}
+                      dateFormat="dd.MM.yyyy"
+                      minDate={new Date()}
+                      locale={de}
+                      placeholderText="dd.MM.yyyy"
+                      className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      wrapperClassName="w-full"
+                      calendarClassName="!text-lg"
+                      popperClassName="!z-[9999]"
+                      popperPlacement="bottom-start"
+                      withPortal
+                      showPopperArrow={false}
+                      popperModifiers={[
+                        {
+                          name: "offset",
+                          options: {
+                            offset: [0, 8],
+                          },
+                        },
+                        {
+                          name: "preventOverflow",
+                          options: {
+                            rootBoundary: "viewport",
+                            tether: false,
+                            altAxis: true,
+                          },
+                        },
+                        {
+                          name: "flip",
+                          options: {
+                            fallbackPlacements: ["bottom-start", "bottom", "top-start", "top"],
+                          },
+                        },
+                      ]}
                     />
                   </div>
                   <textarea
@@ -959,23 +1314,21 @@ function ExpiryManagement() {
                   <button
                     onClick={() => {
                       setRemoveDialog({ open: false, product: null });
-                      setNewExpiryDate('');
+                      setNewExpiryDate(null);
+                      setNote('');
                     }}
                     className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Abbrechen
                   </button>
                   <button
-                    onClick={() => handleRemoveProduct(false)}
-                    className="px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                    onClick={() => handleRemoveProduct()}
+                    disabled={!newExpiryDate}
+                    className={`px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg transition-colors whitespace-nowrap ${
+                      !newExpiryDate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                    }`}
                   >
                     Aussortieren
-                  </button>
-                  <button
-                    onClick={() => handleRemoveProduct(true)}
-                    className="px-3 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-                  >
-                    Deaktivieren
                   </button>
                 </div>
               </div>
@@ -1192,8 +1545,217 @@ function ExpiryManagement() {
         title={scannerMode === 'critical' ? 'Kritisches Produkt-Barcode scannen' : 'Warnprodukt-Barcode scannen'}
         keepOpen={true}
       />
+
+      {/* TARİH GÜNCELLEME DİALOGU - Kırmızı Alan */}
+      <AnimatePresence>
+        {dateUpdateDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setDateUpdateDialog({ open: false, product: null });
+                setUpdateExpiryDate(null);
+              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">MHD Datum Eingeben</h3>
+                  <button
+                    onClick={() => {
+                      setDateUpdateDialog({ open: false, product: null });
+                      setUpdateExpiryDate(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
+                  <p className="text-xs md:text-sm text-gray-700">
+                    Bitte geben Sie das neue MHD für <strong>{dateUpdateDialog.product?.name}</strong> ein:
+                  </p>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                      Neues MHD
+                    </label>
+                    <DatePicker
+                      selected={updateExpiryDate}
+                      onChange={(date) => setUpdateExpiryDate(date)}
+                      dateFormat="dd.MM.yyyy"
+                      minDate={new Date()}
+                      locale={de}
+                      placeholderText="dd.MM.yyyy"
+                      className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      wrapperClassName="w-full"
+                      calendarClassName="!text-lg"
+                      popperClassName="!z-[9999]"
+                      popperPlacement="bottom-start"
+                      withPortal
+                      showPopperArrow={false}
+                      popperModifiers={[
+                        {
+                          name: "offset",
+                          options: {
+                            offset: [0, 8],
+                          },
+                        },
+                        {
+                          name: "preventOverflow",
+                          options: {
+                            rootBoundary: "viewport",
+                            tether: false,
+                            altAxis: true,
+                          },
+                        },
+                        {
+                          name: "flip",
+                          options: {
+                            fallbackPlacements: ["bottom-start", "bottom", "top-start", "top"],
+                          },
+                        },
+                      ]}
+                    />
+                  </div>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 md:gap-3">
+                  <button
+                    onClick={() => {
+                      setDateUpdateDialog({ open: false, product: null });
+                      setUpdateExpiryDate(null);
+                    }}
+                    className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={() => handleUpdateExpiryDate(dateUpdateDialog.product?.id, false)}
+                    className="px-4 py-2 text-xs md:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Speichern
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* TARİH GÜNCELLEME DİALOGU - Sarı Alan */}
+      <AnimatePresence>
+        {warningDateUpdateDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setWarningDateUpdateDialog({ open: false, product: null });
+                setUpdateExpiryDate(null);
+              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Neues Datum hinzufügen</h3>
+                  <button
+                    onClick={() => {
+                      setWarningDateUpdateDialog({ open: false, product: null });
+                      setUpdateExpiryDate(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
+                  <p className="text-xs md:text-sm text-gray-700">
+                    Bitte geben Sie das neue MHD für <strong>{warningDateUpdateDialog.product?.name}</strong> ein:
+                  </p>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                      Neues MHD
+                    </label>
+                    <DatePicker
+                      selected={updateExpiryDate}
+                      onChange={(date) => setUpdateExpiryDate(date)}
+                      dateFormat="dd.MM.yyyy"
+                      minDate={new Date()}
+                      locale={de}
+                      placeholderText="dd.MM.yyyy"
+                      className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      wrapperClassName="w-full"
+                      calendarClassName="!text-lg"
+                      popperClassName="!z-[9999]"
+                      popperPlacement="bottom-start"
+                      withPortal
+                      showPopperArrow={false}
+                      popperModifiers={[
+                        {
+                          name: "offset",
+                          options: {
+                            offset: [0, 8],
+                          },
+                        },
+                        {
+                          name: "preventOverflow",
+                          options: {
+                            rootBoundary: "viewport",
+                            tether: false,
+                            altAxis: true,
+                          },
+                        },
+                        {
+                          name: "flip",
+                          options: {
+                            fallbackPlacements: ["bottom-start", "bottom", "top-start", "top"],
+                          },
+                        },
+                      ]}
+                    />
+                  </div>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 md:gap-3">
+                  <button
+                    onClick={() => {
+                      setWarningDateUpdateDialog({ open: false, product: null });
+                      setUpdateExpiryDate(null);
+                    }}
+                    className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={() => handleUpdateExpiryDate(warningDateUpdateDialog.product?.id, true)}
+                    className="px-4 py-2 text-xs md:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Speichern
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 export default ExpiryManagement;
+

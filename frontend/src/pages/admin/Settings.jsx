@@ -60,6 +60,14 @@ function Settings() {
       longitude: null,
     },
     defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
+    companyInfo: {
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      taxNumber: '',
+      registrationNumber: '',
+    },
   });
   const [newCityInput, setNewCityInput] = useState(''); // Yeni şehir ekleme input'u
 
@@ -150,6 +158,14 @@ function Settings() {
           longitude: null,
         },
         defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
+        companyInfo: {
+          name: '',
+          address: '',
+          phone: '',
+          email: '',
+          taxNumber: '',
+          registrationNumber: '',
+        },
       });
       
       // Eski defaultCity varsa defaultCities'e çevir (geriye dönük uyumluluk)
@@ -1292,6 +1308,141 @@ function Settings() {
 
             <div className="mt-6">
               <h3 className="text-sm font-medium text-gray-900 mb-4">Geschäft</h3>
+              
+              {/* Firma Bilgileri */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  📄 Firmeninformationen (für Rechnung)
+                  <HelpTooltip content="Diese Informationen werden auf Rechnungen und Lieferscheinen angezeigt. Füllen Sie alle Felder aus, die auf Ihren Dokumenten erscheinen sollen." />
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Firmenname *
+                    </label>
+                    <input
+                      type="text"
+                      value={storeSettings.companyInfo?.name || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            name: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. Gruner SuperStore"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Adresse
+                    </label>
+                    <input
+                      type="text"
+                      value={storeSettings.companyInfo?.address || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            address: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. Musterstraße 123, 71332 Waiblingen"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Telefon
+                    </label>
+                    <input
+                      type="text"
+                      value={storeSettings.companyInfo?.phone || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            phone: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. +49 7151 123456"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      E-Mail
+                    </label>
+                    <input
+                      type="email"
+                      value={storeSettings.companyInfo?.email || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            email: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. info@grunersuperstore.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      USt-IdNr. (MwSt-Nummer)
+                      <HelpTooltip content="Ihre Umsatzsteuer-Identifikationsnummer. Wird auf Rechnungen angezeigt." />
+                    </label>
+                    <input
+                      type="text"
+                      value={storeSettings.companyInfo?.taxNumber || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            taxNumber: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. DE123456789"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      Handelsregisternummer (HRB)
+                      <HelpTooltip content="Ihre Handelsregisternummer. Wird auf Rechnungen angezeigt." />
+                    </label>
+                    <input
+                      type="text"
+                      value={storeSettings.companyInfo?.registrationNumber || ''}
+                      onChange={(e) =>
+                        setStoreSettings({
+                          ...storeSettings,
+                          companyInfo: {
+                            ...storeSettings.companyInfo,
+                            registrationNumber: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="z.B. HRB 12345"
+                    />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-gray-600">
+                  Diese Informationen werden auf allen Rechnungen und Lieferscheinen angezeigt. Stellen Sie sicher, dass alle Angaben korrekt sind.
+                </p>
+              </div>
               
               {/* Market Konumu */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">

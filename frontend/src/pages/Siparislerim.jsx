@@ -13,12 +13,13 @@ import {
   FiShoppingBag,
   FiChevronRight,
   FiRefreshCw,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 import useCartStore from '../store/cartStore';
 
 // Sipariş durumu badge component
-export function OrderStatusBadge({ status }) {
+export function OrderStatusBadge({ status, orderType }) {
   const statusConfig = {
     pending: {
       label: 'Ausstehend',
@@ -42,8 +43,8 @@ export function OrderStatusBadge({ status }) {
       iconColor: 'text-purple-600',
     },
     shipped: {
-      label: 'Unterwegs',
-      icon: FiTruck,
+      label: orderType === 'pickup' ? 'Bereit' : 'Unterwegs',
+      icon: orderType === 'pickup' ? FiCheckCircle : FiTruck,
       bgColor: 'bg-indigo-100',
       textColor: 'text-indigo-800',
       iconColor: 'text-indigo-600',
@@ -119,7 +120,7 @@ function OrderCard({ order, onReorder }) {
           >
             <FiRefreshCw className={`w-4 h-4 ${reordering ? 'animate-spin' : ''}`} />
           </button>
-          <OrderStatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status} orderType={order.type} />
         </div>
       </div>
 

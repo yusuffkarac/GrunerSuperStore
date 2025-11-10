@@ -110,6 +110,16 @@ class TemplateService {
       description: 'E-Mail an Kunden bei Rechnungsversand',
       variables: ['firstName', 'lastName', 'orderNo', 'orderDate', 'total', 'storeName'],
     },
+    'expiry-completion-notification': {
+      name: 'MHD-Verwaltung abgeschlossen',
+      description: 'E-Mail an Admins bei abgeschlossener MHD-Verwaltung',
+      variables: ['productCount', 'products', 'date', 'storeName'],
+    },
+    'expiry-daily-reminder': {
+      name: 'MHD-Verwaltung: Tägliche Erinnerung',
+      description: 'E-Mail an Admins mit Anzahl der heute zu bearbeitenden Produkte',
+      variables: ['date', 'criticalCount', 'warningCount', 'totalCount', 'storeName'],
+    },
   };
 
   /**
@@ -139,6 +149,8 @@ class TemplateService {
       'order-cancelled': 'Bestellung {{orderNo}} storniert',
       'order-notification-admin': 'Neue Bestellung: {{orderNo}}',
       invoice: 'Rechnung für Bestellung {{orderNo}}',
+      'expiry-completion-notification': 'MHD-Verwaltung abgeschlossen - {{productCount}} Produkt(e)',
+      'expiry-daily-reminder': 'MHD-Verwaltung: {{totalCount}} Produkt(e) müssen heute bearbeitet werden',
     };
     return subjects[templateName] || 'E-Mail von Gruner SuperStore';
   }

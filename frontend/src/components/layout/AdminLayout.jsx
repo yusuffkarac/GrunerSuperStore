@@ -364,7 +364,6 @@ function AdminLayout() {
       <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <img src={logo} alt="Gruner Logo" className="w-7 h-7 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
-          <h1 className="text-lg font-bold text-green-600">Gruner Admin Panel</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* Mobile Top Menu Icons */}

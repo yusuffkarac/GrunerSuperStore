@@ -840,7 +840,7 @@ class OrderService {
         pending: 'Ausstehend',
         accepted: 'Akzeptiert',
         preparing: 'In Vorbereitung',
-        shipped: 'Versandt',
+        shipped: order.type === 'pickup' ? 'Bereit' : 'Versandt',
         delivered: 'Geliefert',
         cancelled: 'Storniert',
       };
@@ -848,7 +848,9 @@ class OrderService {
       const statusMessageMap = {
         accepted: 'Ihre Bestellung wurde bestätigt und wird bald bearbeitet.',
         preparing: 'Wir bereiten Ihre Bestellung gerade vor.',
-        shipped: 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
+        shipped: order.type === 'pickup' 
+          ? 'Ihre Bestellung ist bereit zur Abholung.' 
+          : 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
         delivered: 'Ihre Bestellung wurde erfolgreich zugestellt. Vielen Dank!',
         cancelled: 'Ihre Bestellung wurde storniert.',
       };
@@ -923,7 +925,7 @@ class OrderService {
         pending: 'Ausstehend',
         accepted: 'Akzeptiert',
         preparing: 'In Vorbereitung',
-        shipped: 'Versandt',
+        shipped: order.type === 'pickup' ? 'Bereit' : 'Versandt',
         delivered: 'Geliefert',
         cancelled: 'Storniert',
       };
@@ -931,7 +933,9 @@ class OrderService {
       const statusMessageMap = {
         accepted: 'Ihre Bestellung wurde bestätigt und wird bald bearbeitet.',
         preparing: 'Wir bereiten Ihre Bestellung gerade vor.',
-        shipped: 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
+        shipped: order.type === 'pickup' 
+          ? 'Ihre Bestellung ist bereit zur Abholung.' 
+          : 'Ihre Bestellung wurde versandt und ist unterwegs zu Ihnen.',
         delivered: 'Ihre Bestellung wurde erfolgreich zugestellt. Vielen Dank!',
         cancelled: 'Ihre Bestellung wurde storniert.',
       };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload, FiPrinter } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload, FiPrinter, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -398,12 +398,12 @@ function Orders() {
   };
 
   // Status ikonu
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status, orderType) => {
     const icons = {
       pending: FiClock,
       accepted: FiCheck,
       preparing: FiPackage,
-      shipped: FiTruck,
+      shipped: orderType === 'pickup' ? FiCheckCircle : FiTruck,
       delivered: FiCheck,
       cancelled: FiXCircle,
     };
@@ -411,12 +411,12 @@ function Orders() {
   };
 
   // Status label
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status, orderType) => {
     const labels = {
       pending: 'Ausstehend',
       accepted: 'Akzeptiert',
       preparing: 'Vorbereitung',
-      shipped: 'Versendet',
+      shipped: orderType === 'pickup' ? 'Bereit' : 'Versendet',
       delivered: 'Geliefert',
       cancelled: 'Storniert',
     };
@@ -621,7 +621,7 @@ function Orders() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {orders.map((order) => {
-                    const StatusIcon = getStatusIcon(order.status);
+                    const StatusIcon = getStatusIcon(order.status, order.type);
                     return (
                       <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-4">
@@ -673,16 +673,17 @@ function Orders() {
                               className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(order.status)}`}
                             >
                               <StatusIcon size={12} />
-                              {getStatusLabel(order.status)}
+                              {getStatusLabel(order.status, order.type)}
                               <FiChevronDown size={10} className="ml-0.5" />
                             </button>
                             {openStatusDropdown === order.id && (
                               <div className="absolute left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
                                 {statusOptions.filter(opt => opt.value).map((option, index) => {
-                                  const OptionIcon = getStatusIcon(option.value);
+                                  const OptionIcon = getStatusIcon(option.value, order.type);
                                   const isSelected = option.value === order.status;
                                   const isFirst = index === 0;
                                   const isLast = index === statusOptions.filter(opt => opt.value).length - 1;
+                                  const optionLabel = getStatusLabel(option.value, order.type);
                                   
                                   if (isSelected) {
                                     return (
@@ -691,7 +692,7 @@ function Orders() {
                                         className={`px-3 py-2 text-sm flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} ${getStatusColor(order.status)}`}
                                       >
                                         <OptionIcon size={14} />
-                                        {option.label}
+                                        {optionLabel}
                                       </div>
                                     );
                                   }
@@ -706,7 +707,7 @@ function Orders() {
                                       className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} transition-colors`}
                                     >
                                       <OptionIcon size={14} />
-                                      {option.label}
+                                      {optionLabel}
                                     </button>
                                   );
                                 })}
@@ -744,7 +745,7 @@ function Orders() {
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-gray-200">
               {orders.map((order) => {
-                const StatusIcon = getStatusIcon(order.status);
+                const StatusIcon = getStatusIcon(order.status, order.type);
                 return (
                   <div key={order.id} className="p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -780,16 +781,17 @@ function Orders() {
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(order.status)} flex-shrink-0`}
                         >
                           <StatusIcon size={12} />
-                          {getStatusLabel(order.status)}
+                          {getStatusLabel(order.status, order.type)}
                           <FiChevronDown size={10} className="ml-0.5" />
                         </button>
                         {openStatusDropdown === order.id && (
                           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
                             {statusOptions.filter(opt => opt.value).map((option, index) => {
-                              const OptionIcon = getStatusIcon(option.value);
+                              const OptionIcon = getStatusIcon(option.value, order.type);
                               const isSelected = option.value === order.status;
                               const isFirst = index === 0;
                               const isLast = index === statusOptions.filter(opt => opt.value).length - 1;
+                              const optionLabel = getStatusLabel(option.value, order.type);
                               
                               if (isSelected) {
                                 return (
@@ -798,7 +800,7 @@ function Orders() {
                                     className={`px-3 py-2 text-sm flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} ${getStatusColor(order.status)}`}
                                   >
                                     <OptionIcon size={14} />
-                                    {option.label}
+                                    {optionLabel}
                                   </div>
                                 );
                               }
@@ -813,7 +815,7 @@ function Orders() {
                                   className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${isFirst ? 'rounded-t-lg' : ''} ${isLast ? 'rounded-b-lg' : ''} transition-colors`}
                                 >
                                   <OptionIcon size={14} />
-                                  {option.label}
+                                  {optionLabel}
                                 </button>
                               );
                             })}
@@ -954,7 +956,7 @@ function Orders() {
                       <h3 className="text-sm font-medium text-gray-700 mb-2">Status & Typ</h3>
                       <div className="space-y-2">
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${getStatusColor(selectedOrder.status)}`}>
-                          {getStatusLabel(selectedOrder.status)}
+                          {getStatusLabel(selectedOrder.status, selectedOrder.type)}
                         </span>
                         <div className="mt-2">
                           <span className={`inline-flex items-center px-3 py-1 rounded text-sm font-medium ${

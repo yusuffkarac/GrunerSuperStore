@@ -254,7 +254,7 @@ function SiparisDetay() {
             >
               <FiRefreshCw className={`w-5 h-5 ${reordering ? 'animate-spin' : ''}`} />
             </button>
-            <OrderStatusBadge status={order.status} />
+            <OrderStatusBadge status={order.status} orderType={order.type} />
           </div>
         </div>
 

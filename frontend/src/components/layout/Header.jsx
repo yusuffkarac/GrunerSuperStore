@@ -177,7 +177,7 @@ function Header() {
               <FiShoppingCart className="w-6 h-6" />
               {itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
-                  {itemCount > 9 ? '9+' : itemCount}
+                  {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
             </Link>
