@@ -13,6 +13,7 @@
     "migrate:validate": "node src/config/validateMigrations.js",
     "migrate:mark-existing": "node src/config/markExistingMigrations.js",
     "migrate:fix-failed": "node src/config/fixFailedMigration.js",
+    "migrate:add-missing-columns": "node src/config/addMissingColumns.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "import-barcodes": "node src/scripts/importBarcodeLabels.js",
     "import-products": "node src/scripts/importProducts.js",
