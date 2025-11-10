@@ -59,6 +59,8 @@ import Notifications from './pages/admin/Notifications';
 import Help from './pages/admin/Help';
 import EmailTemplates from './pages/admin/EmailTemplates';
 import NotificationTemplates from './pages/admin/NotificationTemplates';
+import RoleManagement from './pages/admin/RoleManagement';
+import ExpiryManagement from './pages/admin/ExpiryManagement';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -215,14 +217,23 @@ function AppContent() {
                   </SuperAdminRoute>
                 } 
               />
-              <Route 
-                path="admins" 
+              <Route
+                path="admins"
                 element={
                   <SuperAdminRoute>
                     <Admins />
                   </SuperAdminRoute>
-                } 
+                }
               />
+              <Route
+                path="roles"
+                element={
+                  <SuperAdminRoute>
+                    <RoleManagement />
+                  </SuperAdminRoute>
+                }
+              />
+              <Route path="expiry-management" element={<ExpiryManagement />} />
               <Route path="barcode-labels" element={<BarcodeLabels />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="email-templates" element={<EmailTemplates />} />
