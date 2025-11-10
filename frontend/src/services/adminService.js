@@ -47,7 +47,7 @@ adminApi.interceptors.request.use(
   }
 );
 
-// Response interceptor - 401 hatası için
+// Response interceptor - 401 ve 403 hatası için
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -58,6 +58,27 @@ adminApi.interceptors.response.use(
         window.location.href = '/admin/login';
       }
     }
+    
+    // 403 Forbidden - İzin yok
+    if (error.response?.status === 403) {
+      // Backend'den gelen mesaj varsa onu kullan, yoksa varsayılan mesaj
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error?.message ||
+                          'Sie haben keine Berechtigung für diese Aktion';
+      
+      return Promise.reject({
+        ...error,
+        message: errorMessage,
+        response: {
+          ...error.response,
+          data: {
+            ...error.response?.data,
+            message: errorMessage,
+          },
+        },
+      });
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -66,6 +87,12 @@ adminApi.interceptors.response.use(
 export { adminApi };
 
 const adminService = {
+  // Admin bilgilerini getir
+  getMe: async () => {
+    const response = await adminApi.get('/admin/auth/me');
+    return response.data;
+  },
+
   // Dashboard istatistikleri
   getDashboardStats: async () => {
     const response = await adminApi.get('/admin/dashboard/stats');
@@ -402,6 +429,26 @@ const adminService = {
   // Toplu fiyat güncelleme
   bulkUpdatePrices: async (data) => {
     const response = await adminApi.post('/admin/products/bulk-update-prices', data);
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemelerini getir
+  getBulkPriceUpdates: async (params) => {
+    const response = await adminApi.get('/admin/bulk-price-updates', { params });
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemesini geri al
+  revertBulkPriceUpdate: async (id) => {
+    const response = await adminApi.post(`/admin/bulk-price-updates/${id}/revert`);
+    return response.data;
+  },
+
+  // Toplu fiyat güncellemesinin bitiş tarihini güncelle
+  updateBulkPriceUpdateEndDate: async (id, temporaryPriceEndDate) => {
+    const response = await adminApi.put(`/admin/bulk-price-updates/${id}/end-date`, {
+      temporaryPriceEndDate,
+    });
     return response.data;
   },
 };

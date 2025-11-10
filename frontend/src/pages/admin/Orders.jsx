@@ -145,6 +145,31 @@ function Orders() {
 
   // Sipariş durumu güncelle
   const handleStatusUpdate = async (orderId, newStatus) => {
+    // Eğer durum "cancelled" ise, önce iptal modal'ını aç
+    if (newStatus === 'cancelled') {
+      setOpenStatusDropdown(null); // Dropdown'u kapat
+      // Siparişi bul veya API'den yükle
+      let orderToCancel = orders.find(o => o.id === orderId) || selectedOrder;
+      
+      // Eğer sipariş bulunamadıysa veya tam detayları yoksa API'den yükle
+      if (!orderToCancel || !orderToCancel.orderItems) {
+        try {
+          const orderDetailResponse = await adminService.getOrderById(orderId);
+          orderToCancel = orderDetailResponse.data.order;
+        } catch (error) {
+          console.error('Sipariş detayı yüklenemedi:', error);
+          toast.error('Sipariş detayları yüklenemedi');
+          return;
+        }
+      }
+      
+      if (orderToCancel) {
+        setSelectedOrder(orderToCancel);
+        openCancelModal();
+      }
+      return;
+    }
+
     try {
       await adminService.updateOrderStatus(orderId, newStatus);
       toast.success('Bestellstatus erfolgreich aktualisiert');
@@ -269,18 +294,14 @@ function Orders() {
   const handleCancelOrder = async () => {
     if (!selectedOrder) return;
 
-    const confirmed = await showConfirm(
-      'Bestellung stornieren',
-      'Möchten Sie diese Bestellung wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden.'
-    );
-
-    if (!confirmed) return;
-
     try {
       await adminService.cancelOrder(selectedOrder.id, cancelFormData);
       toast.success('Bestellung erfolgreich storniert');
       closeCancelModal();
+      // Eğer detay modal'ı açıksa onu da kapat
+      if (showModal) {
       closeModal();
+      }
       loadOrders();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Fehler beim Stornieren');

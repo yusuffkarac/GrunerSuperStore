@@ -625,21 +625,21 @@ class AdminController {
 
   // POST /api/admin/products/bulk-update-prices - Toplu fiyat güncelleme
   bulkUpdatePrices = asyncHandler(async (req, res) => {
-    const { type, categoryId, productIds, adjustmentType, adjustmentValue, includeVariants } = req.body;
+    const { type, categoryId, productIds, adjustmentType, adjustmentValue, includeVariants, updateType, temporaryPriceEndDate } = req.body;
 
-    // Ürün fiyatlarını güncelle
     const productResult = await productService.bulkUpdatePrices({
       type,
       categoryId,
       productIds,
       adjustmentType,
       adjustmentValue,
+      updateType,
+      temporaryPriceEndDate,
+      includeVariants,
     });
 
     let variantResult = { updatedCount: 0 };
-
-    // Varyant fiyatlarını da güncelle (eğer istenmişse)
-    if (includeVariants) {
+    if (includeVariants && updateType === 'permanent') { // Variants sadece permanent updates için
       variantResult = await productService.bulkUpdateVariantPrices({
         type,
         categoryId,
@@ -651,12 +651,64 @@ class AdminController {
 
     res.status(200).json({
       success: true,
-      message: 'Preise erfolgreich aktualisiert',
+      message: updateType === 'temporary'
+        ? 'Temporäre Preise erfolgreich aktualisiert'
+        : 'Preise erfolgreich aktualisiert',
       data: {
         products: productResult,
         variants: variantResult,
         totalUpdated: productResult.updatedCount + variantResult.updatedCount,
+        bulkUpdateId: productResult.bulkUpdateId,
       },
+    });
+  });
+
+  // GET /api/admin/bulk-price-updates - Toplu fiyat güncellemelerini getir
+  getBulkPriceUpdates = asyncHandler(async (req, res) => {
+    const { page, limit, filter } = req.query;
+
+    const result = await productService.getBulkPriceUpdates({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 10,
+      filter: filter || 'all',
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  });
+
+  // POST /api/admin/bulk-price-updates/:id/revert - Toplu fiyat güncellemesini geri al
+  revertBulkPriceUpdate = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.admin.id;
+
+    const result = await productService.revertBulkPriceUpdate(id, adminId);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
+
+  // PUT /api/admin/bulk-price-updates/:id/end-date - Toplu fiyat güncellemesinin bitiş tarihini güncelle
+  updateBulkPriceUpdateEndDate = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { temporaryPriceEndDate } = req.body;
+
+    if (!temporaryPriceEndDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enddatum ist erforderlich',
+      });
+    }
+
+    const result = await productService.updateBulkPriceUpdateEndDate(id, temporaryPriceEndDate);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
     });
   });
 }

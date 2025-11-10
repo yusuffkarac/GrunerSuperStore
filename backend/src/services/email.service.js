@@ -71,6 +71,7 @@ class EmailService {
     }
 
     let templateContent = null;
+    let fromDB = false;
 
     try {
       // Önce DB'den oku
@@ -80,6 +81,7 @@ class EmailService {
 
       if (dbTemplate && dbTemplate.body) {
         templateContent = dbTemplate.body;
+        fromDB = true;
         console.log(`📧 Template DB'den yüklendi: ${templateName}`);
       } else {
         // DB'de yoksa dosyadan oku (fallback)
@@ -100,8 +102,29 @@ class EmailService {
     }
 
     // Template'i compile et ve cache'le
+    // Eğer DB'den yüklendiyse ve compile hatası varsa, dosyadan yükle
+    try {
     this.templates[templateName] = handlebars.compile(templateContent);
     return this.templates[templateName];
+    } catch (compileError) {
+      console.error(`⚠️  Template compile hatası (${templateName}):`, compileError.message);
+      
+      // Eğer DB'den yüklendiyse ve compile hatası varsa, dosyadan yükle
+      if (fromDB) {
+        console.log(`📧 DB template'i geçersiz, dosyadan yükleniyor: ${templateName}`);
+        try {
+          const templatePath = path.join(__dirname, '../../templates/emails', `${templateName}.hbs`);
+          templateContent = await fs.readFile(templatePath, 'utf-8');
+          this.templates[templateName] = handlebars.compile(templateContent);
+          console.log(`✅ Template dosyadan başarıyla yüklendi: ${templateName}`);
+          return this.templates[templateName];
+        } catch (fallbackError) {
+          throw new Error(`Template compile ve fallback hatası (${templateName}): ${compileError.message}`);
+        }
+      } else {
+        throw new Error(`Template compile hatası (${templateName}): ${compileError.message}`);
+      }
+    }
   }
 
   /**
@@ -137,6 +160,39 @@ class EmailService {
 
       return html;
     } catch (error) {
+      // Eğer compile/render hatası varsa, cache'i temizle ve tekrar dene
+      const isTemplateError = error.message && (
+        error.message.includes('Parse error') || 
+        error.message.includes('template') ||
+        error.message.includes('Handlebars')
+      );
+      
+      if (isTemplateError) {
+        console.error(`⚠️  Template render hatası (${templateName}), cache temizleniyor:`, error.message);
+        // Cache'i temizle
+        this.clearTemplateCache(templateName);
+        
+        // Tekrar dene (dosyadan yüklenecek)
+        try {
+          const template = await this.loadTemplate(templateName);
+          const baseLayout = await this.loadBaseLayout();
+          
+          const body = template(data);
+          const html = baseLayout({
+            body,
+            subject: data.subject || '',
+            storeName: data.storeName || 'Gruner SuperStore',
+            year: new Date().getFullYear(),
+          });
+          
+          console.log(`✅ Template başarıyla render edildi (cache temizlendikten sonra): ${templateName}`);
+          return html;
+        } catch (retryError) {
+          console.error(`❌ Template render retry hatası (${templateName}):`, retryError.message);
+          throw retryError;
+        }
+      }
+      
       console.error(`Template render hatası (${templateName}):`, error);
       throw error;
     }

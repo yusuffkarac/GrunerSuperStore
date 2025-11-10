@@ -1,6 +1,6 @@
 import express from 'express';
 import campaignController from '../controllers/campaign.controller.js';
-import { authenticateAdmin } from '../middleware/admin.js';
+import { authenticateAdmin, requirePermission } from '../middleware/admin.js';
 
 const router = express.Router();
 
@@ -29,19 +29,19 @@ const adminRouter = express.Router();
 adminRouter.use(authenticateAdmin);
 
 // GET /api/admin/campaigns - Tüm kampanyaları listele
-adminRouter.get('/', campaignController.getAllCampaigns);
+adminRouter.get('/', requirePermission('marketing_campaigns'), campaignController.getAllCampaigns);
 
 // POST /api/admin/campaigns - Yeni kampanya oluştur
-adminRouter.post('/', campaignController.createCampaign);
+adminRouter.post('/', requirePermission('marketing_campaigns'), campaignController.createCampaign);
 
 // GET /api/admin/campaigns/:id - Tek kampanya getir
-adminRouter.get('/:id', campaignController.getAdminCampaignById);
+adminRouter.get('/:id', requirePermission('marketing_campaigns'), campaignController.getAdminCampaignById);
 
 // PUT /api/admin/campaigns/:id - Kampanya güncelle
-adminRouter.put('/:id', campaignController.updateCampaign);
+adminRouter.put('/:id', requirePermission('marketing_campaigns'), campaignController.updateCampaign);
 
 // DELETE /api/admin/campaigns/:id - Kampanya sil
-adminRouter.delete('/:id', campaignController.deleteCampaign);
+adminRouter.delete('/:id', requirePermission('marketing_campaigns'), campaignController.deleteCampaign);
 
 export { adminRouter as adminCampaignRouter };
 export default router;

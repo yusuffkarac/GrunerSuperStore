@@ -49,6 +49,9 @@ function Settings() {
     maxUrunAdedi: '',
     maxSepetKalemi: '',
   });
+  const [customerCancellationSettings, setCustomerCancellationSettings] = useState({
+    allowedStatuses: ['pending', 'accepted'], // Status, in denen Kunden stornieren können
+  });
   const [storeSettings, setStoreSettings] = useState({
     bakimModu: false,
     bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
@@ -134,6 +137,11 @@ function Settings() {
           maxSepetKalemi: '',
         }
       );
+      setCustomerCancellationSettings(
+        s.customerCancellationSettings ?? {
+          allowedStatuses: ['pending', 'accepted'],
+        }
+      );
       setStoreSettings(s.storeSettings ?? {
         bakimModu: false,
         bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
@@ -200,6 +208,7 @@ function Settings() {
         storeSettings,
         smtpSettings,
         emailNotificationSettings,
+        customerCancellationSettings,
       });
       setSettings(response.data.settings);
       if (response.data.settings.orderIdFormat) {
@@ -214,6 +223,7 @@ function Settings() {
       setPaymentOptions(s2.paymentOptions ?? paymentOptions);
       setOrderLimits(s2.orderLimits ?? orderLimits);
       setStoreSettings(s2.storeSettings ?? storeSettings);
+      setCustomerCancellationSettings(s2.customerCancellationSettings ?? customerCancellationSettings);
       // E-Mail-Einstellungen auch zurücklesen
       if (s2.smtpSettings) setSmtpSettings(s2.smtpSettings);
       if (s2.emailNotificationSettings) setEmailNotificationSettings(s2.emailNotificationSettings);
@@ -1178,6 +1188,69 @@ function Settings() {
                 </div>
               </div>
               
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+                </button>
+              </div>
+            </div>
+
+            {/* Kunden Stornierung Einstellungen */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  Kundenbestellung Stornierung
+                  <HelpTooltip content="Bestimmen Sie, in welchen Bestellstatus Kunden ihre Bestellungen stornieren können. Beispiel: 'pending' und 'accepted' Status können storniert werden, aber 'preparing' oder 'shipped' Status nicht." />
+                </h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Stornierbare Bestellstatus
+                    </label>
+                    <div className="space-y-3">
+                      {[
+                        { value: 'pending', label: 'Ausstehend' },
+                        { value: 'accepted', label: 'Akzeptiert' },
+                        { value: 'preparing', label: 'In Vorbereitung' },
+                        { value: 'shipped', label: 'Versandt' },
+                        { value: 'delivered', label: 'Zugestellt' },
+                        { value: 'cancelled', label: 'Storniert' },
+                      ].map((status) => (
+                        <Switch
+                          key={status.value}
+                          id={`customerCancellation-${status.value}`}
+                          checked={customerCancellationSettings.allowedStatuses.includes(status.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCustomerCancellationSettings({
+                                ...customerCancellationSettings,
+                                allowedStatuses: [...customerCancellationSettings.allowedStatuses, status.value],
+                              });
+                            } else {
+                              setCustomerCancellationSettings({
+                                ...customerCancellationSettings,
+                                allowedStatuses: customerCancellationSettings.allowedStatuses.filter(
+                                  (s) => s !== status.value
+                                ),
+                              });
+                            }
+                          }}
+                          label={status.label}
+                          color="primary"
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Kunden können nur Bestellungen in den ausgewählten Status stornieren.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
                 <button
                   onClick={handleSave}

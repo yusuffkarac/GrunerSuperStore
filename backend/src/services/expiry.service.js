@@ -89,7 +89,18 @@ export const getCriticalProducts = async () => {
     },
   });
 
-  return products.map(product => ({
+  // Son işlemi kontrol ederek filtrele (etiketlenmiş veya kaldırılmış olanları çıkar)
+  const filteredProducts = products.filter(product => {
+    const lastAction = product.expiryActions[0];
+    if (!lastAction) return true;
+    // Son işlem labeled veya removed ise ve geri alınmamışsa listeden çıkar
+    if ((lastAction.actionType === 'labeled' || lastAction.actionType === 'removed') && !lastAction.isUndone) {
+      return false;
+    }
+    return true;
+  });
+
+  return filteredProducts.map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,
@@ -150,7 +161,18 @@ export const getWarningProducts = async () => {
     },
   });
 
-  return products.map(product => ({
+  // Son işlemi kontrol ederek filtrele (etiketlenmiş veya kaldırılmış olanları çıkar)
+  const filteredProducts = products.filter(product => {
+    const lastAction = product.expiryActions[0];
+    if (!lastAction) return true;
+    // Son işlem labeled veya removed ise ve geri alınmamışsa listeden çıkar
+    if ((lastAction.actionType === 'labeled' || lastAction.actionType === 'removed') && !lastAction.isUndone) {
+      return false;
+    }
+    return true;
+  });
+
+  return filteredProducts.map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,

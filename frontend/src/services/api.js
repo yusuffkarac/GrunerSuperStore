@@ -58,6 +58,15 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
+    // 403 Forbidden - İzin yok
+    if (error.response?.status === 403) {
+      return Promise.reject({
+        message: 'Sie haben keine Berechtigung für diese Aktion',
+        status: 403,
+        data: error.response?.data,
+      });
+    }
+
     // Token expired veya unauthorized
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;

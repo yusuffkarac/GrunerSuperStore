@@ -1,6 +1,6 @@
 import express from 'express';
 import notificationController from '../controllers/notification.controller.js';
-import { authenticateAdmin } from '../middleware/admin.js';
+import { authenticateAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import {
   createNotificationValidation,
@@ -13,13 +13,13 @@ const router = express.Router();
 router.use(authenticateAdmin);
 
 // POST /api/admin/notifications - Bildirim gönderme
-router.post('/', createNotificationValidation, validate, notificationController.createNotification);
+router.post('/', requirePermission('notification_management_create'), createNotificationValidation, validate, notificationController.createNotification);
 
 // GET /api/admin/notifications - Tüm bildirimleri listele (admin)
-router.get('/', notificationController.getAllNotifications);
+router.get('/', requirePermission('notification_management_view'), notificationController.getAllNotifications);
 
 // DELETE /api/admin/notifications/:id - Bildirimi sil (admin)
-router.delete('/:id', notificationIdValidation, validate, notificationController.deleteNotification);
+router.delete('/:id', requirePermission('notification_management_delete'), notificationIdValidation, validate, notificationController.deleteNotification);
 
 export default router;
 

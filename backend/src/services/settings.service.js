@@ -82,6 +82,9 @@ class SettingsService {
             labelPriceCurrencyFontSize: 24,
             labelSkuFontSize: 11,
           },
+          customerCancellationSettings: {
+            allowedStatuses: ['pending', 'accepted'],
+          },
         },
       });
     }
@@ -138,6 +141,9 @@ class SettingsService {
     }
     if (data.barcodeLabelSettings !== undefined) {
       updateData.barcodeLabelSettings = data.barcodeLabelSettings;
+    }
+    if (data.customerCancellationSettings !== undefined) {
+      updateData.customerCancellationSettings = data.customerCancellationSettings;
     }
     if (data.emailTemplates !== undefined) {
       updateData.emailTemplates = data.emailTemplates;
@@ -217,6 +223,9 @@ class SettingsService {
             labelPriceFontSize: 46,
             labelPriceCurrencyFontSize: 24,
             labelSkuFontSize: 11,
+          },
+          customerCancellationSettings: data.customerCancellationSettings ?? {
+            allowedStatuses: ['pending', 'accepted'],
           },
         },
       });

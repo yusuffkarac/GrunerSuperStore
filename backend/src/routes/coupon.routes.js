@@ -1,7 +1,7 @@
 import express from 'express';
 import couponController from '../controllers/coupon.controller.js';
 import { optionalAuth } from '../middleware/auth.js';
-import { authenticateAdmin } from '../middleware/admin.js';
+import { authenticateAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import {
   validateCouponValidation,
@@ -32,25 +32,25 @@ router.post(
 router.use(authenticateAdmin);
 
 // GET /api/coupons/generate-code - Rastgele kupon kodu oluştur
-router.get('/generate-code', couponController.generateCouponCode);
+router.get('/generate-code', requirePermission('marketing_coupons'), couponController.generateCouponCode);
 
 // GET /api/coupons - Tüm kuponları listele
-router.get('/', couponController.getAllCoupons);
+router.get('/', requirePermission('marketing_coupons'), couponController.getAllCoupons);
 
 // GET /api/coupons/:id - Kupon detayı
-router.get('/:id', couponController.getCouponById);
+router.get('/:id', requirePermission('marketing_coupons'), couponController.getCouponById);
 
 // GET /api/coupons/:id/stats - Kupon istatistikleri
-router.get('/:id/stats', couponController.getCouponStats);
+router.get('/:id/stats', requirePermission('marketing_coupons'), couponController.getCouponStats);
 
 // POST /api/coupons - Kupon oluştur
-router.post('/', createCouponValidation, validate, couponController.createCoupon);
+router.post('/', requirePermission('marketing_coupons'), createCouponValidation, validate, couponController.createCoupon);
 
 // PUT /api/coupons/:id - Kupon güncelle
-router.put('/:id', updateCouponValidation, validate, couponController.updateCoupon);
+router.put('/:id', requirePermission('marketing_coupons'), updateCouponValidation, validate, couponController.updateCoupon);
 
 // DELETE /api/coupons/:id - Kupon sil
-router.delete('/:id', couponController.deleteCoupon);
+router.delete('/:id', requirePermission('marketing_coupons'), couponController.deleteCoupon);
 
 export default router;
 

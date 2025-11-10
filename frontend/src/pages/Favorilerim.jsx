@@ -7,34 +7,34 @@ import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
 import EmptyState from '../components/common/EmptyState';
 
-// Favorilerim Sayfası
+// Meine Favoriten Seite
 function Favorilerim() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { favorites, loading, loadFavorites } = useFavoriteStore();
   const [campaigns, setCampaigns] = useState([]);
 
-  // Kampanyaları yükle
+  // Kampagnen laden
   useEffect(() => {
     const loadCampaigns = async () => {
       try {
         const response = await campaignService.getActiveCampaigns();
         setCampaigns(response.data.campaigns || []);
       } catch (error) {
-        console.error('Kampanya yükleme hatası:', error);
+        console.error('Fehler beim Laden der Kampagnen:', error);
       }
     };
     loadCampaigns();
   }, []);
 
-  // Favorileri yükle
+  // Favoriten laden
   useEffect(() => {
     if (isAuthenticated) {
       loadFavorites();
     }
   }, [isAuthenticated, loadFavorites]);
 
-  // Ürün için geçerli kampanyayı bul
+  // Gültige Kampagne für Produkt finden
   const getCampaignForProduct = (product) => {
     if (!campaigns || campaigns.length === 0) return null;
 
@@ -59,20 +59,20 @@ function Favorilerim() {
     return applicableCampaigns.length > 0 ? applicableCampaigns[0] : null;
   };
 
-  // Giriş yapılmamışsa
+  // Wenn nicht angemeldet
   if (!isAuthenticated) {
     return (
       <div className="container-mobile py-8 pb-20">
         <EmptyState
-          title="Giriş Yapın"
-          message="Favorilerinizi görmek için giriş yapmanız gerekiyor"
+          title="Anmelden"
+          message="Sie müssen sich anmelden, um Ihre Favoriten zu sehen"
         />
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/giris')}
             className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
           >
-            Giriş Yap
+            Anmelden
           </button>
         </div>
       </div>
@@ -92,12 +92,12 @@ function Favorilerim() {
   return (
     <div className="pb-20 bg-white">
       <div className="container-mobile py-4">
-        <h1 className="text-2xl font-bold mb-4 text-gray-900">Favorilerim</h1>
+        <h1 className="text-2xl font-bold mb-4 text-gray-900">Meine Favoriten</h1>
 
         {favoriteProducts.length === 0 ? (
           <EmptyState
-            title="Henüz favori ürününüz yok"
-            message="Beğendiğiniz ürünleri favorilerinize ekleyin"
+            title="Sie haben noch keine Favoriten"
+            message="Fügen Sie Produkte, die Ihnen gefallen, zu Ihren Favoriten hinzu"
           />
         ) : (
           <div className="grid grid-cols-2 gap-3">
