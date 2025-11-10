@@ -28,6 +28,22 @@ async function addMissingColumns() {
       }
     }
 
+    // 1b. notification_templates kolonunu ekle
+    console.log('📋 Adding notification_templates column to settings table...');
+    try {
+      await pool.query(`
+        ALTER TABLE settings 
+        ADD COLUMN IF NOT EXISTS notification_templates JSONB;
+      `);
+      console.log('✅ notification_templates column added\n');
+    } catch (error) {
+      if (error.code === '42701') { // column already exists
+        console.log('⏭️  notification_templates column already exists\n');
+      } else {
+        throw error;
+      }
+    }
+
     // 2. role_id kolonunu ekle
     console.log('📋 Adding role_id column to admins table...');
     try {
@@ -103,9 +119,11 @@ async function addMissingColumns() {
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'settings' 
-      AND column_name = 'email_templates'
+      AND column_name IN ('email_templates', 'notification_templates')
     `);
-    console.log(`   email_templates: ${settingsColumns.rows.length > 0 ? '✅ Exists' : '❌ Missing'}`);
+    const existingColumns = settingsColumns.rows.map(r => r.column_name);
+    console.log(`   email_templates: ${existingColumns.includes('email_templates') ? '✅ Exists' : '❌ Missing'}`);
+    console.log(`   notification_templates: ${existingColumns.includes('notification_templates') ? '✅ Exists' : '❌ Missing'}`);
 
     const adminColumns = await pool.query(`
       SELECT column_name 
