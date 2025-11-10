@@ -13,7 +13,10 @@ export const getExpirySettings = async () => {
     criticalDays: 0, // Kırmızı (aynı gün) için
   };
 
-  return settings?.expiryManagementSettings || defaultSettings;
+  const result = settings?.expiryManagementSettings || defaultSettings;
+  console.log('📖 SKT Ayarları getiriliyor:', result);
+
+  return result;
 };
 
 /**
@@ -45,14 +48,19 @@ export const getCriticalProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
-  // criticalDays gün sonrasına kadar olan ürünler
+  console.log('🔴 CRITICAL Products - Ayarlar:', settings);
+
+  // criticalDays gün sonrasına kadar olan ürünler (DAHİL)
+  // +1 gün ekleyip "lt" kullanarak sınır durumunu düzeltiyoruz
   const criticalDate = new Date(today);
-  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays);
+  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
+
+  console.log('🔴 CRITICAL Tarih Aralığı - Today:', today, 'Critical Date (<):', criticalDate);
 
   const products = await prisma.product.findMany({
     where: {
       expiryDate: {
-        lte: criticalDate,
+        lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
         gte: today, // Geçmiş tarihli olanları hariç tut
       },
       excludeFromExpiryCheck: false,
@@ -114,18 +122,22 @@ export const getWarningProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
+  console.log('🟠 WARNING Products - Ayarlar:', settings);
+
   // criticalDays'den sonra, warningDays'e kadar olan ürünler
   const criticalDate = new Date(today);
-  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays);
+  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
 
   const warningDate = new Date(today);
-  warningDate.setDate(warningDate.getDate() + settings.warningDays);
+  warningDate.setDate(warningDate.getDate() + settings.warningDays + 1);
+
+  console.log('🟠 WARNING Tarih Aralığı - Critical Date (>=):', criticalDate, 'Warning Date (<):', warningDate);
 
   const products = await prisma.product.findMany({
     where: {
       expiryDate: {
-        gt: criticalDate, // Kritik tarihten sonra
-        lte: warningDate, // Warning tarihine kadar
+        gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
+        lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
       },
       excludeFromExpiryCheck: false,
       isActive: true,
@@ -425,12 +437,16 @@ export const updateExpirySettings = async (newSettings) => {
     throw new NotFoundError('Ayarlar bulunamadı');
   }
 
+  console.log('📝 Yeni ayarlar kaydediliyor:', newSettings);
+
   const updatedSettings = await prisma.settings.update({
     where: { id: settings.id },
     data: {
       expiryManagementSettings: newSettings,
     },
   });
+
+  console.log('✅ Ayarlar kaydedildi:', updatedSettings.expiryManagementSettings);
 
   return updatedSettings.expiryManagementSettings;
 };

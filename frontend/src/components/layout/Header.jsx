@@ -4,6 +4,7 @@ import { FiSearch, FiShoppingCart, FiUser, FiArrowLeft, FiHome, FiGrid, FiHeart 
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import productService from '../../services/productService';
+import settingsService from '../../services/settingsService';
 import { normalizeImageUrls } from '../../utils/imageUtils';
 import NotificationBell from '../common/NotificationBell';
 
@@ -17,11 +18,36 @@ function Header() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [logo, setLogo] = useState('/logo.png');
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
 
   // Geri butonu gösterilecek sayfalar
   const showBackButton = !['/', '/urunler'].includes(location.pathname);
+
+  // Logo yükle
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        const settings = response.data?.settings;
+        
+        if (settings?.storeSettings?.logo) {
+          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+          const logoUrl = settings.storeSettings.logo.startsWith('http')
+            ? settings.storeSettings.logo
+            : `${API_BASE}${settings.storeSettings.logo}`;
+          setLogo(logoUrl);
+        } else {
+          setLogo('/logo.png');
+        }
+      } catch (error) {
+        console.error('Logo yüklenirken hata:', error);
+        setLogo('/logo.png');
+      }
+    };
+    loadLogo();
+  }, []);
 
   // Debounced search - yazdıkça arama yap
   useEffect(() => {
@@ -111,9 +137,10 @@ function Header() {
             aria-label="Ana Sayfa"
           >
             <img
-              src="/logo.png"
+              src={logo}
               alt="Gruner SuperStore"
               className="h-10 w-auto object-contain"
+              onError={(e) => { e.target.src = '/logo.png'; }}
             />
           </Link>
 

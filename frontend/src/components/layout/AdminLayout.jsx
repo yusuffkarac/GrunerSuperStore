@@ -20,11 +20,13 @@ import {
   FiMail,
   FiMessageSquare,
   FiClock,
+  FiCheckSquare,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
 import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 import adminService from '../../services/adminService';
+import settingsService from '../../services/settingsService';
 
 function AdminLayout() {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [logo, setLogo] = useState('/logo.png');
 
   // Admin bilgilerini al
   const getAdminData = () => {
@@ -169,6 +172,7 @@ function AdminLayout() {
 
   useEffect(() => {
     loadAdminData();
+    loadLogo();
 
     // Rol güncellendiğinde admin bilgilerini yeniden yükle
     const handlePermissionsUpdate = () => {
@@ -182,12 +186,43 @@ function AdminLayout() {
     };
   }, [loadAdminData]);
 
+  // Logo yükle
+  const loadLogo = useCallback(async () => {
+    try {
+      const response = await settingsService.getSettings();
+      const settings = response.data?.settings;
+      
+      if (settings?.storeSettings?.logo) {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const logoUrl = settings.storeSettings.logo.startsWith('http')
+          ? settings.storeSettings.logo
+          : `${API_BASE}${settings.storeSettings.logo}`;
+        setLogo(logoUrl);
+      } else {
+        setLogo('/logo.png');
+      }
+    } catch (error) {
+      console.error('Logo yüklenirken hata:', error);
+      setLogo('/logo.png');
+    }
+  }, []);
+
   // Sayfa değiştiğinde erişim kontrolü yap
   useEffect(() => {
     if (!admin || loading) return;
 
     checkPageAccess(admin, location.pathname);
   }, [location.pathname, admin, loading, checkPageAccess]);
+
+  // Üst menü öğeleri (soldan sağa sıralama)
+  const topMenuItems = [
+    { path: '/admin/tasks', label: 'Görevler', icon: FiCheckSquare, permission: 'product_management_view', isAction: false }, // En solda
+    { path: '/admin/users', label: 'Kullanıcılar', icon: FiUsers, permission: 'user_management_view', isAction: false },
+    { path: '/admin/notifications', label: 'Bildirim', icon: FiBell, permission: 'notification_management_view', isAction: false },
+    { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view', isAction: false },
+    { path: null, label: 'Çıkış', icon: FiLogOut, permission: null, isAction: true }, // Logout action
+    { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle, permission: null, isAction: false }, // En sağda
+  ];
 
   const allMenuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome, permission: null }, // Dashboard herkese açık
@@ -197,18 +232,33 @@ function AdminLayout() {
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid, permission: 'product_management_view' },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag, permission: 'marketing_campaigns' },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiTag, permission: 'marketing_coupons' },
-    { path: '/admin/users', label: 'Benutzer', icon: FiUsers, permission: 'user_management_view' },
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/roles', label: 'Roller ve İzinler', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
-    { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell, permission: 'notification_management_view' },
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
     { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
-    { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view' },
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
-    { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle, permission: null }, // Help herkese açık
   ];
+
+  // Üst menü öğelerini filtrele (güncel admin bilgileriyle)
+  const filteredTopMenuItems = admin ? (() => {
+    const currentIsSuperAdmin = admin?.role?.toString().trim().toLowerCase() === 'superadmin';
+    const currentPermissions = getAdminPermissions(admin);
+
+    return topMenuItems.filter(item => {
+      // Logout her zaman gösterilir
+      if (item.isAction) return true;
+
+      // İzin kontrolü
+      if (item.permission === null) {
+        return true;
+      }
+
+      // İzin kontrolü yap
+      return currentIsSuperAdmin || currentPermissions.includes(item.permission);
+    });
+  })() : [];
 
   // Menü öğelerini filtrele (güncel admin bilgileriyle)
   const menuItems = admin ? (() => {
@@ -267,16 +317,99 @@ function AdminLayout() {
   }
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col lg:flex-row overflow-hidden">
+    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
+      {/* Top Menu Bar - Desktop */}
+      <div className="hidden lg:flex bg-white shadow-sm border-b px-6 py-3 flex-shrink-0 items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Gruner Logo" className="w-8 h-8 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
+          <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          {filteredTopMenuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = !item.isAction && location.pathname === item.path;
+
+            if (item.isAction) {
+              return (
+                <button
+                  key={item.label}
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  title={item.label}
+                >
+                  <Icon size={20} />
+                </button>
+              );
+            }
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`p-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-green-50 text-green-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                title={item.label}
+              >
+                <Icon size={20} />
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Mobile Header */}
       <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100"
-        >
-          {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Gruner Logo" className="w-7 h-7 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
+          <h1 className="text-lg font-bold text-green-600">Gruner Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Mobile Top Menu Icons */}
+          <div className="flex items-center gap-2">
+            {filteredTopMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = !item.isAction && location.pathname === item.path;
+
+              if (item.isAction) {
+                return (
+                  <button
+                    key={item.label}
+                    onClick={handleLogout}
+                    className="p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title={item.label}
+                  >
+                    <Icon size={20} />
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-green-50 text-green-600'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title={item.label}
+                >
+                  <Icon size={20} />
+                </Link>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100"
+          >
+            {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -286,10 +419,6 @@ function AdminLayout() {
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           }`}
         >
-          <div className="p-6 border-b flex-shrink-0">
-            <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
-          </div>
-
           <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -311,14 +440,6 @@ function AdminLayout() {
                 </Link>
               );
             })}
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-auto"
-            >
-              <FiLogOut size={20} />
-              <span>Abmelden</span>
-            </button>
           </nav>
         </aside>
 

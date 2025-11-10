@@ -711,6 +711,63 @@ class AdminController {
       message: result.message,
     });
   });
+
+  // GET /api/admin/products/missing-data - Eksik bilgisi olan ürünleri getir
+  getProductsWithMissingData = asyncHandler(async (req, res) => {
+    const { missingType, page, limit, search, categoryId } = req.query;
+
+    if (!missingType) {
+      return res.status(400).json({
+        success: false,
+        message: 'missingType parametresi gereklidir',
+      });
+    }
+
+    const result = await productService.getProductsWithMissingData(missingType, {
+      page,
+      limit,
+      search,
+      categoryId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  });
+
+  // POST /api/admin/products/:id/ignore-task - Ürünü görev tipinden muaf tut
+  ignoreProductTask = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { category } = req.body;
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'category parametresi gereklidir',
+      });
+    }
+
+    const result = await productService.ignoreProductTask(id, category);
+
+    res.status(200).json({
+      success: true,
+      message: 'Ürün görev tipinden muaf tutuldu',
+      data: { taskIgnore: result },
+    });
+  });
+
+  // DELETE /api/admin/products/:id/ignore-task/:category - Ürünün muafiyetini kaldır
+  unignoreProductTask = asyncHandler(async (req, res) => {
+    const { id, category } = req.params;
+
+    const result = await productService.unignoreProductTask(id, category);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
 }
 
 export default new AdminController();

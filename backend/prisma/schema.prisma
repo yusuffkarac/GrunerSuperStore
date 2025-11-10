@@ -195,6 +195,7 @@ model Product {
   variantOptions ProductVariantOption[]
   variants       ProductVariant[]
   expiryActions  ExpiryAction[]
+  taskIgnores    ProductTaskIgnore[]
 
   @@index([slug])
   @@index([name])
@@ -787,4 +788,25 @@ model BulkPriceUpdate {
   @@index([updateType])
   @@index([categoryId])
   @@map("bulk_price_updates")
+}
+
+// ===================================
+// PRODUCT TASK IGNORES
+// ===================================
+
+model ProductTaskIgnore {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  category  String   // 'image', 'barcode', 'category', 'price', 'expiryDate'
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([category])
+  @@index([productId, category])
+  @@unique([productId, category])
+  @@map("product_task_ignores")
 }

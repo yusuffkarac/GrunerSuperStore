@@ -97,6 +97,9 @@ router.get('/orders/:id/delivery-slip', requirePermission('order_management_view
 // GET /api/admin/products - Tüm ürünleri listele
 router.get('/products', requirePermission('product_management_view'), adminController.getProducts);
 
+// GET /api/admin/products/missing-data - Eksik bilgisi olan ürünleri getir (/:id'den ÖNCE olmalı)
+router.get('/products/missing-data', requirePermission('product_management_view'), adminController.getProductsWithMissingData);
+
 // GET /api/admin/products/:id - Ürün detayı
 router.get('/products/:id', requirePermission('product_management_view'), adminController.getProductById);
 
@@ -274,5 +277,15 @@ router.post('/upload', requirePermission('product_management_edit'), upload.sing
 
 // POST /api/admin/upload/multiple - Birden fazla dosya yükle
 router.post('/upload/multiple', requirePermission('product_management_edit'), upload.array('files', 10), uploadController.uploadMultiple);
+
+// ===============================
+// PRODUCT TASKS (MISSING DATA)
+// ===============================
+
+// POST /api/admin/products/:id/ignore-task - Ürünü görev tipinden muaf tut
+router.post('/products/:id/ignore-task', requirePermission('product_management_edit'), adminController.ignoreProductTask);
+
+// DELETE /api/admin/products/:id/ignore-task/:category - Ürünün muafiyetini kaldır
+router.delete('/products/:id/ignore-task/:category', requirePermission('product_management_edit'), adminController.unignoreProductTask);
 
 export default router;

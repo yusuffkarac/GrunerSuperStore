@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../utils/errors.js';
 import { getGermanyDate } from '../utils/date.js';
 import settingsService from './settings.service.js';
@@ -212,6 +213,12 @@ class ProductService {
 
   // Tek ürün getir (ID ile)
   async getProductById(id) {
+    // UUID formatını kontrol et
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!id || !uuidRegex.test(id)) {
+      throw new NotFoundError('Produkt nicht gefunden');
+    }
+
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
@@ -1222,6 +1229,336 @@ class ProductService {
     return {
       message: 'Enddatum erfolgreich aktualisiert',
     };
+  }
+
+  /**
+   * Eksik bilgisi olan ürünleri getir
+   * @param {String} missingType - 'image', 'barcode', 'category', 'price', 'expiryDate'
+   * @param {Object} filters - { page, limit, search, categoryId }
+   * @returns {Object} { products, pagination }
+   */
+  async getProductsWithMissingData(missingType, filters = {}) {
+    const { page = 1, limit = 20, search, categoryId } = filters;
+    const skip = (page - 1) * limit;
+
+    // UUID formatını kontrol eden regex
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // Muaf tutulan ürün ID'lerini al
+    let ignoredIds = [];
+    try {
+      const ignoredProductIds = await prisma.productTaskIgnore.findMany({
+        where: { category: missingType },
+        select: { productId: true },
+      });
+      // Geçerli UUID'leri filtrele - null veya geçersiz formatları çıkar
+      ignoredIds = ignoredProductIds
+        .map((item) => item.productId)
+        .filter((id) => {
+          if (!id || typeof id !== 'string') return false;
+          return uuidRegex.test(id);
+        });
+    } catch (error) {
+      console.error('Muafiyet kayıtları yüklenirken hata:', error);
+      // Hata durumunda boş array kullan
+      ignoredIds = [];
+    }
+
+    // Where koşulunu oluştur
+    const where = {};
+
+    // Muaf tutulan ürünleri hariç tut
+    if (ignoredIds.length > 0) {
+      where.id = { notIn: ignoredIds };
+    }
+
+    // Eksiklik tipine göre koşul ekle
+    switch (missingType) {
+      case 'image':
+        // imageUrls boş array kontrolü için özel işlem yapacağız
+        // Prisma'da JSON array'in boş olup olmadığını kontrol etmek zor olduğu için
+        // önce tüm ürünleri çekip sonra filtreleyeceğiz
+        // where koşulunu image için özel olarak ayarlamayacağız
+        break;
+      case 'barcode':
+        where.OR = [
+          { barcode: null },
+          { barcode: '' },
+        ];
+        break;
+      case 'category':
+        // categoryId nullable olmayan alan için null kontrolü zor olduğu için
+        // JavaScript'te filtreleyeceğiz
+        break;
+      case 'price':
+        // price için özel işlem yapacağız - Decimal null kontrolü zor olduğu için
+        // JavaScript'te filtreleyeceğiz
+        break;
+      case 'expiryDate':
+        where.expiryDate = null;
+        where.excludeFromExpiryCheck = false;
+        break;
+      default:
+        throw new Error(`Geçersiz eksiklik tipi: ${missingType}`);
+    }
+
+    // Kategori filtresi (category eksikliği kontrolü dışında)
+    if (categoryId && missingType !== 'category') {
+      where.categoryId = categoryId;
+    }
+
+    // Arama filtresi
+    if (search) {
+      where.AND = where.AND || [];
+      where.AND.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { brand: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Ürünleri getir
+    let products;
+    let total;
+
+    if (missingType === 'image') {
+      // imageUrls için özel işlem - boş array kontrolü
+      const allProducts = await prisma.product.findMany({
+        where,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Boş array kontrolü yap
+      const filteredProducts = allProducts.filter((product) => {
+        const imageUrls = product.imageUrls;
+        return !imageUrls || (Array.isArray(imageUrls) && imageUrls.length === 0);
+      });
+
+      // Sayfalama
+      total = filteredProducts.length;
+      products = filteredProducts.slice(skip, skip + parseInt(limit));
+    } else if (missingType === 'category') {
+      // categoryId için özel işlem - nullable olmayan alan için null kontrolü
+      // Tüm ürünleri çekip JavaScript'te filtrele
+      const allProducts = await prisma.product.findMany({
+        where: {
+          ...where,
+          // categoryId koşulunu kaldır, tüm ürünleri çek
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // categoryId null olanları filtrele
+      const filteredProducts = allProducts.filter((product) => {
+        return product.categoryId === null;
+      });
+
+      // Sayfalama
+      total = filteredProducts.length;
+      products = filteredProducts.slice(skip, skip + parseInt(limit));
+    } else if (missingType === 'price') {
+      // price için özel işlem - Decimal null kontrolü
+      // Tüm ürünleri çekip JavaScript'te filtrele
+      const allProducts = await prisma.product.findMany({
+        where: {
+          ...where,
+          // NOT koşulunu kaldır, tüm ürünleri çek
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // price 0 veya null olanları filtrele
+      const filteredProducts = allProducts.filter((product) => {
+        return product.price === null || product.price === 0 || (typeof product.price === 'object' && product.price !== null && product.price.toNumber() === 0);
+      });
+
+      // Sayfalama
+      total = filteredProducts.length;
+      products = filteredProducts.slice(skip, skip + parseInt(limit));
+    } else {
+      // Diğer eksiklik tipleri için normal sorgu
+      [products, total] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: parseInt(limit),
+        }),
+        prisma.product.count({ where }),
+      ]);
+    }
+
+    return {
+      products,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Ürünü belirli bir görev tipinden muaf tut
+   * @param {String} productId - Ürün ID
+   * @param {String} category - Görev tipi ('image', 'barcode', 'category', 'price', 'expiryDate')
+   * @returns {Object} ProductTaskIgnore kaydı
+   */
+  async ignoreProductTask(productId, category) {
+    // Geçerli görev tiplerini kontrol et
+    const validCategories = ['image', 'barcode', 'category', 'price', 'expiryDate'];
+    if (!validCategories.includes(category)) {
+      throw new Error(`Geçersiz görev tipi: ${category}`);
+    }
+
+    // UUID formatını kontrol et
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(productId)) {
+      throw new Error(`Geçersiz ürün ID formatı: ${productId}`);
+    }
+
+    // Ürünün var olup olmadığını kontrol et
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundError('Produkt nicht gefunden');
+    }
+
+    // Zaten muaf tutulmuş mu kontrol et
+    const existing = await prisma.productTaskIgnore.findUnique({
+      where: {
+        productId_category: {
+          productId,
+          category,
+        },
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Muafiyet kaydı oluştur
+    const taskIgnore = await prisma.productTaskIgnore.create({
+      data: {
+        productId,
+        category,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return taskIgnore;
+  }
+
+  /**
+   * Ürünün muafiyetini kaldır
+   * @param {String} productId - Ürün ID
+   * @param {String} category - Görev tipi
+   * @returns {Object} { message }
+   */
+  async unignoreProductTask(productId, category) {
+    // UUID formatını kontrol et
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(productId)) {
+      throw new Error(`Geçersiz ürün ID formatı: ${productId}`);
+    }
+
+    const taskIgnore = await prisma.productTaskIgnore.findUnique({
+      where: {
+        productId_category: {
+          productId,
+          category,
+        },
+      },
+    });
+
+    if (!taskIgnore) {
+      throw new NotFoundError('Muafiyet kaydı bulunamadı');
+    }
+
+    await prisma.productTaskIgnore.delete({
+      where: {
+        productId_category: {
+          productId,
+          category,
+        },
+      },
+    });
+
+    return { message: 'Muafiyet başarıyla kaldırıldı' };
+  }
+
+  /**
+   * Ürünün muaf olduğu görev tiplerini getir
+   * @param {String} productId - Ürün ID
+   * @returns {Array} Muafiyet kayıtları
+   */
+  async getProductTaskIgnores(productId) {
+    // UUID formatını kontrol et
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(productId)) {
+      throw new Error(`Geçersiz ürün ID formatı: ${productId}`);
+    }
+
+    const ignores = await prisma.productTaskIgnore.findMany({
+      where: { productId },
+      select: {
+        id: true,
+        category: true,
+        createdAt: true,
+      },
+    });
+
+    return ignores;
   }
 }
 
