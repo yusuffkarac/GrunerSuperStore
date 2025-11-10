@@ -104,8 +104,8 @@ class EmailService {
     // Template'i compile et ve cache'le
     // Eğer DB'den yüklendiyse ve compile hatası varsa, dosyadan yükle
     try {
-      this.templates[templateName] = handlebars.compile(templateContent);
-      return this.templates[templateName];
+    this.templates[templateName] = handlebars.compile(templateContent);
+    return this.templates[templateName];
     } catch (compileError) {
       console.error(`⚠️  Template compile hatası (${templateName}):`, compileError.message);
       

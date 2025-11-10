@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiAlertCircle, FiTag, FiTrash2, FiRotateCcw, FiClock, FiSettings, FiX, FiCamera } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import BarcodeScanner from '../../components/common/BarcodeScanner';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -36,6 +37,8 @@ function ExpiryManagement() {
   const [removeDialog, setRemoveDialog] = useState({ open: false, product: null });
   const [labelDialog, setLabelDialog] = useState({ open: false, product: null });
   const [settingsDialog, setSettingsDialog] = useState(false);
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState(null); // 'critical' veya 'warning'
 
   // Form states
   const [excludeFromCheck, setExcludeFromCheck] = useState(false);
@@ -177,6 +180,82 @@ function ExpiryManagement() {
     }
   };
 
+  // Barkod okuma fonksiyonları
+  const handleBarcodeScan = async (barcode) => {
+    try {
+      // Barkod ile ürünü bul
+      const products = scannerMode === 'critical' ? criticalProducts : warningProducts;
+      const product = products.find(p => p.barcode === barcode);
+
+      if (!product) {
+        toast.warning(`Barkod okundu: ${barcode} - Bu barkod listede bulunamadı`);
+        return; // Popup açık kalacak
+      }
+
+      // Moda göre işlem yap
+      if (scannerMode === 'critical') {
+        // Kritik ürünü kaldır
+        await handleRemoveProductByBarcode(product, false);
+        // İşlem başarılı olduğunda popup'ı kapat
+        setBarcodeScannerOpen(false);
+        setScannerMode(null);
+      } else if (scannerMode === 'warning') {
+        // Uyarı ürününü etiketle
+        await handleLabelProductByBarcode(product);
+        // İşlem başarılı olduğunda popup'ı kapat
+        setBarcodeScannerOpen(false);
+        setScannerMode(null);
+      }
+    } catch (err) {
+      toast.error('Barkod işlenirken hata oluştu');
+      console.error('Barkod işleme hatası:', err);
+      // Hata olsa bile popup açık kalsın
+    }
+  };
+
+  const handleRemoveProductByBarcode = async (product, excludeFromExpiryCheck = false) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        `${API_URL}/admin/expiry/remove/${product.id}`,
+        { excludeFromCheck: excludeFromExpiryCheck, note: 'Barkod okutularak kaldırıldı' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success(`${product.name} başarıyla raftan kaldırıldı`);
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleLabelProductByBarcode = async (product) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.post(
+        `${API_URL}/admin/expiry/label/${product.id}`,
+        { note: 'Barkod okutularak etiketlendi' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success(`${product.name} başarıyla etiketlendi`);
+      fetchData();
+    } catch (err) {
+      const errorMessage = typeof err.response?.data?.error === 'string' 
+        ? err.response.data.error 
+        : err.response?.data?.error?.message || err.message || 'İşlem sırasında hata oluştu';
+      toast.error(errorMessage);
+    }
+  };
+
+  const openBarcodeScanner = (mode) => {
+    setScannerMode(mode);
+    setBarcodeScannerOpen(true);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('tr-TR');
@@ -286,11 +365,20 @@ function ExpiryManagement() {
       {/* KRİTİK ÜRÜNLER TABLOSU */}
       {activeTab === 0 && (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-red-600">
-          <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+          <div className="bg-red-50 px-4 py-3 border-b border-red-200 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-red-900 flex items-center gap-2">
               <FiAlertCircle className="w-5 h-5" />
               Son Günü Gelen Ürünler (Raftan Kaldırılmalı)
             </h2>
+            {criticalProducts.length > 0 && (
+              <button
+                onClick={() => openBarcodeScanner('critical')}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                <FiCamera className="w-4 h-4" />
+                Barkod Oku
+              </button>
+            )}
           </div>
 
           {criticalProducts.length === 0 ? (
@@ -383,11 +471,20 @@ function ExpiryManagement() {
       {/* UYARI ÜRÜNLERİ TABLOSU */}
       {activeTab === 1 && (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-amber-500">
-          <div className="bg-amber-50 px-4 py-3 border-b border-amber-200">
+          <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-amber-900 flex items-center gap-2">
               <FiAlertTriangle className="w-5 h-5" />
               İndirim Etiketi Yapıştırılmalı
             </h2>
+            {warningProducts.length > 0 && (
+              <button
+                onClick={() => openBarcodeScanner('warning')}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+              >
+                <FiCamera className="w-4 h-4" />
+                Barkod Oku
+              </button>
+            )}
           </div>
 
           {warningProducts.length === 0 ? (
@@ -792,6 +889,18 @@ function ExpiryManagement() {
           </>
         )}
       </AnimatePresence>
+
+      {/* BARKOD OKUMA SCANNER */}
+      <BarcodeScanner
+        isOpen={barcodeScannerOpen}
+        onClose={() => {
+          setBarcodeScannerOpen(false);
+          setScannerMode(null);
+        }}
+        onScan={handleBarcodeScan}
+        title={scannerMode === 'critical' ? 'Kritik Ürün Barkodunu Okutun' : 'Uyarı Ürünü Barkodunu Okutun'}
+        keepOpen={true}
+      />
     </div>
   );
 }

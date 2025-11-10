@@ -300,7 +300,7 @@ function Orders() {
       closeCancelModal();
       // Eğer detay modal'ı açıksa onu da kapat
       if (showModal) {
-        closeModal();
+      closeModal();
       }
       loadOrders();
     } catch (error) {
