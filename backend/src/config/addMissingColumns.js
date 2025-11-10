@@ -44,6 +44,24 @@ async function addMissingColumns() {
       }
     }
 
+    // 1c. addresses tablosuna latitude ve longitude kolonlarını ekle
+    console.log('📋 Adding latitude and longitude columns to addresses table...');
+    try {
+      await pool.query(`
+        ALTER TABLE addresses 
+        ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 8),
+        ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8);
+      `);
+      console.log('✅ latitude and longitude columns added\n');
+    } catch (error) {
+      if (error.code === '42701') { // column already exists
+        console.log('⏭️  latitude/longitude columns already exist\n');
+      } else {
+        console.error('⚠️  Error adding latitude/longitude:', error.message);
+        // Devam et, diğer kolonları eklemeye çalış
+      }
+    }
+
     // 2. role_id kolonunu ekle
     console.log('📋 Adding role_id column to admins table...');
     try {
@@ -121,9 +139,19 @@ async function addMissingColumns() {
       WHERE table_name = 'settings' 
       AND column_name IN ('email_templates', 'notification_templates')
     `);
-    const existingColumns = settingsColumns.rows.map(r => r.column_name);
-    console.log(`   email_templates: ${existingColumns.includes('email_templates') ? '✅ Exists' : '❌ Missing'}`);
-    console.log(`   notification_templates: ${existingColumns.includes('notification_templates') ? '✅ Exists' : '❌ Missing'}`);
+    const existingSettingsColumns = settingsColumns.rows.map(r => r.column_name);
+    console.log(`   email_templates: ${existingSettingsColumns.includes('email_templates') ? '✅ Exists' : '❌ Missing'}`);
+    console.log(`   notification_templates: ${existingSettingsColumns.includes('notification_templates') ? '✅ Exists' : '❌ Missing'}`);
+
+    const addressColumns = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'addresses' 
+      AND column_name IN ('latitude', 'longitude')
+    `);
+    const existingAddressColumns = addressColumns.rows.map(r => r.column_name);
+    console.log(`   addresses.latitude: ${existingAddressColumns.includes('latitude') ? '✅ Exists' : '❌ Missing'}`);
+    console.log(`   addresses.longitude: ${existingAddressColumns.includes('longitude') ? '✅ Exists' : '❌ Missing'}`);
 
     const adminColumns = await pool.query(`
       SELECT column_name 
