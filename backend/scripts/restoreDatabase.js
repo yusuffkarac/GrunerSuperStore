@@ -37,7 +37,11 @@ if (tenantName) {
   const tenantEnvPath = join(__dirname, `../.env.${tenantName}`);
   if (existsSync(tenantEnvPath)) {
     console.log(`📋 Tenant .env dosyası bulundu: .env.${tenantName}`);
+    // Önce mevcut DB_NAME'i logla
+    console.log(`   Önceki DB_NAME: ${process.env.DB_NAME || 'not set'}`);
     dotenv.config({ path: tenantEnvPath });
+    // Sonra yeni DB_NAME'i logla
+    console.log(`   Yeni DB_NAME: ${process.env.DB_NAME || 'not set'}`);
   } else {
     console.warn(`⚠️  Tenant .env dosyası bulunamadı: .env.${tenantName}`);
     console.warn(`   Varsayılan .env dosyası kullanılacak.`);
@@ -50,6 +54,14 @@ const DB_PORT = process.env.DB_PORT || 5432;
 const DB_NAME = process.env.DB_NAME || 'gruner_superstore';
 const DB_USER = process.env.DB_USER || 'postgres';
 const DB_PASSWORD = process.env.DB_PASSWORD; // Opsiyonel - şifre yoksa trust/peer auth kullanılır
+
+// Debug: Final değerleri göster
+if (tenantName) {
+  console.log(`\n🔍 Final Database Config:`);
+  console.log(`   DB_NAME: ${DB_NAME}`);
+  console.log(`   DB_HOST: ${DB_HOST}`);
+  console.log(`   DB_USER: ${DB_USER}`);
+}
 
 // Dump klasörü
 const DUMP_DIR = join(__dirname, '../database-dumps');
