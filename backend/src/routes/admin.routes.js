@@ -6,6 +6,7 @@ import uploadController from '../controllers/upload.controller.js';
 import * as roleController from '../controllers/role.controller.js';
 import * as expiryController from '../controllers/expiry.controller.js';
 import * as stockController from '../controllers/stock.controller.js';
+import * as supplierController from '../controllers/supplier.controller.js';
 import { authenticateAdmin, requireSuperAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
@@ -123,6 +124,9 @@ router.put(
 
 // GET /api/admin/orders/:id/review - Sipariş review'ını getir (admin)
 router.get('/orders/:id/review', requirePermission('order_management_view'), orderIdValidation, validate, orderController.getReview);
+
+// GET /api/admin/orders/:id/invoice - Fatura PDF'ini indir/görüntüle (Admin)
+router.get('/orders/:id/invoice', requirePermission('order_management_view'), orderIdValidation, validate, orderController.getInvoicePDF);
 
 // POST /api/admin/orders/:id/send-invoice - Müşteriye fatura gönder
 router.post('/orders/:id/send-invoice', requirePermission('order_management_edit'), orderIdValidation, validate, orderController.sendInvoice);
@@ -321,6 +325,17 @@ router.post('/stock/order/:orderId/undo', requirePermission(['stock_management_v
 
 // Tedarikçi güncelleme
 router.put('/stock/product/:productId/supplier', requirePermission(['stock_management_view', 'stock_management_action']), stockController.updateProductSupplier);
+
+// Sipariş listeleri
+router.post('/stock/lists', requirePermission(['stock_management_view', 'stock_management_action']), stockController.createStockOrderList);
+router.get('/stock/lists', requirePermission('stock_management_view'), stockController.getStockOrderLists);
+router.get('/stock/lists/:listId', requirePermission('stock_management_view'), stockController.getStockOrderListById);
+router.put('/stock/lists/:listId/status', requirePermission(['stock_management_view', 'stock_management_action']), stockController.updateStockOrderListStatus);
+router.get('/stock/lists/:listId/pdf', requirePermission('stock_management_view'), stockController.getStockOrderListPDF);
+
+// Supplier email yönetimi
+router.get('/suppliers/emails', requirePermission('stock_management_view'), supplierController.getSupplierEmails);
+router.post('/suppliers/emails', requirePermission(['stock_management_view', 'stock_management_action']), supplierController.addSupplierEmail);
 
 // ===============================
 // SETTINGS MANAGEMENT

@@ -1,0 +1,66 @@
+<h2 style="color: #111827; margin-bottom: 20px;">Neue Bestellliste erstellt!</h2>
+
+<p style="color: #374151; margin-bottom: 15px;">
+    Eine neue Bestellliste wurde erstellt und wartet auf Ihre Bearbeitung.
+</p>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Listeninformationen</h3>
+
+    <div class="info-row">
+        <span class="info-label">Listenname:</span>
+        <span class="info-value">{{listName}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Erstellt am:</span>
+        <span class="info-value">{{createdDate}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Erstellt von:</span>
+        <span class="info-value">{{createdBy}}</span>
+    </div>
+
+    <div class="info-row">
+        <span class="info-label">Status:</span>
+        <span class="info-value">{{status}}</span>
+    </div>
+
+    {{#if note}}
+    <div class="info-row">
+        <span class="info-label">Notiz:</span>
+        <span class="info-value">{{note}}</span>
+    </div>
+    {{/if}}
+</div>
+
+<div class="info-box">
+    <h3 style="color: #111827; margin-bottom: 15px;">Bestellte Artikel ({{itemCount}})</h3>
+
+    {{#each items}}
+    <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="color: #374151; font-weight: 500;">{{this.productName}}</span>
+            <span style="color: #6b7280;">{{this.quantity}} {{this.unit}}</span>
+        </div>
+        {{#if this.categoryName}}
+        <div style="color: #6b7280; font-size: 14px;">Kategorie: {{this.categoryName}}</div>
+        {{/if}}
+        {{#if this.barcode}}
+        <div style="color: #6b7280; font-size: 14px;">Barcode: {{this.barcode}}</div>
+        {{/if}}
+    </div>
+    {{/each}}
+</div>
+
+{{#if adminOrderUrl}}
+<div style="text-align: center;">
+    <a href="{{adminOrderUrl}}" class="button">Bestellliste im Admin-Panel anzeigen</a>
+</div>
+{{/if}}
+
+<p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+    Bitte bearbeiten Sie diese Bestellliste so schnell wie möglich.
+</p>
+

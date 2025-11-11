@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError, BadRequestError } from '../utils/errors.js';
+import queueService from './queue.service.js';
 
 /**
  * Kritik stok seviyesinin altındaki ürünleri getir
@@ -448,5 +449,439 @@ export const updateProductSupplier = async (productId, supplier) => {
   });
 
   return updatedProduct;
+};
+
+/**
+ * Yeni sipariş listesi oluştur
+ */
+export const createStockOrderList = async (adminId, data) => {
+  const { name, note, supplierEmail, sendToAdmins, sendToSupplier, orders } = data;
+
+  if (!name || name.trim().length === 0) {
+    throw new BadRequestError('Liste ismi gereklidir');
+  }
+
+  if (!orders || !Array.isArray(orders) || orders.length === 0) {
+    throw new BadRequestError('En az bir ürün seçilmelidir');
+  }
+
+  // Supplier email kontrolü
+  if (sendToSupplier && (!supplierEmail || !supplierEmail.includes('@'))) {
+    throw new BadRequestError('Supplier email adresi geçerli olmalıdır');
+  }
+
+  // Transaction içinde liste ve siparişleri oluştur
+  const result = await prisma.$transaction(async (tx) => {
+    // Liste oluştur
+    const orderList = await tx.stockOrderList.create({
+      data: {
+        name: name.trim(),
+        note: note || null,
+        supplierEmail: supplierEmail ? supplierEmail.trim().toLowerCase() : null,
+        sendToAdmins: sendToAdmins || false,
+        sendToSupplier: sendToSupplier || false,
+        adminId,
+        status: 'pending',
+      },
+    });
+
+    // Siparişleri oluştur
+    const createdOrders = await Promise.all(
+      orders.map(async (orderData) => {
+        const { productId, orderQuantity, orderUnit, expectedDeliveryDate, note: orderNote } = orderData;
+
+        if (!productId || !orderQuantity || orderQuantity <= 0) {
+          throw new BadRequestError('Geçersiz sipariş verisi');
+        }
+
+        // Ürün kontrolü
+        const product = await tx.product.findUnique({
+          where: { id: productId },
+        });
+
+        if (!product) {
+          throw new NotFoundError(`Ürün bulunamadı: ${productId}`);
+        }
+
+        return tx.stockOrder.create({
+          data: {
+            productId,
+            adminId,
+            orderListId: orderList.id,
+            status: 'pending',
+            orderQuantity: parseInt(orderQuantity),
+            orderUnit: orderUnit || null,
+            expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
+            note: orderNote || null,
+          },
+        });
+      })
+    );
+
+    // Liste ile birlikte siparişleri getir
+    const orderListWithOrders = await tx.stockOrderList.findUnique({
+      where: { id: orderList.id },
+      include: {
+        admin: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+          },
+        },
+        orders: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                stock: true,
+                lowStockLevel: true,
+                supplier: true,
+                barcode: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            admin: {
+              select: {
+                id: true,
+                firstName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return orderListWithOrders;
+  });
+
+  // Mail gönderimi (transaction'dan sonra)
+  try {
+    const settings = await prisma.settings.findFirst();
+
+    // SMTP ayarları yoksa mail gönderme
+    if (settings?.smtpSettings) {
+      const statusLabels = {
+        pending: 'Ausstehend',
+        ordered: 'Bestellt',
+        delivered: 'Geliefert',
+        cancelled: 'Storniert',
+      };
+
+      const createdDate = new Date(result.createdAt).toLocaleString('de-DE');
+      const items = result.orders.map((order) => ({
+        productName: order.product.name,
+        quantity: order.orderQuantity,
+        unit: order.orderUnit || order.product.unit || '',
+        categoryName: order.product.category?.name || null,
+        barcode: order.product.barcode || null,
+      }));
+
+      const adminOrderUrl = `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/stock/lists/${result.id}`;
+
+      // Adminlere mail gönder
+      if (sendToAdmins) {
+        const adminEmail = settings.emailNotificationSettings?.adminEmail;
+        if (adminEmail) {
+          const adminEmails = adminEmail
+            .split(',')
+            .map((email) => email.trim())
+            .filter((email) => email && email.includes('@'));
+
+          const emailPromises = adminEmails.map(async (email) => {
+            try {
+              await queueService.addEmailJob({
+                to: email,
+                subject: `Neue Bestellliste: ${result.name}`,
+                template: 'stock-order-list-notification',
+                data: {
+                  listName: result.name,
+                  createdDate,
+                  createdBy: result.admin.firstName,
+                  status: statusLabels[result.status] || result.status,
+                  note: result.note,
+                  items,
+                  itemCount: items.length,
+                  adminOrderUrl,
+                },
+                metadata: { listId: result.id, type: 'stock-order-list-notification-admin' },
+                priority: 2,
+              });
+              return { email, success: true };
+            } catch (emailError) {
+              console.error(`❌ Email gönderim hatası (${email}):`, emailError);
+              return { email, success: false, error: emailError.message };
+            }
+          });
+
+          await Promise.all(emailPromises);
+        }
+      }
+
+      // Supplier'a mail gönder
+      if (sendToSupplier && supplierEmail) {
+        try {
+          await queueService.addEmailJob({
+            to: supplierEmail.trim().toLowerCase(),
+            subject: `Bestellliste: ${result.name}`,
+            template: 'stock-order-list-notification',
+            data: {
+              listName: result.name,
+              createdDate,
+              createdBy: result.admin.firstName,
+              status: statusLabels[result.status] || result.status,
+              note: result.note,
+              items,
+              itemCount: items.length,
+            },
+            metadata: { listId: result.id, type: 'stock-order-list-notification-supplier' },
+            priority: 2,
+          });
+        } catch (emailError) {
+          console.error(`❌ Supplier email gönderim hatası:`, emailError);
+        }
+      }
+    }
+  } catch (mailError) {
+    // Mail hatası liste oluşturmayı engellemez, sadece log at
+    console.error('⚠️  Mail gönderim hatası (liste oluşturuldu):', mailError);
+  }
+
+  return result;
+};
+
+/**
+ * Sipariş listelerini getir
+ */
+export const getStockOrderLists = async (filters = {}) => {
+  const { status, limit = 1000, offset = 0, date } = filters;
+
+  const where = {
+    ...(status && { status }),
+  };
+
+  // Tarih filtresi ekle
+  if (date) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    where.createdAt = {
+      gte: startDate,
+      lte: endDate,
+    };
+  }
+
+  const [lists, total] = await Promise.all([
+    prisma.stockOrderList.findMany({
+      where,
+      include: {
+        admin: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+          },
+        },
+        orders: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                supplier: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.stockOrderList.count({ where }),
+  ]);
+
+  return {
+    lists,
+    total,
+    limit,
+    offset,
+  };
+};
+
+/**
+ * Sipariş listesi detayını getir
+ */
+export const getStockOrderListById = async (listId) => {
+  const orderList = await prisma.stockOrderList.findUnique({
+    where: { id: listId },
+    include: {
+      admin: {
+        select: {
+          id: true,
+          firstName: true,
+          email: true,
+        },
+      },
+      orders: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              stock: true,
+              lowStockLevel: true,
+              supplier: true,
+              barcode: true,
+              unit: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          admin: {
+            select: {
+              id: true,
+              firstName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  });
+
+  if (!orderList) {
+    throw new NotFoundError('Sipariş listesi bulunamadı');
+  }
+
+  return orderList;
+};
+
+/**
+ * Sipariş listesi durumunu güncelle
+ */
+export const updateStockOrderListStatus = async (listId, status, adminId) => {
+  const orderList = await prisma.stockOrderList.findUnique({
+    where: { id: listId },
+    include: {
+      orders: true,
+    },
+  });
+
+  if (!orderList) {
+    throw new NotFoundError('Sipariş listesi bulunamadı');
+  }
+
+  // Durum geçişlerini kontrol et
+  const validTransitions = {
+    pending: ['ordered', 'cancelled'],
+    ordered: ['delivered', 'cancelled'],
+    delivered: [], // Teslim edildikten sonra değiştirilemez
+    cancelled: [], // İptal edildikten sonra değiştirilemez
+  };
+
+  if (!validTransitions[orderList.status]?.includes(status)) {
+    throw new BadRequestError(`Geçersiz durum geçişi: ${orderList.status} -> ${status}`);
+  }
+
+  // Transaction içinde liste ve sipariş durumlarını güncelle
+  const result = await prisma.$transaction(async (tx) => {
+    // Liste durumunu güncelle
+    const updatedList = await tx.stockOrderList.update({
+      where: { id: listId },
+      data: { status },
+    });
+
+    // Liste içindeki tüm siparişlerin durumunu güncelle
+    await tx.stockOrder.updateMany({
+      where: {
+        orderListId: listId,
+        isUndone: false,
+      },
+      data: { status },
+    });
+
+    // Eğer durum 'delivered' ise, tüm siparişlerin ürün stoklarını güncelle
+    if (status === 'delivered') {
+      for (const order of orderList.orders) {
+        if (!order.isUndone) {
+          await tx.product.update({
+            where: { id: order.productId },
+            data: {
+              stock: {
+                increment: order.orderQuantity,
+              },
+            },
+          });
+        }
+      }
+    }
+
+    // Güncellenmiş listeyi getir
+    return tx.stockOrderList.findUnique({
+      where: { id: listId },
+      include: {
+        admin: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+          },
+        },
+        orders: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                stock: true,
+                lowStockLevel: true,
+                supplier: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            admin: {
+              select: {
+                id: true,
+                firstName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  return result;
 };
 

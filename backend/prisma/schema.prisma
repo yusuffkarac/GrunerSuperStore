@@ -447,6 +447,8 @@ model Admin {
   expiryActions ExpiryAction[]
   stockOrders   StockOrder[]   @relation("StockOrderAdmin")
   stockOrdersUndone StockOrder[] @relation("StockOrderUndoneBy")
+  stockOrderLists StockOrderList[] @relation("StockOrderListAdmin")
+  supplierEmails SupplierEmail[] @relation("SupplierEmailAdmin")
 
   @@index([email])
   @@index([role])
@@ -782,8 +784,10 @@ model StockOrder {
   id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId           String          @map("product_id") @db.Uuid
   adminId             String          @map("admin_id") @db.Uuid
+  orderListId         String?         @map("order_list_id") @db.Uuid
   status              StockOrderStatus @default(pending)
   orderQuantity       Int             @map("order_quantity")
+  orderUnit           String?         @map("order_unit") // karton/adet/kilo/palet
   expectedDeliveryDate DateTime?      @map("expected_delivery_date") @db.Date
   actualDeliveryDate  DateTime?      @map("actual_delivery_date") @db.Date
   note                String?
@@ -797,6 +801,7 @@ model StockOrder {
   // Relations
   product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   admin         Admin   @relation("StockOrderAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  orderList     StockOrderList? @relation(fields: [orderListId], references: [id], onDelete: SetNull)
   previousOrder StockOrder? @relation("PreviousStockOrder", fields: [previousOrderId], references: [id], onDelete: SetNull)
   reversedOrders StockOrder[] @relation("PreviousStockOrder")
   undoneByAdmin Admin? @relation("StockOrderUndoneBy", fields: [undoneBy], references: [id], onDelete: SetNull)
@@ -808,7 +813,46 @@ model StockOrder {
   @@index([isUndone])
   @@index([productId, status])
   @@index([productId, isUndone])
+  @@index([orderListId])
   @@map("stock_orders")
+}
+
+model StockOrderList {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  note          String?
+  supplierEmail String?         @map("supplier_email")
+  sendToAdmins  Boolean         @default(false) @map("send_to_admins")
+  sendToSupplier Boolean        @default(false) @map("send_to_supplier")
+  adminId       String          @map("admin_id") @db.Uuid
+  status        StockOrderStatus @default(pending)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  admin  Admin        @relation("StockOrderListAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  orders StockOrder[]
+
+  @@index([adminId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("stock_order_lists")
+}
+
+model SupplierEmail {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin Admin @relation("SupplierEmailAdmin", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([email])
+  @@index([createdBy])
+  @@index([createdAt(sort: Desc)])
+  @@map("supplier_emails")
 }
 
 // ===================================

@@ -190,12 +190,12 @@ function Orders() {
           // Admin için invoiceSent her zaman true olabilir, ama email log kontrolü yapalım
           // Daha güvenli bir yol: sipariş detayını yükledikten sonra kontrol et
           if (!orderDetail.invoiceSent) {
-            // Invoice PDF URL'ini oluştur
+            // Invoice PDF URL'ini oluştur (admin endpoint kullan)
             const token = localStorage.getItem('adminToken');
             const apiUrl = import.meta.env.VITE_API_URL 
               ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
               : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
-            const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
+            const pdfUrl = `${apiUrl}/admin/orders/${orderId}/invoice`;
             
             setInvoicePopupOrder(orderDetail);
             setInvoicePdfUrl(pdfUrl);
@@ -338,8 +338,25 @@ function Orders() {
       const apiUrl = import.meta.env.VITE_API_URL 
         ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
         : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
-      const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
-      window.open(pdfUrl, '_blank');
+      const pdfUrl = `${apiUrl}/admin/orders/${orderId}/invoice`;
+      
+      // Token'ı header'da gönder
+      const response = await fetch(pdfUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Cleanup after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      } else {
+        toast.error('Fehler beim Öffnen der Rechnung');
+        console.error('PDF yüklenemedi:', response.status);
+      }
     } catch (error) {
       toast.error('Fehler beim Öffnen der Rechnung');
       console.error('Fatura indirme hatası:', error);
@@ -1272,14 +1289,16 @@ function Orders() {
                       <div className="w-full h-full flex items-center justify-center text-gray-500">
                         <div className="text-center">
                           <p>PDF konnte nicht geladen werden</p>
-                          <a
-                            href={invoicePdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline mt-2 inline-block"
-                          >
-                            PDF in neuem Tab öffnen
-                          </a>
+                          {invoicePdfBlob && (
+                            <a
+                              href={invoicePdfBlob}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline mt-2 inline-block"
+                            >
+                              PDF in neuem Tab öffnen
+                            </a>
+                          )}
                         </div>
                       </div>
                     </object>
@@ -1287,14 +1306,16 @@ function Orders() {
                     <div className="w-full h-full flex items-center justify-center text-gray-500">
                       <div className="text-center">
                         <p>PDF konnte nicht geladen werden</p>
-                        <a
-                          href={invoicePdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline mt-2 inline-block"
-                        >
-                          PDF in neuem Tab öffnen
-                        </a>
+                        {invoicePdfBlob && (
+                          <a
+                            href={invoicePdfBlob}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline mt-2 inline-block"
+                          >
+                            PDF in neuem Tab öffnen
+                          </a>
+                        )}
                       </div>
                     </div>
                   )}

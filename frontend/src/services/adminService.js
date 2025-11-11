@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya nginx proxy
 const getApiUrl = () => {
@@ -642,6 +643,112 @@ const adminService = {
   // Ürün tedarikçisini güncelle
   updateProductSupplier: async (productId, supplier) => {
     const response = await adminApi.put(`/admin/stock/product/${productId}/supplier`, { supplier });
+    return response.data;
+  },
+
+  // Sipariş listeleri
+  createStockOrderList: async (data) => {
+    const response = await adminApi.post('/admin/stock/lists', data);
+    return response.data;
+  },
+
+  getStockOrderLists: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.offset) queryParams.append('offset', params.offset);
+    if (params.date) queryParams.append('date', params.date);
+
+    const response = await adminApi.get(`/admin/stock/lists?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  getStockOrderListById: async (listId) => {
+    const response = await adminApi.get(`/admin/stock/lists/${listId}`);
+    return response.data;
+  },
+
+  updateStockOrderListStatus: async (listId, status) => {
+    const response = await adminApi.put(`/admin/stock/lists/${listId}/status`, { status });
+    return response.data;
+  },
+
+  downloadStockOrderListPDF: async (listId) => {
+    try {
+      const response = await adminApi.get(`/admin/stock/lists/${listId}/pdf`, {
+        responseType: 'blob',
+      });
+      
+      // Blob URL oluştur
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Yeni pencerede PDF'i aç
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Bestellliste-${listId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // URL'i temizle
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('PDF indirme hatası:', error);
+      throw error;
+    }
+  },
+
+  printStockOrderListPDF: async (listId) => {
+    try {
+      const response = await adminApi.get(`/admin/stock/lists/${listId}/pdf`, {
+        responseType: 'blob',
+      });
+      
+      // Blob URL oluştur
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Yeni pencerede PDF'i aç ve print dialog'unu göster
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            // Print dialog kapandıktan sonra URL'i temizle
+            printWindow.onafterprint = () => {
+              window.URL.revokeObjectURL(url);
+            };
+          }, 250);
+        };
+      } else {
+        // Popup engellendi, alternatif yöntem
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.warning('Bitte erlauben Sie Popups für den Druck');
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('PDF yazdırma hatası:', error);
+      throw error;
+    }
+  },
+
+  // Supplier email yönetimi
+  getSupplierEmails: async () => {
+    const response = await adminApi.get('/admin/suppliers/emails');
+    return response.data;
+  },
+
+  addSupplierEmail: async (email) => {
+    const response = await adminApi.post('/admin/suppliers/emails', { email });
     return response.data;
   },
 };

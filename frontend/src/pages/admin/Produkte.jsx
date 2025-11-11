@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp, FiArchive } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp, FiArchive, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
@@ -432,8 +432,14 @@ function Produkte() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isActiveFilter, setIsActiveFilter] = useState('');
   const [isFeaturedFilter, setIsFeaturedFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState(() => {
+    const saved = localStorage.getItem('produkteSortBy');
+    return saved || 'createdAt';
+  });
+  const [sortOrder, setSortOrder] = useState(() => {
+    const saved = localStorage.getItem('produkteSortOrder');
+    return saved || 'desc';
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -931,8 +937,30 @@ function Produkte() {
     const [field, order] = e.target.value.split('-');
     setSortBy(field);
     setSortOrder(order);
+    localStorage.setItem('produkteSortBy', field);
+    localStorage.setItem('produkteSortOrder', order);
     setCurrentPage(1);
   }, []);
+
+  // Kolon başlığına tıklanınca sıralama yap
+  const handleColumnSort = useCallback((column) => {
+    let newSortBy = column;
+    let newSortOrder;
+    // Eğer aynı kolona tıklanırsa sıralama yönünü değiştir
+    if (sortBy === column) {
+      newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newSortOrder);
+    } else {
+      // Yeni kolona geçildiğinde varsayılan olarak artan sıralama
+      newSortOrder = 'asc';
+      setSortBy(column);
+      setSortOrder(newSortOrder);
+    }
+    // localStorage'a kaydet
+    localStorage.setItem('produkteSortBy', newSortBy);
+    localStorage.setItem('produkteSortOrder', newSortOrder);
+    setCurrentPage(1);
+  }, [sortBy, sortOrder]);
 
   // View mode handler
   const handleViewModeChange = useCallback((mode) => {
@@ -1215,23 +1243,71 @@ function Produkte() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Produkt
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('name')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Produkt
+                        {sortBy === 'name' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Kategorie
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('categoryId')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Kategorie
+                        {sortBy === 'categoryId' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Preis
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('price')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Preis
+                        {sortBy === 'price' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Lager
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('stock')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Lager
+                        {sortBy === 'stock' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Barcode
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('barcode')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Barcode
+                        {sortBy === 'barcode' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Status
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                      onClick={() => handleColumnSort('isActive')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Status
+                        {sortBy === 'isActive' && (
+                          sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
+                        )}
+                      </div>
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Aktionen

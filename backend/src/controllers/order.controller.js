@@ -154,9 +154,11 @@ class OrderController {
   // GET /api/orders/:id/invoice - Fatura PDF'ini indir
   getInvoicePDF = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    // Support both user and admin tokens (from authenticateFlexible middleware)
+    // Support both user and admin tokens
+    // Admin route'unda authenticateAdmin kullanılıyor, bu req.admin set ediyor
+    // User route'unda authenticateFlexible kullanılıyor, bu req.user ve req.isAdmin set ediyor
     const userId = req.user?.id || null;
-    const isAdmin = req.isAdmin === true || req.admin?.role === 'admin';
+    const isAdmin = req.isAdmin === true || !!req.admin; // req.admin varsa admin olarak kabul et
 
     // Sipariş kontrolü - kullanıcı kendi siparişini veya admin tüm siparişleri görebilir
     const order = await orderService.getOrderById(id, userId, isAdmin);

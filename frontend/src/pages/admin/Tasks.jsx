@@ -372,7 +372,7 @@ const Tasks = () => {
       ) : products.length === 0 ? (
         <EmptyState
           icon={taskType.icon}
-          title={activeTab === 'ignored' ? 'Keine gözardı edilen Produkte gefunden' : `Keine Produkte mit fehlendem ${taskType.label} gefunden`}
+          title={activeTab === 'ignored' ? 'Keine ignorierten Produkte gefunden' : `Keine Produkte mit fehlendem ${taskType.label} gefunden`}
           description={activeTab === 'ignored' ? 'Es gibt derzeit keine Produkte, die von Aufgaben befreit sind.' : 'Alle Produkte scheinen für diesen Aufgabentyp vollständig zu sein.'}
         />
       ) : (

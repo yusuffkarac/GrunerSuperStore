@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPackage, FiEdit2, FiRotateCcw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiCheck, FiXCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiPackage, FiEdit2, FiRotateCcw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiCheck, FiXCircle, FiAlertCircle, FiCheckSquare, FiSquare, FiDownload, FiPrinter, FiGrid, FiLayers, FiChevronDown, FiChevronUp, FiTruck, FiSearch } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -9,10 +9,14 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import adminService from '../../services/adminService';
 import { normalizeImageUrl } from '../../utils/imageUtils';
+import ProductQuantityDialog from '../../components/stock/ProductQuantityDialog';
+import CreateStockOrderListDialog from '../../components/stock/CreateStockOrderListDialog';
+import StockOrderListCard from '../../components/stock/StockOrderListCard';
 
 function StockManagement() {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
+  const [activeLists, setActiveLists] = useState([]); // Liste bazlı aktif siparişler
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -25,8 +29,45 @@ function StockManagement() {
     const savedTab = localStorage.getItem('stockManagement_activeTab');
     return savedTab ? parseInt(savedTab, 10) : 0;
   });
+  const [viewMode, setViewMode] = useState(() => {
+    // localStorage'dan görünüm modunu oku, yoksa varsayılan olarak 'criticality' (kritiklik)
+    const savedMode = localStorage.getItem('stockManagement_viewMode');
+    return savedMode || 'criticality'; // 'criticality', 'category' veya 'supplier'
+  });
+  const [expandedCategories, setExpandedCategories] = useState(() => {
+    // localStorage'dan açık kategorileri oku
+    const saved = localStorage.getItem('stockManagement_expandedCategories');
+    return saved ? JSON.parse(saved) : {}; // { "Kategori Adı": true/false }
+  });
+  const [expandedSuppliers, setExpandedSuppliers] = useState(() => {
+    // localStorage'dan açık tedarikçileri oku
+    const saved = localStorage.getItem('stockManagement_expandedSuppliers');
+    return saved ? JSON.parse(saved) : {}; // { "Tedarikçi Adı": true/false }
+  });
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Dialog states
+  // Checkbox seçimi için state'ler
+  const [selectedProducts, setSelectedProducts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('stockManagement_selectedProducts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Array kontrolü ve geçerli obje kontrolü
+        if (Array.isArray(parsed)) {
+          return parsed.filter(p => p && typeof p === 'object' && p.productId && p.orderQuantity);
+        }
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading selectedProducts from localStorage:', error);
+      return [];
+    }
+  });
+  const [quantityDialog, setQuantityDialog] = useState({ open: false, product: null });
+  const [createListDialog, setCreateListDialog] = useState(false);
+  const [listDetailDialog, setListDetailDialog] = useState({ open: false, list: null });
+
+  // Dialog states (eski sistem için korunuyor)
   const [orderDialog, setOrderDialog] = useState({ open: false, product: null, order: null });
   const [orderDetailDialog, setOrderDetailDialog] = useState({ open: false, order: null });
   const [supplierDialog, setSupplierDialog] = useState({ open: false, product: null });
@@ -42,6 +83,10 @@ function StockManagement() {
   const [orderCreationStatus, setOrderCreationStatus] = useState('pending'); // 'pending' veya 'ordered'
 
   useEffect(() => {
+    localStorage.setItem('stockManagement_selectedProducts', JSON.stringify(selectedProducts));
+  }, [selectedProducts]);
+
+  useEffect(() => {
     fetchData();
   }, [activeTab, selectedDate, statusFilter]);
 
@@ -55,6 +100,25 @@ function StockManagement() {
     }
   }, [selectedDate]);
 
+  // Görünüm modu değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('stockManagement_viewMode', viewMode);
+    // Kategori veya tedarikçi moduna geçildiğinde aktif tab'ı 0'a ayarla
+    if ((viewMode === 'category' || viewMode === 'supplier') && activeTab !== 2) {
+      setActiveTab(0);
+    }
+  }, [viewMode]);
+
+  // Açık kategorileri localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('stockManagement_expandedCategories', JSON.stringify(expandedCategories));
+  }, [expandedCategories]);
+
+  // Açık tedarikçileri localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('stockManagement_expandedSuppliers', JSON.stringify(expandedSuppliers));
+  }, [expandedSuppliers]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -62,15 +126,37 @@ function StockManagement() {
         const productsResponse = await adminService.getLowStockProducts();
         setLowStockProducts(productsResponse || []);
       } else if (activeTab === 1) {
-        // Aktif siparişler: pending ve ordered durumundaki, geri alınmamış siparişler
-        const activeOrdersResponse = await adminService.getStockOrderHistory({
+        // Aktif sipariş listelerini getir
+        try {
+          const listsResponse = await adminService.getStockOrderLists({
           status: undefined, // Tüm durumları getir, sonra filtrele
           limit: 1000,
         });
-        const filtered = (activeOrdersResponse?.orders || []).filter(
-          order => !order.isUndone && (order.status === 'pending' || order.status === 'ordered')
+          // Response yapısını kontrol et
+          const lists = listsResponse?.lists || listsResponse?.data?.lists || (Array.isArray(listsResponse) ? listsResponse : []);
+          const filtered = lists.filter(
+            list => list && list.status && (list.status === 'pending' || list.status === 'ordered')
+          );
+          setActiveLists(filtered);
+        } catch (err) {
+          console.error('Error loading stock order lists:', err);
+          setActiveLists([]);
+        }
+        
+        // Eski sistem için aktif siparişleri de getir (liste dışındakiler)
+        try {
+          const activeOrdersResponse = await adminService.getStockOrderHistory({
+            status: undefined,
+            limit: 1000,
+          });
+          const filteredOrders = (activeOrdersResponse?.orders || []).filter(
+            order => order && !order.isUndone && !order.orderListId && (order.status === 'pending' || order.status === 'ordered')
         );
-        setActiveOrders(filtered);
+          setActiveOrders(filteredOrders);
+        } catch (err) {
+          console.error('Error loading active orders:', err);
+          setActiveOrders([]);
+        }
       } else if (activeTab === 2) {
         const dateParam = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
         const historyResponse = await adminService.getStockOrderHistory({
@@ -214,17 +300,20 @@ function StockManagement() {
 
   const openSupplierDialog = (product) => {
     setSupplierDialog({ open: true, product });
-    setSupplier(product.supplier || '');
+    setSupplier(product.supplier ? (typeof product.supplier === 'string' ? product.supplier : String(product.supplier)) : '');
   };
 
   const getStatusBadge = (status) => {
+    // Status bir obje ise, string'e çevir
+    const statusString = typeof status === 'string' ? status : (status?.status || String(status || 'pending'));
+    
     const badges = {
       pending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Ausstehend' },
       ordered: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Bestellt' },
       delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Geliefert' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Storniert' },
     };
-    const badge = badges[status] || badges.pending;
+    const badge = badges[statusString] || badges.pending;
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
         {badge.label}
@@ -263,6 +352,167 @@ function StockManagement() {
     return selectedDate.toDateString() === today.toDateString();
   };
 
+  // Checkbox seçimi handler'ları
+  const handleProductCheckbox = (product) => {
+    const isSelected = selectedProducts.some(p => p.productId === product.id);
+    if (isSelected) {
+      setSelectedProducts(selectedProducts.filter(p => p.productId !== product.id));
+    } else {
+      // Checkbox'a tıklanınca miktar dialog'unu aç
+      setQuantityDialog({ open: true, product });
+    }
+  };
+
+  const handleQuantitySave = (orderData) => {
+    // Geçerli veri kontrolü
+    if (!orderData || !orderData.productId || !orderData.orderQuantity) {
+      console.error('Invalid orderData:', orderData);
+      return;
+    }
+
+    const existingIndex = selectedProducts.findIndex(p => p.productId === orderData.productId);
+    if (existingIndex >= 0) {
+      // Güncelle
+      const updated = [...selectedProducts];
+      updated[existingIndex] = {
+        productId: orderData.productId,
+        orderQuantity: Number(orderData.orderQuantity),
+        orderUnit: orderData.orderUnit || null,
+      };
+      setSelectedProducts(updated);
+    } else {
+      // Yeni ekle
+      setSelectedProducts([
+        ...selectedProducts,
+        {
+          productId: orderData.productId,
+          orderQuantity: Number(orderData.orderQuantity),
+          orderUnit: orderData.orderUnit || null,
+        },
+      ]);
+    }
+  };
+
+  const handleRemoveSelectedProduct = (productId) => {
+    setSelectedProducts(selectedProducts.filter(p => p.productId !== productId));
+  };
+
+  const handleCreateListSuccess = () => {
+    setSelectedProducts([]);
+    setActiveTab(1); // Aktif siparişler tab'ına geç
+    fetchData();
+  };
+
+  const getSelectedProductData = (productId) => {
+    return selectedProducts.find(p => p.productId === productId);
+  };
+
+  const isProductSelected = (productId) => {
+    return selectedProducts.some(p => p.productId === productId);
+  };
+
+  // Ürünleri arama sorgusuna göre filtrele
+  const filterProducts = (products) => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return products.filter(product => {
+      const name = product.name?.toLowerCase() || '';
+      const category = product.category?.name?.toLowerCase() || '';
+      const supplier = product.supplier ? String(product.supplier).toLowerCase() : '';
+      const barcode = product.barcode ? String(product.barcode).toLowerCase() : '';
+
+      return name.includes(query) ||
+             category.includes(query) ||
+             supplier.includes(query) ||
+             barcode.includes(query);
+    });
+  };
+
+  // Kategoriye göre ürünleri grupla
+  const getProductsGroupedByCategory = () => {
+    // Tüm kritik stok ürünlerini al ve filtrele
+    const allProducts = filterProducts(lowStockProducts.map(p => ({ ...p })));
+
+    // Kategorilere göre grupla ve sırala
+    const grouped = {};
+    allProducts.forEach(product => {
+      const categoryName = product.category?.name || 'Keine Kategorie';
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = {
+          name: categoryName,
+          products: []
+        };
+      }
+      grouped[categoryName].products.push(product);
+    });
+
+    // Her kategorideki ürünleri sırala: seçili olanlar en üstte
+    Object.values(grouped).forEach(category => {
+      category.products.sort((a, b) => {
+        const aSelected = isProductSelected(a.id);
+        const bSelected = isProductSelected(b.id);
+        
+        // Seçili olanlar önce
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        
+        // Aynı durumdaysa alfabetik sırala
+        return a.name.localeCompare(b.name, 'de');
+      });
+    });
+
+    // Kategorileri alfabetik sırala
+    return Object.values(grouped).sort((a, b) => {
+      if (a.name === 'Keine Kategorie') return 1;
+      if (b.name === 'Keine Kategorie') return -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
+  };
+
+  // Tedarikçiye göre ürünleri grupla
+  const getProductsGroupedBySupplier = () => {
+    // Tüm kritik stok ürünlerini al ve filtrele
+    const allProducts = filterProducts(lowStockProducts.map(p => ({ ...p })));
+
+    // Tedarikçilere göre grupla ve sırala
+    const grouped = {};
+    allProducts.forEach(product => {
+      const supplierName = product.supplier ? String(product.supplier) : 'Kein Lieferant';
+      if (!grouped[supplierName]) {
+        grouped[supplierName] = {
+          name: supplierName,
+          products: []
+        };
+      }
+      grouped[supplierName].products.push(product);
+    });
+
+    // Her tedarikçideki ürünleri sırala: seçili olanlar en üstte
+    Object.values(grouped).forEach(supplier => {
+      supplier.products.sort((a, b) => {
+        const aSelected = isProductSelected(a.id);
+        const bSelected = isProductSelected(b.id);
+        
+        // Seçili olanlar önce
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        
+        // Aynı durumdaysa alfabetik sırala
+        return a.name.localeCompare(b.name, 'de');
+      });
+    });
+
+    // Tedarikçileri alfabetik sırala
+    return Object.values(grouped).sort((a, b) => {
+      if (a.name === 'Kein Lieferant') return 1;
+      if (b.name === 'Kein Lieferant') return -1;
+      return a.name.localeCompare(b.name, 'de');
+    });
+  };
+
   if (loading && lowStockProducts.length === 0 && history.length === 0) {
     return <Loading />;
   }
@@ -276,6 +526,60 @@ function StockManagement() {
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">
               Bestandsverwaltung
             </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Görünüm Modu Switch */}
+            {activeTab === 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => setViewMode('criticality')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'criticality'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Kritikalität anzeigen"
+                >
+                  <FiLayers className="w-3 h-3" />
+                  <span className="hidden sm:inline">Kritikalität</span>
+                </button>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <button
+                  onClick={() => setViewMode('category')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'category'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Kategorie anzeigen"
+                >
+                  <FiGrid className="w-3 h-3" />
+                  <span className="hidden sm:inline">Kategorie</span>
+                </button>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <button
+                  onClick={() => setViewMode('supplier')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'supplier'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Lieferant anzeigen"
+                >
+                  <FiTruck className="w-3 h-3" />
+                  <span className="hidden sm:inline">Lieferant</span>
+                </button>
+              </div>
+            )}
+            {activeTab === 0 && selectedProducts.length > 0 && (
+              <button
+                onClick={() => setCreateListDialog(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <FiPackage className="w-4 h-4" />
+                Bestellliste erstellen ({selectedProducts.length})
+              </button>
+            )}
           </div>
         </div>
         <p className="text-sm md:text-base text-gray-600">
@@ -305,105 +609,200 @@ function StockManagement() {
       {/* Tabs */}
       <div className="mb-4 md:mb-6 border-b border-gray-200">
         <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
-          <button
-            onClick={() => setActiveTab(0)}
-            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-              activeTab === 0
-                ? 'border-red-500 text-red-600 font-medium'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
-          >
-            <FiAlertCircle className="w-4 h-4" />
-            <span>Kritischer Bestand</span>
-            {lowStockProducts.length > 0 && (
-              <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
-                activeTab === 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {lowStockProducts.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab(1)}
-            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-              activeTab === 1
-                ? 'border-green-500 text-green-600 font-medium'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
-          >
-            <FiPackage className="w-4 h-4" />
-            <span>Aktive Bestellungen</span>
-            {activeOrders.length > 0 && (
-              <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
-                activeTab === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {activeOrders.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab(2)}
-            className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-              activeTab === 2
-                ? 'border-blue-500 text-blue-600 font-medium'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
-          >
-            <FiClock className="w-4 h-4" />
-            <span>Verlauf</span>
-          </button>
+          {viewMode === 'criticality' ? (
+            <>
+              <button
+                onClick={() => setActiveTab(0)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 0
+                    ? 'border-red-500 text-red-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiAlertCircle className="w-4 h-4" />
+                <span>Kritischer Bestand</span>
+                {lowStockProducts.length > 0 && (
+                  <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
+                    activeTab === 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {lowStockProducts.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab(1)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 1
+                    ? 'border-green-500 text-green-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiPackage className="w-4 h-4" />
+                <span>Aktive Bestellungen</span>
+                {(activeLists.length > 0 || activeOrders.length > 0) && (
+                  <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
+                    activeTab === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {activeLists.length + activeOrders.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab(2)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 2
+                    ? 'border-blue-500 text-blue-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiClock className="w-4 h-4" />
+                <span>Verlauf</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setActiveTab(0)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab !== 2
+                    ? 'border-green-500 text-green-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                {viewMode === 'category' ? (
+                  <FiGrid className="w-4 h-4" />
+                ) : (
+                  <FiTruck className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
+                <span className="sm:hidden">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab(2)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 2
+                    ? 'border-blue-500 text-blue-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiClock className="w-4 h-4" />
+                <span className="hidden sm:inline">Verlauf</span>
+                <span className="sm:hidden">Verlauf</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* KRİTİK STOK TAB'ı */}
+      {/* Arama Çubuğu - Sadece Kritik Stok Tab'ında */}
       {activeTab === 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="bg-red-50 px-4 py-3 border-b border-red-200">
-            <h2 className="text-base md:text-lg font-semibold text-red-900 flex items-center gap-2">
-              <FiAlertCircle className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-sm md:text-base">Produkte unter dem kritischen Bestandsniveau</span>
-            </h2>
-          </div>
-
-          {lowStockProducts.length === 0 ? (
-            <EmptyState
-              icon={FiPackage}
-              title="Keine Produkte mit niedrigem Bestand"
-              message="Es gibt keine Produkte, die unter dem kritischen Bestandsniveau liegen."
+        <div className="mb-4 md:mb-6">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Produkte suchen (Name, Kategorie, Lieferant, Barcode)..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
-          ) : (
-            <>
-              {/* Desktop Tablo Görünümü */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Produkt
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Bestand / Kritisches Niveau
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Lieferant
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                        Aktionen
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {lowStockProducts.map((product) => {
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* KRİTİK STOK TAB'ı */}
+      {activeTab === 0 && viewMode === 'criticality' && (() => {
+        const filteredProducts = filterProducts(lowStockProducts);
+        return (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-red-50 px-4 py-3 border-b border-red-200">
+              <h2 className="text-base md:text-lg font-semibold text-red-900 flex items-center gap-2">
+                <FiAlertCircle className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">Produkte unter dem kritischen Bestandsniveau</span>
+                {searchQuery && (
+                  <span className="text-xs font-normal text-red-700">
+                    ({filteredProducts.length} von {lowStockProducts.length})
+                  </span>
+                )}
+              </h2>
+            </div>
+
+            {filteredProducts.length === 0 ? (
+              <EmptyState
+                icon={FiPackage}
+                title={searchQuery ? "Keine Produkte gefunden" : "Keine Produkte mit niedrigem Bestand"}
+                message={searchQuery ? `Keine Produkte gefunden für "${searchQuery}"` : "Es gibt keine Produkte, die unter dem kritischen Bestandsniveau liegen."}
+              />
+            ) : (
+              <>
+                {/* Desktop Tablo Görünümü */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                // Tümünü seç - her biri için dialog açılacak
+                                // Bu durumda sadece checkbox'ları işaretle, kullanıcı manuel olarak miktar girecek
+                              } else {
+                                setSelectedProducts([]);
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded"
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          Produkt
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          Bestand / Kritisches Niveau
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          Lieferant
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                          Aktionen
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredProducts.map((product) => {
                       const currentStatus = getCurrentOrderStatus(product);
                       const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
                         ? normalizeImageUrl(product.imageUrls[0])
                         : null;
+                      const isSelected = isProductSelected(product.id);
+                      const selectedData = getSelectedProductData(product.id);
 
                       return (
-                        <tr key={product.id} className="hover:bg-red-50 transition-colors">
+                        <tr key={product.id} className={`hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                          <td className="px-4 py-4">
+                            <button
+                              onClick={() => handleProductCheckbox(product)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            >
+                              {isSelected ? (
+                                <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <FiSquare className="w-5 h-5 text-gray-400" />
+                              )}
+                            </button>
+                          </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
                               {imageUrl ? (
@@ -419,6 +818,11 @@ function StockManagement() {
                               )}
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                {selectedData && selectedData.orderQuantity && (
+                                  <div className="text-xs text-blue-600 mt-1">
+                                    {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                                  </div>
+                                )}
                                 <div className="mt-1 space-y-0.5">
                                   {product.category?.name && (
                                     <div className="text-xs text-gray-500">{product.category.name}</div>
@@ -435,7 +839,11 @@ function StockManagement() {
                               <span className={`font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
                                 {product.stock}
                               </span>
-                              {product.unit && <span className="text-gray-500 ml-1">/{String(product.unit)}</span>}
+                              {product.unit && (
+                                <span className="text-gray-500 ml-1">
+                                  /{typeof product.unit === 'string' ? product.unit : String(product.unit || '')}
+                                </span>
+                              )}
                               {product.lowStockLevel && (
                                 <div className="text-xs text-gray-500 mt-1">
                                   Kritisches Niveau: {product.lowStockLevel}
@@ -509,15 +917,27 @@ function StockManagement() {
 
               {/* Mobil Kart Görünümü */}
               <div className="md:hidden divide-y divide-gray-200">
-                {lowStockProducts.map((product) => {
+                {filteredProducts.map((product) => {
                   const currentStatus = getCurrentOrderStatus(product);
                   const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
                     ? normalizeImageUrl(product.imageUrls[0])
                     : null;
+                  const isSelected = isProductSelected(product.id);
+                  const selectedData = getSelectedProductData(product.id);
 
                   return (
-                    <div key={product.id} className="p-4 hover:bg-red-50 transition-colors">
+                    <div key={product.id} className={`p-4 hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
                       <div className="flex items-start gap-3 mb-3">
+                        <button
+                          onClick={() => handleProductCheckbox(product)}
+                          className="mt-1 p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                        >
+                          {isSelected ? (
+                            <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <FiSquare className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
                         {imageUrl ? (
                           <img
                             src={imageUrl}
@@ -531,6 +951,11 @@ function StockManagement() {
                         )}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-gray-900 text-sm mb-1">{product.name}</h3>
+                          {selectedData && selectedData.orderQuantity && (
+                            <div className="text-xs text-blue-600 mb-1">
+                              {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                            </div>
+                          )}
                           {product.category?.name && (
                             <p className="text-xs text-gray-500 mb-0.5">{product.category.name}</p>
                           )}
@@ -544,7 +969,7 @@ function StockManagement() {
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500">Bestand:</span>
                           <span className={`text-sm font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
-                            {product.stock} {product.unit ? String(product.unit) : ''}
+                            {product.stock} {product.unit ? (typeof product.unit === 'string' ? product.unit : String(product.unit)) : ''}
                           </span>
                         </div>
                         {product.lowStockLevel && (
@@ -616,11 +1041,722 @@ function StockManagement() {
               </div>
             </>
           )}
+          </div>
+        );
+      })()}
+
+      {/* KATEGORİ GÖRÜNÜMÜ */}
+      {activeTab === 0 && viewMode === 'category' && (
+        <div className="space-y-6">
+          {getProductsGroupedByCategory().map((categoryGroup) => {
+            const hasProducts = categoryGroup.products.length > 0;
+            if (!hasProducts) return null;
+
+            const selectedCount = categoryGroup.products.filter(p => isProductSelected(p.id)).length;
+
+            const isExpanded = expandedCategories[categoryGroup.name] !== false; // Varsayılan olarak açık
+            const toggleCategory = () => {
+              setExpandedCategories(prev => ({
+                ...prev,
+                [categoryGroup.name]: !isExpanded
+              }));
+            };
+
+            return (
+              <div key={categoryGroup.name} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Kategori Başlığı - Tıklanabilir */}
+                <button
+                  onClick={toggleCategory}
+                  className="w-full px-4 py-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                >
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FiGrid className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="text-sm md:text-base">{categoryGroup.name}</span>
+                    {selectedCount > 0 && (
+                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 ml-2">
+                        {selectedCount} ausgewählt
+                      </span>
+                    )}
+                    <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 ml-1">
+                      {categoryGroup.products.length}
+                    </span>
+                  </h2>
+                  {isExpanded ? (
+                    <FiChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <FiChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+
+                {/* Kategori İçeriği - Açılır Kapanır */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Desktop Tablo */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-12">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedProducts.length === categoryGroup.products.length && categoryGroup.products.length > 0}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Tümünü seç - her biri için dialog açılacak
+                                    } else {
+                                      setSelectedProducts(selectedProducts.filter(p => !categoryGroup.products.some(cp => cp.id === p.productId)));
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded"
+                                />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Produkt
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Bestand / Kritisches Niveau
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Lieferant
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Aktionen
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {categoryGroup.products.map((product) => {
+                              const currentStatus = getCurrentOrderStatus(product);
+                              const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+                                ? normalizeImageUrl(product.imageUrls[0])
+                                : null;
+                              const isSelected = isProductSelected(product.id);
+                              const selectedData = getSelectedProductData(product.id);
+
+                              return (
+                                <tr key={product.id} className={`hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                                  <td className="px-4 py-4">
+                                    <button
+                                      onClick={() => handleProductCheckbox(product)}
+                                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                    >
+                                      {isSelected ? (
+                                        <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                                      ) : (
+                                        <FiSquare className="w-5 h-5 text-gray-400" />
+                                      )}
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-3">
+                                      {imageUrl ? (
+                                        <img
+                                          src={imageUrl}
+                                          alt={product.name}
+                                          className="w-12 h-12 object-cover rounded-lg"
+                                        />
+                                      ) : (
+                                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                          <FiPackage className="text-gray-400" size={20} />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                        {selectedData && selectedData.orderQuantity && (
+                                          <div className="text-xs text-blue-600 mt-1">
+                                            {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                                          </div>
+                                        )}
+                                        {product.barcode && (
+                                          <div className="text-xs text-gray-400 font-mono mt-1">{String(product.barcode)}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="text-sm">
+                                      <span className={`font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {product.stock}
+                                      </span>
+                                      {product.unit && (
+                                        <span className="text-gray-500 ml-1">
+                                          /{typeof product.unit === 'string' ? product.unit : String(product.unit || '')}
+                                        </span>
+                                      )}
+                                      {product.lowStockLevel && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          Kritisches Niveau: {product.lowStockLevel}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="text-sm text-gray-900">
+                                      {product.supplier ? String(product.supplier) : '-'}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    {currentStatus ? getStatusBadge(currentStatus) : '-'}
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => openSupplierDialog(product)}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Lieferant bearbeiten"
+                                      >
+                                        <FiEdit2 className="w-4 h-4" />
+                                      </button>
+                                      {(!currentStatus || currentStatus === 'pending') && (
+                                        <button
+                                          onClick={() => openOrderDialog(product)}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                        >
+                                          Bestellung erstellen
+                                        </button>
+                                      )}
+                                      {currentStatus === 'ordered' && (
+                                        <>
+                                          <button
+                                            onClick={() => openOrderDialog(product, product.lastOrder)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                          >
+                                            Erhalten
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                            }}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Stornieren"
+                                          >
+                                            <FiXCircle className="w-4 h-4" />
+                                          </button>
+                                        </>
+                                      )}
+                                      {currentStatus === 'delivered' && product.lastOrder && (
+                                        <button
+                                          onClick={() => {
+                                            setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                          }}
+                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                          title="Rückgängig machen"
+                                        >
+                                          <FiRotateCcw className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Mobil Kart */}
+                      <div className="md:hidden divide-y divide-gray-200">
+                        {categoryGroup.products.map((product) => {
+                          const currentStatus = getCurrentOrderStatus(product);
+                          const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+                            ? normalizeImageUrl(product.imageUrls[0])
+                            : null;
+                          const isSelected = isProductSelected(product.id);
+                          const selectedData = getSelectedProductData(product.id);
+
+                          return (
+                            <div key={product.id} className={`p-4 hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                              <div className="flex items-start gap-3 mb-3">
+                                <button
+                                  onClick={() => handleProductCheckbox(product)}
+                                  className="mt-1 p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                                >
+                                  {isSelected ? (
+                                    <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                                  ) : (
+                                    <FiSquare className="w-5 h-5 text-gray-400" />
+                                  )}
+                                </button>
+                                {imageUrl ? (
+                                  <img
+                                    src={imageUrl}
+                                    alt={product.name}
+                                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <FiPackage className="text-gray-400" size={24} />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-medium text-gray-900 text-sm mb-1">{product.name}</h3>
+                                  {selectedData && selectedData.orderQuantity && (
+                                    <div className="text-xs text-blue-600 mb-1">
+                                      {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                                    </div>
+                                  )}
+                                  {product.barcode && (
+                                    <p className="text-xs text-gray-400 font-mono">{String(product.barcode)}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="space-y-2 mb-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Bestand:</span>
+                                  <span className={`text-sm font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
+                                    {product.stock} {product.unit ? (typeof product.unit === 'string' ? product.unit : String(product.unit)) : ''}
+                                  </span>
+                                </div>
+                                {product.lowStockLevel && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">Kritisches Niveau:</span>
+                                    <span className="text-sm text-gray-900">{product.lowStockLevel}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Lieferant:</span>
+                                  <span className="text-sm text-gray-900">{product.supplier ? String(product.supplier) : '-'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Status:</span>
+                                  {currentStatus ? getStatusBadge(currentStatus) : '-'}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => openSupplierDialog(product)}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                >
+                                  <FiEdit2 className="w-3 h-3" />
+                                  Lieferant
+                                </button>
+                                {(!currentStatus || currentStatus === 'pending') && (
+                                  <button
+                                    onClick={() => openOrderDialog(product)}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                                  >
+                                    Bestellung erstellen
+                                  </button>
+                                )}
+                                {currentStatus === 'ordered' && (
+                                  <>
+                                    <button
+                                      onClick={() => openOrderDialog(product, product.lastOrder)}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                    >
+                                      Erhalten
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                      }}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
+                                    >
+                                      <FiXCircle className="w-3 h-3" />
+                                      Stornieren
+                                    </button>
+                                  </>
+                                )}
+                                {currentStatus === 'delivered' && product.lastOrder && (
+                                  <button
+                                    onClick={() => {
+                                      setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                  >
+                                    <FiRotateCcw className="w-3 h-3" />
+                                    Rückgängig
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+          {getProductsGroupedByCategory().length === 0 && (
+            <EmptyState
+              icon={FiGrid}
+              title="Keine Produkte gefunden"
+              message="Es gibt keine Produkte unter dem kritischen Bestandsniveau."
+            />
+          )}
+        </div>
+      )}
+
+      {/* TEDARİKÇİ GÖRÜNÜMÜ */}
+      {activeTab === 0 && viewMode === 'supplier' && (
+        <div className="space-y-6">
+          {getProductsGroupedBySupplier().map((supplierGroup) => {
+            const hasProducts = supplierGroup.products.length > 0;
+            if (!hasProducts) return null;
+
+            const selectedCount = supplierGroup.products.filter(p => isProductSelected(p.id)).length;
+
+            const isExpanded = expandedSuppliers[supplierGroup.name] !== false; // Varsayılan olarak açık
+            const toggleSupplier = () => {
+              setExpandedSuppliers(prev => ({
+                ...prev,
+                [supplierGroup.name]: !isExpanded
+              }));
+            };
+
+            return (
+              <div key={supplierGroup.name} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Tedarikçi Başlığı - Tıklanabilir */}
+                <button
+                  onClick={toggleSupplier}
+                  className="w-full px-4 py-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                >
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FiTruck className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="text-sm md:text-base">{supplierGroup.name}</span>
+                    {selectedCount > 0 && (
+                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 ml-2">
+                        {selectedCount} ausgewählt
+                      </span>
+                    )}
+                    <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 ml-1">
+                      {supplierGroup.products.length}
+                    </span>
+                  </h2>
+                  {isExpanded ? (
+                    <FiChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <FiChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </button>
+
+                {/* Tedarikçi İçeriği - Açılır Kapanır */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Desktop Tablo */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-12">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedProducts.length === supplierGroup.products.length && supplierGroup.products.length > 0}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Tümünü seç - her biri için dialog açılacak
+                                    } else {
+                                      setSelectedProducts(selectedProducts.filter(p => !supplierGroup.products.some(sp => sp.id === p.productId)));
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded"
+                                />
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Produkt
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Bestand / Kritisches Niveau
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Kategorie
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Aktionen
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {supplierGroup.products.map((product) => {
+                              const currentStatus = getCurrentOrderStatus(product);
+                              const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+                                ? normalizeImageUrl(product.imageUrls[0])
+                                : null;
+                              const isSelected = isProductSelected(product.id);
+                              const selectedData = getSelectedProductData(product.id);
+
+                              return (
+                                <tr key={product.id} className={`hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                                  <td className="px-4 py-4">
+                                    <button
+                                      onClick={() => handleProductCheckbox(product)}
+                                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                    >
+                                      {isSelected ? (
+                                        <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                                      ) : (
+                                        <FiSquare className="w-5 h-5 text-gray-400" />
+                                      )}
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex items-center gap-3">
+                                      {imageUrl ? (
+                                        <img
+                                          src={imageUrl}
+                                          alt={product.name}
+                                          className="w-12 h-12 object-cover rounded-lg"
+                                        />
+                                      ) : (
+                                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                          <FiPackage className="text-gray-400" size={20} />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                        {selectedData && selectedData.orderQuantity && (
+                                          <div className="text-xs text-blue-600 mt-1">
+                                            {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                                          </div>
+                                        )}
+                                        {product.barcode && (
+                                          <div className="text-xs text-gray-400 font-mono mt-1">{String(product.barcode)}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="text-sm">
+                                      <span className={`font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {product.stock}
+                                      </span>
+                                      {product.unit && (
+                                        <span className="text-gray-500 ml-1">
+                                          /{typeof product.unit === 'string' ? product.unit : String(product.unit || '')}
+                                        </span>
+                                      )}
+                                      {product.lowStockLevel && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          Kritisches Niveau: {product.lowStockLevel}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="text-sm text-gray-900">
+                                      {product.category?.name || '-'}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    {currentStatus ? getStatusBadge(currentStatus) : '-'}
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => openSupplierDialog(product)}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Lieferant bearbeiten"
+                                      >
+                                        <FiEdit2 className="w-4 h-4" />
+                                      </button>
+                                      {(!currentStatus || currentStatus === 'pending') && (
+                                        <button
+                                          onClick={() => openOrderDialog(product)}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                        >
+                                          Bestellung erstellen
+                                        </button>
+                                      )}
+                                      {currentStatus === 'ordered' && (
+                                        <>
+                                          <button
+                                            onClick={() => openOrderDialog(product, product.lastOrder)}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                          >
+                                            Erhalten
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                            }}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Stornieren"
+                                          >
+                                            <FiXCircle className="w-4 h-4" />
+                                          </button>
+                                        </>
+                                      )}
+                                      {currentStatus === 'delivered' && product.lastOrder && (
+                                        <button
+                                          onClick={() => {
+                                            setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                          }}
+                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                          title="Rückgängig machen"
+                                        >
+                                          <FiRotateCcw className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Mobil Kart */}
+                      <div className="md:hidden divide-y divide-gray-200">
+                        {supplierGroup.products.map((product) => {
+                          const currentStatus = getCurrentOrderStatus(product);
+                          const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+                            ? normalizeImageUrl(product.imageUrls[0])
+                            : null;
+                          const isSelected = isProductSelected(product.id);
+                          const selectedData = getSelectedProductData(product.id);
+
+                          return (
+                            <div key={product.id} className={`p-4 hover:bg-red-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+                              <div className="flex items-start gap-3 mb-3">
+                                <button
+                                  onClick={() => handleProductCheckbox(product)}
+                                  className="mt-1 p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                                >
+                                  {isSelected ? (
+                                    <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                                  ) : (
+                                    <FiSquare className="w-5 h-5 text-gray-400" />
+                                  )}
+                                </button>
+                                {imageUrl ? (
+                                  <img
+                                    src={imageUrl}
+                                    alt={product.name}
+                                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <FiPackage className="text-gray-400" size={24} />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-medium text-gray-900 text-sm mb-1">{product.name}</h3>
+                                  {selectedData && selectedData.orderQuantity && (
+                                    <div className="text-xs text-blue-600 mb-1">
+                                      {selectedData.orderQuantity} {selectedData.orderUnit ? (typeof selectedData.orderUnit === 'string' ? selectedData.orderUnit : String(selectedData.orderUnit)) : ''}
+                                    </div>
+                                  )}
+                                  {product.barcode && (
+                                    <p className="text-xs text-gray-400 font-mono">{String(product.barcode)}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="space-y-2 mb-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Bestand:</span>
+                                  <span className={`text-sm font-medium ${product.stock <= (product.lowStockLevel || 0) ? 'text-red-600' : 'text-gray-900'}`}>
+                                    {product.stock} {product.unit ? (typeof product.unit === 'string' ? product.unit : String(product.unit)) : ''}
+                                  </span>
+                                </div>
+                                {product.lowStockLevel && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">Kritisches Niveau:</span>
+                                    <span className="text-sm text-gray-900">{product.lowStockLevel}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Kategorie:</span>
+                                  <span className="text-sm text-gray-900">{product.category?.name || '-'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-500">Status:</span>
+                                  {currentStatus ? getStatusBadge(currentStatus) : '-'}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => openSupplierDialog(product)}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                >
+                                  <FiEdit2 className="w-3 h-3" />
+                                  Lieferant
+                                </button>
+                                {(!currentStatus || currentStatus === 'pending') && (
+                                  <button
+                                    onClick={() => openOrderDialog(product)}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                                  >
+                                    Bestellung erstellen
+                                  </button>
+                                )}
+                                {currentStatus === 'ordered' && (
+                                  <>
+                                    <button
+                                      onClick={() => openOrderDialog(product, product.lastOrder)}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                    >
+                                      Erhalten
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                      }}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
+                                    >
+                                      <FiXCircle className="w-3 h-3" />
+                                      Stornieren
+                                    </button>
+                                  </>
+                                )}
+                                {currentStatus === 'delivered' && product.lastOrder && (
+                                  <button
+                                    onClick={() => {
+                                      setUndoDialog({ open: true, orderId: product.lastOrder.id, productName: product.name });
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                  >
+                                    <FiRotateCcw className="w-3 h-3" />
+                                    Rückgängig
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+          {getProductsGroupedBySupplier().length === 0 && (
+            <EmptyState
+              icon={FiTruck}
+              title="Keine Produkte gefunden"
+              message="Es gibt keine Produkte unter dem kritischen Bestandsniveau."
+            />
+          )}
         </div>
       )}
 
       {/* AKTİF SİPARİŞLER TAB'ı */}
-      {activeTab === 1 && (
+      {activeTab === 1 && viewMode === 'criticality' && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="bg-green-50 px-4 py-3 border-b border-green-200">
             <h2 className="text-base md:text-lg font-semibold text-green-900 flex items-center gap-2">
@@ -629,7 +1765,7 @@ function StockManagement() {
             </h2>
           </div>
 
-          {activeOrders.length === 0 ? (
+          {activeLists.length === 0 && activeOrders.length === 0 ? (
             <EmptyState
               icon={FiPackage}
               title="Keine aktiven Bestellungen"
@@ -637,7 +1773,28 @@ function StockManagement() {
             />
           ) : (
             <>
-              {/* Desktop Tablo Görünümü */}
+              {/* Liste görünümü */}
+              {activeLists.length > 0 && (
+                <div className="p-4 md:p-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Bestelllisten</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeLists.map((list) => (
+                      <StockOrderListCard
+                        key={list.id}
+                        list={list}
+                        onStatusUpdate={fetchData}
+                        onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Eski sistem - Liste dışındaki siparişler */}
+              {activeOrders.length > 0 && (
+                <div className={`p-4 md:p-6 ${activeLists.length > 0 ? 'border-t border-gray-200' : ''}`}>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Einzelne Bestellungen</h3>
+                  {/* Mevcut aktif siparişler görünümü korunuyor */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
@@ -686,7 +1843,7 @@ function StockManagement() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-900">
-                          {order.orderQuantity}
+                              {order.orderQuantity} {order.orderUnit ? (typeof order.orderUnit === 'string' ? order.orderUnit : String(order.orderUnit)) : ''}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-900">
                           <div className="flex items-center gap-2">
@@ -747,7 +1904,7 @@ function StockManagement() {
                 </table>
               </div>
 
-              {/* Mobil Kart Görünümü */}
+                  {/* Mobil görünüm */}
               <div className="md:hidden divide-y divide-gray-200">
                 {activeOrders.map((order) => (
                   <div key={order.id} className="p-4 hover:bg-green-50 transition-colors">
@@ -767,7 +1924,9 @@ function StockManagement() {
                     <div className="space-y-2 text-xs mb-3">
                       <div className="flex justify-between">
                         <span className="text-gray-500">Menge:</span>
-                        <span className="text-gray-900">{order.orderQuantity}</span>
+                            <span className="text-gray-900">
+                              {order.orderQuantity} {order.orderUnit ? (typeof order.orderUnit === 'string' ? order.orderUnit : String(order.orderUnit)) : ''}
+                            </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-500">Erwartetes Datum:</span>
@@ -843,6 +2002,8 @@ function StockManagement() {
                   </div>
                 ))}
               </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -1497,6 +2658,164 @@ function StockManagement() {
                     className="px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                   >
                     Rückgängig machen
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* PRODUCT QUANTITY DIALOG */}
+      <ProductQuantityDialog
+        open={quantityDialog.open}
+        product={quantityDialog.product}
+        onClose={() => setQuantityDialog({ open: false, product: null })}
+        onSave={handleQuantitySave}
+      />
+
+      {/* CREATE LIST DIALOG */}
+      <CreateStockOrderListDialog
+        open={createListDialog}
+        selectedProducts={selectedProducts}
+        onClose={() => setCreateListDialog(false)}
+        onSuccess={handleCreateListSuccess}
+      />
+
+      {/* LIST DETAIL DIALOG */}
+      <AnimatePresence>
+        {listDetailDialog.open && listDetailDialog.list && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setListDetailDialog({ open: false, list: null })}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                    Bestellliste: {listDetailDialog.list.name}
+                  </h3>
+                  <button
+                    onClick={() => setListDetailDialog({ open: false, list: null })}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-500">Status</div>
+                      <div className="mt-1">{getStatusBadge(listDetailDialog.list.status)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Erstellt am</div>
+                      <div className="mt-1 text-sm text-gray-900">{formatDate(listDetailDialog.list.createdAt)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Erstellt von</div>
+                      <div className="mt-1 text-sm text-gray-900">{listDetailDialog.list.admin?.firstName || '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Produkte</div>
+                      <div className="mt-1 text-sm text-gray-900">{listDetailDialog.list.orders?.length || 0}</div>
+                    </div>
+                  </div>
+
+                  {listDetailDialog.list.note && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Notiz</div>
+                      <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded">{listDetailDialog.list.note}</div>
+                    </div>
+                  )}
+
+                  {listDetailDialog.list.supplierEmail && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Lieferant E-Mail</div>
+                      <div className="text-sm text-gray-900">{listDetailDialog.list.supplierEmail}</div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Produkte</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Produkt</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Menge</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Einheit</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-700">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {listDetailDialog.list.orders?.map((order) => (
+                            <tr key={order.id}>
+                              <td className="px-3 py-2">
+                                <div className="font-medium text-gray-900">{order.product?.name || '-'}</div>
+                                {order.product?.category?.name && (
+                                  <div className="text-xs text-gray-500">{order.product.category.name}</div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-gray-900">{order.orderQuantity}</td>
+                              <td className="px-3 py-2 text-gray-900">
+                                {order.orderUnit 
+                                  ? (typeof order.orderUnit === 'string' ? order.orderUnit : String(order.orderUnit))
+                                  : (order.product?.unit 
+                                    ? (typeof order.product.unit === 'string' ? order.product.unit : String(order.product.unit))
+                                    : '-')}
+                              </td>
+                              <td className="px-3 py-2">{getStatusBadge(order.status)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sticky bottom-0 bg-white">
+                  <button
+                    onClick={() => setListDetailDialog({ open: false, list: null })}
+                    className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Schließen
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await adminService.printStockOrderListPDF(listDetailDialog.list.id);
+                      } catch (error) {
+                        toast.error('Fehler beim Drucken der PDF');
+                      }
+                    }}
+                    className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 flex items-center justify-center gap-1.5"
+                  >
+                    <FiPrinter className="w-4 h-4" />
+                    Drucken
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await adminService.downloadStockOrderListPDF(listDetailDialog.list.id);
+                        toast.success('PDF erfolgreich heruntergeladen');
+                      } catch (error) {
+                        toast.error('Fehler beim Herunterladen der PDF');
+                      }
+                    }}
+                    className="px-3 py-2 text-xs md:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center gap-1.5"
+                  >
+                    <FiDownload className="w-4 h-4" />
+                    PDF herunterladen
                   </button>
                 </div>
               </div>
