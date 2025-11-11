@@ -21,6 +21,11 @@ class TemplateService {
       description: 'Bestätigungscode, der beim Registrieren gesendet wird',
       variables: ['firstName', 'lastName', 'verificationCode', 'storeName'],
     },
+    'email-change-verification': {
+      name: 'E-Mail-Änderung Bestätigung',
+      description: 'Bestätigungscode für E-Mail-Adressänderung',
+      variables: ['firstName', 'lastName', 'currentEmail', 'newEmail', 'verificationCode', 'storeName'],
+    },
     welcome: {
       name: 'Willkommen',
       description: 'Willkommensnachricht nach E-Mail-Bestätigung',

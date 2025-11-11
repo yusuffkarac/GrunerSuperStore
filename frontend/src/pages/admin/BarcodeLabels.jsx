@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiPrinter, FiCheckSquare, FiSquare, FiChevronLeft, FiChevronRight, FiSettings, FiRotateCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -14,10 +14,15 @@ function BarcodeLabels() {
   const { showConfirm } = useAlert();
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingLabel, setEditingLabel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const searchTimeoutRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const wasInputFocusedRef = useRef(false);
   const [selectedLabels, setSelectedLabels] = useState([]); // Toplu baskı için seçilenler
   const [labelSettings, setLabelSettings] = useState({
     labelHeaderFontSize: 16,
@@ -41,20 +46,46 @@ function BarcodeLabels() {
     barcode: '',
   });
 
+  // Debounce search query
+  useEffect(() => {
+    // Önceki timeout'u temizle
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Yeni timeout ayarla (500ms debounce)
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
   // Verileri yükle
   useEffect(() => {
     loadLabels();
     loadLabelSettings();
-  }, [searchQuery, currentPage, itemsPerPage]);
+  }, [debouncedSearchQuery, currentPage, itemsPerPage]);
 
   const loadLabels = async () => {
-    setLoading(true);
+    // İlk yükleme değilse (arama yapılıyorsa) loading state'ini değiştirme
+    const shouldShowLoading = isInitialLoad;
+    
+    if (shouldShowLoading) {
+      setLoading(true);
+    }
+    
     try {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
       };
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
 
       const response = await barcodeLabelService.getAllBarcodeLabels(params);
       setLabels(response.data.labels || []);
@@ -67,11 +98,27 @@ function BarcodeLabels() {
       
       // Sayfa değiştiğinde seçimleri temizle
       setSelectedLabels([]);
+      
+      // İlk yükleme tamamlandı
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     } catch (error) {
       toast.error('Barcode-Etiketten konnten nicht geladen werden');
       console.error('Etiket yükleme hatası:', error);
     } finally {
-      setLoading(false);
+      if (shouldShowLoading) {
+        setLoading(false);
+      }
+      // Focus'u koru - eğer input daha önce focus'taysa geri ver
+      if (searchInputRef.current && wasInputFocusedRef.current) {
+        // Bir sonraki render cycle'da focus'u geri ver
+        requestAnimationFrame(() => {
+          if (searchInputRef.current && document.activeElement !== searchInputRef.current) {
+            searchInputRef.current.focus();
+          }
+        });
+      }
     }
   };
 
@@ -375,12 +422,30 @@ function BarcodeLabels() {
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Produktname oder Barcode suchen..."
               value={searchQuery}
+              onFocus={() => {
+                wasInputFocusedRef.current = true;
+              }}
+              onBlur={() => {
+                // Sadece başka bir input'a geçilmediyse blur'u işaretle
+                setTimeout(() => {
+                  if (document.activeElement !== searchInputRef.current) {
+                    wasInputFocusedRef.current = false;
+                  }
+                }, 0);
+              }}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1); // Arama yapıldığında ilk sayfaya dön
+              }}
+              onKeyDown={(e) => {
+                // Enter'a basıldığında form submit'ini engelle
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                }
               }}
               className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />

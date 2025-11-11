@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FiHome,
@@ -21,6 +21,9 @@ import {
   FiMessageSquare,
   FiClock,
   FiCheckSquare,
+  FiAlertCircle,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
@@ -33,6 +36,13 @@ function AdminLayout() {
   const location = useLocation();
   const { showConfirm } = useAlert();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [hoveredMenuItem, setHoveredMenuItem] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const menuItemRefs = useRef({});
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [logo, setLogo] = useState('/logo.png');
@@ -228,6 +238,7 @@ function AdminLayout() {
     { path: '/admin/dashboard', label: 'Dashboard', icon: FiHome, permission: null }, // Dashboard herkese açık
     { path: '/admin/products', label: 'Produkte', icon: FiPackage, permission: 'product_management_view' },
     { path: '/admin/expiry-management', label: 'MHD Verwaltung', icon: FiClock, permission: 'expiry_management_view' },
+    { path: '/admin/stock-management', label: 'Lagerverwaltung', icon: FiAlertCircle, permission: 'stock_management_view' },
     { path: '/admin/orders', label: 'Bestellungen', icon: FiShoppingBag, permission: 'order_management_view' },
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid, permission: 'product_management_view' },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiTag, permission: 'marketing_campaigns' },
@@ -297,6 +308,12 @@ function AdminLayout() {
       toast.success('Erfolgreich abgemeldet');
       navigate('/admin/login');
     }
+  };
+
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
   };
 
   // Loading durumunda göster
@@ -414,32 +431,92 @@ function AdminLayout() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 right-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 flex flex-col h-screen lg:h-full ${
+          className={`fixed lg:static inset-y-0 right-0 z-50 bg-white shadow-lg transform transition-all duration-300 flex flex-col h-screen lg:h-full ${
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-          }`}
+          } ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'} w-64`}
         >
-          <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+          <nav className={`p-4 space-y-2 flex-1 overflow-y-auto ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
+            {/* Toggle Button - Desktop Only */}
+            <div className={`hidden lg:flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} mb-2`}>
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                title={sidebarCollapsed ? 'Menüyü Genişlet' : 'Menüyü Daralt'}
+              >
+                {sidebarCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
+              </button>
+            </div>
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
+              const isHovered = hoveredMenuItem === item.path;
 
               return (
-                <Link
+                <div
                   key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-green-50 text-green-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  ref={(el) => {
+                    if (el) menuItemRefs.current[item.path] = el;
+                  }}
+                  className={`relative ${sidebarCollapsed ? 'lg:flex lg:justify-center' : ''}`}
+                  onMouseEnter={(e) => {
+                    if (sidebarCollapsed) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const nav = e.currentTarget.closest('nav');
+                      const navRect = nav?.getBoundingClientRect();
+                      
+                      // Item'ın navigation içindeki relative pozisyonunu al
+                      const relativeTop = rect.top - (navRect?.top || 0);
+                      
+                      // Tooltip'i sidebar'ın başlangıcından itibaren hesapla (toggle button hariç)
+                      const aside = document.querySelector('aside');
+                      const asideRect = aside?.getBoundingClientRect();
+                      
+                      setTooltipPosition({
+                        top: (asideRect?.top || 0) + relativeTop + (rect.height / 2),
+                        left: rect.right + 8
+                      });
+                      setHoveredMenuItem(item.path);
+                    }
+                  }}
+                  onMouseLeave={() => setHoveredMenuItem(null)}
                 >
-                  <Icon size={20} />
-                  <span>{item.label}</span>
-                </Link>
+                  <Link
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      sidebarCollapsed ? 'lg:px-2 lg:justify-center' : ''
+                    } ${
+                      isActive
+                        ? 'bg-green-50 text-green-600 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    <span className={`${sidebarCollapsed ? 'lg:hidden' : ''} whitespace-nowrap`}>
+                      {item.label}
+                    </span>
+                  </Link>
+                </div>
               );
             })}
           </nav>
+          
+          {/* Tooltip - Sidebar dışında render ediliyor */}
+          {sidebarCollapsed && hoveredMenuItem && (
+            <div 
+              className="hidden lg:block fixed z-[9999] pointer-events-none"
+              style={{
+                left: `${tooltipPosition.left}px`,
+                top: `${tooltipPosition.top}px`,
+                transform: 'translateY(-50%)'
+              }}
+            >
+              <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl whitespace-nowrap relative">
+                {menuItems.find(item => item.path === hoveredMenuItem)?.label}
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* Overlay */}

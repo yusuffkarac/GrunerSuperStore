@@ -21,6 +21,7 @@
     "remove-openfoodfacts-images": "node src/scripts/removeOpenFoodFactsImages.js",
     "update-tax-rates": "node src/scripts/updateTaxRates.js",
     "check-expiry-notify": "node src/scripts/checkExpiryAndNotify.js",
+    "analyze-categories": "node src/scripts/analyzeCategoriesWithGemini.js",
     "db:dump": "node scripts/dumpDatabase.js",
     "db:restore": "node scripts/restoreDatabase.js"
   },
@@ -44,7 +45,8 @@
     "nodemailer": "^6.10.1",
     "pdfkit": "^0.17.2",
     "pg": "^8.11.3",
-    "serpapi": "^2.2.1"
+    "serpapi": "^2.2.1",
+    "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",

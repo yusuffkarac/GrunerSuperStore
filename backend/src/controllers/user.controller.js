@@ -32,6 +32,31 @@ class UserController {
     });
   });
 
+  // POST /api/user/request-email-change
+  requestEmailChange = asyncHandler(async (req, res) => {
+    const { newEmail } = req.body;
+
+    const result = await userService.requestEmailChange(req.user.id, newEmail);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  });
+
+  // POST /api/user/verify-email-change
+  verifyEmailChange = asyncHandler(async (req, res) => {
+    const { code } = req.body;
+
+    const user = await userService.verifyEmailChange(req.user.id, code);
+
+    res.status(200).json({
+      success: true,
+      message: 'E-Mail-Adresse erfolgreich geändert',
+      data: { user },
+    });
+  });
+
   // PUT /api/user/password
   changePassword = asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;

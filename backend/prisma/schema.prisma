@@ -89,6 +89,9 @@ model User {
   isEmailVerified             Boolean   @default(false) @map("is_email_verified")
   emailVerificationCode       String?   @map("email_verification_code")
   emailVerificationCodeExpiry DateTime? @map("email_verification_code_expiry")
+  newEmail                    String?   @map("new_email")
+  emailChangeCode             String?   @map("email_change_code")
+  emailChangeCodeExpiry       DateTime? @map("email_change_code_expiry")
   createdAt                   DateTime  @default(now()) @map("created_at")
   updatedAt                   DateTime  @updatedAt @map("updated_at")
 
@@ -183,6 +186,7 @@ model Product {
   isActive                Boolean   @default(true) @map("is_active")
   isFeatured              Boolean   @default(false) @map("is_featured")
   showStock               Boolean   @default(false) @map("show_stock")
+  supplier                String?   // Tedarikçi bilgisi
   // Son Kullanma Tarihi (SKT) yönetimi
   expiryDate              DateTime? @map("expiry_date") // Son kullanma tarihi
   excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf
@@ -198,6 +202,7 @@ model Product {
   variants       ProductVariant[]
   expiryActions  ExpiryAction[]
   taskIgnores    ProductTaskIgnore[]
+  stockOrders    StockOrder[]
 
   @@index([slug])
   @@index([name])
@@ -440,6 +445,8 @@ model Admin {
   // Relations
   adminRole     AdminRole?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
   expiryActions ExpiryAction[]
+  stockOrders   StockOrder[]   @relation("StockOrderAdmin")
+  stockOrdersUndone StockOrder[] @relation("StockOrderUndoneBy")
 
   @@index([email])
   @@index([role])
@@ -756,6 +763,52 @@ model ExpiryAction {
   @@index([productId, createdAt(sort: Desc)])
   @@index([adminId, createdAt(sort: Desc)])
   @@map("expiry_actions")
+}
+
+// ===================================
+// STOCK ORDER MANAGEMENT
+// ===================================
+
+enum StockOrderStatus {
+  pending    // Beklemede
+  ordered    // Sipariş edildi
+  delivered  // Teslim edildi
+  cancelled  // İptal edildi
+
+  @@map("stock_order_status")
+}
+
+model StockOrder {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId           String          @map("product_id") @db.Uuid
+  adminId             String          @map("admin_id") @db.Uuid
+  status              StockOrderStatus @default(pending)
+  orderQuantity       Int             @map("order_quantity")
+  expectedDeliveryDate DateTime?      @map("expected_delivery_date") @db.Date
+  actualDeliveryDate  DateTime?      @map("actual_delivery_date") @db.Date
+  note                String?
+  previousOrderId     String?         @map("previous_order_id") @db.Uuid
+  isUndone            Boolean         @default(false) @map("is_undone")
+  undoneAt            DateTime?      @map("undone_at")
+  undoneBy            String?         @map("undone_by") @db.Uuid
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  admin         Admin   @relation("StockOrderAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  previousOrder StockOrder? @relation("PreviousStockOrder", fields: [previousOrderId], references: [id], onDelete: SetNull)
+  reversedOrders StockOrder[] @relation("PreviousStockOrder")
+  undoneByAdmin Admin? @relation("StockOrderUndoneBy", fields: [undoneBy], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([adminId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([isUndone])
+  @@index([productId, status])
+  @@index([productId, isUndone])
+  @@map("stock_orders")
 }
 
 // ===================================

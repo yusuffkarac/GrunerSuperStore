@@ -5,6 +5,7 @@ import settingsController from '../controllers/settings.controller.js';
 import uploadController from '../controllers/upload.controller.js';
 import * as roleController from '../controllers/role.controller.js';
 import * as expiryController from '../controllers/expiry.controller.js';
+import * as stockController from '../controllers/stock.controller.js';
 import { authenticateAdmin, requireSuperAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
@@ -49,6 +50,45 @@ router.get('/dashboard/recent-orders', adminController.getRecentOrders);
 
 // GET /api/admin/dashboard/low-stock - Düşük stoklu ürünler
 router.get('/dashboard/low-stock', adminController.getLowStockProducts);
+
+// GET /api/admin/dashboard/trends - Dashboard trend verileri
+router.get('/dashboard/trends', adminController.getDashboardTrends);
+
+// GET /api/admin/dashboard/top-products - En çok satan ürünler
+router.get('/dashboard/top-products', adminController.getTopSellingProducts);
+
+// GET /api/admin/dashboard/category-stats - Kategori istatistikleri
+router.get('/dashboard/category-stats', adminController.getCategoryStats);
+
+// GET /api/admin/dashboard/order-status-distribution - Sipariş durumu dağılımı
+router.get('/dashboard/order-status-distribution', adminController.getOrderStatusDistribution);
+
+// GET /api/admin/dashboard/revenue-stats - Gelir istatistikleri
+router.get('/dashboard/revenue-stats', adminController.getRevenueStats);
+
+// GET /api/admin/dashboard/daily-order-counts - Günlük sipariş sayıları
+router.get('/dashboard/daily-order-counts', adminController.getDailyOrderCounts);
+
+// GET /api/admin/dashboard/hourly-distribution - Saatlik sipariş dağılımı
+router.get('/dashboard/hourly-distribution', adminController.getHourlyOrderDistribution);
+
+// GET /api/admin/dashboard/customer-growth - Müşteri büyümesi trendi
+router.get('/dashboard/customer-growth', adminController.getCustomerGrowthTrend);
+
+// GET /api/admin/dashboard/cancellation-rate - İptal oranı trendi
+router.get('/dashboard/cancellation-rate', adminController.getCancellationRateTrend);
+
+// GET /api/admin/dashboard/top-customers - En aktif müşteriler
+router.get('/dashboard/top-customers', adminController.getTopCustomers);
+
+// GET /api/admin/dashboard/order-completion-time - Sipariş tamamlama süresi
+router.get('/dashboard/order-completion-time', adminController.getOrderCompletionTime);
+
+// GET /api/admin/dashboard/monthly-comparison - Aylık karşılaştırma
+router.get('/dashboard/monthly-comparison', adminController.getMonthlyComparison);
+
+// GET /api/admin/dashboard/average-cart-value - Ortalama sepet değeri trendi
+router.get('/dashboard/average-cart-value', adminController.getAverageCartValueTrend);
 
 // ===============================
 // ORDER MANAGEMENT
@@ -263,6 +303,24 @@ router.get('/expiry/history', requirePermission('expiry_management_view'), expir
 router.post('/expiry/undo/:actionId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.undoAction);
 router.post('/expiry/check-and-notify', requirePermission('expiry_management_view'), expiryController.checkAndNotifyAdmins);
 router.get('/expiry/daily-reminder', requirePermission('expiry_management_view'), expiryController.sendDailyReminder);
+
+// ===============================
+// STOCK MANAGEMENT
+// ===============================
+
+// Kritik stoklu ürünler
+router.get('/stock/low-stock', requirePermission('stock_management_view'), stockController.getLowStockProducts);
+
+// Sipariş geçmişi
+router.get('/stock/history', requirePermission('stock_management_view'), stockController.getStockOrderHistory);
+
+// Sipariş işlemleri
+router.post('/stock/order/:productId', requirePermission(['stock_management_view', 'stock_management_action']), stockController.createStockOrder);
+router.put('/stock/order/:orderId/status', requirePermission(['stock_management_view', 'stock_management_action']), stockController.updateStockOrderStatus);
+router.post('/stock/order/:orderId/undo', requirePermission(['stock_management_view', 'stock_management_action']), stockController.undoStockOrder);
+
+// Tedarikçi güncelleme
+router.put('/stock/product/:productId/supplier', requirePermission(['stock_management_view', 'stock_management_action']), stockController.updateProductSupplier);
 
 // ===============================
 // SETTINGS MANAGEMENT

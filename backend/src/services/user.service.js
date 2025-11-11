@@ -6,7 +6,10 @@ import {
   UnauthorizedError,
   ForbiddenError,
   ConflictError,
+  BadRequestError,
 } from '../utils/errors.js';
+import queueService from './queue.service.js';
+import crypto from 'crypto';
 
 class UserService {
   // Kullanıcı profil bilgilerini getir
@@ -32,7 +35,12 @@ class UserService {
     return user;
   }
 
-  // Kullanıcı profil güncelleme
+  // 6 haneli doğrulama kodu oluştur
+  generateVerificationCode() {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
+  // Kullanıcı profil güncelleme (email hariç)
   async updateProfile(userId, data) {
     const { firstName, lastName, phone } = data;
 
@@ -56,6 +64,161 @@ class UserService {
     });
 
     return user;
+  }
+
+  // Email değişikliği talebi - yeni email'e kod gönder
+  async requestEmailChange(userId, newEmail) {
+    // Email'i normalize et
+    const normalizedEmail = newEmail.toLowerCase().trim();
+
+    // Kullanıcıyı bul
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Benutzer nicht gefunden');
+    }
+
+    // Aynı email ise hata ver
+    if (normalizedEmail === user.email) {
+      throw new BadRequestError('Neue E-Mail-Adresse muss sich von der aktuellen unterscheiden');
+    }
+
+    // Yeni email'in başka bir kullanıcı tarafından kullanılıp kullanılmadığını kontrol et
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      throw new ConflictError('Diese E-Mail-Adresse wird bereits verwendet');
+    }
+
+    // Doğrulama kodu oluştur
+    const verificationCode = this.generateVerificationCode();
+    const codeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 dakika
+
+    // Kullanıcıyı güncelle
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        newEmail: normalizedEmail,
+        emailChangeCode: verificationCode,
+        emailChangeCodeExpiry: codeExpiry,
+      },
+    });
+
+    // Doğrulama maili gönder
+    await this.sendEmailChangeVerificationEmail(user, normalizedEmail, verificationCode).catch((err) => {
+      console.error('Email change verification mail hatası:', err);
+    });
+
+    return {
+      message: 'Bestätigungscode wurde an die neue E-Mail-Adresse gesendet',
+    };
+  }
+
+  // Email değişikliği doğrulama maili gönder
+  async sendEmailChangeVerificationEmail(user, newEmail, verificationCode) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, email değişikliği doğrulama maili gönderilmedi.');
+        console.log(`📧 Email değişikliği kodu (Development): ${verificationCode}`);
+        return;
+      }
+
+      await queueService.addEmailJob({
+        to: newEmail,
+        subject: 'E-Mail-Adresse ändern - Bestätigungscode',
+        template: 'email-change-verification',
+        data: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          currentEmail: user.email,
+          newEmail: newEmail,
+          verificationCode: verificationCode,
+          storeName: 'Gruner SuperStore',
+        },
+        metadata: { userId: user.id, type: 'email-change-verification' },
+        priority: 1, // Yüksek öncelik
+      });
+
+      console.log(`✅ Email değişikliği doğrulama maili kuyruğa eklendi: ${newEmail}`);
+    } catch (error) {
+      console.error('Email change verification mail hatası:', error);
+    }
+  }
+
+  // Email değişikliği doğrulama - kodu kontrol et ve email'i güncelle
+  async verifyEmailChange(userId, code) {
+    // Kullanıcıyı bul
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('Benutzer nicht gefunden');
+    }
+
+    // Email değişikliği talebi var mı kontrol et
+    if (!user.newEmail || !user.emailChangeCode || !user.emailChangeCodeExpiry) {
+      throw new BadRequestError('Keine E-Mail-Änderungsanfrage gefunden. Bitte fordern Sie zuerst eine E-Mail-Änderung an.');
+    }
+
+    // Kod süre kontrolü
+    if (new Date() > user.emailChangeCodeExpiry) {
+      // Süresi dolmuş kodları temizle
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          newEmail: null,
+          emailChangeCode: null,
+          emailChangeCodeExpiry: null,
+        },
+      });
+      throw new BadRequestError('Bestätigungscode ist abgelaufen. Bitte fordern Sie einen neuen Code an.');
+    }
+
+    // Kod kontrolü
+    if (user.emailChangeCode !== code) {
+      throw new BadRequestError('Ungültiger Bestätigungscode');
+    }
+
+    // Yeni email'in hala başka bir kullanıcı tarafından kullanılıp kullanılmadığını kontrol et
+    const existingUser = await prisma.user.findUnique({
+      where: { email: user.newEmail },
+    });
+
+    if (existingUser) {
+      throw new ConflictError('Diese E-Mail-Adresse wird bereits verwendet');
+    }
+
+    // Email'i güncelle ve temizle
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: user.newEmail,
+        newEmail: null,
+        emailChangeCode: null,
+        emailChangeCodeExpiry: null,
+        isEmailVerified: true, // Yeni email doğrulanmış sayılır
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser;
   }
 
   // Şifre değiştirme

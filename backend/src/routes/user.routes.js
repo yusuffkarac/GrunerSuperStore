@@ -7,6 +7,8 @@ import {
   changePasswordValidation,
   createAddressValidation,
   updateAddressValidation,
+  requestEmailChangeValidation,
+  verifyEmailChangeValidation,
 } from '../validators/user.validator.js';
 
 const router = express.Router();
@@ -27,6 +29,20 @@ router.put(
   changePasswordValidation,
   validate,
   userController.changePassword
+);
+
+// Email değişikliği route'ları
+router.post(
+  '/request-email-change',
+  requestEmailChangeValidation,
+  validate,
+  userController.requestEmailChange
+);
+router.post(
+  '/verify-email-change',
+  verifyEmailChangeValidation,
+  validate,
+  userController.verifyEmailChange
 );
 
 // Adres route'ları

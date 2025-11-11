@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import authService from '../services/authService';
+import userService from '../services/userService';
 
 // Auth store
 const useAuthStore = create((set, get) => ({
@@ -77,13 +78,35 @@ const useAuthStore = create((set, get) => ({
   // Profil bilgilerini yeniden yükle
   refreshProfile: async () => {
     try {
-      const response = await authService.getProfile();
-      set({ user: response.data.user });
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Token kontrolü - token yoksa refresh yapma
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('Token bulunamadı, profil yenileme atlandı');
+        return;
+      }
+
+      const response = await userService.getProfile();
+      // API interceptor response.data döndürüyor, yani { success: true, data: { user: {...} } }
+      // Bu yüzden response.data.user kullanmalıyız
+      if (response?.data?.user) {
+        set({ user: response.data.user });
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      } else if (response?.user) {
+        // Alternatif format kontrolü
+        set({ user: response.user });
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
     } catch (error) {
-      // Token geçersizse çıkış yap
-      get().logout();
+      // API interceptor zaten logout yapıyor, burada sadece log at
+      console.error('Profil yenileme hatası:', error);
+      // Logout yapma - API interceptor zaten yapıyor
     }
+  },
+
+  // Kullanıcı bilgilerini güncelle
+  setUser: (user) => {
+    set({ user });
+    localStorage.setItem('user', JSON.stringify(user));
   },
 
   // Error'u temizle

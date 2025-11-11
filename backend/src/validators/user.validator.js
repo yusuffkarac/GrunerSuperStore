@@ -33,6 +33,24 @@ export const changePasswordValidation = [
     ),
 ];
 
+// Email değişikliği talebi validasyonu
+export const requestEmailChangeValidation = [
+  body('newEmail')
+    .isEmail()
+    .withMessage('Ungültige E-Mail-Adresse')
+    .normalizeEmail()
+    .trim(),
+];
+
+// Email değişikliği doğrulama validasyonu
+export const verifyEmailChangeValidation = [
+  body('code')
+    .notEmpty()
+    .withMessage('Bestätigungscode ist erforderlich')
+    .matches(/^\d{6}$/)
+    .withMessage('Bestätigungscode muss 6 Ziffern haben'),
+];
+
 // Adres oluşturma validasyonu
 export const createAddressValidation = [
   body('title').trim().notEmpty().withMessage('Adresstitel ist erforderlich'),

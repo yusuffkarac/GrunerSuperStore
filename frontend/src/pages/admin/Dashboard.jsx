@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { OrderStatusBadge } from '../Siparislerim';
@@ -9,9 +9,26 @@ import {
   FiDollarSign,
   FiTrendingUp,
   FiAlertTriangle,
+  FiClock,
+  FiPercent,
 } from 'react-icons/fi';
 import adminService from '../../services/adminService';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import DashboardFilters from '../../components/admin/DashboardFilters';
+import OrderTrendChart from '../../components/admin/OrderTrendChart';
+import RevenueTrendChart from '../../components/admin/RevenueTrendChart';
+import OrderStatusChart from '../../components/admin/OrderStatusChart';
+import CategorySalesChart from '../../components/admin/CategorySalesChart';
+import TopProductsTable from '../../components/admin/TopProductsTable';
+import CategoryPerformanceTable from '../../components/admin/CategoryPerformanceTable';
+import DailyOrderCountChart from '../../components/admin/DailyOrderCountChart';
+import HourlyOrderDistributionChart from '../../components/admin/HourlyOrderDistributionChart';
+import CustomerGrowthChart from '../../components/admin/CustomerGrowthChart';
+import CancellationRateChart from '../../components/admin/CancellationRateChart';
+import AverageCartValueChart from '../../components/admin/AverageCartValueChart';
+import TopCustomersTable from '../../components/admin/TopCustomersTable';
+import MonthlyComparisonCard from '../../components/admin/MonthlyComparisonCard';
+import OrderCompletionTimeCard from '../../components/admin/OrderCompletionTimeCard';
 
 function StatCard({ icon: Icon, title, value, change, color }) {
   return (
@@ -47,17 +64,57 @@ function Dashboard() {
     totalRevenue: 0,
     recentOrders: [],
     lowStockProducts: 0,
+    pendingOrders: 0,
+    todayOrders: 0,
   });
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  });
+
+  // Grafik verileri
+  const [trends, setTrends] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [categoryStats, setCategoryStats] = useState([]);
+  const [orderStatusDistribution, setOrderStatusDistribution] = useState([]);
+  const [revenueStats, setRevenueStats] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [chartsLoading, setChartsLoading] = useState(false);
+  
+  // Yeni grafik verileri
+  const [dailyOrderCounts, setDailyOrderCounts] = useState([]);
+  const [hourlyDistribution, setHourlyDistribution] = useState([]);
+  const [customerGrowth, setCustomerGrowth] = useState([]);
+  const [cancellationRate, setCancellationRate] = useState([]);
+  const [averageCartValue, setAverageCartValue] = useState([]);
+  const [topCustomers, setTopCustomers] = useState([]);
+  const [monthlyComparison, setMonthlyComparison] = useState(null);
+  const [completionTime, setCompletionTime] = useState(null);
 
   useEffect(() => {
     loadDashboardStats();
+    loadCategories();
   }, []);
+
+  useEffect(() => {
+    loadChartData();
+  }, [filters]);
+
+  const loadCategories = async () => {
+    try {
+      const response = await adminService.getCategories();
+      if (response?.data?.categories) {
+        setCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Kategoriler yüklenemedi:', error);
+    }
+  };
 
   const loadDashboardStats = async () => {
     try {
-
       const [statsResponse, lowStockResponse] = await Promise.all([
         adminService.getDashboardStats(),
         adminService.getLowStockProducts(5),
@@ -76,6 +133,69 @@ function Dashboard() {
       setLoading(false);
     }
   };
+
+  const loadChartData = async () => {
+    setChartsLoading(true);
+    try {
+      const [
+        trendsRes,
+        topProductsRes,
+        categoryStatsRes,
+        orderStatusRes,
+        revenueStatsRes,
+        dailyCountsRes,
+        hourlyDistRes,
+        customerGrowthRes,
+        cancellationRateRes,
+        averageCartValueRes,
+        topCustomersRes,
+        monthlyComparisonRes,
+        completionTimeRes,
+      ] = await Promise.all([
+        adminService.getDashboardTrends(filters.startDate, filters.endDate),
+        adminService.getTopSellingProducts(10, filters.startDate, filters.endDate),
+        adminService.getCategoryStats(filters.startDate, filters.endDate),
+        adminService.getOrderStatusDistribution(),
+        adminService.getRevenueStats(filters.startDate, filters.endDate),
+        adminService.getDailyOrderCounts(7),
+        adminService.getHourlyOrderDistribution(filters.startDate, filters.endDate),
+        adminService.getCustomerGrowthTrend(filters.startDate, filters.endDate),
+        adminService.getCancellationRateTrend(filters.startDate, filters.endDate),
+        adminService.getAverageCartValueTrend(filters.startDate, filters.endDate),
+        adminService.getTopCustomers(10, filters.startDate, filters.endDate),
+        adminService.getMonthlyComparison(),
+        adminService.getOrderCompletionTime(filters.startDate, filters.endDate),
+      ]);
+
+      if (trendsRes?.data?.trends) setTrends(trendsRes.data.trends);
+      if (topProductsRes?.data?.products) setTopProducts(topProductsRes.data.products);
+      if (categoryStatsRes?.data?.stats) setCategoryStats(categoryStatsRes.data.stats);
+      if (orderStatusRes?.data?.distribution)
+        setOrderStatusDistribution(orderStatusRes.data.distribution);
+      if (revenueStatsRes?.data?.stats) setRevenueStats(revenueStatsRes.data.stats);
+      if (dailyCountsRes?.data?.counts) setDailyOrderCounts(dailyCountsRes.data.counts);
+      if (hourlyDistRes?.data?.distribution) setHourlyDistribution(hourlyDistRes.data.distribution);
+      if (customerGrowthRes?.data?.trend) setCustomerGrowth(customerGrowthRes.data.trend);
+      if (cancellationRateRes?.data?.trend) setCancellationRate(cancellationRateRes.data.trend);
+      if (averageCartValueRes?.data?.trend) setAverageCartValue(averageCartValueRes.data.trend);
+      if (topCustomersRes?.data?.customers) setTopCustomers(topCustomersRes.data.customers);
+      if (monthlyComparisonRes?.data?.comparison) setMonthlyComparison(monthlyComparisonRes.data.comparison);
+      if (completionTimeRes?.data) setCompletionTime(completionTimeRes.data);
+    } catch (error) {
+      console.error('❌ Chart data error:', error);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const averageOrderValue = useMemo(() => {
+    if (stats.totalOrders === 0) return 0;
+    return Number(stats.totalRevenue) / Number(stats.totalOrders);
+  }, [stats.totalOrders, stats.totalRevenue]);
 
   if (loading) {
     return (
@@ -111,23 +231,164 @@ function Dashboard() {
           icon={FiShoppingBag}
           title="Bestellungen"
           value={stats.totalOrders}
-          change="+12% diese Woche"
           color="bg-green-600"
         />
         <StatCard
           icon={FiUsers}
           title="Benutzer"
           value={stats.totalUsers}
-          change="+5% diesen Monat"
           color="bg-purple-600"
         />
         <StatCard
           icon={FiDollarSign}
           title="Umsatz"
           value={`${(Number(stats.totalRevenue) || 0).toFixed(2)} €`}
-          change="+18% diesen Monat"
           color="bg-amber-600"
         />
+        <StatCard
+          icon={FiClock}
+          title="Ausstehende Bestellungen"
+          value={stats.pendingOrders}
+          color="bg-orange-600"
+        />
+        <StatCard
+          icon={FiShoppingBag}
+          title="Heutige Bestellungen"
+          value={stats.todayOrders}
+          color="bg-teal-600"
+        />
+        <StatCard
+          icon={FiDollarSign}
+          title="Ø Bestellwert"
+          value={`${averageOrderValue.toFixed(2)} €`}
+          color="bg-indigo-600"
+        />
+        <StatCard
+          icon={FiPercent}
+          title="Umsatzänderung"
+          value={
+            revenueStats?.revenueChange
+              ? `${revenueStats.revenueChange > 0 ? '+' : ''}${revenueStats.revenueChange.toFixed(1)}%`
+              : '-'
+          }
+          change={
+            revenueStats?.revenueChange
+              ? revenueStats.revenueChange > 0
+                ? 'Steigend'
+                : 'Fallend'
+              : null
+          }
+          color="bg-pink-600"
+        />
+      </div>
+
+      {/* Son Siparişler - EN BAŞTA */}
+      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Letzte Bestellungen</h2>
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                  Bestellung
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                  Kunde
+                </th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                  Status
+                </th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
+                  Betrag
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.recentOrders?.length > 0 ? (
+                stats.recentOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm">#{order.orderNo}</td>
+                    <td className="py-3 px-4 text-sm">{order.user?.email}</td>
+                    <td className="py-3 px-4">
+                      <OrderStatusBadge status={order.status} />
+                    </td>
+                    <td className="py-3 px-4 text-sm text-right font-medium">
+                      {parseFloat(order.total).toFixed(2)} €
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="py-8 text-center text-gray-500">
+                    Keine Bestellungen gefunden
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {stats.recentOrders?.length > 0 ? (
+            stats.recentOrders.map((order) => (
+              <div key={order.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">#{order.orderNo}</span>
+                  <span className="text-lg font-bold text-gray-900">
+                    {parseFloat(order.total).toFixed(2)} €
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600 mb-2">{order.user?.email}</div>
+                <OrderStatusBadge status={order.status} />
+              </div>
+            ))
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              Keine Bestellungen gefunden
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bilgi Kartları - Aylık Karşılaştırma ve Tamamlama Süresi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <MonthlyComparisonCard data={monthlyComparison} loading={chartsLoading} />
+        <OrderCompletionTimeCard data={completionTime} loading={chartsLoading} />
+      </div>
+
+      {/* Tablolar - Grafiklerin Üstünde */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <TopProductsTable data={topProducts} loading={chartsLoading} />
+        <CategoryPerformanceTable data={categoryStats} loading={chartsLoading} />
+        <TopCustomersTable data={topCustomers} loading={chartsLoading} />
+      </div>
+
+      {/* Filtreler */}
+      <DashboardFilters
+        onFilterChange={handleFilterChange}
+        categories={categories}
+      />
+
+      {/* Grafikler */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <OrderTrendChart data={trends} loading={chartsLoading} />
+        <RevenueTrendChart data={trends} loading={chartsLoading} />
+        <OrderStatusChart data={orderStatusDistribution} loading={chartsLoading} />
+        <CategorySalesChart data={categoryStats} loading={chartsLoading} />
+      </div>
+
+      {/* Günlük ve Saatlik Grafikler */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <DailyOrderCountChart data={dailyOrderCounts} loading={chartsLoading} />
+        <HourlyOrderDistributionChart data={hourlyDistribution} loading={chartsLoading} />
+      </div>
+
+      {/* Trend Grafikleri */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <CustomerGrowthChart data={customerGrowth} loading={chartsLoading} />
+        <CancellationRateChart data={cancellationRate} loading={chartsLoading} />
+        <AverageCartValueChart data={averageCartValue} loading={chartsLoading} />
       </div>
 
       {/* Düşük Stoklu Ürünler */}
@@ -205,75 +466,6 @@ function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Recent Orders */}
-      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
-        <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Letzte Bestellungen</h2>
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                  Bestellung
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                  Kunde
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                  Status
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">
-                  Betrag
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.recentOrders?.length > 0 ? (
-                stats.recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm">#{order.orderNo}</td>
-                    <td className="py-3 px-4 text-sm">{order.user?.email}</td>
-                    <td className="py-3 px-4">
-                      <OrderStatusBadge status={order.status} />
-                    </td>
-                    <td className="py-3 px-4 text-sm text-right font-medium">
-                      {parseFloat(order.total).toFixed(2)} €
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="py-8 text-center text-gray-500">
-                    Keine Bestellungen gefunden
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-3">
-          {stats.recentOrders?.length > 0 ? (
-            stats.recentOrders.map((order) => (
-              <div key={order.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">#{order.orderNo}</span>
-                  <span className="text-lg font-bold text-gray-900">
-                    {parseFloat(order.total).toFixed(2)} €
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">{order.user?.email}</div>
-                <OrderStatusBadge status={order.status} />
-              </div>
-            ))
-          ) : (
-            <div className="py-8 text-center text-gray-500">
-              Keine Bestellungen gefunden
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

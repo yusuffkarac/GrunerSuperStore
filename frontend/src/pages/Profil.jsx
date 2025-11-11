@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiPackage } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiLogOut, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiPackage, FiMail, FiSave, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import settingsService from '../services/settingsService';
@@ -35,6 +35,21 @@ function Profil() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
+  const [emailChangeData, setEmailChangeData] = useState({
+    newEmail: '',
+    code: '',
+  });
+  const [emailChangeStep, setEmailChangeStep] = useState('request'); // 'request' veya 'verify'
+  const [sendingEmailCode, setSendingEmailCode] = useState(false);
+  const [verifyingEmailCode, setVerifyingEmailCode] = useState(false);
 
   // Desktop-Prüfung
   useEffect(() => {
@@ -45,6 +60,37 @@ function Profil() {
     window.addEventListener('resize', checkDesktop);
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
+
+  // Profil bilgilerini yükle (sayfa yüklendiğinde)
+  useEffect(() => {
+    const loadProfile = async () => {
+      // Token kontrolü - token yoksa refresh yapma
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('Token bulunamadı, profil yenileme atlandı');
+        return;
+      }
+
+      try {
+        await useAuthStore.getState().refreshProfile();
+      } catch (error) {
+        console.error('Profil yükleme hatası:', error);
+        // Hata durumunda logout yapma - API interceptor zaten yapıyor
+      }
+    };
+    loadProfile();
+  }, []);
+
+  // Profil formunu kullanıcı bilgileriyle doldur
+  useEffect(() => {
+    if (user) {
+      setProfileFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
 
   // Adressformular-State
   const [formData, setFormData] = useState({
@@ -200,6 +246,151 @@ function Profil() {
       navigate('/');
       toast.success('Erfolgreich abgemeldet');
     }
+  };
+
+  // Profil düzenleme
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+    // Formu kullanıcı bilgileriyle sıfırla
+    if (user) {
+      setProfileFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+      });
+    }
+  };
+
+  const handleProfileInputChange = (e) => {
+    const { name, value } = e.target;
+    setProfileFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const response = await userService.updateProfile(profileFormData);
+      // Kullanıcı bilgilerini güncelle
+      const { user: updatedUser } = response.data;
+      useAuthStore.getState().setUser(updatedUser);
+      // Profil bilgilerini yeniden yükle (güncel bilgiler için)
+      await useAuthStore.getState().refreshProfile();
+      toast.success('Profil erfolgreich aktualisiert');
+      setIsEditingProfile(false);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Aktualisieren des Profils';
+      toast.error(errorMessage);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  // Email değişikliği
+  const handleRequestEmailChange = async () => {
+    // Email validasyonu - daha sıkı kontrol
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailChangeData.newEmail || !emailRegex.test(emailChangeData.newEmail)) {
+      toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+      return;
+    }
+
+    // Email formatını normalize et (küçük harfe çevir, trim)
+    const normalizedEmail = emailChangeData.newEmail.toLowerCase().trim();
+    const currentEmail = user?.email ? user.email.toLowerCase().trim() : '';
+
+    // Debug: Email karşılaştırması
+    console.log('Email karşılaştırması:', {
+      newEmail: normalizedEmail,
+      currentEmail: currentEmail,
+      areEqual: normalizedEmail === currentEmail,
+      userEmail: user?.email
+    });
+
+    // Mevcut email ile aynı olup olmadığını kontrol et
+    if (currentEmail && normalizedEmail === currentEmail) {
+      toast.error('Die neue E-Mail-Adresse muss sich von der aktuellen unterscheiden');
+      return;
+    }
+
+    setSendingEmailCode(true);
+    try {
+      await userService.requestEmailChange(normalizedEmail);
+      toast.success('Bestätigungscode wurde an die neue E-Mail-Adresse gesendet');
+      setEmailChangeStep('verify');
+      // Normalize edilmiş email'i state'e kaydet
+      setEmailChangeData(prev => ({ ...prev, newEmail: normalizedEmail }));
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Senden des Bestätigungscodes';
+      toast.error(errorMessage);
+    } finally {
+      setSendingEmailCode(false);
+    }
+  };
+
+  const handleVerifyEmailChange = async () => {
+    if (!emailChangeData.code || emailChangeData.code.length !== 6) {
+      toast.error('Bitte geben Sie den 6-stelligen Bestätigungscode ein');
+      return;
+    }
+
+    setVerifyingEmailCode(true);
+    try {
+      const response = await userService.verifyEmailChange(emailChangeData.code);
+      // API interceptor zaten response.data döndürüyor
+      // Backend'den gelen: { success: true, message: '...', data: { user: {...} } }
+      // Interceptor'dan gelen: { success: true, message: '...', data: { user: {...} } }
+      // userService.verifyEmailChange() direkt response döndürüyor
+      if (response?.data?.user) {
+        const { user: updatedUser } = response.data;
+        useAuthStore.getState().setUser(updatedUser);
+        // Profil bilgilerini yeniden yükle (güncel email için)
+        await useAuthStore.getState().refreshProfile();
+        toast.success('E-Mail-Adresse erfolgreich geändert');
+        setShowEmailChangeModal(false);
+        setEmailChangeStep('request');
+        setEmailChangeData({ newEmail: '', code: '' });
+      } else {
+        // Debug için log ekle
+        console.error('Unexpected response format:', response);
+        throw new Error('Ungültige Antwort vom Server');
+      }
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Bestätigen der E-Mail-Adresse';
+      toast.error(errorMessage);
+      
+      // Eğer "Keine E-Mail-Änderungsanfrage gefunden" hatası varsa, request adımına dön
+      if (errorMessage.includes('Keine E-Mail-Änderungsanfrage gefunden')) {
+        setEmailChangeStep('request');
+        setEmailChangeData({ newEmail: '', code: '' });
+        toast.info('Bitte fordern Sie zuerst eine E-Mail-Änderung an');
+      } else {
+        // Diğer hatalarda newEmail'i koru, sadece kodu temizle
+        setEmailChangeData(prev => ({ ...prev, code: '' }));
+      }
+    } finally {
+      setVerifyingEmailCode(false);
+    }
+  };
+
+  const handleCloseEmailChangeModal = () => {
+    // Modal kapatıldığında her şeyi sıfırla
+    setShowEmailChangeModal(false);
+    setEmailChangeStep('request');
+    setEmailChangeData({ newEmail: '', code: '' });
+  };
+
+  // Modal açıldığında state'i sıfırla
+  const handleOpenEmailChangeModal = () => {
+    setEmailChangeStep('request');
+    setEmailChangeData({ newEmail: '', code: '' });
+    setShowEmailChangeModal(true);
   };
 
   const handleDeleteAddress = async (id) => {
@@ -517,22 +708,125 @@ function Profil() {
       {/* Profil Tab */}
       {activeTab === 'profile' && (
         <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-gray-500">Name</label>
-              <p className="font-medium">
-                {user?.firstName} {user?.lastName}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">E-Mail</label>
-              <p className="font-medium">{user?.email}</p>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">Telefon</label>
-              <p className="font-medium">{user?.phone || '-'}</p>
-            </div>
-          </div>
+          {!isEditingProfile ? (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500">Name</label>
+                  <p className="font-medium">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">E-Mail</label>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{user?.email}</p>
+                    <button
+                      onClick={handleOpenEmailChangeModal}
+                      className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
+                    >
+                      <FiMail className="w-4 h-4" />
+                      Ändern
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Telefon</label>
+                  <p className="font-medium">{user?.phone || '-'}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleEditProfile}
+                className="w-full mt-6 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 flex items-center justify-center gap-2"
+              >
+                <FiEdit2 />
+                Profil bearbeiten
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Vorname <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={profileFormData.firstName}
+                    onChange={handleProfileInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Nachname <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={profileFormData.lastName}
+                    onChange={handleProfileInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Telefon
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={profileFormData.phone}
+                    onChange={handleProfileInputChange}
+                    placeholder="+49..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">E-Mail</label>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{user?.email}</p>
+                    <button
+                      onClick={handleOpenEmailChangeModal}
+                      className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
+                    >
+                      <FiMail className="w-4 h-4" />
+                      Ändern
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCancelEditProfile}
+                  disabled={savingProfile}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {savingProfile ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Speichern...
+                    </>
+                  ) : (
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      Speichern
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
 
           <button
             onClick={handleLogout}
@@ -970,6 +1264,218 @@ function Profil() {
                 </div>
               </div>
             </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Email Değişikliği Modal */}
+      <AnimatePresence>
+        {showEmailChangeModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                // Verify adımındaysa modal'ı kapatma, sadece request adımındaysa kapat
+                if (emailChangeStep === 'request') {
+                  handleCloseEmailChangeModal();
+                }
+              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className={`fixed z-[9999] ${
+                isDesktop 
+                  ? 'inset-0 flex items-center justify-center p-6' 
+                  : 'inset-x-4 top-[10%] max-h-[85vh]'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`bg-white rounded-2xl shadow-xl w-full flex flex-col ${
+                isDesktop ? 'max-w-lg max-h-[85vh]' : 'max-h-full'
+              }`}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    E-Mail-Adresse ändern
+                  </h2>
+                  <button
+                    onClick={handleCloseEmailChangeModal}
+                    className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <FiX className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+                  {emailChangeStep === 'request' ? (
+                    <>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Aktuelle E-Mail-Adresse
+                        </label>
+                        <p className="text-sm font-medium text-gray-900">{user?.email || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Neue E-Mail-Adresse <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={emailChangeData.newEmail}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEmailChangeData(prev => ({ ...prev, newEmail: value }));
+                          }}
+                          placeholder="neue@email.de"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                          autoComplete="email"
+                        />
+                        {emailChangeData.newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailChangeData.newEmail) && (
+                          <p className="text-xs text-red-500 mt-1">Bitte geben Sie eine gültige E-Mail-Adresse ein</p>
+                        )}
+                        {(() => {
+                          if (!emailChangeData.newEmail || !user?.email) return null;
+                          
+                          const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailChangeData.newEmail);
+                          if (!isValidEmail) return null;
+                          
+                          const newEmailNormalized = emailChangeData.newEmail.toLowerCase().trim();
+                          const currentEmailNormalized = user.email.toLowerCase().trim();
+                          const isSameEmail = newEmailNormalized === currentEmailNormalized;
+                          
+                          // Debug log
+                          console.log('Email karşılaştırması (UI):', {
+                            newEmail: newEmailNormalized,
+                            currentEmail: currentEmailNormalized,
+                            areEqual: isSameEmail,
+                            userEmailRaw: user.email
+                          });
+                          
+                          return isSameEmail ? (
+                            <p className="text-xs text-red-500 mt-1">Die neue E-Mail-Adresse muss sich von der aktuellen unterscheiden</p>
+                          ) : null;
+                        })()}
+                      </div>
+                      <p className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                        <FiInfo className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <span>Wir senden Ihnen einen Bestätigungscode an die neue E-Mail-Adresse.</span>
+                      </p>
+                      <button
+                        onClick={handleRequestEmailChange}
+                        disabled={sendingEmailCode || !emailChangeData.newEmail}
+                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        {sendingEmailCode ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Code wird gesendet...
+                          </>
+                        ) : (
+                          <>
+                            <FiMail className="w-4 h-4" />
+                            Bestätigungscode senden
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Neue E-Mail-Adresse
+                        </label>
+                        <p className="text-sm font-medium text-gray-900">{emailChangeData.newEmail}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Bestätigungscode <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={emailChangeData.code}
+                          onChange={(e) => setEmailChangeData(prev => ({ ...prev, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                          placeholder="123456"
+                          maxLength={6}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-2xl font-mono tracking-widest transition-all"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+                        <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <span>Bitte geben Sie den 6-stelligen Code ein, den wir an {emailChangeData.newEmail} gesendet haben.</span>
+                      </p>
+                      <button
+                        onClick={handleVerifyEmailChange}
+                        disabled={verifyingEmailCode || emailChangeData.code.length !== 6}
+                        className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {verifyingEmailCode ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Wird bestätigt...
+                          </>
+                        ) : (
+                          <>
+                            <FiCheck className="w-4 h-4" />
+                            Bestätigen
+                          </>
+                        )}
+                      </button>
+                        <button
+                          onClick={async () => {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(emailChangeData.newEmail)) {
+                              toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+                              return;
+                            }
+                            const normalizedEmail = emailChangeData.newEmail.toLowerCase().trim();
+                            // Mevcut email ile aynı olup olmadığını kontrol et
+                            const currentEmail = user?.email ? user.email.toLowerCase().trim() : '';
+                            if (currentEmail && normalizedEmail === currentEmail) {
+                              toast.error('Die neue E-Mail-Adresse muss sich von der aktuellen unterscheiden');
+                              return;
+                            }
+                            setSendingEmailCode(true);
+                            try {
+                              await userService.requestEmailChange(normalizedEmail);
+                              toast.success('Bestätigungscode wurde erneut gesendet');
+                              setEmailChangeData(prev => ({ ...prev, code: '', newEmail: normalizedEmail }));
+                            } catch (error) {
+                              const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Senden des Bestätigungscodes';
+                              toast.error(errorMessage);
+                            } finally {
+                              setSendingEmailCode(false);
+                            }
+                          }}
+                          disabled={sendingEmailCode}
+                          className="px-4 py-3 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                        >
+                          {sendingEmailCode ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                              Wird gesendet...
+                            </>
+                          ) : (
+                            <>
+                              <FiMail className="w-4 h-4" />
+                              Code erneut senden
+                            </>
+                          )}
+                        </button>
+                    </>
+                  )}
+                </div>
+              </div>
             </motion.div>
           </>
         )}

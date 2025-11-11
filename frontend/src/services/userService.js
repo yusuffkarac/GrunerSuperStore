@@ -3,8 +3,12 @@ import api from './api';
 const userService = {
   // Profil bilgilerini getir
   getProfile: async () => {
+    // API interceptor zaten response.data döndürüyor
+    // Backend'den gelen: { success: true, data: { user: {...} } }
+    // Interceptor'dan gelen: { success: true, data: { user: {...} } }
+    // Bu yüzden direkt response'u döndürüyoruz
     const response = await api.get('/user/profile');
-    return response.data;
+    return response;
   },
 
   // Profil güncelle
@@ -17,6 +21,22 @@ const userService = {
   changePassword: async (data) => {
     const response = await api.put('/user/password', data);
     return response.data;
+  },
+
+  // Email değişikliği talebi
+  requestEmailChange: async (newEmail) => {
+    const response = await api.post('/user/request-email-change', { newEmail });
+    return response.data;
+  },
+
+  // Email değişikliği doğrulama
+  verifyEmailChange: async (code) => {
+    // API interceptor zaten response.data döndürüyor
+    // Backend'den gelen: { success: true, message: '...', data: { user: {...} } }
+    // Interceptor'dan gelen: { success: true, message: '...', data: { user: {...} } }
+    // Bu yüzden direkt response'u döndürüyoruz
+    const response = await api.post('/user/verify-email-change', { code });
+    return response;
   },
 
   // Adresleri getir

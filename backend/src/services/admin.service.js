@@ -257,6 +257,394 @@ class AdminService {
     }));
   }
 
+  // Dashboard trend verileri
+  async getDashboardTrends(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Günlük sipariş ve gelir verilerini al
+    const trends = await prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*)::int as orders,
+        COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0)::decimal as revenue
+      FROM orders
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    return trends.map((trend) => ({
+      date: trend.date.toISOString().split('T')[0],
+      orders: Number(trend.orders),
+      revenue: Number(trend.revenue),
+    }));
+  }
+
+  // En çok satan ürünler
+  async getTopSellingProducts(limit = 10, startDate, endDate) {
+    const limitInt = parseInt(limit) || 10;
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const topProducts = await prisma.$queryRaw`
+      SELECT
+        oi.product_id as "productId",
+        oi.product_name as "productName",
+        c.name as "categoryName",
+        SUM(oi.quantity)::int as "salesCount",
+        COALESCE(SUM(oi.price * oi.quantity), 0)::decimal as revenue
+      FROM order_items oi
+      INNER JOIN orders o ON oi.order_id = o.id
+      LEFT JOIN products p ON oi.product_id = p.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE o.created_at >= ${start}
+      AND o.created_at <= ${end}
+      AND o.status != 'cancelled'
+      GROUP BY oi.product_id, oi.product_name, c.name
+      ORDER BY "salesCount" DESC
+      LIMIT ${limitInt}
+    `;
+
+    return topProducts.map((product) => ({
+      productId: product.productId,
+      productName: product.productName,
+      categoryName: product.categoryName || '-',
+      salesCount: Number(product.salesCount),
+      revenue: Number(product.revenue),
+    }));
+  }
+
+  // Kategori bazlı istatistikler
+  async getCategoryStats(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const categoryStats = await prisma.$queryRaw`
+      SELECT
+        c.id as "categoryId",
+        c.name as "categoryName",
+        COUNT(DISTINCT o.id)::int as "orderCount",
+        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN o.total ELSE 0 END), 0)::decimal as "totalRevenue"
+      FROM categories c
+      LEFT JOIN products p ON c.id = p.category_id
+      LEFT JOIN order_items oi ON p.id = oi.product_id
+      LEFT JOIN orders o ON oi.order_id = o.id AND o.created_at >= ${start} AND o.created_at <= ${end}
+      WHERE c.is_active = true
+      GROUP BY c.id, c.name
+      HAVING COUNT(DISTINCT o.id) > 0
+      ORDER BY "totalRevenue" DESC
+    `;
+
+    return categoryStats.map((stat) => ({
+      categoryId: stat.categoryId,
+      categoryName: stat.categoryName,
+      orderCount: Number(stat.orderCount),
+      totalRevenue: Number(stat.totalRevenue),
+      averageOrderValue: stat.orderCount > 0 ? Number(stat.totalRevenue) / Number(stat.orderCount) : 0,
+    }));
+  }
+
+  // Sipariş durumu dağılımı
+  async getOrderStatusDistribution() {
+    const distribution = await prisma.$queryRaw`
+      SELECT
+        status,
+        COUNT(*)::int as count
+      FROM orders
+      GROUP BY status
+      ORDER BY count DESC
+    `;
+
+    return distribution.map((item) => ({
+      status: item.status,
+      count: Number(item.count),
+    }));
+  }
+
+  // Detaylı gelir istatistikleri
+  async getRevenueStats(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Önceki dönem için tarih aralığı hesapla
+    const periodDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    const previousStart = new Date(start);
+    previousStart.setDate(previousStart.getDate() - periodDays);
+    const previousEnd = new Date(start);
+
+    const [currentPeriod, previousPeriod, totalOrders] = await Promise.all([
+      // Mevcut dönem
+      prisma.order.aggregate({
+        where: {
+          createdAt: { gte: start, lte: end },
+          status: { not: 'cancelled' },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+        _avg: { total: true },
+      }),
+      // Önceki dönem
+      prisma.order.aggregate({
+        where: {
+          createdAt: { gte: previousStart, lt: previousEnd },
+          status: { not: 'cancelled' },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+        _avg: { total: true },
+      }),
+      // Toplam sipariş sayısı
+      prisma.order.count({
+        where: {
+          createdAt: { gte: start, lte: end },
+          status: { not: 'cancelled' },
+        },
+      }),
+    ]);
+
+    const currentRevenue = Number(currentPeriod._sum.total || 0);
+    const previousRevenue = Number(previousPeriod._sum.total || 0);
+    const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+
+    return {
+      totalRevenue: currentRevenue,
+      averageOrderValue: Number(currentPeriod._avg.total || 0),
+      totalOrders,
+      previousPeriodRevenue: previousRevenue,
+      revenueChange: Number(revenueChange.toFixed(2)),
+    };
+  }
+
+  // Günlük sipariş sayısı (son 7 gün)
+  async getDailyOrderCounts(days = 7) {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+
+    const dailyCounts = await prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*)::int as count
+      FROM orders
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    return dailyCounts.map((item) => ({
+      date: item.date.toISOString().split('T')[0],
+      count: Number(item.count),
+    }));
+  }
+
+  // Saatlik sipariş dağılımı
+  async getHourlyOrderDistribution(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const hourlyDistribution = await prisma.$queryRaw`
+      SELECT
+        EXTRACT(HOUR FROM created_at)::int as hour,
+        COUNT(*)::int as count
+      FROM orders
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY EXTRACT(HOUR FROM created_at)
+      ORDER BY hour ASC
+    `;
+
+    return hourlyDistribution.map((item) => ({
+      hour: Number(item.hour),
+      count: Number(item.count),
+    }));
+  }
+
+  // Müşteri büyümesi trendi
+  async getCustomerGrowthTrend(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const growthTrend = await prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*)::int as "newCustomers"
+      FROM users
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    return growthTrend.map((item) => ({
+      date: item.date.toISOString().split('T')[0],
+      newCustomers: Number(item.newCustomers),
+    }));
+  }
+
+  // İptal oranı trendi
+  async getCancellationRateTrend(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const cancellationTrend = await prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*)::int as "totalOrders",
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END)::int as "cancelledOrders"
+      FROM orders
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    return cancellationTrend.map((item) => ({
+      date: item.date.toISOString().split('T')[0],
+      totalOrders: Number(item.totalOrders),
+      cancelledOrders: Number(item.cancelledOrders),
+      cancellationRate: item.totalOrders > 0 
+        ? ((Number(item.cancelledOrders) / Number(item.totalOrders)) * 100).toFixed(2)
+        : 0,
+    }));
+  }
+
+  // En aktif müşteriler
+  async getTopCustomers(limit = 10, startDate, endDate) {
+    const limitInt = parseInt(limit) || 10;
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const topCustomers = await prisma.$queryRaw`
+      SELECT
+        u.id as "userId",
+        u.first_name || ' ' || u.last_name as "customerName",
+        u.email,
+        COUNT(DISTINCT o.id)::int as "orderCount",
+        COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN o.total ELSE 0 END), 0)::decimal as "totalSpent"
+      FROM users u
+      INNER JOIN orders o ON u.id = o.user_id
+      WHERE o.created_at >= ${start}
+      AND o.created_at <= ${end}
+      GROUP BY u.id, u.first_name, u.last_name, u.email
+      ORDER BY "totalSpent" DESC
+      LIMIT ${limitInt}
+    `;
+
+    return topCustomers.map((customer) => ({
+      userId: customer.userId,
+      customerName: customer.customerName,
+      email: customer.email,
+      orderCount: Number(customer.orderCount),
+      totalSpent: Number(customer.totalSpent),
+    }));
+  }
+
+  // Sipariş tamamlama süresi analizi
+  async getOrderCompletionTime(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const completionTimes = await prisma.$queryRaw`
+      SELECT
+        o.id,
+        o.created_at as "orderDate",
+        o.updated_at as "completedDate",
+        EXTRACT(EPOCH FROM (o.updated_at - o.created_at)) / 3600 as "hoursToComplete"
+      FROM orders o
+      WHERE o.status = 'delivered'
+      AND o.created_at >= ${start}
+      AND o.created_at <= ${end}
+      ORDER BY o.created_at DESC
+    `;
+
+    const times = completionTimes.map((item) => Number(item.hoursToComplete));
+    const avgTime = times.length > 0 
+      ? times.reduce((a, b) => a + b, 0) / times.length 
+      : 0;
+
+    return {
+      averageHours: Number(avgTime.toFixed(2)),
+      totalDelivered: times.length,
+      completionTimes: completionTimes.map((item) => ({
+        orderId: item.id,
+        hoursToComplete: Number(item.hoursToComplete.toFixed(2)),
+      })),
+    };
+  }
+
+  // Aylık karşılaştırma
+  async getMonthlyComparison() {
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+
+    const lastMonth = new Date(currentMonth);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    const [currentMonthData, lastMonthData] = await Promise.all([
+      prisma.order.aggregate({
+        where: {
+          createdAt: { gte: currentMonth },
+          status: { not: 'cancelled' },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+      prisma.order.aggregate({
+        where: {
+          createdAt: { gte: lastMonth, lt: currentMonth },
+          status: { not: 'cancelled' },
+        },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    return {
+      currentMonth: {
+        revenue: Number(currentMonthData._sum.total || 0),
+        orders: currentMonthData._count.id,
+      },
+      lastMonth: {
+        revenue: Number(lastMonthData._sum.total || 0),
+        orders: lastMonthData._count.id,
+      },
+      revenueChange: lastMonthData._sum.total > 0
+        ? (((currentMonthData._sum.total || 0) - (lastMonthData._sum.total || 0)) / (lastMonthData._sum.total || 0)) * 100
+        : 0,
+      ordersChange: lastMonthData._count.id > 0
+        ? (((currentMonthData._count.id || 0) - lastMonthData._count.id) / lastMonthData._count.id) * 100
+        : 0,
+    };
+  }
+
+  // Ortalama sepet değeri trendi
+  async getAverageCartValueTrend(startDate, endDate) {
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const cartValueTrend = await prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*)::int as "orderCount",
+        COALESCE(AVG(CASE WHEN status != 'cancelled' THEN total ELSE NULL END), 0)::decimal as "avgCartValue"
+      FROM orders
+      WHERE created_at >= ${start}
+      AND created_at <= ${end}
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) ASC
+    `;
+
+    return cartValueTrend.map((item) => ({
+      date: item.date.toISOString().split('T')[0],
+      avgCartValue: Number(item.avgCartValue || 0).toFixed(2),
+      orderCount: Number(item.orderCount),
+    }));
+  }
+
   // ===============================
   // PRODUCT VARIANT MANAGEMENT
   // ===============================

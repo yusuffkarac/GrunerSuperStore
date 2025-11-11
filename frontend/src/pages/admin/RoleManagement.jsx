@@ -50,7 +50,7 @@ function RoleManagement() {
     try {
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        setError('Oturum açmanız gerekiyor');
+        setError('Sie müssen sich anmelden');
         setLoading(false);
         return;
       }
@@ -67,7 +67,7 @@ function RoleManagement() {
       setError(null);
     } catch (err) {
       console.error('Rol ve izin verileri yüklenirken hata:', err);
-      let errorMessage = 'Veriler yüklenirken hata oluştu';
+      let errorMessage = 'Fehler beim Laden der Daten';
       
       if (err.response?.data?.error) {
         errorMessage = typeof err.response.data.error === 'string' 
@@ -81,9 +81,9 @@ function RoleManagement() {
       
       // 403 hatası için özel mesaj
       if (err.response?.status === 403) {
-        errorMessage = 'Bu sayfaya erişim için Super Admin yetkisi gerekiyor';
+        errorMessage = 'Super-Admin-Berechtigung erforderlich, um auf diese Seite zuzugreifen';
       } else if (err.response?.status === 401) {
-        errorMessage = 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın';
+        errorMessage = 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an';
       }
       
       setError(errorMessage);
@@ -122,10 +122,10 @@ function RoleManagement() {
 
       if (roleDialog.mode === 'create') {
         await axios.post(`${API_URL}/admin/roles`, formData, config);
-        toast.success('Rol başarıyla oluşturuldu');
+        toast.success('Rolle erfolgreich erstellt');
       } else {
         await axios.patch(`${API_URL}/admin/roles/${roleDialog.role.id}`, formData, config);
-        toast.success('Rol başarıyla güncellendi');
+        toast.success('Rolle erfolgreich aktualisiert');
       }
 
       handleCloseDialog();
@@ -137,7 +137,7 @@ function RoleManagement() {
       window.dispatchEvent(new CustomEvent('adminPermissionsUpdated'));
     } catch (err) {
       console.error('Rol kaydetme hatası:', err);
-      let errorMessage = 'İşlem sırasında hata oluştu';
+      let errorMessage = 'Fehler während des Vorgangs';
       
       if (err.response?.data?.error) {
         errorMessage = typeof err.response.data.error === 'string' 
@@ -160,13 +160,13 @@ function RoleManagement() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success('Rol başarıyla silindi');
+      toast.success('Rolle erfolgreich gelöscht');
       setDeleteDialog({ open: false, role: null });
       fetchData();
       setError(null);
     } catch (err) {
       console.error('Rol silme hatası:', err);
-      let errorMessage = 'Rol silinirken hata oluştu';
+      let errorMessage = 'Fehler beim Löschen der Rolle';
       
       if (err.response?.data?.error) {
         errorMessage = typeof err.response.data.error === 'string' 
@@ -306,10 +306,10 @@ function RoleManagement() {
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
             <FiShield className="w-6 h-6 md:w-8 md:h-8" />
-            Rol ve İzin Yönetimi
+            Rollen- und Berechtigungsverwaltung
           </h1>
           <p className="text-gray-600 mt-0.5 md:mt-1 text-xs md:text-base">
-            Rolleri oluşturun ve izinleri yönetin
+            Rollen erstellen und Berechtigungen verwalten
           </p>
         </div>
         <button
@@ -317,7 +317,7 @@ function RoleManagement() {
           className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
         >
           <FiPlus className="w-4 h-4" />
-          <span>Yeni Rol Oluştur</span>
+          <span>Neue Rolle erstellen</span>
         </button>
       </div>
 
@@ -349,8 +349,8 @@ function RoleManagement() {
         ) : roles.length === 0 ? (
           <EmptyState
             icon={FiShield}
-            title="Henüz rol oluşturulmamış"
-            message="İlk rolünüzü oluşturmak için 'Yeni Rol Oluştur' butonuna tıklayın."
+            title="Noch keine Rolle erstellt"
+            message="Klicken Sie auf 'Neue Rolle erstellen', um Ihre erste Rolle zu erstellen."
           />
         ) : (
           <div className="overflow-x-auto">
@@ -358,22 +358,22 @@ function RoleManagement() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Rol Adı
+                    Rollenname
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Açıklama
+                    Beschreibung
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    İzin Sayısı
+                    Anzahl der Berechtigungen
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Admin Sayısı
+                    Anzahl der Admins
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Durum
+                    Status
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    İşlemler
+                    Aktionen
                   </th>
                 </tr>
               </thead>
@@ -388,7 +388,7 @@ function RoleManagement() {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {role.permissions?.length || 0} izin
+                        {role.permissions?.length || 0} Berechtigung{role.permissions?.length !== 1 ? 'en' : ''}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -398,12 +398,12 @@ function RoleManagement() {
                       {role.isActive ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
                           <FiCheck size={12} />
-                          Aktif
+                          Aktiv
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
                           <FiXCircle size={12} />
-                          Pasif
+                          Inaktiv
                         </span>
                       )}
                     </td>
@@ -412,14 +412,14 @@ function RoleManagement() {
                         <button
                           onClick={() => handleOpenDialog('edit', role)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Düzenle"
+                          title="Bearbeiten"
                         >
                           <FiEdit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteDialog({ open: true, role })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Sil"
+                          title="Löschen"
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
@@ -454,7 +454,7 @@ function RoleManagement() {
               <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-8">
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {roleDialog.mode === 'create' ? 'Yeni Rol Oluştur' : 'Rolü Düzenle'}
+                    {roleDialog.mode === 'create' ? 'Neue Rolle erstellen' : 'Rolle bearbeiten'}
                   </h3>
                   <button
                     onClick={handleCloseDialog}
@@ -466,7 +466,7 @@ function RoleManagement() {
                 <div className="px-6 py-4 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Rol Adı *
+                      Rollenname *
                     </label>
                     <input
                       type="text"
@@ -479,7 +479,7 @@ function RoleManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Açıklama
+                      Beschreibung
                     </label>
                     <textarea
                       value={formData.description}
@@ -490,21 +490,21 @@ function RoleManagement() {
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">İzinler</h4>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Berechtigungen</h4>
 
                     {permissions.length === 0 ? (
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                         <p className="text-sm font-medium text-amber-900 mb-2">
-                          Henüz izin tanımlanmamış
+                          Noch keine Berechtigungen definiert
                         </p>
                         <p className="text-sm text-amber-800 mb-2">
-                          İzinleri oluşturmak için backend'de şu komutu çalıştırın:
+                          Führen Sie im Backend folgenden Befehl aus, um Berechtigungen zu erstellen:
                         </p>
                         <pre className="bg-amber-100 p-2 rounded text-xs text-amber-900 overflow-x-auto">
                           node backend/src/scripts/seedPermissions.js
                         </pre>
                         <p className="text-sm text-amber-800 mt-2">
-                          Veya izinleri manuel olarak oluşturmak için API endpoint'ini kullanabilirsiniz.
+                          Oder Sie können die API-Endpunkte verwenden, um Berechtigungen manuell zu erstellen.
                         </p>
                       </div>
                     ) : (
@@ -540,7 +540,7 @@ function RoleManagement() {
                                         {permission.displayName}
                                         {isDisabled && (
                                           <span className="ml-2 text-xs text-amber-600">
-                                            (Görüntüleme izni gerekli)
+                                            (Ansichtsberechtigung erforderlich)
                                           </span>
                                         )}
                                       </div>
@@ -559,7 +559,7 @@ function RoleManagement() {
                         {formData.permissionIds.length > 0 && (
                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                             <p className="text-sm text-blue-900">
-                              <strong>{formData.permissionIds.length} izin</strong> seçildi. Bu izinler rol kaydedildiğinde atanacak.
+                              <strong>{formData.permissionIds.length} Berechtigung{formData.permissionIds.length !== 1 ? 'en' : ''}</strong> ausgewählt. Diese Berechtigungen werden der Rolle zugewiesen, wenn sie gespeichert wird.
                             </p>
                           </div>
                         )}
@@ -572,14 +572,14 @@ function RoleManagement() {
                     onClick={handleCloseDialog}
                     className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    İptal
+                    Abbrechen
                   </button>
                   <button
                     onClick={handleSaveRole}
                     disabled={!formData.name}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {roleDialog.mode === 'create' ? 'Oluştur' : 'Güncelle'}
+                    {roleDialog.mode === 'create' ? 'Erstellen' : 'Aktualisieren'}
                   </button>
                 </div>
               </div>
@@ -608,7 +608,7 @@ function RoleManagement() {
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Rolü Sil</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Rolle löschen</h3>
                   <button
                     onClick={() => setDeleteDialog({ open: false, role: null })}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -618,12 +618,12 @@ function RoleManagement() {
                 </div>
                 <div className="px-6 py-4 space-y-4">
                   <p className="text-gray-700">
-                    <strong>{deleteDialog.role?.name}</strong> rolünü silmek istediğinizden emin misiniz?
+                    Sind Sie sicher, dass Sie die Rolle <strong>{deleteDialog.role?.name}</strong> löschen möchten?
                   </p>
                   {deleteDialog.role?.adminCount > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                       <p className="text-sm text-amber-900">
-                        Bu rol {deleteDialog.role.adminCount} admin tarafından kullanılıyor. Önce bu adminlerin rollerini değiştirmelisiniz.
+                        Diese Rolle wird von {deleteDialog.role.adminCount} Admin{deleteDialog.role.adminCount !== 1 ? 's' : ''} verwendet. Sie müssen zuerst die Rollen dieser Admins ändern.
                       </p>
                     </div>
                   )}
@@ -633,14 +633,14 @@ function RoleManagement() {
                     onClick={() => setDeleteDialog({ open: false, role: null })}
                     className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    İptal
+                    Abbrechen
                   </button>
                   <button
                     onClick={handleDeleteRole}
                     disabled={deleteDialog.role?.adminCount > 0}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Sil
+                    Löschen
                   </button>
                 </div>
               </div>

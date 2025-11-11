@@ -66,6 +66,158 @@ class AdminController {
     });
   });
 
+  // GET /api/admin/dashboard/trends - Dashboard trend verileri
+  getDashboardTrends = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const trends = await adminService.getDashboardTrends(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { trends },
+    });
+  });
+
+  // GET /api/admin/dashboard/top-products - En çok satan ürünler
+  getTopSellingProducts = asyncHandler(async (req, res) => {
+    const { limit, startDate, endDate } = req.query;
+
+    const products = await adminService.getTopSellingProducts(limit, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { products },
+    });
+  });
+
+  // GET /api/admin/dashboard/category-stats - Kategori istatistikleri
+  getCategoryStats = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const stats = await adminService.getCategoryStats(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { stats },
+    });
+  });
+
+  // GET /api/admin/dashboard/order-status-distribution - Sipariş durumu dağılımı
+  getOrderStatusDistribution = asyncHandler(async (req, res) => {
+    const distribution = await adminService.getOrderStatusDistribution();
+
+    res.status(200).json({
+      success: true,
+      data: { distribution },
+    });
+  });
+
+  // GET /api/admin/dashboard/revenue-stats - Gelir istatistikleri
+  getRevenueStats = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const stats = await adminService.getRevenueStats(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { stats },
+    });
+  });
+
+  // GET /api/admin/dashboard/daily-order-counts - Günlük sipariş sayıları
+  getDailyOrderCounts = asyncHandler(async (req, res) => {
+    const { days } = req.query;
+
+    const counts = await adminService.getDailyOrderCounts(days || 7);
+
+    res.status(200).json({
+      success: true,
+      data: { counts },
+    });
+  });
+
+  // GET /api/admin/dashboard/hourly-distribution - Saatlik sipariş dağılımı
+  getHourlyOrderDistribution = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const distribution = await adminService.getHourlyOrderDistribution(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { distribution },
+    });
+  });
+
+  // GET /api/admin/dashboard/customer-growth - Müşteri büyümesi trendi
+  getCustomerGrowthTrend = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const trend = await adminService.getCustomerGrowthTrend(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { trend },
+    });
+  });
+
+  // GET /api/admin/dashboard/cancellation-rate - İptal oranı trendi
+  getCancellationRateTrend = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const trend = await adminService.getCancellationRateTrend(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { trend },
+    });
+  });
+
+  // GET /api/admin/dashboard/top-customers - En aktif müşteriler
+  getTopCustomers = asyncHandler(async (req, res) => {
+    const { limit, startDate, endDate } = req.query;
+
+    const customers = await adminService.getTopCustomers(limit, startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { customers },
+    });
+  });
+
+  // GET /api/admin/dashboard/order-completion-time - Sipariş tamamlama süresi
+  getOrderCompletionTime = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const data = await adminService.getOrderCompletionTime(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  });
+
+  // GET /api/admin/dashboard/monthly-comparison - Aylık karşılaştırma
+  getMonthlyComparison = asyncHandler(async (req, res) => {
+    const comparison = await adminService.getMonthlyComparison();
+
+    res.status(200).json({
+      success: true,
+      data: { comparison },
+    });
+  });
+
+  // GET /api/admin/dashboard/average-cart-value - Ortalama sepet değeri trendi
+  getAverageCartValueTrend = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const trend = await adminService.getAverageCartValueTrend(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: { trend },
+    });
+  });
+
   // ===============================
   // ORDER MANAGEMENT
   // ===============================

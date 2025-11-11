@@ -105,6 +105,114 @@ const adminService = {
     return response.data;
   },
 
+  // Dashboard trend verileri
+  getDashboardTrends: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/trends', { params });
+    return response.data;
+  },
+
+  // En çok satan ürünler
+  getTopSellingProducts: async (limit = 10, startDate, endDate) => {
+    const params = { limit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/top-products', { params });
+    return response.data;
+  },
+
+  // Kategori istatistikleri
+  getCategoryStats: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/category-stats', { params });
+    return response.data;
+  },
+
+  // Sipariş durumu dağılımı
+  getOrderStatusDistribution: async () => {
+    const response = await adminApi.get('/admin/dashboard/order-status-distribution');
+    return response.data;
+  },
+
+  // Gelir istatistikleri
+  getRevenueStats: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/revenue-stats', { params });
+    return response.data;
+  },
+
+  // Günlük sipariş sayıları
+  getDailyOrderCounts: async (days = 7) => {
+    const response = await adminApi.get('/admin/dashboard/daily-order-counts', { params: { days } });
+    return response.data;
+  },
+
+  // Saatlik sipariş dağılımı
+  getHourlyOrderDistribution: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/hourly-distribution', { params });
+    return response.data;
+  },
+
+  // Müşteri büyümesi trendi
+  getCustomerGrowthTrend: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/customer-growth', { params });
+    return response.data;
+  },
+
+  // İptal oranı trendi
+  getCancellationRateTrend: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/cancellation-rate', { params });
+    return response.data;
+  },
+
+  // En aktif müşteriler
+  getTopCustomers: async (limit = 10, startDate, endDate) => {
+    const params = { limit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/top-customers', { params });
+    return response.data;
+  },
+
+  // Sipariş tamamlama süresi
+  getOrderCompletionTime: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/order-completion-time', { params });
+    return response.data;
+  },
+
+  // Aylık karşılaştırma
+  getMonthlyComparison: async () => {
+    const response = await adminApi.get('/admin/dashboard/monthly-comparison');
+    return response.data;
+  },
+
+  // Ortalama sepet değeri trendi
+  getAverageCartValueTrend: async (startDate, endDate) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await adminApi.get('/admin/dashboard/average-cart-value', { params });
+    return response.data;
+  },
+
   // Ürün yönetimi
   getProducts: async (params) => {
     const response = await adminApi.get('/admin/products', { params });
@@ -487,6 +595,53 @@ const adminService = {
     if (filters.categoryId) params.append('categoryId', filters.categoryId);
 
     const response = await adminApi.get(`/admin/products/ignored?${params.toString()}`);
+    return response.data;
+  },
+
+  // ===============================
+  // STOCK MANAGEMENT
+  // ===============================
+
+  // Kritik stoklu ürünleri getir
+  getLowStockProducts: async () => {
+    const response = await adminApi.get('/admin/stock/low-stock');
+    return response.data;
+  },
+
+  // Sipariş geçmişini getir
+  getStockOrderHistory: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.productId) queryParams.append('productId', params.productId);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.offset) queryParams.append('offset', params.offset);
+    if (params.date) queryParams.append('date', params.date);
+
+    const response = await adminApi.get(`/admin/stock/history?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  // Yeni sipariş oluştur
+  createStockOrder: async (productId, data) => {
+    const response = await adminApi.post(`/admin/stock/order/${productId}`, data);
+    return response.data;
+  },
+
+  // Sipariş durumunu güncelle
+  updateStockOrderStatus: async (orderId, data) => {
+    const response = await adminApi.put(`/admin/stock/order/${orderId}/status`, data);
+    return response.data;
+  },
+
+  // Siparişi geri al
+  undoStockOrder: async (orderId) => {
+    const response = await adminApi.post(`/admin/stock/order/${orderId}/undo`);
+    return response.data;
+  },
+
+  // Ürün tedarikçisini güncelle
+  updateProductSupplier: async (productId, supplier) => {
+    const response = await adminApi.put(`/admin/stock/product/${productId}/supplier`, { supplier });
     return response.data;
   },
 };
