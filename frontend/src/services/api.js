@@ -17,11 +17,9 @@ const getApiBaseUrl = () => {
     return '/api';
   }
   
-  // Production'da tam URL kullan
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  const port = '5001';
-  return `${protocol}//${hostname}:${port}/api`;
+a  // Production'da nginx üzerinden git (port kullanma, nginx proxy kullan)
+  // Nginx /api isteklerini backend'e yönlendirir
+  return '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
