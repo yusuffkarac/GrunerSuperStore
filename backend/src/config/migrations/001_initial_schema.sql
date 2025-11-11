@@ -10,9 +10,23 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUMS
 -- ===================================
 
-CREATE TYPE order_type AS ENUM ('pickup', 'delivery');
-CREATE TYPE order_status AS ENUM ('pending', 'accepted', 'preparing', 'shipped', 'delivered', 'cancelled');
-CREATE TYPE payment_type AS ENUM ('none', 'cash', 'card_on_delivery');
+DO $$ BEGIN
+    CREATE TYPE order_type AS ENUM ('pickup', 'delivery');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE order_status AS ENUM ('pending', 'accepted', 'preparing', 'shipped', 'delivered', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE payment_type AS ENUM ('none', 'cash', 'card_on_delivery');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- ===================================
 -- TRIGGER FUNCTION FOR updated_at
