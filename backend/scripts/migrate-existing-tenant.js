@@ -211,12 +211,31 @@ async function migrateExistingTenant() {
       // Eğer zaten tenant-specific klasör yoksa taşı
       if (!fs.existsSync(newFrontendDist)) {
         fs.mkdirSync(path.dirname(newFrontendDist), { recursive: true });
-        copyDirectory(oldFrontendDist, newFrontendDist);
-        console.log(`✅ Frontend dist klasörü taşındı\n`);
+        
+        // Eğer dist klasörü içinde tenant klasörü yoksa, içeriği taşı
+        // Ama eğer dist klasörü zaten tenant klasörü içindeyse, taşıma
+        const distContents = fs.readdirSync(oldFrontendDist);
+        const hasTenantFolder = distContents.includes(tenantName);
+        
+        if (!hasTenantFolder) {
+          // Normal kopyalama - dist içeriğini dist/tenantName'e kopyala
+          copyDirectory(oldFrontendDist, newFrontendDist);
+          console.log(`✅ Frontend dist klasörü taşındı\n`);
+        } else {
+          // Zaten tenant klasörü var, sadece içeriğini kopyala
+          const tenantDistPath = path.join(oldFrontendDist, tenantName);
+          if (fs.existsSync(tenantDistPath)) {
+            copyDirectory(tenantDistPath, newFrontendDist);
+            console.log(`✅ Frontend dist klasörü taşındı (mevcut tenant klasöründen)\n`);
+          }
+        }
       } else {
         console.log(`⚠️  Frontend dist klasörü zaten mevcut: dist/${tenantName}`);
         console.log(`   Mevcut klasör korunuyor\n`);
       }
+    } else {
+      console.log(`⚠️  Frontend dist klasörü bulunamadı: ${oldFrontendDist}`);
+      console.log(`   Build yapıldığında oluşturulacak\n`);
     }
 
     // 9. Eski .env dosyasını yedekle (opsiyonel)
@@ -248,8 +267,18 @@ async function migrateExistingTenant() {
 
 /**
  * Klasörü recursive kopyala
+ * Sonsuz döngüyü önlemek için kontrol ekle
  */
 function copyDirectory(src, dest) {
+  // Eğer kaynak ve hedef aynıysa veya hedef kaynağın içindeyse, kopyalama
+  const srcNormalized = path.resolve(src);
+  const destNormalized = path.resolve(dest);
+  
+  if (srcNormalized === destNormalized || destNormalized.startsWith(srcNormalized + path.sep)) {
+    console.log(`⚠️  Kopyalama atlandı: hedef kaynağın içinde (sonsuz döngü önlendi)`);
+    return;
+  }
+  
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
   }
@@ -258,6 +287,11 @@ function copyDirectory(src, dest) {
   items.forEach(item => {
     const srcPath = path.join(src, item);
     const destPath = path.join(dest, item);
+    
+    // Eğer hedef zaten kaynağın içindeyse, atla
+    if (path.resolve(destPath).startsWith(path.resolve(srcPath) + path.sep)) {
+      return;
+    }
     
     if (fs.statSync(srcPath).isDirectory()) {
       copyDirectory(srcPath, destPath);
