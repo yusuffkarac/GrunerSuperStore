@@ -150,7 +150,7 @@ async function getOrCreateCategory(categoryName, existingCategories) {
 
 
 /**
- * "Genel" kategorisindeki ürünleri Gemini ile analiz et ve kategorilerini güncelle
+ * "Genel" ve "Allgemein" kategorisindeki ürünleri Gemini ile analiz et ve kategorilerini güncelle
  */
 async function analyzeCategoriesWithGemini(limit = 10) {
   const startTime = Date.now();
@@ -158,8 +158,8 @@ async function analyzeCategoriesWithGemini(limit = 10) {
   try {
     console.log('🔄 Gemini ile kategori analizi başlatılıyor...\n');
 
-    // "Genel" veya "Allgemein" kategorisini bul
-    const genelCategory = await prisma.category.findFirst({
+    // Hem "Genel" hem de "Allgemein" kategorilerini bul
+    const defaultCategories = await prisma.category.findMany({
       where: {
         OR: [
           { name: 'Genel' },
@@ -168,19 +168,33 @@ async function analyzeCategoriesWithGemini(limit = 10) {
           { slug: 'allgemein' },
         ],
       },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
     });
 
-    if (!genelCategory) {
+    if (defaultCategories.length === 0) {
       console.log('❌ "Genel" veya "Allgemein" kategorisi bulunamadı.');
       return;
     }
 
-    console.log(`✅ Kategori bulundu: ${genelCategory.name} (ID: ${genelCategory.id})\n`);
+    console.log(`✅ Bulunan kategoriler (${defaultCategories.length} adet):`);
+    defaultCategories.forEach((cat, index) => {
+      console.log(`   ${index + 1}. ${cat.name} (ID: ${cat.id})`);
+    });
+    console.log('');
 
-    // Kategorideki ürünleri getir (limit ile)
+    // Kategori ID'lerini çıkar
+    const categoryIds = defaultCategories.map(cat => cat.id);
+
+    // Her iki kategorideki ürünleri birlikte getir (limit ile)
     const products = await prisma.product.findMany({
       where: {
-        categoryId: genelCategory.id,
+        categoryId: {
+          in: categoryIds,
+        },
       },
       take: limit,
       select: {
@@ -191,11 +205,23 @@ async function analyzeCategoriesWithGemini(limit = 10) {
     });
 
     if (products.length === 0) {
-      console.log(`ℹ️  "${genelCategory.name}" kategorisinde analiz edilecek ürün bulunamadı.`);
+      console.log(`ℹ️  "Genel" ve "Allgemein" kategorilerinde analiz edilecek ürün bulunamadı.`);
       return;
     }
 
     console.log(`📊 ${products.length} ürün analiz edilecek:\n`);
+    // Hangi kategoriden kaç ürün geldiğini göster
+    const categoryCounts = {};
+    products.forEach(product => {
+      const category = defaultCategories.find(cat => cat.id === product.categoryId);
+      const categoryName = category ? category.name : 'Bilinmeyen';
+      categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
+    });
+    
+    Object.entries(categoryCounts).forEach(([catName, count]) => {
+      console.log(`   📦 ${catName}: ${count} ürün`);
+    });
+    console.log('');
 
     // Tüm aktif kategorileri bir kere getir (performans için)
     const allCategories = await prisma.category.findMany({
@@ -287,6 +313,10 @@ async function analyzeCategoriesWithGemini(limit = 10) {
       }
 
       try {
+        // Eski kategori adını bul (güncellemeden önce)
+        const oldCategory = defaultCategories.find(cat => cat.id === product.categoryId);
+        const oldCategoryName = oldCategory ? oldCategory.name : 'Bilinmeyen';
+        
         console.log(`   ✅ Seçilen kategori: "${selectedCategory.name}" (ID: ${selectedCategory.id})`);
 
         // Ürünün kategorisini güncelle
@@ -301,10 +331,11 @@ async function analyzeCategoriesWithGemini(limit = 10) {
 
         console.log(`   ✅ Ürün kategorisi güncellendi!\n`);
         successCount++;
+        
         results.push({
           product: product.name,
           status: 'success',
-          oldCategory: genelCategory.name,
+          oldCategory: oldCategoryName,
           newCategory: selectedCategory.name,
         });
       } catch (error) {
