@@ -5,15 +5,19 @@
  * GitHub'dan çekilen dump dosyasını sunucudaki veritabanına yükler.
  * 
  * Kullanım:
- *   npm run db:restore [dump-file-name]
+ *   npm run db:restore [dump-file-name] [tenant-name]
  *   veya
- *   node backend/scripts/restoreDatabase.js [dump-file-name]
+ *   node backend/scripts/restoreDatabase.js [dump-file-name] [tenant-name]
  * 
  * Eğer dosya adı belirtilmezse, en son dump dosyası kullanılır.
+ * Eğer tenant-name belirtilirse, .env.{tenant-name} dosyası kullanılır.
+ * 
+ * Örnek:
+ *   node scripts/restoreDatabase.js dump_gruner_superstore_2025-11-11_164132.sql gruner
  */
 
 import { spawn } from 'child_process';
-import { readdirSync, statSync, createReadStream } from 'fs';
+import { readdirSync, statSync, createReadStream, existsSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -21,9 +25,24 @@ import readline from 'readline';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// .env dosyasını yükle (önce backend/.env, sonra root .env)
+// Tenant adını al (ikinci parametre)
+const tenantName = process.argv[3];
+
+// Önce varsayılan .env dosyalarını yükle
 dotenv.config({ path: join(__dirname, '../.env') });
 dotenv.config({ path: join(__dirname, '../../.env') });
+
+// Eğer tenant-name belirtilmişse, .env.{tenant-name} dosyasını yükle (override eder)
+if (tenantName) {
+  const tenantEnvPath = join(__dirname, `../.env.${tenantName}`);
+  if (existsSync(tenantEnvPath)) {
+    console.log(`📋 Tenant .env dosyası bulundu: .env.${tenantName}`);
+    dotenv.config({ path: tenantEnvPath });
+  } else {
+    console.warn(`⚠️  Tenant .env dosyası bulunamadı: .env.${tenantName}`);
+    console.warn(`   Varsayılan .env dosyası kullanılacak.`);
+  }
+}
 
 // Veritabanı bağlantı bilgileri
 const DB_HOST = process.env.DB_HOST || 'localhost';
@@ -264,7 +283,14 @@ async function restoreDatabase(dumpFile) {
 // Ana fonksiyon
 async function main() {
   const dumpFileName = process.argv[2];
+  const tenantName = process.argv[3];
   let dumpFile;
+  
+  // Tenant bilgisini göster
+  if (tenantName) {
+    console.log(`\n🏢 Tenant: ${tenantName}`);
+    console.log(`   .env dosyası: .env.${tenantName}`);
+  }
   
   if (dumpFileName) {
     // Belirtilen dosya adı
