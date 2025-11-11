@@ -19,32 +19,20 @@ if (process.env.NODE_ENV === 'production') {
     port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'gruner_superstore',
     user: process.env.DB_USER || 'postgres',
+    databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@') : 'not set',
   });
 }
 
-// Prisma Client singleton pattern
-let prisma;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
+// Prisma Client singleton pattern - Her process için ayrı instance
+// PM2 her process için ayrı environment variable'lar set ediyor, bu yüzden her process kendi Prisma Client'ını oluşturur
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
     },
-  });
-} else {
-  // Development'ta her zaman yeni client oluştur
-  // (Prisma client güncellendiğinde cache sorunlarını önlemek için)
-  prisma = new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
-  });
-}
+  },
+  log: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['query', 'error', 'warn'],
+});
 
 // Graceful shutdown
 process.on('beforeExit', async () => {

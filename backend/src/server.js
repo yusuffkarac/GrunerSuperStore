@@ -258,7 +258,13 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: {
+      name: process.env.DB_NAME || 'not set',
+      host: process.env.DB_HOST || 'not set',
+      port: process.env.DB_PORT || 'not set',
+      user: process.env.DB_USER || 'not set',
+    }
   });
 });
 
