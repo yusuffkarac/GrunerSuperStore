@@ -24,7 +24,8 @@
     "analyze-categories": "node src/scripts/analyzeCategoriesWithGemini.js",
     "rollback-categories": "node src/scripts/rollbackCategories.js",
     "db:dump": "node scripts/dumpDatabase.js",
-    "db:restore": "node scripts/restoreDatabase.js"
+    "db:restore": "node scripts/restoreDatabase.js",
+    "merge-categories": "node scripts/mergeDuplicateCategories.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
