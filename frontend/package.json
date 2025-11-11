@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:force": "vite --force",
-    "build": "vite build",
-    "build:tenant": "node -e \"const tenant=process.argv[1];if(!tenant){console.error('Usage: npm run build:tenant <tenant-name>');process.exit(1);}process.env.TENANT_NAME=tenant;process.env.VITE_API_URL=`https://${process.argv[2]||tenant+'.superstore.com'}/api`;require('child_process').execSync('vite build',{stdio:'inherit'});\"",
+    "build": "npx vite build",
+    "build:tenant": "node -e \"const tenant=process.argv[1];if(!tenant){console.error('Usage: npm run build:tenant <tenant-name>');process.exit(1);}process.env.TENANT_NAME=tenant;process.env.VITE_API_URL=`https://${process.argv[2]||tenant+'.superstore.com'}/api`;require('child_process').execSync('npx vite build',{stdio:'inherit'});\"",
     "preview": "vite preview",
     "lint": "eslint src --ext js,jsx",
     "clean": "rm -rf node_modules/.vite"
