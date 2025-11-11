@@ -1,9 +1,22 @@
 import dotenv from 'dotenv';
 import prisma from '../config/prisma.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // .env dosyasını yükle
 dotenv.config();
+
+// ES modules için __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Log klasörünü oluştur
+const logDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 
 // Gemini API anahtarı kontrolü
 if (!process.env.GEMINI_API_KEY) {
@@ -22,43 +35,55 @@ function generateSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// Tanımlı kategoriler (sadece bunlar kullanılacak)
+const DEFINED_CATEGORIES = [
+  'Obst und Gemüse',
+  'Fleisch, Geflügel und Fisch',
+  'Feinkost und Frühstück',
+  'Milch- und Molkereiprodukte',
+  'Brot und Backwaren',
+  'Grundnahrungsmittel',
+  'Snacks',
+  'Getränke',
+  'Körperpflege',
+  'Haushalts- und Reinigungsmittel',
+  'Babyprodukte',
+  'Haustierprodukte',
+  'Fertiggerichte und Tiefkühlprodukte',
+  'Alkoholische Getränke',
+  'Bio und Diät',
+  'Haushalt und Wohnen',
+];
+
 /**
- * Gemini API ile ürünleri analiz et ve her ürün için uygun kategori öner
- * AI kendi kategorileri bulur (market sipariş uygulaması için)
+ * Gemini API ile ürünleri analiz et ve verilen kategorilerden birini seç
  */
-async function analyzeProductsAndSuggestCategories(products) {
+async function analyzeProductsAndSuggestCategories(products, availableCategories) {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Ürün listesini formatla
     const productList = products.map((product, index) => `${index + 1}. ${product.name}`).join('\n');
 
+    // Kategori listesini formatla
+    const categoryList = availableCategories.map((cat, index) => `${index + 1}. ${cat.name}`).join('\n');
+
     const prompt = `Sen bir market sipariş uygulaması için ürün kategorileri belirleyen bir uzmansın.
-Aşağıdaki ürünleri analiz et ve her ürün için en uygun kategoriyi öner.
+Aşağıdaki ürünleri analiz et ve her ürün için VERİLEN KATEGORİLER LİSTESİNDEN en uygun kategoriyi seç.
 
 Ürünler:
 ${productList}
 
-Her satır için "Ürün No: Kategori Adı" formatında döndür. Kategori adları kesinlikle Almanca olmalı.
-Sadece kategori adını yaz, başka açıklama yapma.
+Kullanılacak kategoriler (SADECE BUNLARI KULLAN):
+${categoryList}
 
-Örnek format:
-1: Meyve ve Sebze
-2: Et, Tavuk ve Balık
-3: Şarküteri ve Kahvaltılık
-4: Süt ve Süt Ürünleri
-5: Ekmek ve Fırın Ürünleri
-6: Temel Gıda
-7: Atıştırmalık
-8: İçecekler
-9: Kişisel Bakım
-10: Ev Bakım ve Temizlik
-11: Bebek Ürünleri
-12: Evcil Hayvan Ürünleri
-13: Hazır Yemek ve Dondurulmuş
-14: Alkollü İçecekler
-15: Organik ve Diyet
-16: Ev ve Yaşam
+Her satır için "Ürün No: Kategori No" formatında döndür. Sadece numaraları kullan, başka açıklama yapma.
+Verilen kategoriler dışında kategori kullanma!
+
+Format (her satır bir ürün için):
+1: 3
+2: 1
+3: 2
 ...
 
 Yanıt:`;
@@ -72,14 +97,15 @@ Yanıt:`;
     const lines = responseText.split('\n').filter(line => line.trim());
 
     for (const line of lines) {
-      // "1: Meyve ve Sebze" veya "1:Meyve ve Sebze" veya "Ürün 1: Meyve ve Sebze" gibi formatları destekle
-      const match = line.match(/(\d+)\s*[:=]\s*(.+)/);
+      // "1: 3" veya "1:3" veya "Ürün 1: Kategori 3" gibi formatları destekle
+      const match = line.match(/(\d+)\s*[:=]\s*(\d+)/);
       if (match) {
         const productIndex = parseInt(match[1], 10) - 1; // 0-based index
-        const categoryName = match[2].trim();
+        const categoryIndex = parseInt(match[2], 10) - 1; // 0-based index
 
-        if (productIndex >= 0 && productIndex < products.length && categoryName) {
-          mappings[productIndex] = categoryName;
+        if (productIndex >= 0 && productIndex < products.length &&
+            categoryIndex >= 0 && categoryIndex < availableCategories.length) {
+          mappings[productIndex] = availableCategories[categoryIndex];
         }
       }
     }
@@ -92,203 +118,144 @@ Yanıt:`;
 }
 
 /**
- * Kategori adını DB'deki kategoriye eşleştir veya yeni kategori oluştur
- * @param {string} categoryName - AI'dan gelen kategori adı
- * @param {Object} existingCategories - DB'deki mevcut kategoriler (name -> category map)
- * @returns {Promise<Object>} - Kategori objesi
+ * Tüm ürünleri "Allgemein" kategorisine taşı, eski kategorileri sil (opsiyonel), yeni kategorileri oluştur ve AI ile ata
+ * @param {number|null} limit - İşlenecek ürün sayısı (null = tümü)
+ * @param {boolean} deleteCategories - Eski kategorileri sil (varsayılan: false)
  */
-async function getOrCreateCategory(categoryName, existingCategories) {
-  const normalizedName = categoryName.trim();
-  const normalizedKey = normalizedName.toLowerCase();
-
-  // Önce tam eşleşme kontrolü
-  if (existingCategories[normalizedKey]) {
-    return existingCategories[normalizedKey];
-  }
-
-  // Kısmi eşleşme kontrolü (içeriyor mu?)
-  for (const [key, category] of Object.entries(existingCategories)) {
-    if (key.includes(normalizedKey) || normalizedKey.includes(key)) {
-      return category;
-    }
-  }
-
-  // Eşleşme bulunamadı, yeni kategori oluştur
-  const slug = generateSlug(normalizedName);
-  
-  // Slug'un benzersiz olduğundan emin ol (eğer varsa numara ekle)
-  let finalSlug = slug;
-  let counter = 1;
-  while (true) {
-    const existing = await prisma.category.findUnique({
-      where: { slug: finalSlug },
-    });
-    
-    if (!existing) {
-      break;
-    }
-    
-    finalSlug = `${slug}-${counter}`;
-    counter++;
-  }
-
-  console.log(`   📁 Yeni kategori oluşturuluyor: "${normalizedName}" (slug: ${finalSlug})`);
-
-  const newCategory = await prisma.category.create({
-    data: {
-      name: normalizedName,
-      slug: finalSlug,
-      isActive: true,
-    },
-  });
-
-  // Cache'e ekle
-  existingCategories[normalizedKey] = newCategory;
-
-  return newCategory;
-}
-
-
-/**
- * "Genel" ve "Allgemein" kategorisindeki ürünleri Gemini ile analiz et ve kategorilerini güncelle
- */
-async function analyzeCategoriesWithGemini(limit = 10) {
+async function analyzeCategoriesWithGemini(limit = null, deleteCategories = false) {
   const startTime = Date.now();
   
   try {
-    console.log('🔄 Gemini ile kategori analizi başlatılıyor...\n');
+    console.log('🔄 Kategori yeniden yapılandırma başlatılıyor...\n');
+    
+    if (deleteCategories) {
+      console.log('⚠️  UYARI: Bu işlem tüm ürünleri "Allgemein" kategorisine taşıyacak ve diğer kategorileri silecek!\n');
+    } else {
+      console.log('ℹ️  Eski kategoriler korunacak (sadece yeni kategoriler eklenecek).\n');
+    }
 
-    // Hem "Genel" hem de "Allgemein" kategorilerini bul
-    const defaultCategories = await prisma.category.findMany({
+    // "Allgemein" kategorisini bul veya oluştur
+    let allgemeinCategory = await prisma.category.findFirst({
       where: {
         OR: [
-          { name: 'Genel' },
-          { slug: 'genel' },
           { name: 'Allgemein' },
           { slug: 'allgemein' },
         ],
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-      },
     });
 
-    if (defaultCategories.length === 0) {
-      console.log('❌ "Genel" veya "Allgemein" kategorisi bulunamadı.');
-      return;
+    if (!allgemeinCategory) {
+      console.log('📁 "Allgemein" kategorisi bulunamadı, oluşturuluyor...');
+      allgemeinCategory = await prisma.category.create({
+        data: {
+          name: 'Allgemein',
+          slug: 'allgemein',
+          isActive: true,
+        },
+      });
+      console.log(`✅ "Allgemein" kategorisi oluşturuldu (ID: ${allgemeinCategory.id})\n`);
+    } else {
+      console.log(`✅ "Allgemein" kategorisi bulundu (ID: ${allgemeinCategory.id})\n`);
     }
 
-    console.log(`✅ Bulunan kategoriler (${defaultCategories.length} adet):`);
-    defaultCategories.forEach((cat, index) => {
-      console.log(`   ${index + 1}. ${cat.name} (ID: ${cat.id})`);
-    });
-    console.log('');
-
-    // Kategori ID'lerini çıkar
-    const categoryIds = defaultCategories.map(cat => cat.id);
-
-    // Her iki kategorideki ürünleri birlikte getir (limit ile)
-    const products = await prisma.product.findMany({
-      where: {
-        categoryId: {
-          in: categoryIds,
-        },
+    // ADIM 1: Tüm ürünleri "Allgemein" kategorisine taşı
+    console.log('📦 ADIM 1: Tüm ürünler "Allgemein" kategorisine taşınıyor...');
+    const updateResult = await prisma.product.updateMany({
+      data: {
+        categoryId: allgemeinCategory.id,
       },
-      take: limit,
+    });
+    console.log(`✅ ${updateResult.count} ürün "Allgemein" kategorisine taşındı.\n`);
+
+    // ADIM 2: "Allgemein" hariç tüm kategorileri sil (opsiyonel)
+    if (deleteCategories) {
+      console.log('🗑️  ADIM 2: "Allgemein" hariç tüm kategoriler siliniyor...');
+      const deleteResult = await prisma.category.deleteMany({
+        where: {
+          id: {
+            not: allgemeinCategory.id,
+          },
+        },
+      });
+      console.log(`✅ ${deleteResult.count} kategori silindi.\n`);
+    } else {
+      console.log('⏭️  ADIM 2: Eski kategoriler korunuyor (silme işlemi atlandı).\n');
+    }
+
+    // ADIM 3: Tanımlı kategorileri oluştur
+    console.log('📁 ADIM 3: Yeni kategoriler oluşturuluyor...');
+    const createdCategories = [];
+    
+    for (const categoryName of DEFINED_CATEGORIES) {
+      const slug = generateSlug(categoryName);
+      
+      // Slug'un benzersiz olduğundan emin ol
+      let finalSlug = slug;
+      let counter = 1;
+      while (true) {
+        const existing = await prisma.category.findUnique({
+          where: { slug: finalSlug },
+        });
+        
+        if (!existing) {
+          break;
+        }
+        
+        finalSlug = `${slug}-${counter}`;
+        counter++;
+      }
+
+      const category = await prisma.category.create({
+        data: {
+          name: categoryName,
+          slug: finalSlug,
+          isActive: true,
+        },
+      });
+      
+      createdCategories.push(category);
+      console.log(`   ✅ ${categoryName} (slug: ${finalSlug})`);
+    }
+    
+    console.log(`\n✅ ${createdCategories.length} kategori oluşturuldu.\n`);
+
+    // ADIM 4: Ürünleri getir (limit varsa uygula)
+    console.log('📊 ADIM 4: Ürünler getiriliyor...');
+    const productsQuery = {
+      where: {
+        categoryId: allgemeinCategory.id,
+      },
       select: {
         id: true,
         name: true,
         categoryId: true,
       },
-    });
+    };
+
+    if (limit && limit > 0) {
+      productsQuery.take = limit;
+    }
+
+    const products = await prisma.product.findMany(productsQuery);
 
     if (products.length === 0) {
-      console.log(`ℹ️  "Genel" ve "Allgemein" kategorilerinde analiz edilecek ürün bulunamadı.`);
+      console.log(`ℹ️  "Allgemein" kategorisinde analiz edilecek ürün bulunamadı.`);
       return;
     }
 
-    console.log(`📊 ${products.length} ürün analiz edilecek:\n`);
-    // Hangi kategoriden kaç ürün geldiğini göster
-    const categoryCounts = {};
-    products.forEach(product => {
-      const category = defaultCategories.find(cat => cat.id === product.categoryId);
-      const categoryName = category ? category.name : 'Bilinmeyen';
-      categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
-    });
+    console.log(`✅ ${products.length} ürün bulundu.\n`);
+
+    // ADIM 5: AI'a ürünleri gönder ve kategorileri ata
+    console.log('🚀 ADIM 5: AI ürünleri analiz ediyor ve kategorilere atıyor...\n');
     
-    Object.entries(categoryCounts).forEach(([catName, count]) => {
-      console.log(`   📦 ${catName}: ${count} ürün`);
-    });
-    console.log('');
+    const categoryMappings = await analyzeProductsAndSuggestCategories(products, createdCategories);
 
-    // Tüm aktif kategorileri bir kere getir (performans için)
-    const allCategories = await prisma.category.findMany({
-      where: {
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-      },
-    });
-
-    // Kategorileri hızlı arama için map'e çevir (name -> category)
-    const existingCategoriesMap = {};
-    allCategories.forEach(cat => {
-      existingCategoriesMap[cat.name.toLowerCase()] = cat;
-    });
-
-    console.log(`📋 Mevcut kategoriler (${allCategories.length} adet):`);
-    allCategories.forEach((cat, index) => {
-      console.log(`   ${index + 1}. ${cat.name}`);
-    });
-    console.log('');
-
-    console.log('🚀 Tüm ürünler Gemini\'ye gönderiliyor...');
-    console.log('   AI kendi kategorileri bulacak ve önerecek.\n');
-
-    // AI'dan kategori önerileri al
-    const categoryNameMappings = await analyzeProductsAndSuggestCategories(products);
-
-    if (!categoryNameMappings || Object.keys(categoryNameMappings).length === 0) {
-      console.log('❌ Gemini\'den kategori önerisi alınamadı.');
+    if (!categoryMappings || Object.keys(categoryMappings).length === 0) {
+      console.log('❌ Gemini\'den kategori eşleştirmesi alınamadı.');
       return;
     }
 
-    console.log(`✅ ${Object.keys(categoryNameMappings).length} ürün için kategori önerisi alındı.\n`);
-
-    // AI'ın önerdiği kategorileri göster
-    const suggestedCategories = new Set(Object.values(categoryNameMappings));
-    console.log(`📋 AI'ın önerdiği kategoriler (${suggestedCategories.size} adet):`);
-    Array.from(suggestedCategories).forEach((catName, index) => {
-      const exists = existingCategoriesMap[catName.toLowerCase()] ? '✅ (Mevcut)' : '🆕 (Yeni)';
-      console.log(`   ${index + 1}. ${catName} ${exists}`);
-    });
-    console.log('');
-
-    // Kategori eşleştirmelerini DB objelerine çevir (yoksa oluştur)
-    const categoryMappings = {};
-    let newCategoriesCount = 0;
-
-    for (let i = 0; i < products.length; i++) {
-      const categoryName = categoryNameMappings[i];
-      if (categoryName) {
-        const category = await getOrCreateCategory(categoryName, existingCategoriesMap);
-        categoryMappings[i] = category;
-        
-        // Yeni kategori oluşturuldu mu kontrol et
-        if (!allCategories.find(c => c.id === category.id)) {
-          newCategoriesCount++;
-        }
-      }
-    }
-
-    if (newCategoriesCount > 0) {
-      console.log(`\n✨ ${newCategoriesCount} yeni kategori veritabanına eklendi.\n`);
-    }
+    console.log(`✅ ${Object.keys(categoryMappings).length} ürün için kategori eşleştirmesi alındı.\n`);
 
     let successCount = 0;
     let failedCount = 0;
@@ -302,21 +269,20 @@ async function analyzeCategoriesWithGemini(limit = 10) {
       console.log(`[${i + 1}/${products.length}] 🔍 İşleniyor: "${product.name}"`);
 
       if (!selectedCategory) {
-        console.log(`   ⚠️  Bu ürün için kategori eşleştirmesi bulunamadı.`);
+        console.log(`   ⚠️  Bu ürün için kategori eşleştirmesi bulunamadı. "Allgemein" kategorisinde kalacak.`);
         failedCount++;
         results.push({
+          productId: product.id,
           product: product.name,
           status: 'failed',
           reason: 'Kategori eşleştirmesi bulunamadı',
+          oldCategoryId: product.categoryId,
+          oldCategory: 'Allgemein',
         });
         continue;
       }
 
       try {
-        // Eski kategori adını bul (güncellemeden önce)
-        const oldCategory = defaultCategories.find(cat => cat.id === product.categoryId);
-        const oldCategoryName = oldCategory ? oldCategory.name : 'Bilinmeyen';
-        
         console.log(`   ✅ Seçilen kategori: "${selectedCategory.name}" (ID: ${selectedCategory.id})`);
 
         // Ürünün kategorisini güncelle
@@ -333,18 +299,24 @@ async function analyzeCategoriesWithGemini(limit = 10) {
         successCount++;
         
         results.push({
+          productId: product.id,
           product: product.name,
           status: 'success',
-          oldCategory: oldCategoryName,
+          oldCategoryId: product.categoryId,
+          oldCategory: 'Allgemein',
+          newCategoryId: selectedCategory.id,
           newCategory: selectedCategory.name,
         });
       } catch (error) {
         console.error(`   ❌ Hata: ${error.message}\n`);
         failedCount++;
         results.push({
+          productId: product.id,
           product: product.name,
           status: 'error',
           error: error.message,
+          oldCategoryId: product.categoryId,
+          oldCategory: 'Allgemein',
         });
       }
     }
@@ -356,7 +328,7 @@ async function analyzeCategoriesWithGemini(limit = 10) {
     console.log(`✅ Başarılı: ${successCount}`);
     console.log(`❌ Başarısız: ${failedCount}`);
     console.log(`📦 Toplam: ${products.length}`);
-    console.log(`🆕 Yeni Kategori: ${newCategoriesCount}\n`);
+    console.log(`📁 Oluşturulan Kategori: ${createdCategories.length}\n`);
 
     if (results.length > 0) {
       console.log('📋 Detaylı Sonuçlar:');
@@ -372,6 +344,43 @@ async function analyzeCategoriesWithGemini(limit = 10) {
       });
     }
 
+    // Log dosyasına kaydet (rollback için)
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const logFile = path.join(logDir, `category-analysis-${timestamp}.json`);
+    
+    const logData = {
+      executedAt: new Date().toISOString(),
+      summary: {
+        totalProducts: products.length,
+        successCount,
+        failedCount,
+        createdCategoriesCount: createdCategories.length,
+      },
+      allgemeinCategory: {
+        id: allgemeinCategory.id,
+        name: allgemeinCategory.name,
+        slug: allgemeinCategory.slug,
+      },
+      createdCategories: createdCategories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+      })),
+      changes: results.filter(r => r.status === 'success').map(r => ({
+        productId: r.productId,
+        productName: r.product,
+        oldCategoryId: r.oldCategoryId,
+        oldCategoryName: r.oldCategory,
+        newCategoryId: r.newCategoryId,
+        newCategoryName: r.newCategory,
+      })),
+      errors: results.filter(r => r.status !== 'success'),
+    };
+    
+    fs.writeFileSync(logFile, JSON.stringify(logData, null, 2), 'utf8');
+    console.log(`\n📝 Rollback log dosyası kaydedildi: ${logFile}`);
+    console.log(`   Geri almak için: npm run rollback-categories ${path.basename(logFile)}`);
+    
     console.log('\n✅ İşlem tamamlandı!');
     
     // Süre hesaplama
@@ -403,14 +412,47 @@ async function analyzeCategoriesWithGemini(limit = 10) {
 }
 
 // Script'i çalıştır
-const limit = process.argv[2] ? parseInt(process.argv[2], 10) : 10;
+// Parametreleri parse et
+const args = process.argv.slice(2);
+let limit = null;
+let deleteCategories = false;
 
-if (isNaN(limit) || limit < 1) {
+for (const arg of args) {
+  if (arg === '--delete-categories' || arg === '-d') {
+    deleteCategories = true;
+  } else if (arg === '--help' || arg === '-h') {
+    console.log(`
+Kategori Analizi Script'i
+
+Kullanım:
+  npm run analyze-categories [limit] [--delete-categories]
+
+Parametreler:
+  limit                    İşlenecek ürün sayısı (opsiyonel, belirtilmezse tüm ürünler)
+  --delete-categories, -d  Eski kategorileri sil (varsayılan: false, kategoriler korunur)
+
+Örnekler:
+  npm run analyze-categories                    # Tüm ürünler, kategoriler korunur
+  npm run analyze-categories 50                # 50 ürün, kategoriler korunur
+  npm run analyze-categories --delete-categories # Tüm ürünler, eski kategoriler silinir
+  npm run analyze-categories 100 -d            # 100 ürün, eski kategoriler silinir
+    `);
+    process.exit(0);
+  } else {
+    // Sayısal değer olarak limit'i dene
+    const parsedLimit = parseInt(arg, 10);
+    if (!isNaN(parsedLimit) && parsedLimit > 0) {
+      limit = parsedLimit;
+    }
+  }
+}
+
+if (limit !== null && limit < 1) {
   console.error('❌ Geçersiz limit değeri. Pozitif bir sayı girin.');
   process.exit(1);
 }
 
-analyzeCategoriesWithGemini(limit)
+analyzeCategoriesWithGemini(limit, deleteCategories)
   .then(() => {
     console.log('\n🎉 Script başarıyla tamamlandı.');
     process.exit(0);

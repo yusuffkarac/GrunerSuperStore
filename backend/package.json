@@ -22,6 +22,7 @@
     "update-tax-rates": "node src/scripts/updateTaxRates.js",
     "check-expiry-notify": "node src/scripts/checkExpiryAndNotify.js",
     "analyze-categories": "node src/scripts/analyzeCategoriesWithGemini.js",
+    "rollback-categories": "node src/scripts/rollbackCategories.js",
     "db:dump": "node scripts/dumpDatabase.js",
     "db:restore": "node scripts/restoreDatabase.js"
   },
