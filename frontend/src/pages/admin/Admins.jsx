@@ -4,6 +4,7 @@ import { FiSearch, FiFilter, FiUser, FiEye, FiX, FiMail, FiPlus, FiEdit2, FiTras
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
@@ -28,6 +29,7 @@ const API_URL = getApiUrl();
 
 function Admins() {
   const { showConfirm } = useAlert();
+  const { themeColors } = useTheme();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
@@ -284,7 +286,16 @@ function Admins() {
         </div>
         <button
           onClick={() => openFormModal()}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm whitespace-nowrap"
+          style={{
+            backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+          }}
         >
           <FiPlus className="w-4 h-4" />
           <span>Neuer Administrator</span>
@@ -316,7 +327,12 @@ function Admins() {
           >
             <FiFilter size={16} className="md:w-[18px] md:h-[18px]" />
             Filter {activeFilterCount > 0 && (
-              <span className="bg-green-600 text-white text-xs px-1.5 md:px-2 py-0.5 rounded-full">
+              <span 
+                className="text-white text-xs px-1.5 md:px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                }}
+              >
                 {activeFilterCount}
               </span>
             )}
@@ -815,7 +831,16 @@ function Admins() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }}
                   >
                     {editingAdmin ? 'Aktualisieren' : 'Erstellen'}
                   </button>

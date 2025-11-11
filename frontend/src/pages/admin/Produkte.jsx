@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
 import { useAlert } from '../../contexts/AlertContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
@@ -384,6 +385,7 @@ ProductMobileRow.displayName = 'ProductMobileRow';
 
 function Produkte() {
   const { showConfirm } = useAlert();
+  const { themeColors } = useTheme();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -1082,7 +1084,16 @@ function Produkte() {
           </button>
           <button
             onClick={() => openModal()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm whitespace-nowrap"
+            style={{
+              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+            }}
           >
             <FiPlus className="w-4 h-4" />
             <span>Neues Produkt</span>
@@ -1115,7 +1126,12 @@ function Produkte() {
           >
             <FiFilter size={18} />
             Filter {activeFilterCount > 0 && (
-              <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+              <span 
+                className="text-white text-xs px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                }}
+              >
                 {activeFilterCount}
               </span>
             )}
@@ -1127,9 +1143,12 @@ function Produkte() {
                 onClick={() => handleViewModeChange('list')}
                 className={`p-2 rounded transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-green-600 text-white'
+                    ? 'text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
+                style={viewMode === 'list' ? {
+                  backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                } : {}}
                 title="Listenansicht"
               >
                 <FiList size={18} />
@@ -1138,9 +1157,12 @@ function Produkte() {
                 onClick={() => handleViewModeChange('card')}
                 className={`p-2 rounded transition-colors ${
                   viewMode === 'card'
-                    ? 'bg-green-600 text-white'
+                    ? 'text-white'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
+                style={viewMode === 'card' ? {
+                  backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                } : {}}
                 title="Kartenansicht"
               >
                 <FiGrid size={18} />
@@ -1478,9 +1500,13 @@ function Produkte() {
                           onClick={() => goToPage(page)}
                           className={`px-3 py-1 border rounded-lg text-sm transition-colors ${
                             currentPage === page
-                              ? 'bg-green-600 text-white border-green-600'
+                              ? 'text-white'
                               : 'border-gray-300 hover:bg-gray-50'
                           }`}
+                          style={currentPage === page ? {
+                            backgroundColor: themeColors?.primary?.[600] || '#16a34a',
+                            borderColor: themeColors?.primary?.[600] || '#16a34a'
+                          } : {}}
                         >
                           {page}
                         </button>
@@ -1509,7 +1535,16 @@ function Produkte() {
                   />
                   <button
                     type="submit"
-                    className="px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    className="px-2 py-1 text-white rounded-lg text-sm"
+                    style={{
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }}
                     title="Sayfaya git"
                   >
                     →
@@ -1696,7 +1731,16 @@ function Produkte() {
                           <button
                             type="button"
                             onClick={handleAddCustomUnit}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            className="px-4 py-2 text-white rounded-lg transition-colors"
+                            style={{
+                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                            }}
                           >
                             Hinzufügen
                           </button>
@@ -2028,7 +2072,16 @@ function Produkte() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                      }}
                     >
                       {editingProduct ? 'Aktualisieren' : 'Erstellen'}
                     </button>
@@ -2090,7 +2143,16 @@ function Produkte() {
                           </h3>
                           <button
                             onClick={openOptionForm}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                            className="flex items-center gap-2 px-3 py-1.5 text-white rounded-lg text-sm"
+                            style={{
+                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                            }}
                           >
                             <FiPlus size={16} />
                             Seçenek Ekle
@@ -2140,7 +2202,16 @@ function Produkte() {
                               }
                               openVariantForm();
                             }}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                            className="flex items-center gap-2 px-3 py-1.5 text-white rounded-lg text-sm"
+                            style={{
+                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                            }}
                           >
                             <FiPlus size={16} />
                             Varyant Ekle
@@ -2378,7 +2449,16 @@ function Produkte() {
                         </button>
                         <button
                           type="submit"
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                          style={{
+                            backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                          }}
                         >
                           Kaydet
                         </button>
@@ -2463,9 +2543,13 @@ function Produkte() {
                                     }}
                                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                                       currentValue === value
-                                        ? 'bg-green-600 text-white border-green-600'
+                                        ? 'text-white'
                                         : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
                                     }`}
+                                    style={currentValue === value ? {
+                                      backgroundColor: themeColors?.primary?.[600] || '#16a34a',
+                                      borderColor: themeColors?.primary?.[600] || '#16a34a'
+                                    } : {}}
                                   >
                                     {value}
                                   </button>
@@ -2558,7 +2642,16 @@ function Produkte() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                      }}
                     >
                       {editingVariant ? 'Güncelle' : 'Kaydet'}
                     </button>

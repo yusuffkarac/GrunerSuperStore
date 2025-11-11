@@ -4,6 +4,7 @@ import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruc
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
@@ -51,6 +52,7 @@ const OrderItemRow = ({ item }) => {
 
 function Orders() {
   const { showConfirm } = useAlert();
+  const { themeColors } = useTheme();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -503,7 +505,12 @@ function Orders() {
           >
             <FiFilter size={18} />
             Filter {activeFilterCount > 0 && (
-              <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+              <span 
+                className="text-white text-xs px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                }}
+              >
                 {activeFilterCount}
               </span>
             )}
@@ -1209,7 +1216,20 @@ function Orders() {
                       <button
                         onClick={() => handleSendInvoice(selectedOrder.id)}
                         disabled={sendingInvoice}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        style={!sendingInvoice ? {
+                          backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                        } : {}}
+                        onMouseEnter={(e) => {
+                          if (!sendingInvoice) {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!sendingInvoice) {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                          }
+                        }}
                       >
                         <FiMail size={16} />
                         {sendingInvoice ? 'Wird gesendet...' : 'Per E-Mail senden'}
@@ -1333,7 +1353,20 @@ function Orders() {
                 <button
                   onClick={handleSendInvoiceFromPopup}
                   disabled={sendingInvoice}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-2 text-white rounded-lg transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={!sendingInvoice ? {
+                    backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                  } : {}}
+                  onMouseEnter={(e) => {
+                    if (!sendingInvoice) {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sendingInvoice) {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }
+                  }}
                 >
                   <FiMail size={18} />
                   {sendingInvoice ? 'Wird gesendet...' : 'Rechnung senden'}

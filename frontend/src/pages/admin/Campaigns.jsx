@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import campaignService from '../../services/campaignService';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import FileUpload from '../../components/common/FileUpload';
@@ -15,6 +16,7 @@ import MultipleSelect from '../../components/common/MultipleSelect';
 
 function Campaigns() {
   const { showConfirm } = useAlert();
+  const { themeColors } = useTheme();
   const [campaigns, setCampaigns] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -267,7 +269,16 @@ function Campaigns() {
             </h1>
             <button
               onClick={() => openModal()}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"
+              className="text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm whitespace-nowrap"
+              style={{
+                backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+              }}
             >
               <FiPlus className="w-4 h-4" />
               <span>Neue Kampagne</span>
@@ -776,7 +787,16 @@ function Campaigns() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }}
                   >
                     {editingCampaign ? 'Aktualisieren' : 'Erstellen'}
                   </button>

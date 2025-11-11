@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import settingsService from '../../services/settingsService';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
@@ -8,6 +9,7 @@ import Switch from '../../components/common/Switch';
 
 // Admin-Einstellungsseite
 function Settings() {
+  const { themeColors } = useTheme();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +57,7 @@ function Settings() {
   const [storeSettings, setStoreSettings] = useState({
     bakimModu: false,
     bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
+    adminPanelTitle: '',
     storeLocation: {
       latitude: null,
       longitude: null,
@@ -153,6 +156,7 @@ function Settings() {
       setStoreSettings(s.storeSettings ?? {
         bakimModu: false,
         bakimModuMesaji: 'Unser Geschäft befindet sich derzeit im Wartungsmodus. Wir sind bald wieder für Sie da.',
+        adminPanelTitle: '',
         storeLocation: {
           latitude: null,
           longitude: null,
@@ -1503,7 +1507,7 @@ function Settings() {
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Adresssuche</h4>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    Varsayılan Şehirler (Default Cities)
+                    Standardstädte
                     <HelpTooltip content="Adres araması için varsayılan olarak kullanılacak şehirler. Birden fazla şehir ekleyebilirsiniz. Yazım hatalarına toleranslı eşleştirme yapılır (örn: 'Waiblingn' → 'Waiblingen')." />
                   </label>
                   
@@ -1553,7 +1557,7 @@ function Settings() {
                         }
                       }}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Şehir adı girin ve Enter'a basın (örn: Stuttgart)"
+                      placeholder="Stadtname eingeben und Enter drücken (z.B. Stuttgart)"
                     />
                     <button
                       type="button"
@@ -1567,7 +1571,16 @@ function Settings() {
                           setNewCityInput('');
                         }
                       }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                      }}
                     >
                       Ekle
                     </button>
@@ -1577,6 +1590,24 @@ function Settings() {
                     Birden fazla şehir ekleyebilirsiniz. Adres araması yapılırken bu şehirlerdeki sonuçlar öncelikli olarak gösterilir. Yazım hatalarına toleranslı eşleştirme yapılır (örn: 'Waiblingn' → 'Waiblingen').
                   </p>
                 </div>
+              </div>
+
+              {/* Admin Panel Başlığı */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  Admin-Panel Titel
+                  <HelpTooltip content="Der Titel, der im oberen Bereich des Admin-Panels angezeigt wird. Bei leerem Feld wird kein Titel angezeigt." />
+                </label>
+                <input
+                  type="text"
+                  value={storeSettings.adminPanelTitle || ''}
+                  onChange={(e) => setStoreSettings({ ...storeSettings, adminPanelTitle: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="z.B. Gruner Admin Panel"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Der Titel erscheint im oberen Bereich des Admin-Panels. Bei leerem Feld wird kein Titel angezeigt.
+                </p>
               </div>
 
               {/* Wartungsmodus */}

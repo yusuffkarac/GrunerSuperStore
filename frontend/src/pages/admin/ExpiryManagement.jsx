@@ -6,6 +6,7 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import BarcodeScanner from '../../components/common/BarcodeScanner';
@@ -27,6 +28,7 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 
 function ExpiryManagement() {
+  const { themeColors } = useTheme();
   const [criticalProducts, setCriticalProducts] = useState([]);
   const [warningProducts, setWarningProducts] = useState([]);
   const [history, setHistory] = useState([]);
@@ -719,7 +721,16 @@ function ExpiryManagement() {
             )}
             <button
               onClick={() => setSettingsDialog(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 text-white rounded-lg transition-colors text-sm whitespace-nowrap"
+              style={{
+                backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+              }}
             >
               <FiSettings className="w-4 h-4" />
               <span>Einstellungen</span>
@@ -2066,7 +2077,16 @@ function ExpiryManagement() {
                       handleUndoAction(undoDialog.actionId);
                       setUndoDialog({ open: false, actionId: null, productName: '' });
                     }}
-                    className="px-4 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 text-xs md:text-sm text-white rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }}
                   >
                     Rückgängig machen
                   </button>
@@ -2147,7 +2167,16 @@ function ExpiryManagement() {
                   </button>
                   <button
                     onClick={handleUpdateSettings}
-                    className="px-4 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 text-xs md:text-sm text-white rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                    }}
                   >
                     Speichern
                   </button>

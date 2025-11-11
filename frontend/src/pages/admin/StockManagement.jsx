@@ -12,8 +12,10 @@ import { normalizeImageUrl } from '../../utils/imageUtils';
 import ProductQuantityDialog from '../../components/stock/ProductQuantityDialog';
 import CreateStockOrderListDialog from '../../components/stock/CreateStockOrderListDialog';
 import StockOrderListCard from '../../components/stock/StockOrderListCard';
+import { useTheme } from '../../contexts/ThemeContext';
 
 function StockManagement() {
+  const { themeColors } = useTheme();
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [activeLists, setActiveLists] = useState([]); // Liste bazlı aktif siparişler
@@ -880,7 +882,16 @@ function StockManagement() {
                                 <>
                                   <button
                                     onClick={() => openOrderDialog(product, product.lastOrder)}
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                                    style={{
+                                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                    }}
                                   >
                                     Erhalten
                                   </button>
@@ -1008,7 +1019,16 @@ function StockManagement() {
                           <>
                             <button
                               onClick={() => openOrderDialog(product, product.lastOrder)}
-                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-white rounded-lg transition-colors text-xs font-medium"
+                              style={{
+                                backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                              }}
                             >
                               Erhalten
                             </button>
@@ -1229,7 +1249,16 @@ function StockManagement() {
                                         <>
                                           <button
                                             onClick={() => openOrderDialog(product, product.lastOrder)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                                            style={{
+                                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                            }}
                                           >
                                             Erhalten
                                           </button>
@@ -1353,7 +1382,16 @@ function StockManagement() {
                                   <>
                                     <button
                                       onClick={() => openOrderDialog(product, product.lastOrder)}
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-white rounded-lg transition-colors text-xs font-medium"
+                                      style={{
+                                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                      }}
                                     >
                                       Erhalten
                                     </button>
@@ -1584,7 +1622,16 @@ function StockManagement() {
                                         <>
                                           <button
                                             onClick={() => openOrderDialog(product, product.lastOrder)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                                            style={{
+                                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                            }}
                                           >
                                             Erhalten
                                           </button>
@@ -1708,7 +1755,16 @@ function StockManagement() {
                                   <>
                                     <button
                                       onClick={() => openOrderDialog(product, product.lastOrder)}
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-white rounded-lg transition-colors text-xs font-medium"
+                                      style={{
+                                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                      }}
                                     >
                                       Erhalten
                                     </button>
@@ -1883,7 +1939,16 @@ function StockManagement() {
                               <>
                                 <button
                                   onClick={() => openOrderDialog(null, order)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                                  style={{
+                                    backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                  }}
                                 >
                                   Erhalten
                                 </button>
@@ -1985,7 +2050,16 @@ function StockManagement() {
                         <>
                           <button
                             onClick={() => openOrderDialog(null, order)}
-                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-white rounded-lg transition-colors text-xs font-medium"
+                            style={{
+                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                            }}
                           >
                             Erhalten
                           </button>
@@ -2362,7 +2436,16 @@ function StockManagement() {
                       {orderDialog.order.status === 'ordered' && (
                         <button
                           onClick={() => handleUpdateOrderStatus('delivered')}
-                          className="px-3 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                          className="px-3 py-2 text-xs md:text-sm text-white rounded-lg transition-colors whitespace-nowrap"
+                          style={{
+                            backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                          }}
                         >
                           Als erhalten markieren
                         </button>
@@ -2508,7 +2591,16 @@ function StockManagement() {
                           setOrderDetailDialog({ open: false, order: null });
                           openOrderDialog(null, orderDetailDialog.order);
                         }}
-                        className="px-3 py-2 text-xs md:text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+                        className="px-3 py-2 text-xs md:text-sm text-white rounded-lg transition-colors whitespace-nowrap"
+                        style={{
+                          backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                        }}
                       >
                         Erhalten
                       </button>

@@ -27,6 +27,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 import adminService from '../../services/adminService';
 import settingsService from '../../services/settingsService';
@@ -35,6 +36,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showConfirm } = useAlert();
+  const { themeColors } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -46,6 +48,7 @@ function AdminLayout() {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [logo, setLogo] = useState('/logo.png');
+  const [adminPanelTitle, setAdminPanelTitle] = useState('');
 
   // Admin bilgilerini al
   const getAdminData = () => {
@@ -196,7 +199,7 @@ function AdminLayout() {
     };
   }, [loadAdminData]);
 
-  // Logo yükle
+  // Logo ve admin panel başlığını yükle
   const loadLogo = useCallback(async () => {
     try {
       const response = await settingsService.getSettings();
@@ -213,9 +216,17 @@ function AdminLayout() {
       } else {
         setLogo('/logo.png');
       }
+
+      // Admin panel başlığını yükle
+      if (settings?.storeSettings?.adminPanelTitle) {
+        setAdminPanelTitle(settings.storeSettings.adminPanelTitle);
+      } else {
+        setAdminPanelTitle('');
+      }
     } catch (error) {
       console.error('Logo yüklenirken hata:', error);
       setLogo('/logo.png');
+      setAdminPanelTitle('');
     }
   }, []);
 
@@ -323,7 +334,10 @@ function AdminLayout() {
     return (
       <div className="h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <div 
+            className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+            style={{ borderColor: themeColors?.primary?.[600] || '#16a34a' }}
+          ></div>
           <p className="text-gray-600">Laden...</p>
         </div>
       </div>
@@ -340,8 +354,24 @@ function AdminLayout() {
       {/* Top Menu Bar - Desktop */}
       <div className="hidden lg:flex bg-white shadow-sm border-b px-6 py-3 flex-shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
+        <div className={`hidden lg:flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} mb-0`}>
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                title={sidebarCollapsed ? 'Menü erweitern' : 'Menü reduzieren'}
+              >
+                {sidebarCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
+              </button>
+            </div>
           <img src={logo} alt="Gruner Logo" className="w-8 h-8 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
-          <h1 className="text-xl font-bold text-green-600">Gruner Admin Panel</h1>
+          {adminPanelTitle && (
+            <h1 
+              className="text-xl font-bold" 
+              style={{ color: themeColors?.primary?.[600] || '#16a34a' }}
+            >
+              {adminPanelTitle}
+            </h1>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {filteredTopMenuItems.map((item) => {
@@ -367,9 +397,13 @@ function AdminLayout() {
                 to={item.path}
                 className={`p-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-green-50 text-green-600'
+                    ? ''
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
+                style={isActive ? {
+                  backgroundColor: themeColors?.primary?.[50] || '#f0fdf4',
+                  color: themeColors?.primary?.[600] || '#16a34a'
+                } : {}}
                 title={item.label}
               >
                 <Icon size={20} />
@@ -411,9 +445,13 @@ function AdminLayout() {
                   onClick={() => setSidebarOpen(false)}
                   className={`p-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-green-50 text-green-600'
+                      ? ''
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
+                  style={isActive ? {
+                    backgroundColor: themeColors?.primary?.[50] || '#f0fdf4',
+                    color: themeColors?.primary?.[600] || '#16a34a'
+                  } : {}}
                   title={item.label}
                 >
                   <Icon size={20} />
@@ -439,15 +477,7 @@ function AdminLayout() {
         >
           <nav className={`p-4 space-y-2 flex-1 overflow-y-auto ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
             {/* Toggle Button - Desktop Only */}
-            <div className={`hidden lg:flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} mb-2`}>
-              <button
-                onClick={toggleSidebar}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
-                title={sidebarCollapsed ? 'Menüyü Genişlet' : 'Menüyü Daralt'}
-              >
-                {sidebarCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
-              </button>
-            </div>
+            
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -485,9 +515,13 @@ function AdminLayout() {
                       sidebarCollapsed ? 'lg:px-2 lg:justify-center' : ''
                     } ${
                       isActive
-                        ? 'bg-green-50 text-green-600 font-medium'
+                        ? 'font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
+                    style={isActive ? {
+                      backgroundColor: themeColors?.primary?.[50] || '#f0fdf4',
+                      color: themeColors?.primary?.[600] || '#16a34a'
+                    } : {}}
                   >
                     <Icon size={20} className="flex-shrink-0" />
                     <span className={`${sidebarCollapsed ? 'lg:hidden' : ''} whitespace-nowrap`}>

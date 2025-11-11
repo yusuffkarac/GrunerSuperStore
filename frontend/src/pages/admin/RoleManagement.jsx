@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiShield, FiX, FiCheck, FiXCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -23,6 +24,7 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 
 function RoleManagement() {
+  const { themeColors } = useTheme();
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -314,7 +316,16 @@ function RoleManagement() {
         </div>
         <button
           onClick={() => handleOpenDialog('create')}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm whitespace-nowrap"
+          style={{
+            backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+          }}
         >
           <FiPlus className="w-4 h-4" />
           <span>Neue Rolle erstellen</span>
@@ -577,7 +588,20 @@ function RoleManagement() {
                   <button
                     onClick={handleSaveRole}
                     disabled={!formData.name}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={!formData.name ? {} : {
+                      backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (formData.name) {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (formData.name) {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                      }
+                    }}
                   >
                     {roleDialog.mode === 'create' ? 'Erstellen' : 'Aktualisieren'}
                   </button>
