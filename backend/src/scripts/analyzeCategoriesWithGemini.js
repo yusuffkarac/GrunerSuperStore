@@ -16,32 +16,49 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * Gemini API ile tüm ürünleri toplu olarak analiz et
- * Verilen kategoriler listesinden her ürün için en uygun kategoriyi seçer
+ * Slug oluştur (category.service.js'den alındı)
  */
-async function analyzeProductsBatch(products, categories) {
+function generateSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+/**
+ * Gemini API ile ürünleri analiz et ve her ürün için uygun kategori öner
+ * AI kendi kategorileri bulur (market sipariş uygulaması için)
+ */
+async function analyzeProductsAndSuggestCategories(products) {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Ürün listesini formatla
     const productList = products.map((product, index) => `${index + 1}. ${product.name}`).join('\n');
 
-    // Kategori listesini formatla
-    const categoryList = categories.map((cat, index) => `${index + 1}. ${cat.name}`).join('\n');
-
-    const prompt = `Aşağıdaki ürünleri analiz et ve her ürün için verilen kategoriler listesinden en uygun kategoriyi seç.
-Her satır için "Ürün No: Kategori No" formatında döndür. Sadece numaraları kullan, başka açıklama yapma.
+    const prompt = `Sen bir market sipariş uygulaması için ürün kategorileri belirleyen bir uzmansın.
+Aşağıdaki ürünleri analiz et ve her ürün için en uygun kategoriyi öner.
 
 Ürünler:
 ${productList}
 
-Mevcut kategoriler:
-${categoryList}
+Her satır için "Ürün No: Kategori Adı" formatında döndür. Kategori adları kesinlikle Almanca olmalı.
+Sadece kategori adını yaz, başka açıklama yapma.
 
-Format (her satır bir ürün için):
-1: 3
-2: 1
-3: 2
+Örnek format:
+1: Meyve ve Sebze
+2: Et, Tavuk ve Balık
+3: Şarküteri ve Kahvaltılık
+4: Süt ve Süt Ürünleri
+5: Ekmek ve Fırın Ürünleri
+6: Temel Gıda
+7: Atıştırmalık
+8: İçecekler
+9: Kişisel Bakım
+10: Ev Bakım ve Temizlik
+11: Bebek Ürünleri
+12: Evcil Hayvan Ürünleri
+13: Hazır Yemek ve Dondurulmuş
+14: Alkollü İçecekler
+15: Organik ve Diyet
+16: Ev ve Yaşam
 ...
 
 Yanıt:`;
@@ -55,15 +72,14 @@ Yanıt:`;
     const lines = responseText.split('\n').filter(line => line.trim());
 
     for (const line of lines) {
-      // "1: 3" veya "1:3" veya "Ürün 1: Kategori 3" gibi formatları destekle
-      const match = line.match(/(\d+)\s*[:=]\s*(\d+)/);
+      // "1: Meyve ve Sebze" veya "1:Meyve ve Sebze" veya "Ürün 1: Meyve ve Sebze" gibi formatları destekle
+      const match = line.match(/(\d+)\s*[:=]\s*(.+)/);
       if (match) {
         const productIndex = parseInt(match[1], 10) - 1; // 0-based index
-        const categoryIndex = parseInt(match[2], 10) - 1; // 0-based index
+        const categoryName = match[2].trim();
 
-        if (productIndex >= 0 && productIndex < products.length &&
-            categoryIndex >= 0 && categoryIndex < categories.length) {
-          mappings[productIndex] = categories[categoryIndex];
+        if (productIndex >= 0 && productIndex < products.length && categoryName) {
+          mappings[productIndex] = categoryName;
         }
       }
     }
@@ -76,34 +92,60 @@ Yanıt:`;
 }
 
 /**
- * Kategori adını veya numarasını kategori objesine çevir
+ * Kategori adını DB'deki kategoriye eşleştir veya yeni kategori oluştur
+ * @param {string} categoryName - AI'dan gelen kategori adı
+ * @param {Object} existingCategories - DB'deki mevcut kategoriler (name -> category map)
+ * @returns {Promise<Object>} - Kategori objesi
  */
-function parseCategorySelection(selection, categories) {
-  // Önce numara olarak kontrol et
-  const categoryNumber = parseInt(selection, 10);
-  if (!isNaN(categoryNumber) && categoryNumber >= 1 && categoryNumber <= categories.length) {
-    return categories[categoryNumber - 1];
+async function getOrCreateCategory(categoryName, existingCategories) {
+  const normalizedName = categoryName.trim();
+  const normalizedKey = normalizedName.toLowerCase();
+
+  // Önce tam eşleşme kontrolü
+  if (existingCategories[normalizedKey]) {
+    return existingCategories[normalizedKey];
   }
 
-  // Kategori adı olarak ara
-  const matchingCategory = categories.find(
-    cat => cat.name.toLowerCase() === selection.toLowerCase() ||
-           cat.name.toLowerCase().includes(selection.toLowerCase()) ||
-           selection.toLowerCase().includes(cat.name.toLowerCase())
-  );
-
-  if (matchingCategory) {
-    return matchingCategory;
+  // Kısmi eşleşme kontrolü (içeriyor mu?)
+  for (const [key, category] of Object.entries(existingCategories)) {
+    if (key.includes(normalizedKey) || normalizedKey.includes(key)) {
+      return category;
+    }
   }
 
-  // Eğer eşleşme bulunamazsa, ilk kelimeyi kontrol et
-  const firstWord = selection.split(/[\s,.-]/)[0].toLowerCase();
-  const partialMatch = categories.find(
-    cat => cat.name.toLowerCase().startsWith(firstWord) ||
-           firstWord.startsWith(cat.name.toLowerCase().split(/[\s,.-]/)[0])
-  );
+  // Eşleşme bulunamadı, yeni kategori oluştur
+  const slug = generateSlug(normalizedName);
+  
+  // Slug'un benzersiz olduğundan emin ol (eğer varsa numara ekle)
+  let finalSlug = slug;
+  let counter = 1;
+  while (true) {
+    const existing = await prisma.category.findUnique({
+      where: { slug: finalSlug },
+    });
+    
+    if (!existing) {
+      break;
+    }
+    
+    finalSlug = `${slug}-${counter}`;
+    counter++;
+  }
 
-  return partialMatch || null;
+  console.log(`   📁 Yeni kategori oluşturuluyor: "${normalizedName}" (slug: ${finalSlug})`);
+
+  const newCategory = await prisma.category.create({
+    data: {
+      name: normalizedName,
+      slug: finalSlug,
+      isActive: true,
+    },
+  });
+
+  // Cache'e ekle
+  existingCategories[normalizedKey] = newCategory;
+
+  return newCategory;
 }
 
 
@@ -167,33 +209,60 @@ async function analyzeCategoriesWithGemini(limit = 10) {
       },
     });
 
-    // Mevcut kategorisini listeden çıkar (çünkü zaten oradan taşıyoruz)
-    const availableCategories = allCategories.filter(
-      cat => cat.id !== genelCategory.id
-    );
+    // Kategorileri hızlı arama için map'e çevir (name -> category)
+    const existingCategoriesMap = {};
+    allCategories.forEach(cat => {
+      existingCategoriesMap[cat.name.toLowerCase()] = cat;
+    });
 
-    if (availableCategories.length === 0) {
-      console.log(`❌ Analiz için uygun kategori bulunamadı. "${genelCategory.name}" dışında en az bir kategori olmalı.`);
-      return;
-    }
-
-    console.log(`📋 Seçilebilecek kategoriler (${availableCategories.length} adet):`);
-    availableCategories.forEach((cat, index) => {
+    console.log(`📋 Mevcut kategoriler (${allCategories.length} adet):`);
+    allCategories.forEach((cat, index) => {
       console.log(`   ${index + 1}. ${cat.name}`);
     });
     console.log('');
 
-    console.log('🚀 Tüm ürünler Gemini\'ye gönderiliyor...\n');
+    console.log('🚀 Tüm ürünler Gemini\'ye gönderiliyor...');
+    console.log('   AI kendi kategorileri bulacak ve önerecek.\n');
 
-    // Tüm ürünleri toplu olarak Gemini'ye gönder
-    const categoryMappings = await analyzeProductsBatch(products, availableCategories);
+    // AI'dan kategori önerileri al
+    const categoryNameMappings = await analyzeProductsAndSuggestCategories(products);
 
-    if (!categoryMappings || Object.keys(categoryMappings).length === 0) {
-      console.log('❌ Gemini\'den kategori eşleştirmesi alınamadı.');
+    if (!categoryNameMappings || Object.keys(categoryNameMappings).length === 0) {
+      console.log('❌ Gemini\'den kategori önerisi alınamadı.');
       return;
     }
 
-    console.log(`✅ ${Object.keys(categoryMappings).length} ürün için kategori eşleştirmesi alındı.\n`);
+    console.log(`✅ ${Object.keys(categoryNameMappings).length} ürün için kategori önerisi alındı.\n`);
+
+    // AI'ın önerdiği kategorileri göster
+    const suggestedCategories = new Set(Object.values(categoryNameMappings));
+    console.log(`📋 AI'ın önerdiği kategoriler (${suggestedCategories.size} adet):`);
+    Array.from(suggestedCategories).forEach((catName, index) => {
+      const exists = existingCategoriesMap[catName.toLowerCase()] ? '✅ (Mevcut)' : '🆕 (Yeni)';
+      console.log(`   ${index + 1}. ${catName} ${exists}`);
+    });
+    console.log('');
+
+    // Kategori eşleştirmelerini DB objelerine çevir (yoksa oluştur)
+    const categoryMappings = {};
+    let newCategoriesCount = 0;
+
+    for (let i = 0; i < products.length; i++) {
+      const categoryName = categoryNameMappings[i];
+      if (categoryName) {
+        const category = await getOrCreateCategory(categoryName, existingCategoriesMap);
+        categoryMappings[i] = category;
+        
+        // Yeni kategori oluşturuldu mu kontrol et
+        if (!allCategories.find(c => c.id === category.id)) {
+          newCategoriesCount++;
+        }
+      }
+    }
+
+    if (newCategoriesCount > 0) {
+      console.log(`\n✨ ${newCategoriesCount} yeni kategori veritabanına eklendi.\n`);
+    }
 
     let successCount = 0;
     let failedCount = 0;
@@ -255,7 +324,8 @@ async function analyzeCategoriesWithGemini(limit = 10) {
     console.log('='.repeat(60));
     console.log(`✅ Başarılı: ${successCount}`);
     console.log(`❌ Başarısız: ${failedCount}`);
-    console.log(`📦 Toplam: ${products.length}\n`);
+    console.log(`📦 Toplam: ${products.length}`);
+    console.log(`🆕 Yeni Kategori: ${newCategoriesCount}\n`);
 
     if (results.length > 0) {
       console.log('📋 Detaylı Sonuçlar:');
