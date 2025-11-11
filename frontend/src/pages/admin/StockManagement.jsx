@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPackage, FiEdit2, FiRotateCcw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiCheck, FiXCircle, FiAlertCircle, FiCheckSquare, FiSquare, FiDownload, FiPrinter, FiGrid, FiLayers, FiChevronDown, FiChevronUp, FiTruck, FiSearch } from 'react-icons/fi';
+import { FiPackage, FiEdit2, FiRotateCcw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiCheck, FiXCircle, FiAlertCircle, FiCheckSquare, FiSquare, FiDownload, FiPrinter, FiGrid, FiLayers, FiChevronDown, FiChevronUp, FiTruck, FiSearch, FiList, FiMail } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -45,6 +45,11 @@ function StockManagement() {
     // localStorage'dan açık tedarikçileri oku
     const saved = localStorage.getItem('stockManagement_expandedSuppliers');
     return saved ? JSON.parse(saved) : {}; // { "Tedarikçi Adı": true/false }
+  });
+  const [listViewMode, setListViewMode] = useState(() => {
+    // localStorage'dan liste görünüm modunu oku, yoksa varsayılan olarak 'card'
+    const savedMode = localStorage.getItem('stockManagement_listViewMode');
+    return savedMode || 'card'; // 'card' veya 'list'
   });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -120,6 +125,11 @@ function StockManagement() {
   useEffect(() => {
     localStorage.setItem('stockManagement_expandedSuppliers', JSON.stringify(expandedSuppliers));
   }, [expandedSuppliers]);
+
+  // Liste görünüm modunu localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('stockManagement_listViewMode', listViewMode);
+  }, [listViewMode]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -531,48 +541,46 @@ function StockManagement() {
           </div>
           <div className="flex items-center gap-2">
             {/* Görünüm Modu Switch */}
-            {activeTab === 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-                <button
-                  onClick={() => setViewMode('criticality')}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                    viewMode === 'criticality'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  title="Nach Kritikalität anzeigen"
-                >
-                  <FiLayers className="w-3 h-3" />
-                  <span className="hidden sm:inline">Kritikalität</span>
-                </button>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <button
-                  onClick={() => setViewMode('category')}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                    viewMode === 'category'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  title="Nach Kategorie anzeigen"
-                >
-                  <FiGrid className="w-3 h-3" />
-                  <span className="hidden sm:inline">Kategorie</span>
-                </button>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <button
-                  onClick={() => setViewMode('supplier')}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                    viewMode === 'supplier'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  title="Nach Lieferant anzeigen"
-                >
-                  <FiTruck className="w-3 h-3" />
-                  <span className="hidden sm:inline">Lieferant</span>
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setViewMode('criticality')}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                  viewMode === 'criticality'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Nach Kritikalität anzeigen"
+              >
+                <FiLayers className="w-3 h-3" />
+                <span className="hidden sm:inline">Kritikalität</span>
+              </button>
+              <div className="w-px h-4 bg-gray-300"></div>
+              <button
+                onClick={() => setViewMode('category')}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                  viewMode === 'category'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Nach Kategorie anzeigen"
+              >
+                <FiGrid className="w-3 h-3" />
+                <span className="hidden sm:inline">Kategorie</span>
+              </button>
+              <div className="w-px h-4 bg-gray-300"></div>
+              <button
+                onClick={() => setViewMode('supplier')}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                  viewMode === 'supplier'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Nach Lieferant anzeigen"
+              >
+                <FiTruck className="w-3 h-3" />
+                <span className="hidden sm:inline">Lieferant</span>
+              </button>
+            </div>
             {activeTab === 0 && selectedProducts.length > 0 && (
               <button
                 onClick={() => setCreateListDialog(true)}
@@ -666,7 +674,7 @@ function StockManagement() {
               <button
                 onClick={() => setActiveTab(0)}
                 className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-                  activeTab !== 2
+                  activeTab === 0
                     ? 'border-green-500 text-green-600 font-medium'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
@@ -678,6 +686,24 @@ function StockManagement() {
                 )}
                 <span className="hidden sm:inline">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
                 <span className="sm:hidden">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab(1)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 1
+                    ? 'border-green-500 text-green-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiPackage className="w-4 h-4" />
+                <span>Aktive Bestellungen</span>
+                {(activeLists.length > 0 || activeOrders.length > 0) && (
+                  <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
+                    activeTab === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {activeLists.length + activeOrders.length}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab(2)}
@@ -1812,7 +1838,7 @@ function StockManagement() {
       )}
 
       {/* AKTİF SİPARİŞLER TAB'ı */}
-      {activeTab === 1 && viewMode === 'criticality' && (
+      {activeTab === 1 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="bg-green-50 px-4 py-3 border-b border-green-200">
             <h2 className="text-base md:text-lg font-semibold text-green-900 flex items-center gap-2">
@@ -1829,20 +1855,174 @@ function StockManagement() {
             />
           ) : (
             <>
-              {/* Liste görünümü */}
+              {/* Bestelllisten */}
               {activeLists.length > 0 && (
                 <div className="p-4 md:p-6">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Bestelllisten</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeLists.map((list) => (
-                      <StockOrderListCard
-                        key={list.id}
-                        list={list}
-                        onStatusUpdate={fetchData}
-                        onViewDetails={(list) => setListDetailDialog({ open: true, list })}
-                      />
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Bestelllisten</h3>
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setListViewMode('card')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          listViewMode === 'card'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Kartenansicht"
+                      >
+                        <FiGrid className="w-4 h-4" />
+                        <span className="hidden sm:inline">Karten</span>
+                      </button>
+                      <button
+                        onClick={() => setListViewMode('list')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          listViewMode === 'list'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Listenansicht"
+                      >
+                        <FiList className="w-4 h-4" />
+                        <span className="hidden sm:inline">Liste</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Kart görünümü */}
+                  {listViewMode === 'card' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeLists.map((list) => (
+                        <StockOrderListCard
+                          key={list.id}
+                          list={list}
+                          onStatusUpdate={fetchData}
+                          onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Liste görünümü */}
+                  {listViewMode === 'list' && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Bestellliste
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Erstellt am
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Produkte
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Erstellt von
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Lieferant E-Mail
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Aktionen
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {activeLists.map((list) => (
+                            <tr key={list.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {list.name ? String(list.name) : '-'}
+                                </div>
+                                {list.note && (
+                                  <div className="text-xs text-gray-500 mt-1 italic">
+                                    Notiz: {String(list.note)}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-4">
+                                {getStatusBadge(list.status)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {formatDate(list.createdAt)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                <div className="flex items-center gap-1">
+                                  <FiPackage className="w-4 h-4 text-gray-400" />
+                                  <span>{list.orders?.length || 0} Produkt(e)</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {list.admin && list.admin.firstName
+                                  ? String(list.admin.firstName)
+                                  : '-'}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {list.supplierEmail ? (
+                                  <div className="flex items-center gap-1">
+                                    <FiMail className="w-3 h-3 text-gray-400" />
+                                    <span>{String(list.supplierEmail)}</span>
+                                  </div>
+                                ) : (
+                                  '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await adminService.downloadStockOrderListPDF(list.id);
+                                        toast.success('PDF erfolgreich heruntergeladen');
+                                      } catch (error) {
+                                        const errorMessage =
+                                          error.response?.data?.error ||
+                                          error.message ||
+                                          'Fehler beim Herunterladen der PDF';
+                                        toast.error(errorMessage);
+                                      }
+                                    }}
+                                    className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                    title="PDF herunterladen"
+                                  >
+                                    <FiDownload className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await adminService.printStockOrderListPDF(list.id);
+                                      } catch (error) {
+                                        const errorMessage =
+                                          error.response?.data?.error ||
+                                          error.message ||
+                                          'Fehler beim Drucken der PDF';
+                                        toast.error(errorMessage);
+                                      }
+                                    }}
+                                    className="p-2 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                                    title="Drucken"
+                                  >
+                                    <FiPrinter className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setListDetailDialog({ open: true, list })}
+                                    className="p-2 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                                    title="Details anzeigen"
+                                  >
+                                    <FiChevronRight className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 

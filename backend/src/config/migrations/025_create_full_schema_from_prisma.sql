@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS delivery_zones (
     delivery_fee DECIMAL(12,2) NOT NULL,
     estimated_time INTEGER NOT NULL,
     max_distance_km DECIMAL(6,2),
-    is_active BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT trueimage.png,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
