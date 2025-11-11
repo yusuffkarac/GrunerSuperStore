@@ -104,6 +104,7 @@ export const getLowStockProducts = async () => {
  * Sipariş geçmişini getir
  */
 export const getStockOrderHistory = async (filters = {}) => {
+  try {
   const { productId, status, limit = 1000, offset = 0, date } = filters;
 
   const where = {
@@ -173,6 +174,16 @@ export const getStockOrderHistory = async (filters = {}) => {
     limit,
     offset,
   };
+  } catch (error) {
+    console.error('❌ getStockOrderHistory hatası:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+      filters,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -671,6 +682,7 @@ export const createStockOrderList = async (adminId, data) => {
  * Sipariş listelerini getir
  */
 export const getStockOrderLists = async (filters = {}) => {
+  try {
   const { status, limit = 1000, offset = 0, date } = filters;
 
   const where = {
@@ -734,6 +746,16 @@ export const getStockOrderLists = async (filters = {}) => {
     limit,
     offset,
   };
+  } catch (error) {
+    console.error('❌ getStockOrderLists hatası:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+      filters,
+    });
+    throw error;
+  }
 };
 
 /**

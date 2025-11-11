@@ -541,46 +541,46 @@ function StockManagement() {
           </div>
           <div className="flex items-center gap-2">
             {/* Görünüm Modu Switch */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-              <button
-                onClick={() => setViewMode('criticality')}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                  viewMode === 'criticality'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Nach Kritikalität anzeigen"
-              >
-                <FiLayers className="w-3 h-3" />
-                <span className="hidden sm:inline">Kritikalität</span>
-              </button>
-              <div className="w-px h-4 bg-gray-300"></div>
-              <button
-                onClick={() => setViewMode('category')}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                  viewMode === 'category'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Nach Kategorie anzeigen"
-              >
-                <FiGrid className="w-3 h-3" />
-                <span className="hidden sm:inline">Kategorie</span>
-              </button>
-              <div className="w-px h-4 bg-gray-300"></div>
-              <button
-                onClick={() => setViewMode('supplier')}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
-                  viewMode === 'supplier'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Nach Lieferant anzeigen"
-              >
-                <FiTruck className="w-3 h-3" />
-                <span className="hidden sm:inline">Lieferant</span>
-              </button>
-            </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => setViewMode('criticality')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'criticality'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Kritikalität anzeigen"
+                >
+                  <FiLayers className="w-3 h-3" />
+                  <span className="hidden sm:inline">Kritikalität</span>
+                </button>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <button
+                  onClick={() => setViewMode('category')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'category'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Kategorie anzeigen"
+                >
+                  <FiGrid className="w-3 h-3" />
+                  <span className="hidden sm:inline">Kategorie</span>
+                </button>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <button
+                  onClick={() => setViewMode('supplier')}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors text-xs font-medium ${
+                    viewMode === 'supplier'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Nach Lieferant anzeigen"
+                >
+                  <FiTruck className="w-3 h-3" />
+                  <span className="hidden sm:inline">Lieferant</span>
+                </button>
+              </div>
             {activeTab === 0 && selectedProducts.length > 0 && (
               <button
                 onClick={() => setCreateListDialog(true)}
@@ -1890,16 +1890,16 @@ function StockManagement() {
 
                   {/* Kart görünümü */}
                   {listViewMode === 'card' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {activeLists.map((list) => (
-                        <StockOrderListCard
-                          key={list.id}
-                          list={list}
-                          onStatusUpdate={fetchData}
-                          onViewDetails={(list) => setListDetailDialog({ open: true, list })}
-                        />
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeLists.map((list) => (
+                      <StockOrderListCard
+                        key={list.id}
+                        list={list}
+                        onStatusUpdate={fetchData}
+                        onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                      />
+                    ))}
+                  </div>
                   )}
 
                   {/* Liste görünümü */}
