@@ -1,12 +1,8 @@
 // PM2 Ecosystem Config - Multi-Tenant Support
 // Her tenant için ayrı PM2 process tanımları
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Tenant'ları otomatik olarak bul ve PM2 config oluştur
@@ -19,7 +15,7 @@ function getTenantConfigs() {
   
   // .env.{tenant-name} dosyalarını bul
   files.forEach(file => {
-    if (file.startsWith('.env.') && file !== '.env.example') {
+    if (file.startsWith('.env.') && file !== '.env.example' && !file.startsWith('.env.backup')) {
       const tenantName = file.replace('.env.', '');
       tenants.push(tenantName);
     }
@@ -48,7 +44,7 @@ function getTenantConfigs() {
 }
 
 // PM2 config export
-export default {
+module.exports = {
   apps: [
     // Redis (eğer docker-compose kullanılmıyorsa)
     // {
