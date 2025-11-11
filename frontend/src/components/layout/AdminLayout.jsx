@@ -460,20 +460,16 @@ function AdminLayout() {
                   className={`relative ${sidebarCollapsed ? 'lg:flex lg:justify-center' : ''}`}
                   onMouseEnter={(e) => {
                     if (sidebarCollapsed) {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const nav = e.currentTarget.closest('nav');
-                      const navRect = nav?.getBoundingClientRect();
-                      
-                      // Item'ın navigation içindeki relative pozisyonunu al
-                      const relativeTop = rect.top - (navRect?.top || 0);
-                      
-                      // Tooltip'i sidebar'ın başlangıcından itibaren hesapla (toggle button hariç)
-                      const aside = document.querySelector('aside');
-                      const asideRect = aside?.getBoundingClientRect();
-                      
+                      // Link elementinin pozisyonunu al (içerideki Link, dıştaki div değil)
+                      const linkElement = e.currentTarget.querySelector('a');
+                      const rect = linkElement ? linkElement.getBoundingClientRect() : e.currentTarget.getBoundingClientRect();
+                      // Tooltip, aside üzerinde 'fixed' olduğundan koordinatları aside'a göre hesapla
+                      const asideEl = e.currentTarget.closest('aside');
+                      const asideRect = asideEl ? asideEl.getBoundingClientRect() : { top: 0, left: 0 };
+
                       setTooltipPosition({
-                        top: (asideRect?.top || 0) + relativeTop + (rect.height / 2),
-                        left: rect.right + 8
+                        top: rect.top - asideRect.top + (rect.height / 2),
+                        left: rect.right - asideRect.left + 8
                       });
                       setHoveredMenuItem(item.path);
                     }
@@ -504,11 +500,10 @@ function AdminLayout() {
           {/* Tooltip - Sidebar dışında render ediliyor */}
           {sidebarCollapsed && hoveredMenuItem && (
             <div 
-              className="hidden lg:block fixed z-[9999] pointer-events-none"
+              className="hidden lg:block fixed z-[9999] pointer-events-none -translate-y-1/2"
               style={{
                 left: `${tooltipPosition.left}px`,
-                top: `${tooltipPosition.top}px`,
-                transform: 'translateY(-50%)'
+                top: `${tooltipPosition.top}px`
               }}
             >
               <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl whitespace-nowrap relative">

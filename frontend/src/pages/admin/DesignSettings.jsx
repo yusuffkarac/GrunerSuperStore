@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import settingsService from '../../services/settingsService';
 import { useTheme } from '../../contexts/ThemeContext';
-import { defaultThemeColors } from '../../config/themeColors';
+import { defaultThemeColors, colorPresets } from '../../config/themeColors';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
@@ -149,6 +149,21 @@ function DesignSettings() {
     }
   };
 
+  // Vorgefertigte Kombination anwenden
+  const applyPreset = (presetKey) => {
+    const preset = colorPresets[presetKey];
+    if (!preset) return;
+
+    setColors(preset.colors);
+    
+    // Wenn Vorschau-Modus aktiv ist, sofort anwenden
+    if (previewMode) {
+      updateThemeColors(preset.colors);
+    }
+    
+    toast.success(`Farbschema "${preset.name}" wurde angewendet`);
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -264,6 +279,63 @@ function DesignSettings() {
             </div>
           </div>
         )}
+
+        {/* Farbkombinationen-Bereich */}
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              Vorgefertigte Farbkombinationen
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Wählen Sie eine vorgefertigte Farbkombination für schnelle Anwendung
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(colorPresets).map(([key, preset]) => (
+                <button
+                  key={key}
+                  onClick={() => applyPreset(key)}
+                  className="group relative p-4 border-2 border-gray-200 rounded-xl hover:border-primary-500 transition-all duration-200 hover:shadow-lg bg-white text-left"
+                >
+                  {/* Farbvorschau */}
+                  <div className="flex gap-2 mb-3">
+                    <div
+                      className="w-8 h-8 rounded-lg border-2 border-gray-300"
+                      style={{ backgroundColor: preset.colors.header.background }}
+                    />
+                    <div
+                      className="w-8 h-8 rounded-lg border-2 border-gray-300"
+                      style={{ backgroundColor: preset.colors.primary[600] }}
+                    />
+                    <div
+                      className="w-8 h-8 rounded-lg border-2 border-gray-300"
+                      style={{ backgroundColor: preset.colors.buttons.addToCart }}
+                    />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                    {preset.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{preset.description}</p>
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <span className="text-xs text-primary-600 font-medium group-hover:text-primary-700">
+                      Anwenden →
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                <strong>Hinweis:</strong> Nach der Auswahl einer Kombination können Sie die Farben auch manuell anpassen. 
+                Vergessen Sie nicht, auf "Änderungen speichern" zu klicken, um die Änderungen zu speichern.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Logo & Favicon Section */}
         <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
