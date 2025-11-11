@@ -1,16 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 
 // PM2 environment variable'larını kullan (dotenv.config() çağrısı yok - PM2 zaten set ediyor)
-// DATABASE_URL'i environment'tan oluştur (eğer yoksa)
-if (!process.env.DATABASE_URL) {
-  const dbHost = process.env.DB_HOST || 'localhost';
-  const dbPort = process.env.DB_PORT || 5432;
-  const dbName = process.env.DB_NAME || 'gruner_superstore';
-  const dbUser = process.env.DB_USER || 'postgres';
-  const dbPassword = process.env.DB_PASSWORD || '';
-  
-  process.env.DATABASE_URL = `postgresql://${dbUser}${dbPassword ? ':' + dbPassword : ''}@${dbHost}:${dbPort}/${dbName}`;
-}
+// DATABASE_URL'i her zaman DB_NAME'den oluştur (DB_NAME varsa)
+// .env dosyasındaki DATABASE_URL'i ignore et - her zaman DB_NAME'den oluştur
+const dbHost = process.env.DB_HOST || 'localhost';
+const dbPort = process.env.DB_PORT || 5432;
+const dbName = process.env.DB_NAME || 'gruner_superstore';
+const dbUser = process.env.DB_USER || 'postgres';
+const dbPassword = process.env.DB_PASSWORD || '';
+
+// DATABASE_URL'i her zaman DB_NAME'den oluştur
+process.env.DATABASE_URL = `postgresql://${dbUser}${dbPassword ? ':' + dbPassword : ''}@${dbHost}:${dbPort}/${dbName}`;
 
 // Database connection bilgisini logla (debug için)
 if (process.env.NODE_ENV === 'production') {
