@@ -88,7 +88,7 @@ async function migrateExistingTenant() {
 
   try {
     // 4. Veritabanı adını değiştir (eğer farklıysa)
-    const newDbName = `gruner_${tenantName}`;
+    let newDbName = `gruner_${tenantName}`;
     let dbRenamed = false;
 
     if (oldDbName !== newDbName) {
@@ -131,6 +131,7 @@ async function migrateExistingTenant() {
       }
     } else {
       console.log(`✅ Veritabanı adı zaten doğru: ${oldDbName}\n`);
+      newDbName = oldDbName;
     }
 
     // 5. Port numarasını belirle
