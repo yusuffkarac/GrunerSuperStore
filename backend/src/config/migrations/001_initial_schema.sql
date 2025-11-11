@@ -248,6 +248,21 @@ CREATE TABLE admins (
 CREATE INDEX idx_admins_email ON admins(email);
 CREATE INDEX idx_admins_role ON admins(role);
 
+-- 11) SETTINGS
+CREATE TABLE settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    guest_can_view_products BOOLEAN DEFAULT true,
+    show_out_of_stock_products BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_settings_created_at ON settings(created_at DESC);
+
+-- Insert default settings record
+INSERT INTO settings (id, guest_can_view_products, show_out_of_stock_products) 
+VALUES (gen_random_uuid(), true, true);
+
 -- ===================================
 -- APPLY updated_at TRIGGERS
 -- ===================================
@@ -280,6 +295,9 @@ CREATE TRIGGER update_delivery_zones_updated_at BEFORE UPDATE ON delivery_zones
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_admins_updated_at BEFORE UPDATE ON admins
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===================================
