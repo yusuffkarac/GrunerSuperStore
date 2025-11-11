@@ -229,9 +229,18 @@ const limiter = rateLimit({
   message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Trust proxy validation'ını kapat - nginx proxy'si güvenilir
-  validate: {
-    trustProxy: false,
+  // Nginx proxy'si arkasında gerçek client IP'yi kullan
+  // X-Forwarded-For header'ından gerçek IP'yi al
+  keyGenerator: (req) => {
+    // Nginx'ten gelen gerçek client IP'yi al
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+      // X-Forwarded-For: client1, proxy1, proxy2 formatında olabilir
+      // İlk IP gerçek client IP'sidir
+      const clientIp = forwardedFor.split(',')[0].trim();
+      return clientIp || req.ip;
+    }
+    return req.ip;
   },
   // OPTIONS request'lerini skip et (CORS preflight)
   skip: (req) => req.method === 'OPTIONS',
