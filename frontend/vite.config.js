@@ -1,6 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Tenant name'i environment variable'dan al (build sırasında)
+const tenantName = process.env.TENANT_NAME || null;
 
 export default defineConfig({
   appType: 'spa',
@@ -88,7 +96,8 @@ export default defineConfig({
     strictPort: false
   },
   build: {
-    outDir: 'dist',
+    // Tenant-specific build klasörü
+    outDir: tenantName ? `dist/${tenantName}` : 'dist',
     sourcemap: false,
     rollupOptions: {
       output: {
@@ -98,5 +107,10 @@ export default defineConfig({
         }
       }
     }
+  },
+  // Environment variables
+  define: {
+    // VITE_API_URL build sırasında set edilebilir
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || ''),
   }
 });

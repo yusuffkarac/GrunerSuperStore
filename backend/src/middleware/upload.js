@@ -2,12 +2,21 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+// .env dosyasını yükle
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Tenant-specific upload path (UPLOAD_PATH environment variable'ından)
+// Eğer UPLOAD_PATH yoksa varsayılan olarak uploads klasörünü kullan
+const uploadsDir = process.env.UPLOAD_PATH
+  ? path.join(__dirname, '../..', process.env.UPLOAD_PATH)
+  : path.join(__dirname, '../../uploads');
+
 // Uploads klasörünü oluştur
-const uploadsDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

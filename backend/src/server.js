@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import fs from 'fs';
 
 // Routes
 import authRoutes from './routes/auth.routes.js';
@@ -111,6 +112,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // __dirname = backend/src, uploads klasörü = backend/uploads
 
+// Tenant-specific upload path (UPLOAD_PATH environment variable'ından)
+// Eğer UPLOAD_PATH yoksa varsayılan olarak uploads klasörünü kullan
+const uploadPath = process.env.UPLOAD_PATH 
+  ? join(__dirname, '..', process.env.UPLOAD_PATH)
+  : join(__dirname, '../uploads');
+
+// Upload klasörünü oluştur (yoksa)
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
 // Statik dosya servisi için header ayarları
 const staticOptions = {
   setHeaders: (res, path, stat) => {
@@ -118,7 +130,14 @@ const staticOptions = {
     if (process.env.NODE_ENV !== 'production') {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
-      res.set('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:5173');
+      // CORS_ORIGIN virgülle ayrılmış liste olabilir
+      const allowedOrigins = process.env.CORS_ORIGIN 
+        ? process.env.CORS_ORIGIN.split(',')
+        : ['http://localhost:5173'];
+      const origin = res.req.headers.origin;
+      if (origin && allowedOrigins.includes(origin)) {
+        res.set('Access-Control-Allow-Origin', origin);
+      }
     }
     res.set('Access-Control-Allow-Credentials', 'true');
     // Cache control headers - production'da cache'le
@@ -129,11 +148,11 @@ const staticOptions = {
 };
 
 // /uploads için static file serving (direkt erişim)
-app.use('/uploads', express.static(join(__dirname, '../uploads'), staticOptions));
+app.use('/uploads', express.static(uploadPath, staticOptions));
 
 // /api/uploads için static file serving (frontend'den gelen istekler için)
 // Frontend normalizeImageUrl fonksiyonu VITE_API_URL eklediği için /api/uploads oluyor
-app.use('/api/uploads', express.static(join(__dirname, '../uploads'), staticOptions));
+app.use('/api/uploads', express.static(uploadPath, staticOptions));
 
 // Logging
 // Morgan için Almanya saatine göre özel format
