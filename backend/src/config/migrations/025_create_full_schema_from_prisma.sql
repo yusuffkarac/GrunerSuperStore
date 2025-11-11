@@ -309,14 +309,21 @@ CREATE TABLE IF NOT EXISTS campaigns (
 CREATE TABLE IF NOT EXISTS coupons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT NOT NULL UNIQUE,
+    name TEXT,
     type coupon_type NOT NULL,
     discount_percent DECIMAL(5,2),
     discount_amount DECIMAL(12,2),
-    minimum_amount DECIMAL(12,2),
-    max_uses INTEGER,
-    used_count INTEGER DEFAULT 0,
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
+    min_purchase DECIMAL(12,2),
+    max_discount DECIMAL(12,2),
+    usage_limit INTEGER,
+    usage_count INTEGER DEFAULT 0,
+    user_usage_limit INTEGER DEFAULT 1,
+    apply_to_all BOOLEAN DEFAULT true,
+    user_ids JSONB,
+    category_ids JSONB,
+    product_ids JSONB,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -327,10 +334,9 @@ CREATE TABLE IF NOT EXISTS coupon_usages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     coupon_id UUID NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    discount_amount DECIMAL(12,2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_coupon_user_order UNIQUE (coupon_id, user_id, order_id)
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    discount DECIMAL(12,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Product Variants
