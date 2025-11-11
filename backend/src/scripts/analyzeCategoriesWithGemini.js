@@ -28,7 +28,7 @@ let openaiClient = null;
  */
 function getGeminiClient() {
   if (!geminiClient) {
-    if (!process.env.GEMINI_API_KEY) {
+if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY environment variable bulunamadı!');
     }
     geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -117,8 +117,8 @@ Yanıt:`;
     if (aiProvider === 'gemini') {
       const genAI = getGeminiClient();
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
       responseText = response.text().trim();
     } else if (aiProvider === 'gpt') {
       const openai = getOpenAIClient();
@@ -171,8 +171,9 @@ Yanıt:`;
  * @param {number|null} limit - İşlenecek ürün sayısı (null = tümü)
  * @param {boolean} deleteCategories - Eski kategorileri sil (varsayılan: false)
  * @param {string} aiProvider - AI provider: 'gemini' veya 'gpt' (varsayılan: 'gemini')
+ * @param {boolean} moveAllProducts - Tüm ürünleri "Allgemein"e taşı (varsayılan: false)
  */
-async function analyzeCategoriesWithGemini(limit = null, deleteCategories = false, aiProvider = 'gemini') {
+async function analyzeCategoriesWithGemini(limit = null, deleteCategories = false, aiProvider = 'gemini', moveAllProducts = false) {
   const startTime = Date.now();
   
   try {
@@ -227,14 +228,35 @@ async function analyzeCategoriesWithGemini(limit = null, deleteCategories = fals
       console.log(`✅ "Allgemein" kategorisi bulundu (ID: ${allgemeinCategory.id})\n`);
     }
 
-    // ADIM 1: Tüm ürünleri "Allgemein" kategorisine taşı
-    console.log('📦 ADIM 1: Tüm ürünler "Allgemein" kategorisine taşınıyor...');
-    const updateResult = await prisma.product.updateMany({
-      data: {
-        categoryId: allgemeinCategory.id,
-      },
-    });
-    console.log(`✅ ${updateResult.count} ürün "Allgemein" kategorisine taşındı.\n`);
+    // ADIM 1: Tüm ürünleri "Allgemein" kategorisine taşı (sadece --move-all flag'i varsa)
+    if (moveAllProducts) {
+      console.log('📦 ADIM 1: Tüm ürünler "Allgemein" kategorisine taşınıyor...');
+      const updateResult = await prisma.product.updateMany({
+        data: {
+          categoryId: allgemeinCategory.id,
+        },
+      });
+      console.log(`✅ ${updateResult.count} ürün "Allgemein" kategorisine taşındı.\n`);
+    } else {
+      console.log('📦 ADIM 1: "Allgemein" kategorisindeki ürünler kontrol ediliyor...');
+      
+      // Önce kaç ürün var kontrol et
+      const allgemeinProductCount = await prisma.product.count({
+        where: {
+          categoryId: allgemeinCategory.id,
+        },
+      });
+      
+      console.log(`ℹ️  "Allgemein" kategorisinde ${allgemeinProductCount} ürün bulundu.`);
+      
+      if (allgemeinProductCount === 0) {
+        console.log(`\n⚠️  "Allgemein" kategorisinde işlenecek ürün yok.`);
+        console.log(`   Tüm ürünleri "Allgemein" kategorisine taşımak isterseniz --move-all flag'ini kullanın.`);
+        return;
+      }
+      
+      console.log(`✅ İşlenecek ürünler: ${allgemeinProductCount}\n`);
+    }
 
     // ADIM 2: "Allgemein" hariç tüm kategorileri sil (opsiyonel)
     if (deleteCategories) {
@@ -449,7 +471,7 @@ async function analyzeCategoriesWithGemini(limit = null, deleteCategories = fals
     fs.writeFileSync(logFile, JSON.stringify(logData, null, 2), 'utf8');
     console.log(`\n📝 Rollback log dosyası kaydedildi: ${logFile}`);
     console.log(`   Geri almak için: npm run rollback-categories ${path.basename(logFile)}`);
-    
+
     console.log('\n✅ İşlem tamamlandı!');
     
     // Süre hesaplama
@@ -486,9 +508,7 @@ const args = process.argv.slice(2);
 let limit = null;
 let deleteCategories = false;
 let aiProvider = 'gemini'; // varsayılan
-
-// Debug: Argümanları göster
-console.log('🔍 Debug - Alınan argümanlar:', args);
+let moveAllProducts = false; // varsayılan: false (sadece Allgemein'deki ürünleri işle)
 
 // Önce --ai parametresini kontrol et
 for (let i = 0; i < args.length; i++) {
@@ -502,24 +522,29 @@ for (let i = 0; i < args.length; i++) {
     deleteCategories = true;
     args.splice(i, 1);
     i--;
+  } else if (arg === '--move-all' || arg === '-m') {
+    moveAllProducts = true;
+    args.splice(i, 1);
+    i--;
   } else if (arg === '--help' || arg === '-h') {
     console.log(`
 Kategori Analizi Script'i
 
 Kullanım:
-  npm run analyze-categories [limit] [--delete-categories] [--ai provider]
+  npm run analyze-categories [limit] [--delete-categories] [--ai provider] [--move-all]
 
 Parametreler:
-  limit                    İşlenecek ürün sayısı (opsiyonel, belirtilmezse tüm ürünler)
+  limit                    İşlenecek ürün sayısı (opsiyonel, belirtilmezse tümü)
   --delete-categories, -d  Eski kategorileri sil (varsayılan: false, kategoriler korunur)
   --ai provider            AI provider: 'gemini' veya 'gpt' (varsayılan: gemini)
+  --move-all, -m           Tüm ürünleri "Allgemein" kategorisine taşı (varsayılan: false)
 
 Örnekler:
-  npm run analyze-categories                           # Tüm ürünler, Gemini, kategoriler korunur
-  npm run analyze-categories 50                       # 50 ürün, Gemini, kategoriler korunur
-  npm run analyze-categories --ai gpt                 # Tüm ürünler, GPT, kategoriler korunur
-  npm run analyze-categories --delete-categories      # Tüm ürünler, Gemini, eski kategoriler silinir
-  npm run analyze-categories 100 -d --ai gpt         # 100 ürün, GPT, eski kategoriler silinir
+  npm run analyze-categories                           # Allgemein'deki ürünler, Gemini
+  npm run analyze-categories 50                       # Allgemein'deki 50 ürün, Gemini
+  npm run analyze-categories --ai gpt                 # Allgemein'deki ürünler, GPT
+  npm run analyze-categories --move-all               # Tüm ürünleri taşı, sonra işle
+  npm run analyze-categories 100 --ai gpt --move-all  # Tüm ürünleri taşı, 100'ünü işle, GPT
 
 NOT: npm run kullanırken -- ile ayırın:
   npm run analyze-categories -- 50 --ai gpt
@@ -560,7 +585,7 @@ if (aiProvider !== 'gemini' && aiProvider !== 'gpt') {
   process.exit(1);
 }
 
-analyzeCategoriesWithGemini(limit, deleteCategories, aiProvider)
+analyzeCategoriesWithGemini(limit, deleteCategories, aiProvider, moveAllProducts)
   .then(() => {
     console.log('\n🎉 Script başarıyla tamamlandı.');
     process.exit(0);
