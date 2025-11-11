@@ -101,21 +101,36 @@ async function migrateExistingTenant() {
       );
 
       if (dbCheck.rows.length > 0) {
-        // Aktif bağlantıları kapat
-        await masterPool.query(`
-          SELECT pg_terminate_backend(pid)
-          FROM pg_stat_activity
-          WHERE datname = $1 AND pid <> pg_backend_pid()
-        `, [oldDbName]);
+        try {
+          // Aktif bağlantıları kapat
+          await masterPool.query(`
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = $1 AND pid <> pg_backend_pid()
+          `, [oldDbName]);
 
-        // Veritabanını yeniden adlandır
-        await masterPool.query(`ALTER DATABASE ${oldDbName} RENAME TO ${newDbName}`);
-        console.log(`✅ Veritabanı adı değiştirildi\n`);
-        dbRenamed = true;
+          // Veritabanını yeniden adlandır
+          await masterPool.query(`ALTER DATABASE ${oldDbName} RENAME TO ${newDbName}`);
+          console.log(`✅ Veritabanı adı değiştirildi\n`);
+          dbRenamed = true;
+        } catch (error) {
+          // Eğer veritabanı adını değiştiremezsek, mevcut adı kullanmaya devam et
+          if (error.message.includes('must be owner') || error.message.includes('permission denied')) {
+            console.log(`⚠️  Veritabanı adı değiştirilemedi: ${error.message}`);
+            console.log(`   Mevcut veritabanı adı kullanılacak: ${oldDbName}`);
+            console.log(`   .env dosyasında DB_NAME=${oldDbName} olarak ayarlanacak\n`);
+            // newDbName'i eski adla değiştir
+            newDbName = oldDbName;
+          } else {
+            throw error;
+          }
+        }
       } else {
         console.log(`⚠️  Veritabanı bulunamadı: ${oldDbName}`);
         console.log(`   Yeni veritabanı oluşturulacak: ${newDbName}\n`);
       }
+    } else {
+      console.log(`✅ Veritabanı adı zaten doğru: ${oldDbName}\n`);
     }
 
     // 5. Port numarasını belirle
@@ -136,7 +151,9 @@ async function migrateExistingTenant() {
     const newEnvPath = path.join(backendDir, `.env.${tenantName}`);
     console.log(`📝 Yeni .env dosyası oluşturuluyor: .env.${tenantName}`);
     
-    const envContent = generateEnvFile(tenantName, newDbName, tenantPort, subdomain, oldEnv.parsed);
+    // newDbName değişkenini kullan (eğer rename başarısız olduysa eski ad kullanılır)
+    const finalDbName = newDbName || `gruner_${tenantName}`;
+    const envContent = generateEnvFile(tenantName, finalDbName, tenantPort, subdomain, oldEnv.parsed);
     fs.writeFileSync(newEnvPath, envContent);
     console.log(`✅ .env dosyası oluşturuldu\n`);
 
