@@ -14,15 +14,18 @@ async function mergeDuplicateCategories() {
 
     // Tüm kategorileri ürün sayılarıyla birlikte çek
     const categories = await prisma.category.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
         _count: {
           select: { products: true },
         },
       },
-      orderBy: [
-        { createdAt: 'asc' }, // İlk oluşturulan önce
-        { _count: { products: 'desc' } }, // En çok ürünü olan önce
-      ],
+      orderBy: {
+        createdAt: 'asc', // İlk oluşturulan önce
+      },
     });
 
     console.log(`Toplam kategori sayısı: ${categories.length}\n`);
