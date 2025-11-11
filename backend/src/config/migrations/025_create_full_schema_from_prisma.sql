@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     district TEXT,
     postal_code TEXT NOT NULL,
     city TEXT NOT NULL,
-    state TEXT NOT NULL,
+    state TEXT,
     latitude DECIMAL(10,8),
     longitude DECIMAL(11,8),
     description TEXT,
@@ -178,10 +178,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL DEFAULT 1,
+    variant_id UUID,
+    quantity INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_user_product_cart UNIQUE (user_id, product_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Delivery Zones
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS orders (
     discount DECIMAL(12,2) DEFAULT 0,
     total DECIMAL(12,2) NOT NULL,
     payment_type payment_type NOT NULL DEFAULT 'none',
-    coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
+    coupon_id UUID,
     coupon_code TEXT,
     note TEXT,
     cancellation_reason TEXT,
@@ -226,12 +226,20 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES products(id),
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    variant_id UUID,
     product_name TEXT NOT NULL,
-    product_price DECIMAL(12,2) NOT NULL,
+    variant_name TEXT,
+    price DECIMAL(12,2) NOT NULL,
+    original_price DECIMAL(12,2),
+    campaign_id UUID REFERENCES campaigns(id),
+    campaign_name TEXT,
     quantity INTEGER NOT NULL,
-    subtotal DECIMAL(12,2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    unit TEXT,
+    brand TEXT,
+    image_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Favorites
@@ -350,8 +358,10 @@ CREATE TABLE IF NOT EXISTS product_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    price DECIMAL(12,2),
+    price DECIMAL(12,2) NOT NULL,
     stock INTEGER DEFAULT 0,
+    sku TEXT UNIQUE,
+    image_urls JSONB DEFAULT '[]',
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -360,9 +370,10 @@ CREATE TABLE IF NOT EXISTS product_variants (
 -- Barcode Labels
 CREATE TABLE IF NOT EXISTS barcode_labels (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    unit TEXT,
     barcode TEXT NOT NULL,
-    label_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -495,17 +506,58 @@ CREATE TABLE IF NOT EXISTS bulk_price_updates (
 CREATE TABLE IF NOT EXISTS product_task_ignores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    task_type TEXT NOT NULL,
+    category TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_product_task UNIQUE (product_id, task_type)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_product_task UNIQUE (product_id, category)
 );
 
 -- ===================================
 -- FOREIGN KEYS
 -- ===================================
 
-ALTER TABLE admins ADD CONSTRAINT IF NOT EXISTS admins_role_id_fkey 
-    FOREIGN KEY (role_id) REFERENCES admin_roles(id) ON DELETE SET NULL;
+-- Add foreign key for orders.coupon_id after coupons table is created
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'orders_coupon_id_fkey'
+    ) THEN
+        ALTER TABLE orders ADD CONSTRAINT orders_coupon_id_fkey 
+            FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- Add foreign key for order_items.variant_id after product_variants table is created
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'order_items_variant_id_fkey'
+    ) THEN
+        ALTER TABLE order_items ADD CONSTRAINT order_items_variant_id_fkey 
+            FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- Add foreign key for cart_items.variant_id after product_variants table is created
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'cart_items_variant_id_fkey'
+    ) THEN
+        ALTER TABLE cart_items ADD CONSTRAINT cart_items_variant_id_fkey 
+            FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'admins_role_id_fkey'
+    ) THEN
+        ALTER TABLE admins ADD CONSTRAINT admins_role_id_fkey 
+            FOREIGN KEY (role_id) REFERENCES admin_roles(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- ===================================
 -- INDEXES
