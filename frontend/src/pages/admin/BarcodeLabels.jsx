@@ -29,6 +29,10 @@ function BarcodeLabels() {
     labelPriceFontSize: 46,
     labelPriceCurrencyFontSize: 24,
     labelSkuFontSize: 11,
+    labelHeight: '40mm',
+    labelHeaderMinHeight: '18mm',
+    labelBorderColor: '#059669',
+    barcodeType: 'auto',
   });
   
   // Pagination state
@@ -134,6 +138,61 @@ function BarcodeLabels() {
     }
   };
 
+  // Etiket şablonları
+  const labelTemplates = {
+    '30mm': {
+      labelHeight: '30mm',
+      labelHeaderFontSize: 12,
+      labelPriceFontSize: 32,
+      labelPriceCurrencyFontSize: 18,
+      labelSkuFontSize: 9,
+      labelHeaderMinHeight: '10mm',
+      labelBorderColor: '#059669',
+      barcodeType: 'auto',
+    },
+    '40mm': {
+      labelHeight: '40mm',
+      labelHeaderFontSize: 16,
+      labelPriceFontSize: 40,
+      labelPriceCurrencyFontSize: 24,
+      labelSkuFontSize: 11,
+      labelHeaderMinHeight: '18mm',
+      labelBorderColor: '#059669',
+      barcodeType: 'auto',
+    },
+    '50mm': {
+      labelHeight: '50mm',
+      labelHeaderFontSize: 20,
+      labelPriceFontSize: 58,
+      labelPriceCurrencyFontSize: 30,
+      labelSkuFontSize: 13,
+      labelHeaderMinHeight: '22mm',
+      labelBorderColor: '#059669',
+      barcodeType: 'auto',
+    },
+    '60mm': {
+      labelHeight: '60mm',
+      labelHeaderFontSize: 24,
+      labelPriceFontSize: 70,
+      labelPriceCurrencyFontSize: 36,
+      labelSkuFontSize: 15,
+      labelHeaderMinHeight: '26mm',
+      labelBorderColor: '#059669',
+      barcodeType: 'auto',
+    },
+  };
+
+  // Şablon seçildiğinde ayarları uygula
+  const handleApplyTemplate = (templateKey) => {
+    const template = labelTemplates[templateKey];
+    if (template) {
+      setLabelSettings({
+        ...labelSettings,
+        ...template,
+      });
+    }
+  };
+
   // Etiket ayarlarını varsayılan değerlere sıfırla
   const handleResetLabelSettings = () => {
     setLabelSettings({
@@ -141,6 +200,10 @@ function BarcodeLabels() {
       labelPriceFontSize: 46,
       labelPriceCurrencyFontSize: 24,
       labelSkuFontSize: 11,
+      labelHeight: '40mm',
+      labelHeaderMinHeight: '18mm',
+      labelBorderColor: '#059669',
+      barcodeType: 'auto',
     });
     toast.info('Einstellungen wurden auf Standardwerte zurückgesetzt');
   };
@@ -154,6 +217,10 @@ function BarcodeLabels() {
         labelPriceFontSize: labelSettings.labelPriceFontSize === '' ? 46 : labelSettings.labelPriceFontSize,
         labelPriceCurrencyFontSize: labelSettings.labelPriceCurrencyFontSize === '' ? 24 : labelSettings.labelPriceCurrencyFontSize,
         labelSkuFontSize: labelSettings.labelSkuFontSize === '' ? 11 : labelSettings.labelSkuFontSize,
+        labelHeight: labelSettings.labelHeight === '' ? '40mm' : labelSettings.labelHeight,
+        labelHeaderMinHeight: labelSettings.labelHeaderMinHeight === '' ? '18mm' : labelSettings.labelHeaderMinHeight,
+        labelBorderColor: labelSettings.labelBorderColor === '' ? '#059669' : labelSettings.labelBorderColor,
+        barcodeType: labelSettings.barcodeType || 'auto',
       };
       
       await settingsService.updateSettings({
@@ -773,7 +840,7 @@ function BarcodeLabels() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black/50 z-40"
+              className="fixed inset-0 bg-black/50 z-[9998]"
             />
 
             {/* Modal */}
@@ -781,7 +848,7 @@ function BarcodeLabels() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             >
               <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
@@ -897,7 +964,7 @@ function BarcodeLabels() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettingsModal(false)}
-              className="fixed inset-0 bg-black/50 z-40"
+              className="fixed inset-0 bg-black/50 z-[9998]"
             />
 
             {/* Modal */}
@@ -905,9 +972,9 @@ function BarcodeLabels() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             >
-              <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <h2 className="text-xl font-bold text-gray-900">
@@ -932,128 +999,265 @@ function BarcodeLabels() {
 
                 {/* Modal Body */}
                 <div className="p-6 space-y-4">
-                  {/* Ürün Adı Font Boyutu */}
+                  {/* Şablon Seçici */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Produktname Schriftgröße (pt)
+                      Etiket Vorlagen
                     </label>
-                    <input
-                      type="number"
-                      min="8"
-                      max="32"
-                      value={labelSettings.labelHeaderFontSize}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setLabelSettings({
-                            ...labelSettings,
-                            labelHeaderFontSize: '',
-                          });
-                        } else {
-                          const numValue = parseInt(value);
-                          if (!isNaN(numValue)) {
-                            setLabelSettings({
-                              ...labelSettings,
-                              labelHeaderFontSize: numValue,
-                            });
-                          }
-                        }
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.keys(labelTemplates).map((templateKey) => {
+                        const template = labelTemplates[templateKey];
+                        const isActive = labelSettings.labelHeight === template.labelHeight;
+                        return (
+                          <button
+                            key={templateKey}
+                            type="button"
+                            onClick={() => handleApplyTemplate(templateKey)}
+                            className={`px-6 py-3 border-2 rounded-lg transition-all text-sm font-medium ${
+                              isActive
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                                : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
+                            }`}
+                          >
+                            <div className="font-semibold">{templateKey}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {template.labelHeaderFontSize}pt / {template.labelPriceFontSize}pt
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Wählen Sie eine Vorlage aus, um alle Einstellungen automatisch anzupassen
+                    </p>
                   </div>
 
-                  {/* Fiyat Font Boyutu */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preis Schriftgröße (pt)
-                    </label>
-                    <input
-                      type="number"
-                      min="20"
-                      max="80"
-                      value={labelSettings.labelPriceFontSize}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setLabelSettings({
-                            ...labelSettings,
-                            labelPriceFontSize: '',
-                          });
-                        } else {
-                          const numValue = parseInt(value);
-                          if (!isNaN(numValue)) {
-                            setLabelSettings({
-                              ...labelSettings,
-                              labelPriceFontSize: numValue,
-                            });
-                          }
-                        }
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">Manuelle Einstellungen</h3>
                   </div>
 
-                  {/* Para Birimi Font Boyutu */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Währung (€) Schriftgröße (pt)
-                    </label>
-                    <input
-                      type="number"
-                      min="10"
-                      max="40"
-                      value={labelSettings.labelPriceCurrencyFontSize}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setLabelSettings({
-                            ...labelSettings,
-                            labelPriceCurrencyFontSize: '',
-                          });
-                        } else {
-                          const numValue = parseInt(value);
-                          if (!isNaN(numValue)) {
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Ürün Adı Font Boyutu */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Produktname Schriftgröße (pt)
+                      </label>
+                      <input
+                        type="number"
+                        min="8"
+                        max="32"
+                        value={labelSettings.labelHeaderFontSize}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
                             setLabelSettings({
                               ...labelSettings,
-                              labelPriceCurrencyFontSize: numValue,
+                              labelHeaderFontSize: '',
                             });
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                              setLabelSettings({
+                                ...labelSettings,
+                                labelHeaderFontSize: numValue,
+                              });
+                            }
                           }
-                        }
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Fiyat Font Boyutu */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Preis Schriftgröße (pt)
+                      </label>
+                      <input
+                        type="number"
+                        min="20"
+                        max="80"
+                        value={labelSettings.labelPriceFontSize}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelPriceFontSize: '',
+                            });
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                              setLabelSettings({
+                                ...labelSettings,
+                                labelPriceFontSize: numValue,
+                              });
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Para Birimi Font Boyutu */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Währung (€) Schriftgröße (pt)
+                      </label>
+                      <input
+                        type="number"
+                        min="10"
+                        max="40"
+                        value={labelSettings.labelPriceCurrencyFontSize}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelPriceCurrencyFontSize: '',
+                            });
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                              setLabelSettings({
+                                ...labelSettings,
+                                labelPriceCurrencyFontSize: numValue,
+                              });
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* SKU/Barkod Font Boyutu */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SKU/Barcode Schriftgröße (pt)
+                      </label>
+                      <input
+                        type="number"
+                        min="8"
+                        max="20"
+                        value={labelSettings.labelSkuFontSize}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            setLabelSettings({
+                              ...labelSettings,
+                              labelSkuFontSize: '',
+                            });
+                          } else {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                              setLabelSettings({
+                                ...labelSettings,
+                                labelSkuFontSize: numValue,
+                              });
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Etiket Yüksekliği */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Etiket Höhe (mm)
+                      </label>
+                      <input
+                        type="text"
+                        value={labelSettings.labelHeight}
+                        onChange={(e) => {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelHeight: e.target.value,
+                          });
+                        }}
+                        placeholder="z.B.: 40mm"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Format: Zahl + Einheit</p>
+                    </div>
+
+                    {/* Ürün Adı Minimum Yüksekliği */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Produktname Mindesthöhe (mm)
+                      </label>
+                      <input
+                        type="text"
+                        value={labelSettings.labelHeaderMinHeight}
+                        onChange={(e) => {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelHeaderMinHeight: e.target.value,
+                          });
+                        }}
+                        placeholder="z.B.: 18mm"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Wird von Vorlagen gesetzt</p>
+                    </div>
                   </div>
 
-                  {/* SKU/Barkod Font Boyutu */}
+                  {/* Etiket Kenarlık Rengi */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      SKU/Barcode Schriftgröße (pt)
+                      Etiket Rahmenfarbe
                     </label>
-                    <input
-                      type="number"
-                      min="8"
-                      max="20"
-                      value={labelSettings.labelSkuFontSize}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={labelSettings.labelBorderColor}
+                        onChange={(e) => {
                           setLabelSettings({
                             ...labelSettings,
-                            labelSkuFontSize: '',
+                            labelBorderColor: e.target.value,
                           });
-                        } else {
-                          const numValue = parseInt(value);
-                          if (!isNaN(numValue)) {
-                            setLabelSettings({
-                              ...labelSettings,
-                              labelSkuFontSize: numValue,
-                            });
-                          }
-                        }
+                        }}
+                        className="w-16 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={labelSettings.labelBorderColor}
+                        onChange={(e) => {
+                          setLabelSettings({
+                            ...labelSettings,
+                            labelBorderColor: e.target.value,
+                          });
+                        }}
+                        placeholder="#059669"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Hex-Farbcode (z.B.: #059669)</p>
+                  </div>
+
+                  {/* Barkod Türü */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Barcode-Typ
+                    </label>
+                    <select
+                      value={labelSettings.barcodeType || 'auto'}
+                      onChange={(e) => {
+                        setLabelSettings({
+                          ...labelSettings,
+                          barcodeType: e.target.value,
+                        });
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
+                    >
+                      <option value="auto">Automatisch (empfohlen)</option>
+                      <option value="EAN13">EAN-13 (13 Ziffern)</option>
+                      <option value="EAN8">EAN-8 (8 Ziffern)</option>
+                      <option value="CODE128">CODE128 (beliebig)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Automatisch erkennt den Barcode-Typ basierend auf der Anzahl der Ziffern
+                    </p>
                   </div>
 
                   {/* Butonlar */}

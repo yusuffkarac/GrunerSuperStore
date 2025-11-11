@@ -13,6 +13,10 @@ function BarcodeLabelsPrint() {
     labelPriceFontSize: 46,
     labelPriceCurrencyFontSize: 24,
     labelSkuFontSize: 11,
+    labelHeight: '40mm',
+    labelHeaderMinHeight: '18mm',
+    labelBorderColor: '#059669',
+    barcodeType: 'auto',
   });
   const barcodeRefs = useRef([]);
 
@@ -59,7 +63,6 @@ function BarcodeLabelsPrint() {
         const canvas = barcodeRefs.current[index];
         if (canvas && label.barcode) {
           try {
-            // Barkod formatını otomatik algıla
             const barcodeValue = label.barcode.toString();
             let format = 'CODE128';
             let options = {
@@ -72,58 +75,113 @@ function BarcodeLabelsPrint() {
               marginBottom: 5
             };
             
-            // EAN13 için 13 haneli sayı kontrolü
-            if (/^\d{13}$/.test(barcodeValue)) {
-              format = 'EAN13';
-              // EAN-13 için özel ayarlar (fotoğraftaki gibi)
-              options = {
-                format: 'EAN13',
-                width: 2.5,           // Daha kalın çizgiler
-                height: 60,            // Daha yüksek barkod
-                displayValue: true,    // Altında sayıları göster
-                fontSize: 14,          // Daha büyük font
-                font: 'monospace',     // Monospace font (daha okunabilir)
-                textAlign: 'center',   // Ortalanmış metin
-                textPosition: 'bottom', // Altında göster
-                textMargin: 2,         // Metin ile barkod arası boşluk
-                margin: 0,
-                marginTop: 5,
-                marginBottom: 5,
-                background: '#ffffff',  // Beyaz arka plan
-                lineColor: '#000000'    // Siyah çizgiler
-              };
-            } 
-            // EAN8 için 8 haneli sayı kontrolü
-            else if (/^\d{8}$/.test(barcodeValue)) {
-              format = 'EAN8';
-              options = {
-                format: 'EAN8',
-                width: 2.5,
-                height: 60,
-                displayValue: true,
-                fontSize: 14,
-                font: 'monospace',
-                textAlign: 'center',
-                textPosition: 'bottom',
-                textMargin: 2,
-                margin: 0,
-                marginTop: 5,
-                marginBottom: 5,
-                background: '#ffffff',
-                lineColor: '#000000'
-              };
+            // Eğer barcodeType 'auto' değilse, belirtilen formatı kullan
+            const barcodeType = labelSettings.barcodeType || 'auto';
+            
+            if (barcodeType === 'auto') {
+              // Otomatik algılama (mevcut mantık)
+              // EAN13 için 13 haneli sayı kontrolü
+              if (/^\d{13}$/.test(barcodeValue)) {
+                format = 'EAN13';
+                options = {
+                  format: 'EAN13',
+                  width: 2.5,
+                  height: 60,
+                  displayValue: true,
+                  fontSize: 14,
+                  font: 'monospace',
+                  textAlign: 'center',
+                  textPosition: 'bottom',
+                  textMargin: 2,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5,
+                  background: '#ffffff',
+                  lineColor: '#000000'
+                };
+              } 
+              // EAN8 için 8 haneli sayı kontrolü
+              else if (/^\d{8}$/.test(barcodeValue)) {
+                format = 'EAN8';
+                options = {
+                  format: 'EAN8',
+                  width: 2.5,
+                  height: 60,
+                  displayValue: true,
+                  fontSize: 14,
+                  font: 'monospace',
+                  textAlign: 'center',
+                  textPosition: 'bottom',
+                  textMargin: 2,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5,
+                  background: '#ffffff',
+                  lineColor: '#000000'
+                };
+              } else {
+                // CODE128 için varsayılan ayarlar
+                options = {
+                  format: 'CODE128',
+                  width: 2,
+                  height: 50,
+                  displayValue: true,
+                  fontSize: 12,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5
+                };
+              }
             } else {
-              // CODE128 için varsayılan ayarlar
-              options = {
-                format: 'CODE128',
-                width: 2,
-                height: 50,
-                displayValue: true,
-                fontSize: 12,
-                margin: 0,
-                marginTop: 5,
-                marginBottom: 5
-              };
+              // Belirtilen formatı kullan
+              format = barcodeType;
+              if (barcodeType === 'EAN13') {
+                options = {
+                  format: 'EAN13',
+                  width: 2.5,
+                  height: 60,
+                  displayValue: true,
+                  fontSize: 14,
+                  font: 'monospace',
+                  textAlign: 'center',
+                  textPosition: 'bottom',
+                  textMargin: 2,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5,
+                  background: '#ffffff',
+                  lineColor: '#000000'
+                };
+              } else if (barcodeType === 'EAN8') {
+                options = {
+                  format: 'EAN8',
+                  width: 2.5,
+                  height: 60,
+                  displayValue: true,
+                  fontSize: 14,
+                  font: 'monospace',
+                  textAlign: 'center',
+                  textPosition: 'bottom',
+                  textMargin: 2,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5,
+                  background: '#ffffff',
+                  lineColor: '#000000'
+                };
+              } else {
+                // CODE128
+                options = {
+                  format: 'CODE128',
+                  width: 2,
+                  height: 50,
+                  displayValue: true,
+                  fontSize: 12,
+                  margin: 0,
+                  marginTop: 5,
+                  marginBottom: 5
+                };
+              }
             }
 
             window.JsBarcode(canvas, barcodeValue, options);
@@ -277,13 +335,13 @@ function BarcodeLabelsPrint() {
         /* Tek etiket - Resme göre tasarım */
         .label-item {
           width: 100%;
-          height: 50mm;
-          border: 2px solid #059669;
+          height: ${labelSettings.labelHeight || '40mm'};
+          border: 2px solid ${labelSettings.labelBorderColor || '#059669'};
           border-radius: 4px;
           padding: 3mm;
           display: grid;
           grid-template-columns: 1fr auto;
-          grid-template-rows: 18mm 1fr;
+          grid-template-rows: ${labelSettings.labelHeaderMinHeight || '18mm'} 1fr;
           gap: 3mm;
           background: white;
           page-break-inside: avoid;
@@ -291,7 +349,7 @@ function BarcodeLabelsPrint() {
 
         @media print {
           .label-item {
-            border: 2px solid #059669;
+            border: 2px solid ${labelSettings.labelBorderColor || '#059669'};
           }
         }
 
@@ -307,7 +365,7 @@ function BarcodeLabelsPrint() {
           -webkit-box-orient: vertical;
           overflow: hidden;
           word-wrap: break-word;
-          min-height: 18mm;
+          min-height: ${labelSettings.labelHeaderMinHeight || '18mm'};
 
         }
 

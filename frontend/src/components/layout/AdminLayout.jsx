@@ -246,7 +246,7 @@ function AdminLayout() {
     { path: '/admin/admins', label: 'Administratoren', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/roles', label: 'Rollen & Berechtigungen', icon: FiShield, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
-    { path: '/admin/notification-templates', label: 'Benachrichtigungs Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
+    { path: '/admin/notification-templates', label: 'Benachr.-Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },

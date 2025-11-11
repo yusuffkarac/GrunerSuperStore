@@ -279,7 +279,7 @@ function EmailTemplates() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen ">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -483,22 +483,30 @@ function EmailTemplates() {
 
             {/* Vorschau-Modal */}
             {showPreview && previewHtml && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                  <div className="border-b border-gray-200 p-4 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900">E-Mail-Vorschau</h3>
-                    <button
-                      onClick={() => setShowPreview(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-auto p-6">
-                    <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+                  onClick={() => setShowPreview(false)}
+                />
+                {/* Modal */}
+                <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4 pointer-events-none">
+                  <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto">
+                    <div className="border-b border-gray-200 p-4 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900">E-Mail-Vorschau</h3>
+                      <button
+                        onClick={() => setShowPreview(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-auto p-6">
+                      <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>

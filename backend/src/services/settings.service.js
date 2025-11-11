@@ -81,6 +81,10 @@ class SettingsService {
             labelPriceFontSize: 46,
             labelPriceCurrencyFontSize: 24,
             labelSkuFontSize: 11,
+            labelHeight: '40mm',
+            labelHeaderMinHeight: '18mm',
+            labelBorderColor: '#059669',
+            barcodeType: 'auto', // 'auto', 'EAN13', 'EAN8', 'CODE128'
           },
           customerCancellationSettings: {
             allowedStatuses: ['pending', 'accepted'],
