@@ -65,6 +65,12 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+DO $$ BEGIN
+    CREATE TYPE stock_order_status AS ENUM ('pending', 'ordered', 'delivered', 'cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- ===================================
 -- TRIGGER FUNCTION
 -- ===================================
@@ -449,12 +455,16 @@ CREATE TABLE IF NOT EXISTS expiry_actions (
 CREATE TABLE IF NOT EXISTS stock_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL,
-    admin_id UUID NOT NULL REFERENCES admins(id),
-    notes TEXT,
+    admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE RESTRICT,
+    status stock_order_status NOT NULL DEFAULT 'pending',
+    order_quantity INTEGER NOT NULL,
+    expected_delivery_date DATE,
+    actual_delivery_date DATE,
+    note TEXT,
+    previous_order_id UUID REFERENCES stock_orders(id) ON DELETE SET NULL,
     is_undone BOOLEAN DEFAULT false,
     undone_at TIMESTAMP,
-    undone_by UUID REFERENCES admins(id),
+    undone_by UUID REFERENCES admins(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -519,6 +529,10 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_type ON campaigns(type);
 CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON campaigns(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_campaigns_active_priority ON campaigns(is_active, priority);
 CREATE INDEX IF NOT EXISTS idx_campaigns_apply_all_active ON campaigns(apply_to_all, is_active);
+CREATE INDEX IF NOT EXISTS idx_stock_orders_product_id ON stock_orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_orders_admin_id ON stock_orders(admin_id);
+CREATE INDEX IF NOT EXISTS idx_stock_orders_status ON stock_orders(status);
+CREATE INDEX IF NOT EXISTS idx_stock_orders_previous_order_id ON stock_orders(previous_order_id);
 
 -- ===================================
 -- TRIGGERS
