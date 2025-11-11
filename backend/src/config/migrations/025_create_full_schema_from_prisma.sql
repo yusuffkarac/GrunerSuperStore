@@ -290,7 +290,15 @@ CREATE TABLE IF NOT EXISTS campaigns (
     get_quantity INTEGER,
     start_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
+    min_purchase DECIMAL(12,2),
+    max_discount DECIMAL(12,2),
+    usage_limit INTEGER,
+    usage_count INTEGER DEFAULT 0,
+    apply_to_all BOOLEAN DEFAULT false,
+    category_ids JSONB,
+    product_ids JSONB,
     is_active BOOLEAN DEFAULT true,
+    priority INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -497,6 +505,12 @@ CREATE INDEX IF NOT EXISTS idx_bulk_price_updates_created_at ON bulk_price_updat
 CREATE INDEX IF NOT EXISTS idx_bulk_price_updates_is_reverted ON bulk_price_updates(is_reverted);
 CREATE INDEX IF NOT EXISTS idx_bulk_price_updates_update_type ON bulk_price_updates(update_type);
 CREATE INDEX IF NOT EXISTS idx_bulk_price_updates_category_id ON bulk_price_updates(category_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_slug ON campaigns(slug);
+CREATE INDEX IF NOT EXISTS idx_campaigns_is_active ON campaigns(is_active);
+CREATE INDEX IF NOT EXISTS idx_campaigns_type ON campaigns(type);
+CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON campaigns(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_campaigns_active_priority ON campaigns(is_active, priority);
+CREATE INDEX IF NOT EXISTS idx_campaigns_apply_all_active ON campaigns(apply_to_all, is_active);
 
 -- ===================================
 -- TRIGGERS
@@ -532,6 +546,14 @@ CREATE TRIGGER update_expiry_actions_updated_at BEFORE UPDATE ON expiry_actions
 
 DROP TRIGGER IF EXISTS update_stock_orders_updated_at ON stock_orders;
 CREATE TRIGGER update_stock_orders_updated_at BEFORE UPDATE ON stock_orders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_campaigns_updated_at ON campaigns;
+CREATE TRIGGER update_campaigns_updated_at BEFORE UPDATE ON campaigns
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_coupons_updated_at ON coupons;
+CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===================================
