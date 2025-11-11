@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/config/runMigrations.js run",
@@ -28,6 +29,7 @@
     "merge-categories": "node scripts/mergeDuplicateCategories.js"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
     "cloudinary": "^2.0.1",
@@ -47,13 +49,12 @@
     "nodemailer": "^6.10.1",
     "pdfkit": "^0.17.2",
     "pg": "^8.11.3",
+    "prisma": "^5.9.0",
     "serpapi": "^2.2.1",
     "@google/generative-ai": "^0.21.0",
     "openai": "^4.28.0"
   },
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
-    "nodemon": "^3.0.3",
-    "prisma": "^5.9.0"
+    "nodemon": "^3.0.3"
   }
 }
