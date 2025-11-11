@@ -36,7 +36,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 // PM2 production'da environment variable'ları zaten set ediyor
 // Development'ta .env dosyasını yükle
 if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
+dotenv.config();
 }
 
 // Timezone ayarı - Almanya saatine göre (CET/CEST otomatik handle edilir)
