@@ -1,9 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import dotenv from 'dotenv';
 
-// .env dosyasını yükle (PM2 env_file ile yüklenmiş olsa bile)
-dotenv.config();
-
+// PM2 environment variable'larını kullan (dotenv.config() çağrısı yok - PM2 zaten set ediyor)
 // DATABASE_URL'i environment'tan oluştur (eğer yoksa)
 if (!process.env.DATABASE_URL) {
   const dbHost = process.env.DB_HOST || 'localhost';
@@ -13,6 +10,16 @@ if (!process.env.DATABASE_URL) {
   const dbPassword = process.env.DB_PASSWORD || '';
   
   process.env.DATABASE_URL = `postgresql://${dbUser}${dbPassword ? ':' + dbPassword : ''}@${dbHost}:${dbPort}/${dbName}`;
+}
+
+// Database connection bilgisini logla (debug için)
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔌 Database Connection:', {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'gruner_superstore',
+    user: process.env.DB_USER || 'postgres',
+  });
 }
 
 // Prisma Client singleton pattern

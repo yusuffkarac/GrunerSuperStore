@@ -1,8 +1,6 @@
 import pg from 'pg';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
+// PM2 environment variable'larını kullan (dotenv.config() çağrısı yok - PM2 zaten set ediyor)
 const { Pool } = pg;
 
 // PostgreSQL connection pool
@@ -18,8 +16,13 @@ const pool = new Pool({
 });
 
 // Bağlantı testi
-pool.on('connect', () => {
-  console.log('✅ Database bağlantısı başarılı');
+pool.on('connect', (client) => {
+  console.log('✅ Database bağlantısı başarılı:', {
+    database: client.database,
+    user: client.user,
+    host: client.host,
+    port: client.port,
+  });
 });
 
 pool.on('error', (err) => {
