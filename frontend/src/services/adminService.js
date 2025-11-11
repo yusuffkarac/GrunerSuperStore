@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
+// API URL - Development'ta Vite proxy kullan, production'da environment variable veya nginx proxy
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     const url = import.meta.env.VITE_API_URL;
@@ -10,8 +10,8 @@ const getApiUrl = () => {
   if (import.meta.env.DEV) {
     return '/api';
   }
-  // Production'da tam URL kullan
-  return 'http://localhost:5001/api';
+  // Production'da nginx üzerinden git (port kullanma, nginx proxy kullan)
+  return '/api';
 };
 
 const API_URL = getApiUrl();

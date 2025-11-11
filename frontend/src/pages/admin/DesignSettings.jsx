@@ -41,7 +41,9 @@ function DesignSettings() {
 
       // Logo ve favicon'u yükle
       if (loadedSettings?.storeSettings?.logo) {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const API_BASE = import.meta.env.VITE_API_URL 
+          ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+          : (import.meta.env.DEV ? 'http://localhost:5001' : '');
         const logoUrl = loadedSettings.storeSettings.logo.startsWith('http')
           ? loadedSettings.storeSettings.logo
           : `${API_BASE}${loadedSettings.storeSettings.logo}`;
@@ -51,7 +53,9 @@ function DesignSettings() {
       }
 
       if (loadedSettings?.storeSettings?.favicon) {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const API_BASE = import.meta.env.VITE_API_URL 
+          ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+          : (import.meta.env.DEV ? 'http://localhost:5001' : '');
         const faviconUrl = loadedSettings.storeSettings.favicon.startsWith('http')
           ? loadedSettings.storeSettings.favicon
           : `${API_BASE}${loadedSettings.storeSettings.favicon}`;

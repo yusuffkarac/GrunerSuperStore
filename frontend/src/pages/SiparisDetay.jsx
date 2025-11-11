@@ -144,7 +144,9 @@ function SiparisDetay() {
   // Rechnung als PDF herunterladen
   const handleDownloadInvoice = () => {
     const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const apiUrl = import.meta.env.VITE_API_URL 
+      ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+      : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
     window.open(`${apiUrl}/orders/${id}/invoice?token=${token}`, '_blank');
   };
 

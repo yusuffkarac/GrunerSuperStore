@@ -17,7 +17,7 @@ const getApiBaseUrl = () => {
     return '/api';
   }
   
-a  // Production'da nginx üzerinden git (port kullanma, nginx proxy kullan)
+  // Production'da nginx üzerinden git (port kullanma, nginx proxy kullan)
   // Nginx /api isteklerini backend'e yönlendirir
   return '/api';
 };

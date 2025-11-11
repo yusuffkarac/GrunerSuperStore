@@ -192,7 +192,9 @@ function Orders() {
           if (!orderDetail.invoiceSent) {
             // Invoice PDF URL'ini oluştur
             const token = localStorage.getItem('adminToken');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+            const apiUrl = import.meta.env.VITE_API_URL 
+              ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+              : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
             const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
             
             setInvoicePopupOrder(orderDetail);
@@ -333,7 +335,9 @@ function Orders() {
   const handleDownloadInvoice = async (orderId, orderNo) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+        : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
       const pdfUrl = `${apiUrl}/orders/${orderId}/invoice?token=${token}`;
       window.open(pdfUrl, '_blank');
     } catch (error) {

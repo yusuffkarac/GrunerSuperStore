@@ -16,8 +16,8 @@ const getApiUrl = () => {
   if (import.meta.env.DEV) {
     return '/api';
   }
-  // Production'da tam URL kullan
-  return 'http://localhost:5001/api';
+  // Production'da nginx üzerinden git (port kullanma, nginx proxy kullan)
+  return '/api';
 };
 
 const API_URL = getApiUrl();

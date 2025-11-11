@@ -23,11 +23,9 @@ export const normalizeImageUrl = (url) => {
       return 'http://localhost:5001';
     }
     
-    // Production'da dinamik olarak hostname ve protocol kullan
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = '5001';
-    return `${protocol}//${hostname}:${port}`;
+    // Production'da nginx üzerinden git (port kullanma)
+    // Nginx /api/uploads isteklerini backend'e yönlendirir
+    return '';
   };
   
   const API_BASE = getApiBaseUrl();

@@ -24,7 +24,7 @@ const notificationService = {
   // SSE stream bağlantısı (EventSource kullanılacak)
   // Bu fonksiyon doğrudan EventSource döndürür
   createEventSource: (token) => {
-    // Development modunda Vite proxy kullan, production'da tam URL
+    // Development modunda Vite proxy kullan, production'da nginx proxy
     let baseURL;
     if (import.meta.env.VITE_API_URL) {
       baseURL = import.meta.env.VITE_API_URL;
@@ -32,8 +32,8 @@ const notificationService = {
       // Development'ta Vite proxy kullan (sadece /api)
       baseURL = '';
     } else {
-      // Production'da tam URL kullan
-      baseURL = 'http://localhost:5001';
+      // Production'da nginx üzerinden git (port kullanma)
+      baseURL = '';
     }
     // EventSource headers desteklemediği için token'ı query parameter olarak gönderiyoruz
     return new EventSource(`${baseURL}/api/notifications/stream?token=${encodeURIComponent(token)}`);

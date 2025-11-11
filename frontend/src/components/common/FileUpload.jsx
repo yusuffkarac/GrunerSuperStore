@@ -102,7 +102,9 @@ function FileUpload({
         : response.data.url;
 
       // API URL'sini tam URL'ye dönüştür
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const API_BASE = import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+        : (import.meta.env.DEV ? 'http://localhost:5001' : '');
       const fullUrl = uploadedUrl.startsWith('http')
         ? uploadedUrl
         : uploadedUrl.startsWith('/uploads')
@@ -232,7 +234,9 @@ function FileUpload({
       }
 
       // API URL'sini tam URL'ye dönüştür
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const API_BASE = import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+        : (import.meta.env.DEV ? 'http://localhost:5001' : '');
       const fullUrls = uploadedUrls.map(url => {
         if (url.startsWith('http')) return url;
         if (url.startsWith('/uploads')) {
@@ -304,8 +308,15 @@ function FileUpload({
       
       
       // URL'yi normalize et
+      const getApiBase = () => {
+        if (import.meta.env.VITE_API_URL) {
+          const url = import.meta.env.VITE_API_URL;
+          return url.endsWith('/api') ? url.slice(0, -4) : url;
+        }
+        return import.meta.env.DEV ? 'http://localhost:5001' : '';
+      };
       const normalizedUrl = originalUrl.startsWith('http') ? originalUrl : 
-        originalUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${originalUrl}` : originalUrl;
+        originalUrl.startsWith('/uploads') ? `${getApiBase()}${originalUrl}` : originalUrl;
       
       
       
