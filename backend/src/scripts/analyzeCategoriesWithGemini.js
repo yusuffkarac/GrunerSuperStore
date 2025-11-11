@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import prisma from '../config/prisma.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,15 +19,37 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-// Gemini API anahtarı kontrolü
-if (!process.env.GEMINI_API_KEY) {
-  console.error('❌ GEMINI_API_KEY environment variable bulunamadı!');
-  console.error('   Lütfen .env dosyanıza GEMINI_API_KEY ekleyin.');
-  process.exit(1);
+// AI client'ları (lazy initialization)
+let geminiClient = null;
+let openaiClient = null;
+
+/**
+ * Gemini client'ı başlat
+ */
+function getGeminiClient() {
+  if (!geminiClient) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable bulunamadı!');
+    }
+    geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  return geminiClient;
 }
 
-// Gemini AI client'ı oluştur
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+/**
+ * OpenAI client'ı başlat
+ */
+function getOpenAIClient() {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable bulunamadı!');
+    }
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 /**
  * Slug oluştur (category.service.js'den alındı)
@@ -56,12 +79,13 @@ const DEFINED_CATEGORIES = [
 ];
 
 /**
- * Gemini API ile ürünleri analiz et ve verilen kategorilerden birini seç
+ * AI ile ürünleri analiz et ve verilen kategorilerden birini seç
+ * @param {string} aiProvider - 'gemini' veya 'gpt'
+ * @param {Array} products - Ürün listesi
+ * @param {Array} availableCategories - Kullanılabilir kategoriler
  */
-async function analyzeProductsAndSuggestCategories(products, availableCategories) {
+async function analyzeProductsAndSuggestCategories(aiProvider, products, availableCategories) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     // Ürün listesini formatla
     const productList = products.map((product, index) => `${index + 1}. ${product.name}`).join('\n');
 
@@ -88,9 +112,34 @@ Format (her satır bir ürün için):
 
 Yanıt:`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text().trim();
+    let responseText;
+
+    if (aiProvider === 'gemini') {
+      const genAI = getGeminiClient();
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      responseText = response.text().trim();
+    } else if (aiProvider === 'gpt') {
+      const openai = getOpenAIClient();
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // veya 'gpt-4', 'gpt-3.5-turbo'
+        messages: [
+          {
+            role: 'system',
+            content: 'Sen bir market sipariş uygulaması için ürün kategorileri belirleyen bir uzmansın. Verilen formatı kesinlikle takip et.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+      });
+      responseText = completion.choices[0].message.content.trim();
+    } else {
+      throw new Error(`Bilinmeyen AI provider: ${aiProvider}`);
+    }
 
     // Yanıtı parse et
     const mappings = {};
@@ -112,7 +161,7 @@ Yanıt:`;
 
     return mappings;
   } catch (error) {
-    console.error(`   ⚠️  Gemini API hatası: ${error.message}`);
+    console.error(`   ⚠️  ${aiProvider.toUpperCase()} API hatası: ${error.message}`);
     return null;
   }
 }
@@ -121,12 +170,32 @@ Yanıt:`;
  * Tüm ürünleri "Allgemein" kategorisine taşı, eski kategorileri sil (opsiyonel), yeni kategorileri oluştur ve AI ile ata
  * @param {number|null} limit - İşlenecek ürün sayısı (null = tümü)
  * @param {boolean} deleteCategories - Eski kategorileri sil (varsayılan: false)
+ * @param {string} aiProvider - AI provider: 'gemini' veya 'gpt' (varsayılan: 'gemini')
  */
-async function analyzeCategoriesWithGemini(limit = null, deleteCategories = false) {
+async function analyzeCategoriesWithGemini(limit = null, deleteCategories = false, aiProvider = 'gemini') {
   const startTime = Date.now();
   
   try {
-    console.log('🔄 Kategori yeniden yapılandırma başlatılıyor...\n');
+    console.log(`🔄 Kategori yeniden yapılandırma başlatılıyor (AI: ${aiProvider.toUpperCase()})...\n`);
+    
+    // AI provider kontrolü
+    if (aiProvider === 'gemini') {
+      if (!process.env.GEMINI_API_KEY) {
+        console.error('❌ GEMINI_API_KEY environment variable bulunamadı!');
+        console.error('   Lütfen .env dosyanıza GEMINI_API_KEY ekleyin veya --ai gpt kullanın.');
+        process.exit(1);
+      }
+    } else if (aiProvider === 'gpt') {
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('❌ OPENAI_API_KEY environment variable bulunamadı!');
+        console.error('   Lütfen .env dosyanıza OPENAI_API_KEY ekleyin veya --ai gemini kullanın.');
+        process.exit(1);
+      }
+    } else {
+      console.error(`❌ Geçersiz AI provider: ${aiProvider}`);
+      console.error('   Desteklenen değerler: gemini, gpt');
+      process.exit(1);
+    }
     
     if (deleteCategories) {
       console.log('⚠️  UYARI: Bu işlem tüm ürünleri "Allgemein" kategorisine taşıyacak ve diğer kategorileri silecek!\n');
@@ -246,12 +315,12 @@ async function analyzeCategoriesWithGemini(limit = null, deleteCategories = fals
     console.log(`✅ ${products.length} ürün bulundu.\n`);
 
     // ADIM 5: AI'a ürünleri gönder ve kategorileri ata
-    console.log('🚀 ADIM 5: AI ürünleri analiz ediyor ve kategorilere atıyor...\n');
+    console.log(`🚀 ADIM 5: ${aiProvider.toUpperCase()} ürünleri analiz ediyor ve kategorilere atıyor...\n`);
     
-    const categoryMappings = await analyzeProductsAndSuggestCategories(products, createdCategories);
+    const categoryMappings = await analyzeProductsAndSuggestCategories(aiProvider, products, createdCategories);
 
     if (!categoryMappings || Object.keys(categoryMappings).length === 0) {
-      console.log('❌ Gemini\'den kategori eşleştirmesi alınamadı.');
+      console.log(`❌ ${aiProvider.toUpperCase()}'den kategori eşleştirmesi alınamadı.`);
       return;
     }
 
@@ -416,33 +485,66 @@ async function analyzeCategoriesWithGemini(limit = null, deleteCategories = fals
 const args = process.argv.slice(2);
 let limit = null;
 let deleteCategories = false;
+let aiProvider = 'gemini'; // varsayılan
 
-for (const arg of args) {
-  if (arg === '--delete-categories' || arg === '-d') {
+// Debug: Argümanları göster
+console.log('🔍 Debug - Alınan argümanlar:', args);
+
+// Önce --ai parametresini kontrol et
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  
+  if (arg === '--ai' && i + 1 < args.length) {
+    aiProvider = args[i + 1].toLowerCase();
+    args.splice(i, 2); // Bu iki argümanı çıkar
+    i--; // Index'i ayarla
+  } else if (arg === '--delete-categories' || arg === '-d') {
     deleteCategories = true;
+    args.splice(i, 1);
+    i--;
   } else if (arg === '--help' || arg === '-h') {
     console.log(`
 Kategori Analizi Script'i
 
 Kullanım:
-  npm run analyze-categories [limit] [--delete-categories]
+  npm run analyze-categories [limit] [--delete-categories] [--ai provider]
 
 Parametreler:
   limit                    İşlenecek ürün sayısı (opsiyonel, belirtilmezse tüm ürünler)
   --delete-categories, -d  Eski kategorileri sil (varsayılan: false, kategoriler korunur)
+  --ai provider            AI provider: 'gemini' veya 'gpt' (varsayılan: gemini)
 
 Örnekler:
-  npm run analyze-categories                    # Tüm ürünler, kategoriler korunur
-  npm run analyze-categories 50                # 50 ürün, kategoriler korunur
-  npm run analyze-categories --delete-categories # Tüm ürünler, eski kategoriler silinir
-  npm run analyze-categories 100 -d            # 100 ürün, eski kategoriler silinir
+  npm run analyze-categories                           # Tüm ürünler, Gemini, kategoriler korunur
+  npm run analyze-categories 50                       # 50 ürün, Gemini, kategoriler korunur
+  npm run analyze-categories --ai gpt                 # Tüm ürünler, GPT, kategoriler korunur
+  npm run analyze-categories --delete-categories      # Tüm ürünler, Gemini, eski kategoriler silinir
+  npm run analyze-categories 100 -d --ai gpt         # 100 ürün, GPT, eski kategoriler silinir
+
+NOT: npm run kullanırken -- ile ayırın:
+  npm run analyze-categories -- 50 --ai gpt
     `);
     process.exit(0);
-  } else {
-    // Sayısal değer olarak limit'i dene
+  }
+}
+
+// Eğer --ai bulunamadıysa, 'gpt' veya 'gemini' kelimesini doğrudan kontrol et
+if (aiProvider === 'gemini') {
+  for (const arg of args) {
+    if (arg.toLowerCase() === 'gpt' || arg.toLowerCase() === 'gemini') {
+      aiProvider = arg.toLowerCase();
+      break;
+    }
+  }
+}
+
+// Kalan argümanlardan limit'i bul
+for (const arg of args) {
+  if (!arg.startsWith('--') && !arg.startsWith('-') && arg.toLowerCase() !== 'gpt' && arg.toLowerCase() !== 'gemini') {
     const parsedLimit = parseInt(arg, 10);
     if (!isNaN(parsedLimit) && parsedLimit > 0) {
       limit = parsedLimit;
+      break;
     }
   }
 }
@@ -452,7 +554,13 @@ if (limit !== null && limit < 1) {
   process.exit(1);
 }
 
-analyzeCategoriesWithGemini(limit, deleteCategories)
+if (aiProvider !== 'gemini' && aiProvider !== 'gpt') {
+  console.error(`❌ Geçersiz AI provider: ${aiProvider}`);
+  console.error('   Desteklenen değerler: gemini, gpt');
+  process.exit(1);
+}
+
+analyzeCategoriesWithGemini(limit, deleteCategories, aiProvider)
   .then(() => {
     console.log('\n🎉 Script başarıyla tamamlandı.');
     process.exit(0);
