@@ -32,8 +32,21 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Prisma hataları
-  if (err.name === 'PrismaClientKnownRequestError') {
+  if (err.name === 'PrismaClientKnownRequestError' || err.code?.startsWith('P')) {
     return handlePrismaError(err, res);
+  }
+
+  // Raw SQL hataları (kolon bulunamadığında)
+  if (err.message?.includes('column') && err.message?.includes('does not exist')) {
+    console.error('❌ Database column hatası:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Datenbankfehler: Spalte fehlt. Bitte Migrationen ausführen.',
+      ...(process.env.NODE_ENV !== 'production' && { 
+        detail: err.message,
+        hint: 'Migration çalıştırın: npm run migrate'
+      }),
+    });
   }
 
   // Validation hataları (express-validator)
@@ -78,6 +91,13 @@ export const errorHandler = (err, req, res, next) => {
 
 // Prisma hatalarını işle
 const handlePrismaError = (err, res) => {
+  // Hata detaylarını logla
+  console.error('❌ Prisma Error:', {
+    code: err.code,
+    message: err.message,
+    meta: err.meta,
+  });
+
   switch (err.code) {
     case 'P2002':
       // Unique constraint hatası
@@ -101,11 +121,29 @@ const handlePrismaError = (err, res) => {
         message: 'Ungültige Referenz',
       });
 
+    case 'P1001':
+      // Can't reach database server
+      return res.status(500).json({
+        success: false,
+        message: 'Datenbankverbindung fehlgeschlagen',
+      });
+
+    case 'P1008':
+      // Operations timed out
+      return res.status(500).json({
+        success: false,
+        message: 'Datenbankanfrage Zeitüberschreitung',
+      });
+
     default:
       return res.status(500).json({
         success: false,
         message: 'Datenbankfehler',
-        ...(process.env.NODE_ENV !== 'production' && { code: err.code }),
+        ...(process.env.NODE_ENV !== 'production' && { 
+          code: err.code,
+          message: err.message,
+          meta: err.meta,
+        }),
       });
   }
 };

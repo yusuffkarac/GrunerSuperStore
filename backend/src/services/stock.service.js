@@ -6,27 +6,28 @@ import queueService from './queue.service.js';
  * Kritik stok seviyesinin altındaki ürünleri getir
  */
 export const getLowStockProducts = async () => {
-  // Raw SQL ile doğru filtreleme yap (Prisma'da bir alanı başka bir alanla karşılaştırmak zor)
-  const filteredProducts = await prisma.$queryRaw`
-    SELECT
-      p.id,
-      p.name,
-      p.stock,
-      p.low_stock_level as "lowStockLevel",
-      p.supplier,
-      p.unit,
-      p.barcode,
-      p.brand,
-      p.image_urls as "imageUrls",
-      c.id as "categoryId",
-      c.name as "categoryName"
-    FROM products p
-    LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.is_active = true
-    AND p.stock <= COALESCE(p.low_stock_level, 0)
-    AND p.low_stock_level IS NOT NULL
-    ORDER BY p.stock ASC
-  `;
+  try {
+    // Raw SQL ile doğru filtreleme yap (Prisma'da bir alanı başka bir alanla karşılaştırmak zor)
+    const filteredProducts = await prisma.$queryRaw`
+      SELECT
+        p.id,
+        p.name,
+        p.stock,
+        p.low_stock_level as "lowStockLevel",
+        p.supplier,
+        p.unit,
+        p.barcode,
+        p.brand,
+        p.image_urls as "imageUrls",
+        c.id as "categoryId",
+        c.name as "categoryName"
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.is_active = true
+      AND p.stock <= COALESCE(p.low_stock_level, 0)
+      AND p.low_stock_level IS NOT NULL
+      ORDER BY p.stock ASC
+    `;
 
   // Her ürün için son siparişi getir
   const productsWithOrders = await Promise.all(
@@ -87,7 +88,16 @@ export const getLowStockProducts = async () => {
     })
   );
 
-  return productsWithOrders;
+    return productsWithOrders;
+  } catch (error) {
+    console.error('❌ getLowStockProducts hatası:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+    });
+    throw error;
+  }
 };
 
 /**
