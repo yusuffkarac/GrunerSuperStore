@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from 'react';
+import { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiHeart, FiPlus, FiCheck, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -17,6 +17,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   const [imageError, setImageError] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
+  const imgRef = useRef(null);
 
   // Store'dan sadece gerekli değerleri oku - selector pattern
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
@@ -27,6 +28,31 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
 
   // Image URL'lerini normalize et
   const normalizedImageUrls = normalizeImageUrls(product.imageUrls);
+
+  // Resim zaten yüklenmişse (cache'den geliyorsa) onLoad tetiklenmeyebilir
+  // Bu durumu kontrol et
+  useEffect(() => {
+    // Resim URL'i değiştiğinde state'i sıfırla
+    setImageLoaded(false);
+    setImageError(false);
+
+    // Kısa bir gecikme ile resmin yüklenip yüklenmediğini kontrol et
+    // (DOM'a eklenmesi için zaman tanı)
+    const checkImageLoaded = () => {
+      if (imgRef.current && normalizedImageUrls && normalizedImageUrls[0]) {
+        // Resim zaten yüklenmişse (complete property true ise)
+        if (imgRef.current.complete && imgRef.current.naturalHeight !== 0) {
+          setImageLoaded(true);
+          setImageError(false);
+        }
+      }
+    };
+
+    // DOM'a eklenmesi için kısa bir gecikme
+    const timeoutId = setTimeout(checkImageLoaded, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [normalizedImageUrls?.[0]]);
 
   // Kampanya hesaplaması
   const calculateDiscountedPrice = () => {
@@ -138,6 +164,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
               
               {/* Görsel */}
               <img
+                ref={imgRef}
                 src={normalizedImageUrls[0]}
                 alt={product.name}
                 className={`w-full h-full object-cover transition-opacity duration-300 ${
