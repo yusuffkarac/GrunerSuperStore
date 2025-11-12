@@ -673,6 +673,11 @@ const adminService = {
     return response.data;
   },
 
+  deleteStockOrderList: async (listId) => {
+    const response = await adminApi.delete(`/admin/stock/lists/${listId}`);
+    return response.data;
+  },
+
   downloadStockOrderListPDF: async (listId) => {
     try {
       const response = await adminApi.get(`/admin/stock/lists/${listId}/pdf`, {
@@ -747,8 +752,8 @@ const adminService = {
     return response.data;
   },
 
-  addSupplierEmail: async (email) => {
-    const response = await adminApi.post('/admin/suppliers/emails', { email });
+  addSupplierEmail: async (name, email) => {
+    const response = await adminApi.post('/admin/suppliers/emails', { name, email });
     return response.data;
   },
 };

@@ -331,6 +331,7 @@ router.post('/stock/lists', requirePermission(['stock_management_view', 'stock_m
 router.get('/stock/lists', requirePermission('stock_management_view'), stockController.getStockOrderLists);
 router.get('/stock/lists/:listId', requirePermission('stock_management_view'), stockController.getStockOrderListById);
 router.put('/stock/lists/:listId/status', requirePermission(['stock_management_view', 'stock_management_action']), stockController.updateStockOrderListStatus);
+router.delete('/stock/lists/:listId', requirePermission(['stock_management_view', 'stock_management_action']), stockController.deleteStockOrderList);
 router.get('/stock/lists/:listId/pdf', requirePermission('stock_management_view'), stockController.getStockOrderListPDF);
 
 // Supplier email yönetimi

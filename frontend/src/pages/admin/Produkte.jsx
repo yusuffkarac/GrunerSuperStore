@@ -1303,7 +1303,7 @@ function Produkte() {
                       onClick={() => handleColumnSort('stock')}
                     >
                       <div className="flex items-center gap-2">
-                        Lager
+                      Bestand
                         {sortBy === 'stock' && (
                           sortOrder === 'asc' ? <FiChevronUp size={14} className="text-green-600" /> : <FiChevronDown size={14} className="text-green-600" />
                         )}

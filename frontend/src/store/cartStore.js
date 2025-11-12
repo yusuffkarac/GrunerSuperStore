@@ -92,11 +92,14 @@ const useCartStore = create(
           set({ items: [...items, newItem] });
 
           // Server'a da ekle (authenticated ise)
-          try {
-            await cartService.addToCart(product.id, quantity, variantId);
-          } catch (error) {
-            // Server hatası olursa sadece local'de kalır
-            console.error('Cart sync error:', error);
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              await cartService.addToCart(product.id, quantity, variantId);
+            } catch (error) {
+              // Server hatası olursa sadece local'de kalır
+              console.error('Cart sync error:', error);
+            }
           }
         }
       },
@@ -118,16 +121,19 @@ const useCartStore = create(
         set({ items: updatedItems });
 
         // Server'ı güncelle (authenticated ise)
-        try {
-          // CartItem ID'sini bul (eğer varsa)
-          const item = items.find(
-            (i) => i.productId === productId && i.variantId === variantId
-          );
-          if (item && item.id) {
-            await cartService.updateCartItem(item.id, quantity);
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            // CartItem ID'sini bul (eğer varsa)
+            const item = items.find(
+              (i) => i.productId === productId && i.variantId === variantId
+            );
+            if (item && item.id) {
+              await cartService.updateCartItem(item.id, quantity);
+            }
+          } catch (error) {
+            console.error('Cart sync error:', error);
           }
-        } catch (error) {
-          console.error('Cart sync error:', error);
         }
       },
 
@@ -143,12 +149,15 @@ const useCartStore = create(
         set({ items: updatedItems });
 
         // Server'dan sil (authenticated ise)
-        try {
-          if (item && item.id) {
-            await cartService.removeFromCart(item.id);
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            if (item && item.id) {
+              await cartService.removeFromCart(item.id);
+            }
+          } catch (error) {
+            console.error('Cart sync error:', error);
           }
-        } catch (error) {
-          console.error('Cart sync error:', error);
         }
       },
 
@@ -157,10 +166,13 @@ const useCartStore = create(
         set({ items: [] });
 
         // Server'ı temizle (authenticated ise)
-        try {
-          await cartService.clearCart();
-        } catch (error) {
-          console.error('Cart sync error:', error);
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            await cartService.clearCart();
+          } catch (error) {
+            console.error('Cart sync error:', error);
+          }
         }
       },
 

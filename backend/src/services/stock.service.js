@@ -830,7 +830,7 @@ export const updateStockOrderListStatus = async (listId, status, adminId) => {
 
   // Durum geçişlerini kontrol et
   const validTransitions = {
-    pending: ['ordered', 'cancelled'],
+    pending: ['ordered', 'delivered', 'cancelled'], // pending'den direkt delivered'a geçilebilir
     ordered: ['delivered', 'cancelled'],
     delivered: [], // Teslim edildikten sonra değiştirilemez
     cancelled: [], // İptal edildikten sonra değiştirilemez
@@ -915,5 +915,43 @@ export const updateStockOrderListStatus = async (listId, status, adminId) => {
   });
 
   return result;
+};
+
+/**
+ * Sipariş listesini sil
+ */
+export const deleteStockOrderList = async (listId, adminId) => {
+  // Liste var mı kontrol et
+  const orderList = await prisma.stockOrderList.findUnique({
+    where: { id: listId },
+    include: {
+      orders: true,
+    },
+  });
+
+  if (!orderList) {
+    throw new NotFoundError('Bestellliste nicht gefunden');
+  }
+
+  // Liste içindeki siparişlerin order_list_id'sini null yap (CASCADE yerine SET NULL kullanıyoruz)
+  // Bu sayede siparişler silinmez, sadece liste referansı kaldırılır
+  await prisma.$transaction(async (tx) => {
+    // Önce siparişlerin order_list_id'sini null yap
+    await tx.stockOrder.updateMany({
+      where: {
+        orderListId: listId,
+      },
+      data: {
+        orderListId: null,
+      },
+    });
+
+    // Sonra listeyi sil
+    await tx.stockOrderList.delete({
+      where: { id: listId },
+    });
+  });
+
+  return { success: true };
 };
 

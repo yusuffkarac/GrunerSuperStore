@@ -19,10 +19,10 @@ export const getSupplierEmails = asyncHandler(async (req, res) => {
  * POST /api/admin/suppliers/emails
  */
 export const addSupplierEmail = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { name, email } = req.body;
   const adminId = req.admin.id;
 
-  const supplierEmail = await supplierService.addSupplierEmail(email, adminId);
+  const supplierEmail = await supplierService.addSupplierEmail(name, email, adminId);
 
   res.status(201).json({
     success: true,

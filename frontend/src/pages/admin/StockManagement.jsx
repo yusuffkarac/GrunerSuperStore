@@ -20,6 +20,7 @@ function StockManagement() {
   const [activeOrders, setActiveOrders] = useState([]);
   const [activeLists, setActiveLists] = useState([]); // Liste bazlı aktif siparişler
   const [history, setHistory] = useState([]);
+  const [historyLists, setHistoryLists] = useState([]); // Geçmişteki listeler
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -52,6 +53,7 @@ function StockManagement() {
     return savedMode || 'card'; // 'card' veya 'list'
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [listSearchQuery, setListSearchQuery] = useState(''); // Bestelllisten için arama
 
   // Checkbox seçimi için state'ler
   const [selectedProducts, setSelectedProducts] = useState(() => {
@@ -85,7 +87,10 @@ function StockManagement() {
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null);
   const [actualDeliveryDate, setActualDeliveryDate] = useState(null);
   const [note, setNote] = useState('');
-  const [supplier, setSupplier] = useState('');
+  const [supplier, setSupplier] = useState(''); // Seçilen supplier email (dropdown'dan)
+  const [supplierEmails, setSupplierEmails] = useState([]); // Kayıtlı tedarikçi email'leri
+  const [newSupplierName, setNewSupplierName] = useState(''); // Yeni tedarikçi ismi
+  const [newSupplierEmail, setNewSupplierEmail] = useState(''); // Yeni tedarikçi email'i
   const [statusFilter, setStatusFilter] = useState('');
   const [orderCreationStatus, setOrderCreationStatus] = useState('pending'); // 'pending' veya 'ordered'
 
@@ -171,12 +176,37 @@ function StockManagement() {
         }
       } else if (activeTab === 2) {
         const dateParam = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
-        const historyResponse = await adminService.getStockOrderHistory({
-          date: dateParam,
-          status: statusFilter || undefined,
-          limit: 1000,
-        });
-        setHistory(historyResponse?.orders || []);
+        
+        // Geçmişteki listeleri getir
+        try {
+          const listsResponse = await adminService.getStockOrderLists({
+            status: statusFilter || undefined,
+            date: dateParam,
+            limit: 1000,
+          });
+          const lists = listsResponse?.lists || listsResponse?.data?.lists || (Array.isArray(listsResponse) ? listsResponse : []);
+          // Aktif olmayan listeleri filtrele (delivered, cancelled veya tümü)
+          const filteredHistoryLists = lists.filter(
+            list => list && list.status && (list.status === 'delivered' || list.status === 'cancelled' || !statusFilter)
+          );
+          setHistoryLists(filteredHistoryLists);
+        } catch (err) {
+          console.error('Error loading history lists:', err);
+          setHistoryLists([]);
+        }
+        
+        // Geçmişteki tek tek siparişleri getir
+        try {
+          const historyResponse = await adminService.getStockOrderHistory({
+            date: dateParam,
+            status: statusFilter || undefined,
+            limit: 1000,
+          });
+          setHistory(historyResponse?.orders || []);
+        } catch (err) {
+          console.error('Error loading history orders:', err);
+          setHistory([]);
+        }
       }
       setError(null);
     } catch (err) {
@@ -264,6 +294,34 @@ function StockManagement() {
     }
   };
 
+  // Liste durumunu güncelle
+  const handleUpdateListStatus = async (listId, status) => {
+    try {
+      await adminService.updateStockOrderListStatus(listId, status);
+      toast.success('Bestellstatus erfolgreich aktualisiert');
+      fetchData();
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || err.message || 'Fehler beim Aktualisieren des Status';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Liste sil
+  const handleDeleteList = async (listId) => {
+    if (!window.confirm('Möchten Sie diese Bestellliste wirklich löschen?')) {
+      return;
+    }
+
+    try {
+      await adminService.deleteStockOrderList(listId);
+      toast.success('Bestellliste erfolgreich gelöscht');
+      fetchData();
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || err.message || 'Fehler beim Löschen der Liste';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleUndoOrder = async () => {
     if (!undoDialog.orderId) return;
 
@@ -281,11 +339,51 @@ function StockManagement() {
   const handleUpdateSupplier = async () => {
     if (!supplierDialog.product) return;
 
+    let finalSupplierName = '';
+    let finalSupplierEmail = '';
+
+    // Dropdown'dan seçildiyse
+    if (supplier) {
+      const selectedSupplier = supplierEmails.find(s => s.email === supplier);
+      if (selectedSupplier) {
+        finalSupplierName = selectedSupplier.name || selectedSupplier.email;
+        finalSupplierEmail = selectedSupplier.email;
+      }
+    } 
+    // Yeni supplier girildiyse
+    else if (newSupplierName || newSupplierEmail) {
+      if (!newSupplierEmail || !newSupplierEmail.includes('@')) {
+        toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+        return;
+      }
+      
+      finalSupplierName = newSupplierName.trim() || newSupplierEmail;
+      finalSupplierEmail = newSupplierEmail.trim();
+      
+      // Yeni supplier'ı kaydet
+      try {
+        await adminService.addSupplierEmail(newSupplierName.trim() || null, finalSupplierEmail);
+        // Email listesini yenile
+        const response = await adminService.getSupplierEmails();
+        setSupplierEmails(response.data || []);
+      } catch (error) {
+        // Email zaten varsa veya başka bir hata varsa devam et
+        console.error('Supplier email ekleme hatası:', error);
+      }
+    } else {
+      toast.error('Bitte wählen Sie einen Lieferanten aus oder geben Sie einen neuen ein');
+      return;
+    }
+
     try {
-      await adminService.updateProductSupplier(supplierDialog.product.id, supplier);
+      // Product.supplier field'ına name kaydet (email'i de ilişkilendirmek için name (email) formatında kaydedebiliriz)
+      const supplierValue = finalSupplierName || finalSupplierEmail;
+      await adminService.updateProductSupplier(supplierDialog.product.id, supplierValue);
       toast.success('Lieferant erfolgreich aktualisiert');
       setSupplierDialog({ open: false, product: null });
       setSupplier('');
+      setNewSupplierName('');
+      setNewSupplierEmail('');
       fetchData();
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Fehler beim Aktualisieren des Lieferanten';
@@ -310,9 +408,43 @@ function StockManagement() {
     }
   };
 
-  const openSupplierDialog = (product) => {
+  const openSupplierDialog = async (product) => {
     setSupplierDialog({ open: true, product });
-    setSupplier(product.supplier ? (typeof product.supplier === 'string' ? product.supplier : String(product.supplier)) : '');
+    setNewSupplierName('');
+    setNewSupplierEmail('');
+    // Tedarikçi email'lerini yükle
+    try {
+      const response = await adminService.getSupplierEmails();
+      const emails = response.data || response || [];
+      const supplierList = Array.isArray(emails) ? emails : [];
+      setSupplierEmails(supplierList);
+      
+      // Mevcut supplier'ı bul (product.supplier ile eşleşen)
+      const currentSupplier = product.supplier ? (typeof product.supplier === 'string' ? product.supplier : String(product.supplier)) : '';
+      if (currentSupplier) {
+        // Önce email olarak ara
+        const foundByEmail = supplierList.find(s => s.email === currentSupplier || s.email?.toLowerCase() === currentSupplier.toLowerCase());
+        if (foundByEmail) {
+          setSupplier(foundByEmail.email);
+        } else {
+          // Sonra name olarak ara
+          const foundByName = supplierList.find(s => s.name === currentSupplier || s.name?.toLowerCase() === currentSupplier.toLowerCase());
+          if (foundByName) {
+            setSupplier(foundByName.email);
+          } else {
+            // Bulunamadıysa yeni giriş olarak ayarla
+            setSupplier('');
+            setNewSupplierName(currentSupplier);
+          }
+        }
+      } else {
+        setSupplier('');
+      }
+    } catch (error) {
+      console.error('Supplier email yükleme hatası:', error);
+      setSupplierEmails([]);
+      setSupplier('');
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -322,7 +454,7 @@ function StockManagement() {
     const badges = {
       pending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Ausstehend' },
       ordered: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Bestellt' },
-      delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Geliefert' },
+      delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Erhalten' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Storniert' },
     };
     const badge = badges[statusString] || badges.pending;
@@ -443,6 +575,21 @@ function StockManagement() {
     });
   };
 
+  // Bestelllisten'i arama sorgusuna göre filtrele
+  const filterLists = (lists) => {
+    if (!listSearchQuery.trim()) {
+      return lists;
+    }
+
+    const query = listSearchQuery.toLowerCase().trim();
+    return lists.filter(list => {
+      const name = list.name ? String(list.name).toLowerCase() : '';
+      const note = list.note ? String(list.note).toLowerCase() : '';
+
+      return name.includes(query) || note.includes(query);
+    });
+  };
+
   // Kategoriye göre ürünleri grupla
   const getProductsGroupedByCategory = () => {
     // Tüm kritik stok ürünlerini al ve filtrele
@@ -525,7 +672,7 @@ function StockManagement() {
     });
   };
 
-  if (loading && lowStockProducts.length === 0 && history.length === 0) {
+  if (loading && lowStockProducts.length === 0 && history.length === 0 && historyLists.length === 0) {
     return <Loading />;
   }
 
@@ -536,7 +683,7 @@ function StockManagement() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-              Bestandsverwaltung
+              Lagerbestand Verwaltung
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -1576,7 +1723,7 @@ function StockManagement() {
                                       )}
                                     </button>
                                   </td>
-                                  <td className="px-4 py-4">
+                                  <td className="px-4 py-4 classtest" style={{ width: '500px' }} >
                                     <div className="flex items-center gap-3">
                                       {imageUrl ? (
                                         <img
@@ -1858,45 +2005,59 @@ function StockManagement() {
               {/* Bestelllisten */}
               {activeLists.length > 0 && (
                 <div className="p-4 md:p-6">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                     <h3 className="text-sm font-semibold text-gray-700">Bestelllisten</h3>
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                      <button
-                        onClick={() => setListViewMode('card')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                          listViewMode === 'card'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                        title="Kartenansicht"
-                      >
-                        <FiGrid className="w-4 h-4" />
-                        <span className="hidden sm:inline">Karten</span>
-                      </button>
-                      <button
-                        onClick={() => setListViewMode('list')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                          listViewMode === 'list'
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                        title="Listenansicht"
-                      >
-                        <FiList className="w-4 h-4" />
-                        <span className="hidden sm:inline">Liste</span>
-                      </button>
+                    <div className="flex items-center gap-2">
+                      {/* Arama kutusu */}
+                      <div className="relative flex-1 sm:flex-initial sm:w-64">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Suchen nach Name oder Notiz..."
+                          value={listSearchQuery}
+                          onChange={(e) => setListSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setListViewMode('card')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            listViewMode === 'card'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                          title="Kartenansicht"
+                        >
+                          <FiGrid className="w-4 h-4" />
+                          <span className="hidden sm:inline">Karten</span>
+                        </button>
+                        <button
+                          onClick={() => setListViewMode('list')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            listViewMode === 'list'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                          title="Listenansicht"
+                        >
+                          <FiList className="w-4 h-4" />
+                          <span className="hidden sm:inline">Liste</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   {/* Kart görünümü */}
                   {listViewMode === 'card' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeLists.map((list) => (
+                    {filterLists(activeLists).map((list) => (
                       <StockOrderListCard
                         key={list.id}
                         list={list}
                         onStatusUpdate={fetchData}
                         onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                        onDelete={fetchData}
                       />
                     ))}
                   </div>
@@ -1932,7 +2093,7 @@ function StockManagement() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {activeLists.map((list) => (
+                          {filterLists(activeLists).map((list) => (
                             <tr key={list.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-4 py-4">
                                 <div className="text-sm font-medium text-gray-900">
@@ -1973,6 +2134,24 @@ function StockManagement() {
                               </td>
                               <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex items-center justify-end gap-2">
+                                  {(list.status === 'pending' || list.status === 'ordered') && (
+                                    <button
+                                      onClick={() => handleUpdateListStatus(list.id, 'delivered')}
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                                      style={{
+                                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                                      }}
+                                      title="Als erhalten markieren"
+                                    >
+                                      Erhalten
+                                    </button>
+                                  )}
                                   <button
                                     onClick={async () => {
                                       try {
@@ -2014,6 +2193,13 @@ function StockManagement() {
                                     title="Details anzeigen"
                                   >
                                     <FiChevronRight className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteList(list.id)}
+                                    className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+                                    title="Liste löschen"
+                                  >
+                                    <FiX className="w-4 h-4" />
                                   </button>
                                 </div>
                               </td>
@@ -2306,7 +2492,7 @@ function StockManagement() {
             </div>
           </div>
 
-          {history.length === 0 ? (
+          {historyLists.length === 0 && history.length === 0 ? (
             <EmptyState
               icon={FiClock}
               title="Keine Bestellungen gefunden"
@@ -2314,7 +2500,196 @@ function StockManagement() {
             />
           ) : (
             <>
-              {/* Desktop Tablo Görünümü */}
+              {/* Bestelllisten */}
+              {historyLists.length > 0 && (
+                <div className="p-4 md:p-6 border-b border-gray-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Bestelllisten</h3>
+                    <div className="flex items-center gap-2">
+                      {/* Arama kutusu */}
+                      <div className="relative flex-1 sm:flex-initial sm:w-64">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Suchen nach Name oder Notiz..."
+                          value={listSearchQuery}
+                          onChange={(e) => setListSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setListViewMode('card')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            listViewMode === 'card'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                          title="Kartenansicht"
+                        >
+                          <FiGrid className="w-4 h-4" />
+                          <span className="hidden sm:inline">Karten</span>
+                        </button>
+                        <button
+                          onClick={() => setListViewMode('list')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                            listViewMode === 'list'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                          title="Listenansicht"
+                        >
+                          <FiList className="w-4 h-4" />
+                          <span className="hidden sm:inline">Liste</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kart görünümü */}
+                  {listViewMode === 'card' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filterLists(historyLists).map((list) => (
+                        <StockOrderListCard
+                          key={list.id}
+                          list={list}
+                          onStatusUpdate={fetchData}
+                          onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                          onDelete={fetchData}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Liste görünümü */}
+                  {listViewMode === 'list' && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Bestellliste
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Erstellt am
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Produkte
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Erstellt von
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Lieferant E-Mail
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Aktionen
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filterLists(historyLists).map((list) => (
+                            <tr key={list.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {list.name ? String(list.name) : '-'}
+                                </div>
+                                {list.note && (
+                                  <div className="text-xs text-gray-500 mt-1 italic">
+                                    Notiz: {String(list.note)}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-4">
+                                {getStatusBadge(list.status)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {formatDate(list.createdAt)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                <div className="flex items-center gap-1">
+                                  <FiPackage className="w-4 h-4 text-gray-400" />
+                                  <span>{list.orders?.length || 0} Produkt(e)</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {list.admin && list.admin.firstName
+                                  ? String(list.admin.firstName)
+                                  : '-'}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {list.supplierEmail ? (
+                                  <div className="flex items-center gap-1">
+                                    <FiMail className="w-3 h-3 text-gray-400" />
+                                    <span>{String(list.supplierEmail)}</span>
+                                  </div>
+                                ) : (
+                                  '-'
+                                )}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await adminService.downloadStockOrderListPDF(list.id);
+                                        toast.success('PDF erfolgreich heruntergeladen');
+                                      } catch (error) {
+                                        const errorMessage =
+                                          error.response?.data?.error ||
+                                          error.message ||
+                                          'Fehler beim Herunterladen der PDF';
+                                        toast.error(errorMessage);
+                                      }
+                                    }}
+                                    className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                    title="PDF herunterladen"
+                                  >
+                                    <FiDownload className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await adminService.printStockOrderListPDF(list.id);
+                                      } catch (error) {
+                                        const errorMessage =
+                                          error.response?.data?.error ||
+                                          error.message ||
+                                          'Fehler beim Drucken der PDF';
+                                        toast.error(errorMessage);
+                                      }
+                                    }}
+                                    className="p-2 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                                    title="Drucken"
+                                  >
+                                    <FiPrinter className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setListDetailDialog({ open: true, list })}
+                                    className="p-2 text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                                    title="Details anzeigen"
+                                  >
+                                    <FiChevronRight className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Einzelne Bestellungen */}
+              {history.length > 0 && (
+                <div className={`p-4 md:p-6 ${historyLists.length > 0 ? 'border-t border-gray-200' : ''}`}>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Einzelne Bestellungen</h3>
+                  {/* Desktop Tablo Görünümü */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
@@ -2446,6 +2821,8 @@ function StockManagement() {
                   </div>
                 ))}
               </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -2822,6 +3199,8 @@ function StockManagement() {
               onClick={() => {
                 setSupplierDialog({ open: false, product: null });
                 setSupplier('');
+                setNewSupplierName('');
+                setNewSupplierEmail('');
               }}
               className="fixed inset-0 bg-black bg-opacity-50 z-50"
             />
@@ -2839,6 +3218,7 @@ function StockManagement() {
                     onClick={() => {
                       setSupplierDialog({ open: false, product: null });
                       setSupplier('');
+                      setNewSupplierEmail('');
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
@@ -2849,19 +3229,76 @@ function StockManagement() {
                   <p className="text-xs md:text-sm text-gray-700">
                     Lieferant für <strong>{supplierDialog.product?.name}</strong>:
                   </p>
-                  <input
-                    type="text"
-                    value={supplier}
-                    onChange={(e) => setSupplier(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Lieferant eingeben"
-                  />
+                  
+                  {/* Kayıtlı tedarikçiler dropdown'u */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      {supplierEmails.length > 0 ? 'Vorhandene Lieferant auswählen:' : 'Lieferant auswählen:'}
+                    </label>
+                    <select
+                      value={supplier}
+                      onChange={(e) => {
+                        setSupplier(e.target.value);
+                        setNewSupplierName('');
+                        setNewSupplierEmail('');
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">-- Auswählen --</option>
+                      {supplierEmails.map((supplierItem) => (
+                        <option key={supplierItem.id} value={supplierItem.email}>
+                          {supplierItem.name ? `${supplierItem.name} (${supplierItem.email})` : supplierItem.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Yeni tedarikçi girişi */}
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        Oder neuen Lieferanten eingeben:
+                      </label>
+                      <input
+                        type="text"
+                        value={newSupplierName}
+                        onChange={(e) => {
+                          setNewSupplierName(e.target.value);
+                          if (e.target.value) {
+                            setSupplier('');
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Lieferantenname"
+                        disabled={!!supplier}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">
+                        E-Mail-Adresse:
+                      </label>
+                      <input
+                        type="email"
+                        value={newSupplierEmail}
+                        onChange={(e) => {
+                          setNewSupplierEmail(e.target.value);
+                          if (e.target.value) {
+                            setSupplier('');
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="lieferant@example.com"
+                        disabled={!!supplier}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                   <button
                     onClick={() => {
                       setSupplierDialog({ open: false, product: null });
                       setSupplier('');
+                      setNewSupplierEmail('');
                     }}
                     className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >

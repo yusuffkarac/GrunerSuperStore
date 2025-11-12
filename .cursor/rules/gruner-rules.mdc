@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+Multi-tenant e-ticaret projesi (Node.js/Prisma/PostgreSQL). 
+
+KRİTİK KURALLAR:
+- Schema değişikliği → "prisma migrate dev --name X" (db push YASAK)
+- Migration'ları git'e dahil et
+- Multi-tenant: .env.gruner, .env.meral (ayrı DB'ler)
+- Production: "prisma migrate deploy" kullan
+- Veri kaybı riski varsa uyar
+
+Bu kurallara uy.

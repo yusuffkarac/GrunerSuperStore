@@ -229,7 +229,7 @@ class StockOrderListPDFService {
 
           // Miktar
           doc
-            .text(String(order.orderQuantity), 300, tableY, { width: 50, align: 'right' });
+            .text(String(order.orderQuantity), 300, tableY, { width: 50, align: 'center' });
 
           // Birim
           doc

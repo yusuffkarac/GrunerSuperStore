@@ -11,6 +11,7 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
   const [sendToSupplier, setSendToSupplier] = useState(false);
   const [supplierEmail, setSupplierEmail] = useState('');
   const [supplierEmails, setSupplierEmails] = useState([]);
+  const [newSupplierName, setNewSupplierName] = useState('');
   const [newSupplierEmail, setNewSupplierEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,9 +24,11 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
   const loadSupplierEmails = async () => {
     try {
       const response = await adminService.getSupplierEmails();
-      setSupplierEmails(response.data || []);
+      const emails = response.data || response || [];
+      setSupplierEmails(Array.isArray(emails) ? emails : []);
     } catch (error) {
       console.error('Supplier email yükleme hatası:', error);
+      setSupplierEmails([]);
     }
   };
 
@@ -40,8 +43,8 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
       return;
     }
 
-    if (sendToSupplier && !supplierEmail && !newSupplierEmail) {
-      toast.error('Bitte geben Sie eine Supplier-E-Mail-Adresse ein');
+    if (sendToSupplier && !supplierEmail && (!newSupplierName || !newSupplierEmail)) {
+      toast.error('Bitte geben Sie einen Lieferantennamen und eine E-Mail-Adresse ein');
       return;
     }
 
@@ -50,8 +53,13 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
       // Yeni supplier email varsa ekle
       let finalSupplierEmail = supplierEmail;
       if (sendToSupplier && newSupplierEmail && !supplierEmail) {
+        if (!newSupplierEmail.includes('@')) {
+          toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+          setLoading(false);
+          return;
+        }
         try {
-          const emailResponse = await adminService.addSupplierEmail(newSupplierEmail);
+          const emailResponse = await adminService.addSupplierEmail(newSupplierName.trim() || null, newSupplierEmail);
           finalSupplierEmail = emailResponse.data.email;
           await loadSupplierEmails(); // Listeyi yenile
         } catch (error) {
@@ -83,6 +91,7 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
       setSendToAdmins(false);
       setSendToSupplier(false);
       setSupplierEmail('');
+      setNewSupplierName('');
       setNewSupplierEmail('');
       
       onSuccess();
@@ -101,6 +110,7 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
     setSendToAdmins(false);
     setSendToSupplier(false);
     setSupplierEmail('');
+    setNewSupplierName('');
     setNewSupplierEmail('');
     onClose();
   };
@@ -192,6 +202,7 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
                           setSendToSupplier(e.target.checked);
                           if (!e.target.checked) {
                             setSupplierEmail('');
+                            setNewSupplierName('');
                             setNewSupplierEmail('');
                           }
                         }}
@@ -204,46 +215,65 @@ function CreateStockOrderListDialog({ open, selectedProducts, onClose, onSuccess
 
                     {sendToSupplier && (
                       <div className="ml-7 space-y-2">
-                        {supplierEmails.length > 0 && (
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">
-                              Vorhandene E-Mail auswählen:
-                            </label>
-                            <select
-                              value={supplierEmail}
-                              onChange={(e) => {
-                                setSupplierEmail(e.target.value);
-                                setNewSupplierEmail('');
-                              }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                              <option value="">-- Auswählen --</option>
-                              {supplierEmails.map((email) => (
-                                <option key={email.id} value={email.email}>
-                                  {email.email}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
                         <div>
                           <label className="block text-xs text-gray-600 mb-1">
-                            {supplierEmails.length > 0 ? 'Oder neue E-Mail eingeben:' : 'E-Mail-Adresse:'}
+                            {supplierEmails.length > 0 ? 'Vorhandene Lieferant auswählen:' : 'Lieferant auswählen:'}
                           </label>
-                          <input
-                            type="email"
-                            value={newSupplierEmail}
+                          <select
+                            value={supplierEmail}
                             onChange={(e) => {
-                              setNewSupplierEmail(e.target.value);
-                              if (e.target.value) {
-                                setSupplierEmail('');
-                              }
+                              setSupplierEmail(e.target.value);
+                              setNewSupplierName('');
+                              setNewSupplierEmail('');
                             }}
                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="lieferant@example.com"
-                            disabled={!!supplierEmail}
-                          />
+                          >
+                            <option value="">-- Auswählen --</option>
+                            {supplierEmails.map((supplier) => (
+                              <option key={supplier.id} value={supplier.email}>
+                                {supplier.name ? `${supplier.name} (${supplier.email})` : supplier.email}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">
+                              Oder neuen Lieferanten eingeben:
+                            </label>
+                            <input
+                              type="text"
+                              value={newSupplierName}
+                              onChange={(e) => {
+                                setNewSupplierName(e.target.value);
+                                if (e.target.value) {
+                                  setSupplierEmail('');
+                                }
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Lieferantenname"
+                              disabled={!!supplierEmail}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">
+                              E-Mail-Adresse:
+                            </label>
+                            <input
+                              type="email"
+                              value={newSupplierEmail}
+                              onChange={(e) => {
+                                setNewSupplierEmail(e.target.value);
+                                if (e.target.value) {
+                                  setSupplierEmail('');
+                                }
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="lieferant@example.com"
+                              disabled={!!supplierEmail}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

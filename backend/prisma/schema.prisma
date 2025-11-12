@@ -842,6 +842,7 @@ model StockOrderList {
 
 model SupplierEmail {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String?  // Tedarikçi ismi
   email     String   @unique
   createdBy String   @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")

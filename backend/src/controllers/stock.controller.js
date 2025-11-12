@@ -195,3 +195,19 @@ export const getStockOrderListPDF = asyncHandler(async (req, res) => {
   res.send(pdfBuffer);
 });
 
+/**
+ * Sipariş listesini sil
+ * DELETE /api/admin/stock/lists/:listId
+ */
+export const deleteStockOrderList = asyncHandler(async (req, res) => {
+  const { listId } = req.params;
+  const adminId = req.admin.id;
+
+  await stockService.deleteStockOrderList(listId, adminId);
+
+  res.json({
+    success: true,
+    message: 'Bestellliste erfolgreich gelöscht',
+  });
+});
+

@@ -1,9 +1,11 @@
 import React from 'react';
-import { FiPackage, FiDownload, FiPrinter, FiChevronRight, FiMail } from 'react-icons/fi';
+import { FiPackage, FiDownload, FiPrinter, FiChevronRight, FiMail, FiX, FiCheck } from 'react-icons/fi';
 import adminService from '../../services/adminService';
 import { toast } from 'react-toastify';
+import { useTheme } from '../../contexts/ThemeContext';
 
-function StockOrderListCard({ list, onStatusUpdate, onViewDetails }) {
+function StockOrderListCard({ list, onStatusUpdate, onViewDetails, onDelete }) {
+  const { themeColors } = useTheme();
   const getStatusBadge = (status) => {
     // Status bir obje ise, string'e çevir
     const statusString = typeof status === 'string' ? status : (status?.status || String(status || 'pending'));
@@ -11,7 +13,7 @@ function StockOrderListCard({ list, onStatusUpdate, onViewDetails }) {
     const badges = {
       pending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Ausstehend' },
       ordered: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Bestellt' },
-      delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Geliefert' },
+      delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Erhalten' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Storniert' },
     };
     const badge = badges[statusString] || badges.pending;
@@ -46,6 +48,38 @@ function StockOrderListCard({ list, onStatusUpdate, onViewDetails }) {
       await adminService.printStockOrderListPDF(list.id);
     } catch (error) {
       const errorMessage = error.response?.data?.error || error.message || 'Fehler beim Drucken der PDF';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleUpdateStatus = async (status) => {
+    try {
+      await adminService.updateStockOrderListStatus(list.id, status);
+      toast.success('Bestellstatus erfolgreich aktualisiert');
+      if (onStatusUpdate) {
+        onStatusUpdate();
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Fehler beim Aktualisieren des Status';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Möchten Sie diese Bestellliste wirklich löschen?')) {
+      return;
+    }
+
+    try {
+      await adminService.deleteStockOrderList(list.id);
+      toast.success('Bestellliste erfolgreich gelöscht');
+      if (onDelete) {
+        onDelete();
+      } else if (onStatusUpdate) {
+        onStatusUpdate();
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Fehler beim Löschen der Liste';
       toast.error(errorMessage);
     }
   };
@@ -89,6 +123,24 @@ function StockOrderListCard({ list, onStatusUpdate, onViewDetails }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {(list.status === 'pending' || list.status === 'ordered') && (
+            <button
+              onClick={() => handleUpdateStatus('delivered')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white rounded-lg transition-colors"
+              style={{
+                backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+              }}
+            >
+              <FiCheck className="w-4 h-4" />
+              Erhalten
+            </button>
+          )}
           <button
             onClick={handleDownloadPDF}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
@@ -112,6 +164,13 @@ function StockOrderListCard({ list, onStatusUpdate, onViewDetails }) {
               <FiChevronRight className="w-4 h-4" />
             </button>
           )}
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-200"
+          >
+            <FiX className="w-4 h-4" />
+            Löschen
+          </button>
         </div>
       </div>
     </div>

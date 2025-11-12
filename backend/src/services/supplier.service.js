@@ -11,6 +11,7 @@ export const getSupplierEmails = async () => {
     },
     select: {
       id: true,
+      name: true,
       email: true,
       createdAt: true,
       admin: {
@@ -29,14 +30,14 @@ export const getSupplierEmails = async () => {
 /**
  * Yeni supplier email ekle
  */
-export const addSupplierEmail = async (email, adminId) => {
+export const addSupplierEmail = async (name, email, adminId) => {
   if (!email || !email.includes('@')) {
     throw new BadRequestError('Geçerli bir email adresi giriniz');
   }
 
   // Email zaten var mı kontrol et
   const existingEmail = await prisma.supplierEmail.findUnique({
-    where: { email },
+    where: { email: email.trim().toLowerCase() },
   });
 
   if (existingEmail) {
@@ -45,6 +46,7 @@ export const addSupplierEmail = async (email, adminId) => {
 
   const supplierEmail = await prisma.supplierEmail.create({
     data: {
+      name: name ? name.trim() : null,
       email: email.trim().toLowerCase(),
       createdBy: adminId,
     },
