@@ -28,7 +28,6 @@ function FileUpload({
   const [cropImageIndex, setCropImageIndex] = useState(null); // Hangi fotoğraf kırpılıyor
   const [draggedIndex, setDraggedIndex] = useState(null); // Sürüklenen elemanın index'i
   const [dragOverIndex, setDragOverIndex] = useState(null); // Üzerine gelinen elemanın index'i
-  const [failedImages, setFailedImages] = useState(new Set()); // Yüklenemeyen resimlerin Set'i
   const fileInputRef = useRef(null);
   const pendingFilesRef = useRef([]);
   const originalUrlsRef = useRef({}); // Her fotoğraf için orijinal URL'leri sakla (index -> originalUrl)
@@ -427,16 +426,7 @@ function FileUpload({
 
   const handleRemove = (index) => {
     if (multiple && Array.isArray(value)) {
-      const removedUrl = value[index];
       const newValue = value.filter((_, i) => i !== index);
-
-      // Failed images'dan da kaldır
-      setFailedImages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(removedUrl);
-        return newSet;
-      });
-
       // Orijinal URL referansını da temizle
       delete originalUrlsRef.current[index];
       // İndeksleri yeniden düzenle
@@ -454,13 +444,6 @@ function FileUpload({
       originalUrlsRef.current = newOriginalUrls;
       onChange(newValue);
     } else {
-      // Failed images'dan da kaldır
-      setFailedImages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(value);
-        return newSet;
-      });
-
       delete originalUrlsRef.current['single'];
       onChange('');
     }
@@ -638,18 +621,17 @@ function FileUpload({
                     </div>
                   </div>
                 )}
-                <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                  {failedImages.has(url) ? (
-                    <FiImage className="text-gray-400" size={20} />
-                  ) : (
+                <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                  {url ? (
                     <img
                       src={url}
                       alt={`Upload ${index + 1}`}
                       className="w-full h-full object-cover"
-                      onError={() => {
-                        setFailedImages(prev => new Set([...prev, url]));
-                      }}
                     />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FiImage className="text-gray-400" size={20} />
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -688,18 +670,17 @@ function FileUpload({
             ))
           ) : value ? (
             <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-              <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                {failedImages.has(value) ? (
-                  <FiImage className="text-gray-400" size={20} />
-                ) : (
+              <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                {value ? (
                   <img
                     src={value}
                     alt="Upload"
                     className="w-full h-full object-cover"
-                    onError={() => {
-                      setFailedImages(prev => new Set([...prev, value]));
-                    }}
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FiImage className="text-gray-400" size={20} />
+                  </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">

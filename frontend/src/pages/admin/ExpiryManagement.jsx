@@ -48,9 +48,9 @@ function ExpiryManagement() {
     return savedTab ? parseInt(savedTab, 10) : 0;
   });
   const [viewMode, setViewMode] = useState(() => {
-    // localStorage'dan görünüm modunu oku, yoksa varsayılan olarak 'criticality' (kritiklik)
+    // localStorage'dan görünüm modunu oku, yoksa varsayılan olarak 'category' (kategori)
     const savedMode = localStorage.getItem('expiryManagement_viewMode');
-    return savedMode || 'criticality'; // 'criticality' veya 'category'
+    return savedMode || 'category'; // 'criticality' veya 'category'
   });
   const [expandedCategories, setExpandedCategories] = useState(() => {
     // localStorage'dan açık kategorileri oku
@@ -722,9 +722,22 @@ function ExpiryManagement() {
       ...warningProducts.map(p => ({ ...p, type: 'warning' }))
     ];
 
+    // Aynı ID'li ürünleri deduplicate et (critical öncelikli)
+    const uniqueProducts = {};
+    allProducts.forEach(product => {
+      if (!uniqueProducts[product.id]) {
+        uniqueProducts[product.id] = product;
+      } else {
+        // Eğer ürün zaten varsa ve yeni gelen critical ise, onu kullan
+        if (product.type === 'critical') {
+          uniqueProducts[product.id] = product;
+        }
+      }
+    });
+
     // Kategorilere göre grupla ve sırala
     const grouped = {};
-    allProducts.forEach(product => {
+    Object.values(uniqueProducts).forEach(product => {
       const categoryName = product.category?.name || 'Keine Kategorie';
       if (!grouped[categoryName]) {
         grouped[categoryName] = {
@@ -914,6 +927,9 @@ function ExpiryManagement() {
               <FiGrid className="w-4 h-4" />
               <span className="hidden sm:inline">Kategorien</span>
               <span className="sm:hidden">Kategorien</span>
+              <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                {getTotalUnprocessedCount()}
+              </span>
             </button>
             <button
               onClick={() => setActiveTab(2)}
