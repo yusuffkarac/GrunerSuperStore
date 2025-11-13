@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 /**
  * Modal açıldığında scroll'u yönetir
- * - Sayfayı en üste scroll eder
- * - Body scroll'unu kilitler
+ * - Admin layout'ta main container'ı scroll eder (window değil)
+ * - Container scroll'unu kilitler
  * - Modal kapandığında eski duruma döner
  * 
  * @param {boolean} isOpen - Modal açık mı?
@@ -11,34 +11,38 @@ import { useEffect } from 'react';
 export const useModalScroll = (isOpen) => {
   useEffect(() => {
     if (isOpen) {
-      // Mevcut scroll pozisyonunu sakla
-      const scrollY = window.scrollY;
-      console.log('[useModalScroll] Modal açılıyor, mevcut scrollY:', scrollY);
+      // Admin layout'ta scroll eden container'ı bul
+      // AdminLayout'ta main element overflow-y-auto ile scroll ediyor
+      const scrollContainer = document.querySelector('main.overflow-y-auto');
       
-      // Sayfayı yukarı scroll et (smooth scroll)
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-      console.log('[useModalScroll] Sayfa yukarı scroll edildi (smooth)');
-      
-      // Body scroll'unu kilitle (modal açıkken scroll yapılmasın)
-      document.body.style.overflow = 'hidden';
-      console.log('[useModalScroll] Body scroll kilitlendi');
+      if (!scrollContainer) {
+        console.log('[useModalScroll] Scroll container bulunamadı');
+        return;
+      }
 
-      // Cleanup: Modal kapandığında
+      // Mevcut scroll pozisyonunu kaydet
+      const scrollTop = scrollContainer.scrollTop;
+      console.log('[useModalScroll] Modal açılıyor, mevcut scrollTop:', scrollTop);
+
+      // Container'ı en üste scroll et
+      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      console.log('[useModalScroll] Container yukarı scroll edildi');
+
+      // Container'ın scroll'unu kilitle
+      const previousOverflow = scrollContainer.style.overflow;
+      scrollContainer.style.overflow = 'hidden';
+      console.log('[useModalScroll] Container scroll kilitlendi');
+
+      // Temizleme: Modal kapandığında
       return () => {
         // Scroll'u geri aç
-        document.body.style.overflow = '';
-        console.log('[useModalScroll] Modal kapandı, body scroll açıldı');
-        
-        // Eski scroll pozisyonuna dön (ama biraz gecikme ile, çünkü smooth scroll bitmeli)
+        scrollContainer.style.overflow = previousOverflow;
+        console.log('[useModalScroll] Modal kapandı, container scroll açıldı');
+
+        // Eski scroll pozisyonuna dön
         setTimeout(() => {
-          console.log('[useModalScroll] Eski scroll konumuna geri dönülüyor, scrollY:', scrollY);
-          window.scrollTo({
-            top: scrollY,
-            behavior: 'smooth'
-          });
+          console.log('[useModalScroll] Eski scroll konumuna geri dönülüyor, scrollTop:', scrollTop);
+          scrollContainer.scrollTo({ top: scrollTop, left: 0, behavior: 'smooth' });
         }, 100);
       };
     }
