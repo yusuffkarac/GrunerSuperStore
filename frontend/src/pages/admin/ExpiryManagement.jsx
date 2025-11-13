@@ -60,7 +60,6 @@ function ExpiryManagement() {
 
   // Dialog states
   const [removeDialog, setRemoveDialog] = useState({ open: false, product: null });
-  const [labelDialog, setLabelDialog] = useState({ open: false, product: null });
   const [undoDialog, setUndoDialog] = useState({ open: false, actionId: null, productName: '' });
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
@@ -70,14 +69,12 @@ function ExpiryManagement() {
   const [mailResendDialog, setMailResendDialog] = useState(false);
 
   // Form states
-  const [excludeFromCheck, setExcludeFromCheck] = useState(false);
   const [note, setNote] = useState('');
   const [newExpiryDate, setNewExpiryDate] = useState(null); // Date objesi olacak
   const [updateExpiryDate, setUpdateExpiryDate] = useState(null); // Date objesi olacak
 
   // Modal scroll yönetimi - her modal için
   useModalScroll(removeDialog.open);
-  useModalScroll(labelDialog.open);
   useModalScroll(undoDialog.open);
   useModalScroll(settingsDialog);
   useModalScroll(barcodeScannerOpen);
@@ -362,20 +359,18 @@ function ExpiryManagement() {
     }
   };
 
-  const handleLabelProduct = async () => {
-    if (!labelDialog.product) return;
+  const handleLabelProduct = async (productId, productName = '') => {
+    if (!productId) return;
 
     try {
       const token = localStorage.getItem('adminToken');
       await axios.post(
-        `${API_URL}/admin/expiry/label/${labelDialog.product.id}`,
-        { note },
+        `${API_URL}/admin/expiry/label/${productId}`,
+        { note: 'Reduziert' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success('Produkt erfolgreich etikettiert');
-      setLabelDialog({ open: false, product: null });
-      setNote('');
+      toast.success(`${productName} erfolgreich etikettiert`);
       fetchData();
     } catch (err) {
       const errorMessage = typeof err.response?.data?.error === 'string' 
@@ -630,16 +625,28 @@ function ExpiryManagement() {
 
   // İşlem yapılmamış mı kontrol et
   const isUnprocessed = (product) => {
-    // Deaktif edilmişse işlem yapılmış sayılır (deaktif etmek bir işlemdir)
+    // Bugünün tarihini al (sadece tarih, saat olmadan)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Deaktif edilmişse ve bugün deaktif edildiyse işlem yapılmış sayılır
+    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
     if (product.excludeFromExpiryCheck === true) {
-      return false;
+      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
+      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+        const actionDate = new Date(product.lastAction.createdAt);
+        actionDate.setHours(0, 0, 0, 0);
+        
+        if (actionDate.getTime() === today.getTime()) {
+          return false; // Bugün deaktif edildi, işlem yapılmış
+        }
+      }
+      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
+      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
     }
+    
     // Bugün bir işlem yapılmışsa ve geri alınmamışsa işlem yapılmış sayılır
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      // Bugünün tarihini al (sadece tarih, saat olmadan)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
       // Son işlemin tarihini al
       const actionDate = new Date(product.lastAction.createdAt);
       actionDate.setHours(0, 0, 0, 0);
@@ -915,37 +922,59 @@ function ExpiryManagement() {
       {/* Kategori Modunda - History Tab */}
       {viewMode === 'category' && (
         <div className="mb-4 md:mb-6 border-b border-gray-200">
-          <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
-            <button
-              onClick={() => setActiveTab(0)}
-              className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-                activeTab !== 2
-                  ? 'border-green-500 text-green-600 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <FiGrid className="w-4 h-4" />
-              <span className="hidden sm:inline">Kategorien</span>
-              <span className="sm:hidden">Kategorien</span>
-              <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                {getTotalUnprocessedCount()}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-0 -mb-px">
+              <button
+                onClick={() => setActiveTab(0)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab !== 2
+                    ? 'border-green-500 text-green-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Kategorien</span>
+                <span className="sm:hidden">Kategorien</span>
+                <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  {getTotalUnprocessedCount()}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab(2)}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
+                  activeTab === 2
+                    ? 'border-blue-500 text-blue-600 font-medium'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <FiClock className="w-4 h-4" />
+                <span className="hidden sm:inline">Vorgangsverlauf</span>
+                <span className="sm:hidden">Verlauf</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 pb-2 md:pb-0 md:mb-px">
+              <span className="px-2 py-1 rounded-full text-[10px] md:text-xs font-medium bg-blue-100 text-blue-700">
+                {(() => {
+                  const allProducts = [...criticalProducts, ...warningProducts];
+                  const uniqueProductsMap = {};
+                  allProducts.forEach(p => {
+                    if (!uniqueProductsMap[p.id]) {
+                      uniqueProductsMap[p.id] = p;
+                    } else if (p.type === 'critical') {
+                      uniqueProductsMap[p.id] = p;
+                    }
+                  });
+                  const uniqueProducts = Object.values(uniqueProductsMap);
+                  const total = uniqueProducts.length;
+                  const processed = total - uniqueProducts.filter(p => isUnprocessed(p)).length;
+                  const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                  return `${processed}/${total} - ${percentage}%`;
+                })()}
               </span>
-            </button>
-            <button
-              onClick={() => setActiveTab(2)}
-              className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-b-2 transition-colors whitespace-nowrap text-sm ${
-                activeTab === 2
-                  ? 'border-blue-500 text-blue-600 font-medium'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <FiClock className="w-4 h-4" />
-              <span className="hidden sm:inline">Vorgangsverlauf</span>
-              <span className="sm:hidden">Verlauf</span>
-              <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+              <span className="px-2 py-1 rounded-full text-[10px] md:text-xs font-medium bg-gray-100 text-gray-700">
                 {getTodayActionCount()}
               </span>
-            </button>
+            </div>
           </div>
         </div>
       )}
@@ -1265,7 +1294,7 @@ function ExpiryManagement() {
                               )}
                               {!product.excludeFromExpiryCheck && (
                                 <button
-                                  onClick={() => setLabelDialog({ open: true, product })}
+                                  onClick={() => handleLabelProduct(product.id, product.name)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
                                 >
                                   <FiTag className="w-4 h-4" />
@@ -1367,7 +1396,7 @@ function ExpiryManagement() {
                         )}
                         {!product.excludeFromExpiryCheck && (
                           <button
-                            onClick={() => setLabelDialog({ open: true, product })}
+                            onClick={() => handleLabelProduct(product.id, product.name)}
                             className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-[10px] font-medium whitespace-nowrap"
                           >
                             <FiTag className="w-2.5 h-2.5" />
@@ -1407,7 +1436,10 @@ function ExpiryManagement() {
             const hasProducts = categoryGroup.products.length > 0;
             if (!hasProducts) return null;
 
+            const totalCount = categoryGroup.products.length;
             const unprocessedCount = categoryGroup.products.filter(p => isUnprocessed(p)).length;
+            const processedCount = totalCount - unprocessedCount;
+            const percentage = totalCount > 0 ? Math.round((processedCount / totalCount) * 100) : 0;
             const criticalCount = categoryGroup.products.filter(p => p.type === 'critical' && isUnprocessed(p)).length;
             const warningCount = categoryGroup.products.filter(p => p.type === 'warning' && isUnprocessed(p)).length;
 
@@ -1430,6 +1462,9 @@ function ExpiryManagement() {
                     <FiGrid className="w-4 h-4 md:w-5 md:h-5" />
                     <span className="text-sm md:text-base">{categoryGroup.name}</span>
                     <div className="flex items-center gap-1.5 ml-2">
+                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {processedCount}/{totalCount} - {percentage}%
+                      </span>
                       {criticalCount > 0 && (
                         <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                           {criticalCount} kritisch
@@ -1438,11 +1473,6 @@ function ExpiryManagement() {
                       {warningCount > 0 && (
                         <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                           {warningCount} Warnung
-                        </span>
-                      )}
-                      {unprocessedCount > 0 && (
-                        <span className="px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                          {unprocessedCount} offen
                         </span>
                       )}
                     </div>
@@ -1596,7 +1626,7 @@ function ExpiryManagement() {
                                               {!product.excludeFromExpiryCheck && (
                                                 <>
                                                   <button
-                                                    onClick={() => setLabelDialog({ open: true, product })}
+                                                    onClick={() => handleLabelProduct(product.id, product.name)}
                                                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
                                                   >
                                                     <FiTag className="w-4 h-4" />
@@ -1752,7 +1782,7 @@ function ExpiryManagement() {
                                         {!product.excludeFromExpiryCheck && (
                                           <>
                                             <button
-                                              onClick={() => setLabelDialog({ open: true, product })}
+                                              onClick={() => handleLabelProduct(product.id, product.name)}
                                               className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-[10px] font-medium whitespace-nowrap"
                                             >
                                               <FiTag className="w-2.5 h-2.5" />
@@ -2111,66 +2141,6 @@ function ExpiryManagement() {
                     }`}
                   >
                     Aussortieren
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* ETİKETLEME DİALOGU */}
-      <AnimatePresence>
-        {labelDialog.open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setLabelDialog({ open: false, product: null })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
-                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Produkt etikettieren</h3>
-                  <button
-                    onClick={() => setLabelDialog({ open: false, product: null })}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <FiX size={18} />
-                  </button>
-                </div>
-                <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
-                  <p className="text-xs md:text-sm text-gray-700">
-                    Möchten Sie wirklich ein Rabattetikett auf das Produkt <strong>{labelDialog.product?.name}</strong> kleben?
-                  </p>
-                  <textarea
-                    placeholder="Notiz (optional)"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 md:gap-3">
-                  <button
-                    onClick={() => setLabelDialog({ open: false, product: null })}
-                    className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Abbrechen
-                  </button>
-                  <button
-                    onClick={handleLabelProduct}
-                    className="px-4 py-2 text-xs md:text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-                  >
-                    Etikettiert
                   </button>
                 </div>
               </div>

@@ -706,18 +706,37 @@ export const updateExpirySettings = async (newSettings) => {
 const getUnprocessedCriticalCount = async () => {
   
   const products = await getCriticalProducts();
-  
+  const today = getToday();
   
   const unprocessed = products.filter(product => {
-    // Deaktif edilmişse sayma
+    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
+    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
     if (product.excludeFromExpiryCheck === true) {
-      
-      return false;
+      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
+      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+        const actionDate = new Date(product.lastAction.createdAt);
+        actionDate.setHours(0, 0, 0, 0);
+        const todayDate = new Date(today);
+        todayDate.setHours(0, 0, 0, 0);
+        
+        if (actionDate.getTime() === todayDate.getTime()) {
+          return false; // Bugün deaktif edildi, sayma
+        }
+      }
+      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
+      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
     }
-    // İşlem yapılmışsa ve geri alınmamışsa sayma
+    
+    // İşlem yapılmışsa ve bugün yapıldıysa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+      const actionDate = new Date(product.lastAction.createdAt);
+      actionDate.setHours(0, 0, 0, 0);
+      const todayDate = new Date(today);
+      todayDate.setHours(0, 0, 0, 0);
       
-      return false;
+      if (actionDate.getTime() === todayDate.getTime()) {
+        return false; // Bugün işlem yapıldı, sayma
+      }
     }
     
     return true;
@@ -735,18 +754,37 @@ const getUnprocessedCriticalCount = async () => {
 const getUnprocessedWarningCount = async () => {
   
   const products = await getWarningProducts();
-  
+  const today = getToday();
   
   const unprocessed = products.filter(product => {
-    // Deaktif edilmişse sayma
+    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
+    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
     if (product.excludeFromExpiryCheck === true) {
-      
-      return false;
+      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
+      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+        const actionDate = new Date(product.lastAction.createdAt);
+        actionDate.setHours(0, 0, 0, 0);
+        const todayDate = new Date(today);
+        todayDate.setHours(0, 0, 0, 0);
+        
+        if (actionDate.getTime() === todayDate.getTime()) {
+          return false; // Bugün deaktif edildi, sayma
+        }
+      }
+      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
+      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
     }
-    // İşlem yapılmışsa ve geri alınmamışsa sayma
+    
+    // İşlem yapılmışsa ve bugün yapıldıysa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+      const actionDate = new Date(product.lastAction.createdAt);
+      actionDate.setHours(0, 0, 0, 0);
+      const todayDate = new Date(today);
+      todayDate.setHours(0, 0, 0, 0);
       
-      return false;
+      if (actionDate.getTime() === todayDate.getTime()) {
+        return false; // Bugün işlem yapıldı, sayma
+      }
     }
     
     return true;
