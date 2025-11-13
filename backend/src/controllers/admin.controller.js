@@ -691,6 +691,101 @@ class AdminController {
   });
 
   // ===============================
+  // USER ADDRESS MANAGEMENT
+  // ===============================
+
+  // POST /api/admin/users/:userId/addresses - Kullanıcıya adres ekle
+  createUserAddress = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const adminId = req.admin.id;
+    const addressData = req.body;
+
+    const address = await userService.createAddress(userId, addressData);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.create_user_address',
+      entityType: 'address',
+      entityId: address.id,
+      level: 'info',
+      message: `Adresse für Benutzer hinzugefügt: ${address.street} ${address.houseNumber}, ${address.city}`,
+      metadata: { addressId: address.id, userId, city: address.city },
+      req,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Adresse erfolgreich hinzugefügt',
+      data: { address },
+    });
+  });
+
+  // PUT /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini güncelle
+  updateUserAddress = asyncHandler(async (req, res) => {
+    const { userId, addressId } = req.params;
+    const adminId = req.admin.id;
+    const addressData = req.body;
+
+    const address = await userService.updateAddress(userId, addressId, addressData);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.update_user_address',
+      entityType: 'address',
+      entityId: address.id,
+      level: 'info',
+      message: `Adresse für Benutzer aktualisiert: ${address.street} ${address.houseNumber}, ${address.city}`,
+      metadata: { addressId: address.id, userId, city: address.city },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Adresse erfolgreich aktualisiert',
+      data: { address },
+    });
+  });
+
+  // DELETE /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini sil
+  deleteUserAddress = asyncHandler(async (req, res) => {
+    const { userId, addressId } = req.params;
+    const adminId = req.admin.id;
+
+    // Silmeden önce adres bilgisini al (log için)
+    const addressBeforeDelete = await prisma.address.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!addressBeforeDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Adresse nicht gefunden',
+      });
+    }
+
+    await userService.deleteAddress(userId, addressId);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.delete_user_address',
+      entityType: 'address',
+      entityId: addressId,
+      level: 'warning',
+      message: `Adresse für Benutzer gelöscht: ${addressBeforeDelete.street} ${addressBeforeDelete.houseNumber}, ${addressBeforeDelete.city}`,
+      metadata: { addressId, userId, city: addressBeforeDelete.city },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Adresse erfolgreich gelöscht',
+    });
+  });
+
+  // ===============================
   // PRODUCT VARIANT MANAGEMENT
   // ===============================
 

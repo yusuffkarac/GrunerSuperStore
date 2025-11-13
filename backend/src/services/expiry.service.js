@@ -15,7 +15,6 @@ export const getExpirySettings = async () => {
   };
 
   const result = settings?.expiryManagementSettings || defaultSettings;
-  console.log('📖 SKT Ayarları getiriliyor:', result);
 
   return result;
 };
@@ -49,14 +48,14 @@ export const getCriticalProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
-  console.log('🔴 CRITICAL Products - Ayarlar:', settings);
+  
 
   // criticalDays gün sonrasına kadar olan ürünler (DAHİL)
   // +1 gün ekleyip "lt" kullanarak sınır durumunu düzeltiyoruz
   const criticalDate = new Date(today);
   criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
 
-  console.log('🔴 CRITICAL Tarih Aralığı - Today:', today, 'Critical Date (<):', criticalDate);
+  
 
   // Bugün sonu
   const todayEnd = new Date(today);
@@ -169,7 +168,6 @@ export const getWarningProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
-  console.log('🟠 WARNING Products - Ayarlar:', settings);
 
   // criticalDays'den sonra, warningDays'e kadar olan ürünler
   const criticalDate = new Date(today);
@@ -178,7 +176,6 @@ export const getWarningProducts = async () => {
   const warningDate = new Date(today);
   warningDate.setDate(warningDate.getDate() + settings.warningDays + 1);
 
-  console.log('🟠 WARNING Tarih Aralığı - Critical Date (>=):', criticalDate, 'Warning Date (<):', warningDate);
 
   // Önce tüm warning aralığındaki ürünleri getir
   // Ayrıca bugün warning aralığında olan ama yeni tarih atanmış ürünleri de dahil et
@@ -690,7 +687,6 @@ export const updateExpirySettings = async (newSettings) => {
     throw new NotFoundError('Ayarlar bulunamadı');
   }
 
-  console.log('📝 Yeni ayarlar kaydediliyor:', newSettings);
 
   const updatedSettings = await prisma.settings.update({
     where: { id: settings.id },
@@ -699,7 +695,6 @@ export const updateExpirySettings = async (newSettings) => {
     },
   });
 
-  console.log('✅ Ayarlar kaydedildi:', updatedSettings.expiryManagementSettings);
 
   return updatedSettings.expiryManagementSettings;
 };
@@ -709,27 +704,27 @@ export const updateExpirySettings = async (newSettings) => {
  * işlem yapılmamış kritik ürün sayısını hesapla
  */
 const getUnprocessedCriticalCount = async () => {
-  console.log('🔍 getUnprocessedCriticalCount çağrıldı');
+  
   const products = await getCriticalProducts();
-  console.log(`📦 Toplam kritik ürün sayısı: ${products.length}`);
+  
   
   const unprocessed = products.filter(product => {
     // Deaktif edilmişse sayma
     if (product.excludeFromExpiryCheck === true) {
-      console.log(`  ⏭️  Ürün deaktif: ${product.name} (ID: ${product.id})`);
+      
       return false;
     }
     // İşlem yapılmışsa ve geri alınmamışsa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      console.log(`  ⏭️  Ürün işlem yapılmış: ${product.name} (ID: ${product.id}, Action: ${product.lastAction.actionType})`);
+      
       return false;
     }
-    console.log(`  ✅ İşlem yapılmamış ürün: ${product.name} (ID: ${product.id})`);
+    
     return true;
   });
   
   const count = unprocessed.length;
-  console.log(`📊 İşlem yapılmamış kritik ürün sayısı: ${count}`);
+  
   return count;
 };
 
@@ -738,27 +733,27 @@ const getUnprocessedCriticalCount = async () => {
  * işlem yapılmamış warning ürün sayısını hesapla
  */
 const getUnprocessedWarningCount = async () => {
-  console.log('🔍 getUnprocessedWarningCount çağrıldı');
+  
   const products = await getWarningProducts();
-  console.log(`📦 Toplam warning ürün sayısı: ${products.length}`);
+  
   
   const unprocessed = products.filter(product => {
     // Deaktif edilmişse sayma
     if (product.excludeFromExpiryCheck === true) {
-      console.log(`  ⏭️  Ürün deaktif: ${product.name} (ID: ${product.id})`);
+      
       return false;
     }
     // İşlem yapılmışsa ve geri alınmamışsa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      console.log(`  ⏭️  Ürün işlem yapılmış: ${product.name} (ID: ${product.id}, Action: ${product.lastAction.actionType})`);
+      
       return false;
     }
-    console.log(`  ✅ İşlem yapılmamış ürün: ${product.name} (ID: ${product.id})`);
+    
     return true;
   });
   
   const count = unprocessed.length;
-  console.log(`📊 İşlem yapılmamış warning ürün sayısı: ${count}`);
+  
   return count;
 };
 
@@ -768,9 +763,9 @@ const getUnprocessedWarningCount = async () => {
  */
 export const notifyDailyExpiryProducts = async () => {
   try {
-    console.log('🌅 ============================================');
-    console.log('🌅 notifyDailyExpiryProducts FONKSİYONU ÇAĞRILDI');
-    console.log('🌅 ============================================');
+    
+    
+    
     
     const today = getToday();
     const todayStart = new Date(today);
@@ -791,8 +786,8 @@ export const notifyDailyExpiryProducts = async () => {
     });
 
     if (existingEmail) {
-      console.log('📧 Bugün bu mail zaten gönderilmiş, tekrar gönderilmiyor.');
-      console.log(`📧 Önceki gönderim: ${existingEmail.sentAt}`);
+      
+      
       return {
         success: true,
         message: 'Bugün bu mail zaten gönderilmiş',
@@ -806,7 +801,7 @@ export const notifyDailyExpiryProducts = async () => {
     const unprocessedWarningCount = await getUnprocessedWarningCount();
     const totalCount = unprocessedCriticalCount + unprocessedWarningCount;
 
-    console.log(`📊 Bugün işlenecek ürün sayıları - Kritik: ${unprocessedCriticalCount}, Warning: ${unprocessedWarningCount}, Toplam: ${totalCount}`);
+    
 
     // Settings'den admin email listesini al
     const allSettings = await prisma.settings.findFirst();
@@ -825,7 +820,7 @@ export const notifyDailyExpiryProducts = async () => {
       return { success: false, message: 'Geçerli admin email adresi bulunamadı', count: 0 };
     }
 
-    console.log(`📧 Admin email adresleri: ${adminEmails.length} adet`, adminEmails);
+    
 
     // Her admin'e mail gönder
     const emailPromises = adminEmails.map(async (email) => {
@@ -847,7 +842,7 @@ export const notifyDailyExpiryProducts = async () => {
           },
           priority: 2,
         });
-        console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
+        
         return { email, success: true };
       } catch (emailError) {
         console.error(`❌ Email gönderim hatası (${email}):`, emailError);
@@ -858,7 +853,7 @@ export const notifyDailyExpiryProducts = async () => {
     const results = await Promise.all(emailPromises);
     const successCount = results.filter((r) => r.success).length;
 
-    console.log(`✅ ${successCount}/${adminEmails.length} admin'e mail gönderildi`);
+    
 
     return {
       success: true,
@@ -884,15 +879,15 @@ export const notifyDailyExpiryProducts = async () => {
  */
 export const checkExpiredProductsAndNotifyAdmins = async () => {
   try {
-    console.log('🚀 ============================================');
-    console.log('🚀 checkExpiredProductsAndNotifyAdmins FONKSİYONU ÇAĞRILDI');
-    console.log('🚀 ============================================');
+    
+    
+    
     
     const today = getToday();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    console.log('📧 MHD kontrolü başlatılıyor...', { today, tomorrow });
+    
 
     // Bugün bu mail daha önce gönderilmiş mi kontrol et
     const todayStart = new Date(today);
@@ -912,8 +907,8 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     });
 
     if (existingEmail) {
-      console.log('📧 Bugün bu mail zaten gönderilmiş, tekrar gönderilmiyor.');
-      console.log(`📧 Önceki gönderim: ${existingEmail.sentAt}`);
+      
+      
       return {
         success: true,
         message: 'Bugün bu mail zaten gönderilmiş',
@@ -923,24 +918,24 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     }
 
     // Frontend'deki mantığı kullanarak işlem yapılmamış ürün sayılarını hesapla
-    console.log('📊 Kritik ürün sayısı hesaplanıyor...');
+    
     const unprocessedCriticalCount = await getUnprocessedCriticalCount();
     
-    console.log('📊 Warning ürün sayısı hesaplanıyor...');
+    
     const unprocessedWarningCount = await getUnprocessedWarningCount();
 
-    console.log(`📊 ============================================`);
-    console.log(`📊 SONUÇ: İşlem yapılmamış ürün sayıları`);
-    console.log(`📊 Kritik: ${unprocessedCriticalCount}`);
-    console.log(`📊 Warning: ${unprocessedWarningCount}`);
-    console.log(`📊 Toplam: ${unprocessedCriticalCount + unprocessedWarningCount}`);
-    console.log(`📊 ============================================`);
+    
+    
+    
+    
+    
+    
 
     // Eğer her iki tabloda da işlem yapılmamış ürün varsa, mail gönderme
     if (unprocessedCriticalCount > 0 || unprocessedWarningCount > 0) {
-      console.log('⚠️ ============================================');
-      console.log('⚠️ İşlem yapılmamış kritik veya warning ürünler var, mail gönderilmiyor.');
-      console.log('⚠️ ============================================');
+      
+      
+      
       return {
         success: true,
         message: `Hala işlem yapılmamış ürünler var (Kritik: ${unprocessedCriticalCount}, Warning: ${unprocessedWarningCount})`,
@@ -951,9 +946,9 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     }
 
     // Her iki tabloda da işlem yapılmamış ürün yoksa, mail gönder
-    console.log('✅ ============================================');
-    console.log('✅ Tüm ürünler için işlem yapılmış, adminlere mail gönderiliyor...');
-    console.log('✅ ============================================');
+    
+    
+    
 
     // Settings'den admin email listesini al
     const allSettings = await prisma.settings.findFirst();
@@ -972,7 +967,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
       return { success: false, message: 'Geçerli admin email adresi bulunamadı', count: 0 };
     }
 
-    console.log(`📧 Admin email adresleri: ${adminEmails.length} adet`, adminEmails);
+    
 
     // Bugün biten ve işlem yapılmış ürünleri bul (mail içeriği için)
     const todayExpiredProducts = await prisma.product.findMany({
@@ -1061,7 +1056,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
           },
           priority: 2,
         });
-        console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
+        
         return { email, success: true };
       } catch (emailError) {
         console.error(`❌ Email gönderim hatası (${email}):`, emailError);
@@ -1072,7 +1067,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     const results = await Promise.all(emailPromises);
     const successCount = results.filter((r) => r.success).length;
 
-    console.log(`✅ ${successCount}/${adminEmails.length} admin'e mail gönderildi`);
+    
 
     return {
       success: true,

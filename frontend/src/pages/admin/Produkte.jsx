@@ -526,6 +526,9 @@ function Produkte() {
 
   // Modal aç/kapat
   const openModal = useCallback((product = null) => {
+    // Sayfayı en üste scroll et
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     setShowCustomUnitInput(false);
     setNewCustomUnit('');
     if (product) {
