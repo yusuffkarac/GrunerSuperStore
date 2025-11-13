@@ -42,7 +42,7 @@ export const useModalScroll = (isOpen) => {
         // Eski scroll pozisyonuna dön
         setTimeout(() => {
           console.log('[useModalScroll] Eski scroll konumuna geri dönülüyor, scrollTop:', scrollTop);
-          scrollContainer.scrollTo({ top: scrollTop, left: 0, behavior: 'smooth' });
+          scrollContainer.scrollTo({ top: scrollTop, left: 0, behavior: 'auto' });
         }, 100);
       };
     }
