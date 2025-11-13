@@ -13,6 +13,7 @@ import ProductQuantityDialog from '../../components/stock/ProductQuantityDialog'
 import CreateStockOrderListDialog from '../../components/stock/CreateStockOrderListDialog';
 import StockOrderListCard from '../../components/stock/StockOrderListCard';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function StockManagement() {
   const { themeColors } = useTheme();
@@ -93,6 +94,15 @@ function StockManagement() {
   const [newSupplierEmail, setNewSupplierEmail] = useState(''); // Yeni tedarikçi email'i
   const [statusFilter, setStatusFilter] = useState('');
   const [orderCreationStatus, setOrderCreationStatus] = useState('pending'); // 'pending' veya 'ordered'
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(quantityDialog.open);
+  useModalScroll(createListDialog);
+  useModalScroll(listDetailDialog.open);
+  useModalScroll(orderDialog.open);
+  useModalScroll(orderDetailDialog.open);
+  useModalScroll(supplierDialog.open);
+  useModalScroll(undoDialog.open);
 
   useEffect(() => {
     localStorage.setItem('stockManagement_selectedProducts', JSON.stringify(selectedProducts));
@@ -1350,7 +1360,7 @@ function StockManagement() {
                                       )}
                                     </button>
                                   </td>
-                                  <td className="px-4 py-4">
+                                  <td className="px-4 py-4" style={{ width: '500px' }} >
                                     <div className="flex items-center gap-3">
                                       {imageUrl ? (
                                         <img

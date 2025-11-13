@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Users() {
   const { showConfirm } = useAlert();
@@ -24,6 +25,11 @@ function Users() {
   const [editingAddress, setEditingAddress] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState('addresses'); // Modal tab state
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showFormModal);
+  useModalScroll(showAddressModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

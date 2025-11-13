@@ -11,6 +11,7 @@ import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Categories() {
   const { showConfirm } = useAlert();
@@ -25,6 +26,9 @@ function Categories() {
     const savedViewMode = localStorage.getItem('categoriesViewMode');
     return savedViewMode || 'grid';
   });
+
+  // Modal scroll yönetimi
+  useModalScroll(showModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

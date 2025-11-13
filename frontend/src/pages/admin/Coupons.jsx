@@ -13,6 +13,7 @@ import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import SwitchListItem from '../../components/common/SwitchListItem';
 import MultipleSelect from '../../components/common/MultipleSelect';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Coupons() {
   const { showConfirm } = useAlert();
@@ -31,6 +32,9 @@ function Coupons() {
     const savedViewMode = localStorage.getItem('couponsViewMode');
     return savedViewMode || 'grid';
   });
+
+  // Modal scroll yönetimi
+  useModalScroll(showModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

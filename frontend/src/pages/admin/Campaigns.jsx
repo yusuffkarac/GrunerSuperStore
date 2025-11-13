@@ -13,6 +13,7 @@ import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import MultipleSelect from '../../components/common/MultipleSelect';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Campaigns() {
   const { showConfirm } = useAlert();
@@ -24,6 +25,9 @@ function Campaigns() {
   const [showModal, setShowModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Modal scroll yönetimi
+  useModalScroll(showModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

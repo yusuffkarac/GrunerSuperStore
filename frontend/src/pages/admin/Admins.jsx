@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import axios from 'axios';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -37,6 +38,10 @@ function Admins() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showFormModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

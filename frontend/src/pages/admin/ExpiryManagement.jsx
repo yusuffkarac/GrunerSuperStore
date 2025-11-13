@@ -10,6 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import BarcodeScanner from '../../components/common/BarcodeScanner';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -73,6 +74,16 @@ function ExpiryManagement() {
   const [note, setNote] = useState('');
   const [newExpiryDate, setNewExpiryDate] = useState(null); // Date objesi olacak
   const [updateExpiryDate, setUpdateExpiryDate] = useState(null); // Date objesi olacak
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(removeDialog.open);
+  useModalScroll(labelDialog.open);
+  useModalScroll(undoDialog.open);
+  useModalScroll(settingsDialog);
+  useModalScroll(barcodeScannerOpen);
+  useModalScroll(dateUpdateDialog.open);
+  useModalScroll(warningDateUpdateDialog.open);
+  useModalScroll(mailResendDialog);
 
   useEffect(() => {
     fetchData();
@@ -1467,7 +1478,7 @@ function ExpiryManagement() {
                               
                               return (
                                 <tr key={product.id} className={`${rowClass} transition-colors ${shouldShowDimmed ? 'opacity-60' : ''}`}>
-                                  <td className="px-4 py-4">
+                                  <td className="px-4 py-4" style={{ width: '500px' }} >
                                     <div className="text-sm font-medium text-gray-900">{product.name}</div>
                                     {product.barcode && (
                                       <div className="mt-1 text-xs text-gray-400 font-mono">{product.barcode}</div>

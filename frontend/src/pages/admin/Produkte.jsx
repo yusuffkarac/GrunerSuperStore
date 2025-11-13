@@ -15,6 +15,7 @@ import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import BulkPriceUpdateModal from '../../components/admin/BulkPriceUpdateModal';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
@@ -414,6 +415,11 @@ function Produkte() {
     imageUrls: [],
     values: {},
   });
+  
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showVariantModal);
+  useModalScroll(showBulkPriceModal);
   
   // Özel birimler için state (localStorage'dan yükle)
   const [customUnits, setCustomUnits] = useState(() => {

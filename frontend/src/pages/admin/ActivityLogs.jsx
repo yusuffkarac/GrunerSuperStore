@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function ActivityLogs() {
   const [logs, setLogs] = useState([]);
@@ -15,6 +16,9 @@ function ActivityLogs() {
   const [stats, setStats] = useState(null);
   const abortControllerRef = useRef(null);
   const filterTimeoutRef = useRef(null);
+
+  // Modal scroll yönetimi
+  useModalScroll(showModal);
 
   // Filtreler
   const [filters, setFilters] = useState({
@@ -241,6 +245,166 @@ function ActivityLogs() {
     });
   };
 
+  // Alan isimlerini Almanca'ya çevir
+  const getFieldLabel = (key) => {
+    const labels = {
+      vorname: 'Vorname',
+      nachname: 'Nachname',
+      email: 'E-Mail',
+      telefon: 'Telefon',
+      status: 'Status',
+      emailBestaetigt: 'E-Mail bestätigt',
+      passwort: 'Passwort',
+      rolle: 'Rolle',
+      rollenId: 'Rollen-ID',
+      rollenName: 'Rollenname',
+      titel: 'Adresstitel',
+      strasse: 'Straße',
+      hausnummer: 'Hausnummer',
+      adresszusatz: 'Adresszusatz',
+      stadtteil: 'Stadtteil',
+      plz: 'PLZ',
+      stadt: 'Stadt',
+      bundesland: 'Bundesland',
+      beschreibung: 'Beschreibung',
+      standardAdresse: 'Standardadresse',
+      benutzerId: 'Benutzer-ID',
+      administratorId: 'Administrator-ID',
+      adressId: 'Adress-ID',
+    };
+    return labels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+  };
+
+  // Metadata'yı okunaklı şekilde render et
+  const renderMetadata = (metadata) => {
+    // Değişiklikler varsa özel gösterim
+    if (metadata.aenderungen && Object.keys(metadata.aenderungen).length > 0) {
+      return (
+        <div className="space-y-4">
+          {/* Değişiklikler */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <FiAlertCircle className="text-blue-600" size={16} />
+              Geänderte Felder
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(metadata.aenderungen).map(([key, change]) => (
+                <div key={key} className="bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                  <div className="text-sm font-semibold text-gray-800 mb-3">{change.feld || getFieldLabel(key)}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                      <div className="text-xs text-red-700 font-semibold mb-1.5 uppercase tracking-wide">Vorher</div>
+                      <div className="text-base text-gray-900 font-semibold break-words">
+                        {change.alt || change.altWert !== undefined ? (change.altWert !== undefined ? (change.altWert ? 'Ja' : 'Nein') : change.alt) : '-'}
+                      </div>
+                    </div>
+                    <div className="text-gray-500 text-2xl font-bold">→</div>
+                    <div className="flex-1 bg-green-50 border-2 border-green-300 rounded-lg p-3">
+                      <div className="text-xs text-green-700 font-semibold mb-1.5 uppercase tracking-wide">Nachher</div>
+                      <div className="text-base text-gray-900 font-semibold break-words">
+                        {change.neu || change.neuWert !== undefined ? (change.neuWert !== undefined ? (change.neuWert ? 'Ja' : 'Nein') : change.neu) : '-'}
+                      </div>
+                    </div>
+                  </div>
+                  {change.hinweis && (
+                    <div className="mt-2 text-xs text-gray-500 italic bg-yellow-50 border border-yellow-200 rounded p-2">
+                      ℹ️ {change.hinweis}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Önce/Sonra Karşılaştırması */}
+          {(metadata.vorher || metadata.nachher) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {metadata.vorher && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    Vorher
+                  </h3>
+                  <div className="space-y-2.5">
+                    {Object.entries(metadata.vorher).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-start gap-2 py-1.5 border-b border-gray-200 last:border-0">
+                        <span className="text-xs font-medium text-gray-600">{getFieldLabel(key)}:</span>
+                        <span className="text-sm text-gray-900 font-medium text-right max-w-[60%] break-words">{value || '-'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {metadata.nachher && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Nachher
+                  </h3>
+                  <div className="space-y-2.5">
+                    {Object.entries(metadata.nachher).map(([key, value]) => {
+                      const changed = metadata.aenderungen && Object.keys(metadata.aenderungen).some(k => {
+                        const change = metadata.aenderungen[k];
+                        return change && (change.feld?.toLowerCase() === key.toLowerCase() || k.toLowerCase() === key.toLowerCase());
+                      });
+                      return (
+                        <div key={key} className={`flex justify-between items-start gap-2 py-1.5 border-b border-gray-200 last:border-0 ${changed ? 'bg-green-50 rounded px-2 -mx-2' : ''}`}>
+                          <span className="text-xs font-medium text-gray-600">{getFieldLabel(key)}:</span>
+                          <span className={`text-sm font-semibold text-right max-w-[60%] break-words ${changed ? 'text-green-700' : 'text-gray-900'}`}>
+                            {value || '-'}
+                            {changed && <span className="ml-1.5 text-green-600 text-xs">✓</span>}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Basit metadata gösterimi
+    return (
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="space-y-2.5">
+          {Object.entries(metadata).map(([key, value]) => {
+            if (value === null || value === undefined) return null;
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              return (
+                <div key={key} className="border-b border-gray-200 pb-3 mb-3 last:border-0 last:mb-0">
+                  <div className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    {getFieldLabel(key)}
+                  </div>
+                  <div className="pl-3 space-y-2 bg-white rounded p-2 border border-gray-200">
+                    {Object.entries(value).map(([subKey, subValue]) => (
+                      <div key={subKey} className="flex justify-between items-start gap-2">
+                        <span className="text-xs font-medium text-gray-600">{getFieldLabel(subKey)}:</span>
+                        <span className="text-xs text-gray-900 font-medium text-right max-w-[60%] break-words">
+                          {String(subValue || '-')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={key} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                <span className="text-xs font-medium text-gray-600">{getFieldLabel(key)}:</span>
+                <span className="text-sm text-gray-900 font-semibold text-right max-w-[60%] break-words">
+                  {String(value)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const getActionLabel = (action) => {
     const actionLabels = {
       // Bestellungen
@@ -252,6 +416,15 @@ function ActivityLogs() {
       
       // Admin
       'admin.login': 'Admin-Anmeldung',
+      'admin.create_admin': 'Administrator erstellen',
+      'admin.update_admin': 'Administrator aktualisieren',
+      'admin.delete_admin': 'Administrator löschen',
+      'admin.create_user': 'Benutzer erstellen',
+      'admin.update_user': 'Benutzer aktualisieren',
+      'admin.toggle_user_status': 'Benutzerstatus ändern',
+      'admin.create_user_address': 'Adresse hinzufügen',
+      'admin.update_user_address': 'Adresse aktualisieren',
+      'admin.delete_user_address': 'Adresse löschen',
       
       // Produkte
       'product.create': 'Produkt erstellen',
@@ -836,10 +1009,8 @@ function ActivityLogs() {
                 )}
                 {selectedLog.metadata && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Metadaten</label>
-                    <pre className="mt-1 p-3 rounded-lg text-xs overflow-auto bg-gray-50 text-gray-900 border border-gray-200">
-                      {JSON.stringify(selectedLog.metadata, null, 2)}
-                    </pre>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Details</label>
+                    {renderMetadata(selectedLog.metadata)}
                   </div>
                 )}
               </div>

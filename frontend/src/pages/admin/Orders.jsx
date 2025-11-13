@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import { normalizeImageUrl } from '../../utils/imageUtils';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Order Item Component with image placeholder
 const OrderItemRow = ({ item }) => {
@@ -74,6 +75,10 @@ function Orders() {
     cancellationCustomerMessage: '',
     showCancellationReasonToCustomer: false,
   });
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showCancelModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');

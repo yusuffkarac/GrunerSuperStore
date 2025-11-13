@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -34,6 +35,10 @@ function RoleManagement() {
   // Dialog states
   const [roleDialog, setRoleDialog] = useState({ open: false, mode: 'create', role: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, role: null });
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(roleDialog.open);
+  useModalScroll(deleteDialog.open);
 
   // Form state
   const [formData, setFormData] = useState({
