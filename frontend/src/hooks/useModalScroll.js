@@ -24,8 +24,8 @@ export const useModalScroll = (isOpen) => {
       const scrollTop = scrollContainer.scrollTop;
       console.log('[useModalScroll] Modal açılıyor, mevcut scrollTop:', scrollTop);
 
-      // Container'ı en üste scroll et
-      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      // Container'ı en üste scroll et (hızlı - anında)
+      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       console.log('[useModalScroll] Container yukarı scroll edildi');
 
       // Container'ın scroll'unu kilitle
