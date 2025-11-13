@@ -5,6 +5,7 @@ import categoryService from '../services/category.service.js';
 import userService from '../services/user.service.js';
 import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import activityLogService from '../services/activityLog.service.js';
 
 class AdminController {
   // POST /api/admin/auth/login - Admin girişi
@@ -12,6 +13,20 @@ class AdminController {
     const { email, password } = req.body;
 
     const result = await adminService.login({ email, password });
+
+    // Log kaydı
+    if (result.admin) {
+      await activityLogService.createLog({
+        adminId: result.admin.id,
+        action: 'admin.login',
+        entityType: 'admin',
+        entityId: result.admin.id,
+        level: 'success',
+        message: `Administrator hat sich angemeldet: ${email}`,
+        metadata: { email },
+        req,
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -257,8 +272,40 @@ class AdminController {
   updateOrderStatus = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Nicht autorisiert',
+      });
+    }
 
     const order = await orderService.updateOrderStatus(id, status);
+
+    // Log kaydı - asenkron yap (fire-and-forget)
+    activityLogService.createLog({
+      adminId,
+      action: 'order.update_status',
+      entityType: 'order',
+      entityId: order.id,
+      level: 'info',
+      message: `Bestellstatus wurde aktualisiert: ${order.orderNo} → ${status}`,
+      metadata: { 
+        orderNo: order.orderNo, 
+        orderId: order.id,
+        oldStatus: order.previousStatus || order.status, 
+        newStatus: status 
+      },
+      req,
+    }).catch((logError) => {
+      console.error('❌ [ADMIN.ORDER.UPDATE_STATUS] Log kaydı hatası (async):', {
+        error: logError.message || logError,
+        adminId,
+        orderId: order.id,
+        status,
+      });
+    });
 
     res.status(200).json({
       success: true,
@@ -271,8 +318,39 @@ class AdminController {
   cancelOrder = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const cancellationData = req.body;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Nicht autorisiert',
+      });
+    }
 
     const order = await orderService.adminCancelOrder(id, cancellationData);
+
+    // Log kaydı - asenkron yap (fire-and-forget)
+    activityLogService.createLog({
+      adminId,
+      action: 'order.cancel',
+      entityType: 'order',
+      entityId: order.id,
+      level: 'warning',
+      message: `Bestellung wurde storniert: ${order.orderNo}`,
+      metadata: { 
+        orderNo: order.orderNo, 
+        orderId: order.id,
+        cancellationReason: cancellationData.cancellationReason || null,
+        showReasonToCustomer: cancellationData.showCancellationReasonToCustomer || false,
+      },
+      req,
+    }).catch((logError) => {
+      console.error('❌ [ADMIN.ORDER.CANCEL] Log kaydı hatası (async):', {
+        error: logError.message || logError,
+        adminId,
+        orderId: order.id,
+      });
+    });
 
     res.status(200).json({
       success: true,
@@ -357,7 +435,20 @@ class AdminController {
 
   // POST /api/admin/products - Ürün oluştur
   createProduct = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const product = await productService.createProduct(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.create',
+      entityType: 'product',
+      entityId: product.id,
+      level: 'success',
+      message: `Produkt wurde erstellt: ${product.name} (ID: ${product.id}${product.barcode ? `, Barcode: ${product.barcode}` : ''})`,
+      metadata: { productId: product.id, name: product.name, price: product.price, barcode: product.barcode },
+      req,
+    });
 
     res.status(201).json({
       success: true,
@@ -369,8 +460,21 @@ class AdminController {
   // PUT /api/admin/products/:id - Ürün güncelle
   updateProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
 
     const product = await productService.updateProduct(id, req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.update',
+      entityType: 'product',
+      entityId: product.id,
+      level: 'info',
+      message: `Produkt wurde aktualisiert: ${product.name} (ID: ${product.id}${product.barcode ? `, Barcode: ${product.barcode}` : ''})`,
+      metadata: { productId: product.id, name: product.name, barcode: product.barcode },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -382,8 +486,24 @@ class AdminController {
   // DELETE /api/admin/products/:id - Ürün sil
   deleteProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
 
+    // Silmeden önce product bilgisini al (log için)
+    const productBeforeDelete = await productService.getProductById(id);
+    
     const result = await productService.deleteProduct(id);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.delete',
+      entityType: 'product',
+      entityId: id,
+      level: 'warning',
+      message: `Produkt wurde gelöscht: ${productBeforeDelete.name} (ID: ${id}${productBeforeDelete.barcode ? `, Barcode: ${productBeforeDelete.barcode}` : ''})`,
+      metadata: { productId: id, name: productBeforeDelete.name, barcode: productBeforeDelete.barcode },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -443,7 +563,20 @@ class AdminController {
 
   // POST /api/admin/categories - Kategori oluştur
   createCategory = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const category = await categoryService.createCategory(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'category.create',
+      entityType: 'category',
+      entityId: category.id,
+      level: 'success',
+      message: `Kategorie wurde erstellt: ${category.name} (${category.id})`,
+      metadata: { categoryId: category.id, name: category.name },
+      req,
+    });
 
     res.status(201).json({
       success: true,

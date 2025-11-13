@@ -1,5 +1,6 @@
 import favoriteService from '../services/favorite.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import activityLogService from '../services/activityLog.service.js';
 
 class FavoriteController {
   // GET /api/favorites - Favori ürünleri listele
@@ -37,6 +38,18 @@ class FavoriteController {
 
     const favorite = await favoriteService.addFavorite(userId, productId);
 
+    // Log kaydı
+    await activityLogService.createLog({
+      userId,
+      action: 'favorite.add',
+      entityType: 'product',
+      entityId: productId,
+      level: 'info',
+      message: `Produkt zu Favoriten hinzugefügt: Produkt ${productId}`,
+      metadata: { productId },
+      req,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Produkt zu Favoriten hinzugefügt',
@@ -50,6 +63,18 @@ class FavoriteController {
     const { productId } = req.params;
 
     await favoriteService.removeFavorite(userId, productId);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      userId,
+      action: 'favorite.remove',
+      entityType: 'product',
+      entityId: productId,
+      level: 'info',
+      message: `Produkt aus Favoriten entfernt: Produkt ${productId}`,
+      metadata: { productId },
+      req,
+    });
 
     res.status(200).json({
       success: true,

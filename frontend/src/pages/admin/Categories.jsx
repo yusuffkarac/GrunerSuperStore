@@ -646,13 +646,13 @@ function Categories() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">

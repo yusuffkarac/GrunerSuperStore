@@ -58,16 +58,48 @@ export const getCriticalProducts = async () => {
 
   console.log('🔴 CRITICAL Tarih Aralığı - Today:', today, 'Critical Date (<):', criticalDate);
 
+  // Bugün sonu
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
+
   const products = await prisma.product.findMany({
     where: {
-      expiryDate: {
-        lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
-        gte: today, // Geçmiş tarihli olanları hariç tut
-      },
-      // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-      OR: [
-        { excludeFromExpiryCheck: false },
-        { excludeFromExpiryCheck: true },
+      AND: [
+        {
+          OR: [
+            {
+              // Normal critical aralığındaki ürünler
+              expiryDate: {
+                lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
+                gte: today, // Geçmiş tarihli olanları hariç tut
+              },
+            },
+            {
+              // Bugün critical aralığında olan ama yeni tarih atanmış ürünler
+              // Son işlem bugün yapılmışsa ve o işlemdeki tarih critical aralığındaysa
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today, // Bugün yapılan işlemler
+                    lte: todayEnd, // Bugünün sonu
+                  },
+                  expiryDate: {
+                    gte: today,
+                    lt: criticalDate,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        {
+          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
+          OR: [
+            { excludeFromExpiryCheck: false },
+            { excludeFromExpiryCheck: true },
+          ],
+        },
       ],
     },
     include: {
@@ -97,7 +129,7 @@ export const getCriticalProducts = async () => {
       },
     },
     orderBy: {
-      expiryDate: 'asc',
+      name: 'asc',
     },
   });
 
@@ -114,7 +146,15 @@ export const getCriticalProducts = async () => {
     return true;
   });
 
-  return filteredProducts.map(product => ({
+  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
+  const uniqueProducts = {};
+  filteredProducts.forEach(product => {
+    if (!uniqueProducts[product.id]) {
+      uniqueProducts[product.id] = product;
+    }
+  });
+
+  return Object.values(uniqueProducts).map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,
@@ -141,16 +181,48 @@ export const getWarningProducts = async () => {
   console.log('🟠 WARNING Tarih Aralığı - Critical Date (>=):', criticalDate, 'Warning Date (<):', warningDate);
 
   // Önce tüm warning aralığındaki ürünleri getir
+  // Ayrıca bugün warning aralığında olan ama yeni tarih atanmış ürünleri de dahil et
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
+  
   const products = await prisma.product.findMany({
     where: {
-      expiryDate: {
-        gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
-        lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
-      },
-      // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-      OR: [
-        { excludeFromExpiryCheck: false },
-        { excludeFromExpiryCheck: true },
+      AND: [
+        {
+          OR: [
+            {
+              // Normal warning aralığındaki ürünler
+              expiryDate: {
+                gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
+                lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
+              },
+            },
+            {
+              // Bugün warning aralığında olan ama yeni tarih atanmış ürünler
+              // Son işlem bugün yapılmışsa ve o işlemdeki tarih warning aralığındaysa
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today, // Bugün yapılan işlemler
+                    lte: todayEnd, // Bugünün sonu
+                  },
+                  expiryDate: {
+                    gte: criticalDate,
+                    lt: warningDate,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        {
+          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
+          OR: [
+            { excludeFromExpiryCheck: false },
+            { excludeFromExpiryCheck: true },
+          ],
+        },
       ],
     },
     include: {
@@ -180,7 +252,7 @@ export const getWarningProducts = async () => {
       },
     },
     orderBy: {
-      expiryDate: 'asc',
+      name: 'asc',
     },
   });
 
@@ -197,7 +269,15 @@ export const getWarningProducts = async () => {
     return true;
   });
 
-  return filteredProducts.map(product => ({
+  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
+  const uniqueProducts = {};
+  filteredProducts.forEach(product => {
+    if (!uniqueProducts[product.id]) {
+      uniqueProducts[product.id] = product;
+    }
+  });
+
+  return Object.values(uniqueProducts).map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,
@@ -388,9 +468,16 @@ export const getActionHistory = async (filters = {}) => {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        {
+          product: {
+            name: 'asc',
+          },
+        },
+        {
+          createdAt: 'desc',
+        },
+      ],
       take: limit,
       skip: offset,
     }),
@@ -424,6 +511,10 @@ export const undoAction = async (actionId, adminId) => {
     throw new BadRequestError('Bu işlem zaten geri alınmış');
   }
 
+  if (action.actionType === 'undone') {
+    throw new BadRequestError('Geri alma işlemi tekrar geri alınamaz');
+  }
+
   // İşlemi geri alındı olarak işaretle
   await prisma.expiryAction.update({
     where: { id: actionId },
@@ -434,11 +525,55 @@ export const undoAction = async (actionId, adminId) => {
     },
   });
 
-  // Eğer bu bir "removed" işlemi ve excludeFromCheck yapılmışsa, onu geri al
-  if (action.actionType === 'removed' && action.excludedFromCheck) {
+  // Eğer bu bir "removed" işlemi ise, ürünü eski haline getir
+  if (action.actionType === 'removed') {
+    let previousExpiryDate = null;
+    
+    // Eğer bu bir tarih güncellemesi ise (excludedFromCheck: false), note'dan eski tarihi al
+    if (action.excludedFromCheck === false && action.note) {
+      const oldDateMatch = action.note.match(/OLD_DATE:([^\s|]+)/);
+      if (oldDateMatch && oldDateMatch[1]) {
+        try {
+          previousExpiryDate = new Date(oldDateMatch[1]);
+          // Geçerli bir tarih mi kontrol et
+          if (isNaN(previousExpiryDate.getTime())) {
+            previousExpiryDate = null;
+          }
+        } catch (e) {
+          previousExpiryDate = null;
+        }
+      }
+    }
+    
+    // Eğer note'dan eski tarih bulunamadıysa, önceki action'ı bul
+    if (!previousExpiryDate) {
+      const previousAction = await prisma.expiryAction.findFirst({
+        where: {
+          productId: action.productId,
+          createdAt: {
+            lt: action.createdAt,
+          },
+          isUndone: false,
+          actionType: {
+            not: 'undone',
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+      
+      // Eğer önceki action varsa onun tarihini kullan, yoksa action'daki tarihi kullan
+      previousExpiryDate = previousAction ? previousAction.expiryDate : action.expiryDate;
+    }
+    
+    // Ürünü güncelle: eski tarihi geri yükle ve excludeFromCheck'i false yap
     await prisma.product.update({
       where: { id: action.productId },
-      data: { excludeFromExpiryCheck: false },
+      data: { 
+        expiryDate: previousExpiryDate,
+        excludeFromExpiryCheck: false,
+      },
     });
   }
 
@@ -494,6 +629,9 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
   const newDate = new Date(newExpiryDate);
   const daysUntilExpiry = getDaysDifference(newDate, today);
 
+  // Eski tarihi kaydet (geri alma işlemi için)
+  const oldExpiryDate = product.expiryDate;
+
   // Ürünün expiryDate'ini güncelle ve excludeFromExpiryCheck'i false yap
   await prisma.product.update({
     where: { id: productId },
@@ -504,6 +642,12 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
   });
 
   // İşlemi kaydet - Tarih güncelleme için 'removed' action type kullanıyoruz ama filtreleme mantığında özel olarak ele alınacak
+  // Eski tarihi note'a JSON formatında ekle (geri alma için)
+  const actionNote = note || 'SKT tarihi güncellendi';
+  const noteWithOldDate = oldExpiryDate 
+    ? `${actionNote} | OLD_DATE:${oldExpiryDate.toISOString()}`
+    : actionNote;
+
   const action = await prisma.expiryAction.create({
     data: {
       productId,
@@ -512,7 +656,7 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
       expiryDate: newDate,
       daysUntilExpiry,
       excludedFromCheck: false,
-      note: note || 'SKT tarihi güncellendi',
+      note: noteWithOldDate,
     },
     include: {
       product: {

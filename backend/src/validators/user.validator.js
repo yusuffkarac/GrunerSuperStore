@@ -13,7 +13,7 @@ export const updateProfileValidation = [
     .notEmpty()
     .withMessage('Nachname darf nicht leer sein'),
   body('phone')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
     .matches(/^(\+49|0)[1-9]\d{1,14}$/)
     .withMessage('Ungültige Telefonnummer'),

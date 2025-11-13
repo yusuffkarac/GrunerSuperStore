@@ -453,13 +453,13 @@ function RoleManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={handleCloseDialog}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-8">
@@ -621,7 +621,7 @@ function RoleManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDeleteDialog({ open: false, role: null })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}

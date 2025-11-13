@@ -21,6 +21,7 @@ function Users() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('addresses'); // Modal tab state
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,6 +102,14 @@ function Users() {
       const response = await adminService.getUserById(user.id);
       setSelectedUser(response.data.user);
       setShowModal(true);
+      setActiveTab('addresses'); // Reset to addresses tab
+      // Scroll to top when modal opens
+      setTimeout(() => {
+        const modalContent = document.querySelector('.modal-content-scroll');
+        if (modalContent) {
+          modalContent.scrollTop = 0;
+        }
+      }, 100);
     } catch (error) {
       toast.error('Benutzerdetails konnten nicht geladen werden');
       console.error('Kullanıcı detay hatası:', error);
@@ -110,6 +119,7 @@ function Users() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
+    setActiveTab('addresses'); // Reset tab when closing
   };
 
   // Form modal aç/kapat
@@ -658,18 +668,18 @@ function Users() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       {selectedUser.firstName} {selectedUser.lastName}
@@ -685,7 +695,7 @@ function Users() {
                 </div>
 
                 {/* Modal Body */}
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1 modal-content-scroll">
                   {/* User Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -763,51 +773,142 @@ function Users() {
                     </div>
                   </div>
 
-                  {/* Addresses */}
-                  {selectedUser.addresses && selectedUser.addresses.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-3">Adressen</h3>
-                      <div className="space-y-2">
-                        {selectedUser.addresses.map((address) => (
-                          <div key={address.id} className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="font-medium text-gray-900">{address.title}</p>
-                                <p className="text-sm text-gray-600">
-                                  {address.street} {address.houseNumber}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  {address.postalCode} {address.city}
-                                </p>
-                              </div>
-                              {address.isDefault && (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  Standard
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Tabs */}
+                  <div className="border-b border-gray-200">
+                    <div className="flex gap-4 -mb-px">
+                      <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'orders'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Bestellungen
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('addresses')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'addresses'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Adressen
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('favorites')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'favorites'
+                            ? 'border-green-600 text-green-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Favoriten
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('cart')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'cart'
+                            ? 'border-gray-600 text-gray-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Warenkorb
+                      </button>
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <button
-                      onClick={() => {
-                        handleToggleStatus(selectedUser);
-                        closeModal();
-                      }}
-                      className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-                        selectedUser.isActive
-                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                          : 'bg-green-100 text-green-800 hover:bg-green-200'
-                      }`}
-                    >
-                      {selectedUser.isActive ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
-                    </button>
                   </div>
+
+                  {/* Tab Content */}
+                  <div className="min-h-[200px]">
+                    {/* Orders Tab */}
+                    {activeTab === 'orders' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.orders || 0} Bestellungen insgesamt
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Bestelldetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Addresses Tab */}
+                    {activeTab === 'addresses' && (
+                      <div>
+                        {selectedUser.addresses && selectedUser.addresses.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedUser.addresses.map((address) => (
+                              <div key={address.id} className="bg-gray-50 p-3 rounded-lg">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="font-medium text-gray-900">{address.title}</p>
+                                    <p className="text-sm text-gray-600">
+                                      {address.street} {address.houseNumber}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      {address.postalCode} {address.city}
+                                    </p>
+                                  </div>
+                                  {address.isDefault && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                      Standard
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <FiMapPin className="mx-auto text-3xl mb-2 text-gray-400" />
+                            <p className="text-sm">Keine Adressen vorhanden</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Favorites Tab */}
+                    {activeTab === 'favorites' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.favorites || 0} Favoriten insgesamt
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Favoritdetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Cart Tab */}
+                    {activeTab === 'cart' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.cartItems || 0} Artikel im Warenkorb
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Warenkorbdetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="border-t border-gray-200 px-6 py-4 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      handleToggleStatus(selectedUser);
+                      closeModal();
+                    }}
+                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                      selectedUser.isActive
+                        ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                        : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    }`}
+                  >
+                    {selectedUser.isActive ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -824,13 +925,13 @@ function Users() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeFormModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">

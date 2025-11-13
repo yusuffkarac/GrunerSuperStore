@@ -64,6 +64,7 @@ import ExpiryManagement from './pages/admin/ExpiryManagement';
 import StockManagement from './pages/admin/StockManagement';
 import BulkPriceUpdates from './pages/admin/BulkPriceUpdates';
 import Tasks from './pages/admin/Tasks';
+import ActivityLogs from './pages/admin/ActivityLogs';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -247,6 +248,7 @@ function AppContent() {
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
+              <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="help" element={<Help />} />
             </>
           )}

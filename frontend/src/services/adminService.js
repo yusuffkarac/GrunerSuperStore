@@ -756,6 +756,22 @@ const adminService = {
     const response = await adminApi.post('/admin/suppliers/emails', { name, email });
     return response.data;
   },
+
+  // Activity Logs
+  getActivityLogs: async (params = {}) => {
+    const response = await adminApi.get('/admin/logs', { params });
+    return response.data;
+  },
+
+  getActivityLogById: async (id) => {
+    const response = await adminApi.get(`/admin/logs/${id}`);
+    return response.data;
+  },
+
+  getActivityLogStats: async (params = {}) => {
+    const response = await adminApi.get('/admin/logs/stats', { params });
+    return response.data;
+  },
 };
 
 export default adminService;
