@@ -10,11 +10,18 @@ const dbUser = process.env.DB_USER || 'postgres';
 const dbPassword = process.env.DB_PASSWORD || '';
 
 // DATABASE_URL'i her zaman DB_NAME'den oluştur
-// Connection pool ayarları: connection_limit=20, pool_timeout=10
-process.env.DATABASE_URL = `postgresql://${dbUser}${dbPassword ? ':' + dbPassword : ''}@${dbHost}:${dbPort}/${dbName}?connection_limit=20&pool_timeout=10`;
+process.env.DATABASE_URL = `postgresql://${dbUser}${dbPassword ? ':' + dbPassword : ''}@${dbHost}:${dbPort}/${dbName}`;
 
 // Database connection bilgisini logla (debug için)
-// bu
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔌 Database Connection:', {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'gruner_superstore',
+    user: process.env.DB_USER || 'postgres',
+    databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:[^:@]+@/, ':****@') : 'not set',
+  });
+}
 
 // Prisma Client singleton pattern - Her process için ayrı instance
 // PM2 her process için ayrı environment variable'lar set ediyor, bu yüzden her process kendi Prisma Client'ını oluşturur

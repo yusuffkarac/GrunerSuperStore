@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import settingsService from '../../services/settingsService';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -95,7 +95,6 @@ function Settings() {
     },
   });
   const [testingEmail, setTestingEmail] = useState(false);
-  const [pageReady, setPageReady] = useState(false);
 
   // Ayarları yükle
   useEffect(() => {
@@ -193,10 +192,6 @@ function Settings() {
       toast.error(err.message || 'Fehler beim Laden der Einstellungen');
     } finally {
       setLoading(false);
-      // Sayfanın tamamen render olması için kısa bir gecikme
-      setTimeout(() => {
-        setPageReady(true);
-      }, 100);
     }
   };
 
@@ -309,24 +304,24 @@ function Settings() {
     }
   };
 
-  // Toggle switch - useCallback ile optimize edildi
-  const handleToggle = useCallback(() => {
-    setSettings(prev => ({
-      ...prev,
-      guestCanViewProducts: !prev.guestCanViewProducts,
-    }));
-  }, []);
+  // Toggle switch
+  const handleToggle = () => {
+    setSettings({
+      ...settings,
+      guestCanViewProducts: !settings.guestCanViewProducts,
+    });
+  };
 
-  // Toggle switch for out of stock products - useCallback ile optimize edildi
-  const handleToggleOutOfStock = useCallback(() => {
-    setSettings(prev => ({
-      ...prev,
-      showOutOfStockProducts: prev.showOutOfStockProducts === false ? true : false,
-    }));
-  }, []);
+  // Toggle switch for out of stock products
+  const handleToggleOutOfStock = () => {
+    setSettings({
+      ...settings,
+      showOutOfStockProducts: !settings.showOutOfStockProducts,
+    });
+  };
 
-  // Bestellungs-ID Vorschau erstellen - useMemo ile optimize edildi
-  const preview = useMemo(() => {
+  // Bestellungs-ID Vorschau erstellen
+  const generatePreview = () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -372,24 +367,24 @@ function Settings() {
       sequenceStr = start.toString().padStart(orderIdFormat.numberPadding || 4, '0');
     }
 
-    let previewStr = '';
+    let preview = '';
     if (dateStr) {
-      previewStr = `${prefix}${separator}${dateStr}${separator}${sequenceStr}`;
+      preview = `${prefix}${separator}${dateStr}${separator}${sequenceStr}`;
     } else {
-      previewStr = `${prefix}${separator}${sequenceStr}`;
+      preview = `${prefix}${separator}${sequenceStr}`;
     }
 
     // Case transform
     if (orderIdFormat.caseTransform === 'uppercase') {
-      previewStr = previewStr.toUpperCase();
+      preview = preview.toUpperCase();
     } else if (orderIdFormat.caseTransform === 'lowercase') {
-      previewStr = previewStr.toLowerCase();
+      preview = preview.toLowerCase();
     }
 
-    return previewStr;
-  }, [orderIdFormat]);
+    return preview;
+  };
 
-  if (loading || !pageReady) {
+  if (loading) {
     return <Loading />;
   }
 
@@ -398,9 +393,8 @@ function Settings() {
   }
 
   return (
-    <div className="w-full" style={{ minHeight: '100%' }}>
-      <div className="container mx-auto px-0 py-6">
-        <div className="max-w-7xl mx-auto" style={{ contain: 'layout style paint' }}>
+    <div className="container mx-auto px-0 py-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -545,7 +539,7 @@ function Settings() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-600 mb-1">Vorschau</p>
                   <p className="text-2xl font-mono font-bold text-primary-700 break-all">
-                    {preview}
+                    {generatePreview()}
                   </p>
                 </div>
                 <div className="bg-white p-3 rounded-lg shadow-sm flex-shrink-0">
@@ -1869,7 +1863,6 @@ function Settings() {
               </p>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

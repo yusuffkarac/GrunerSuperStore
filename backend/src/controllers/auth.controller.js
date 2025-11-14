@@ -1,6 +1,5 @@
 import authService from '../services/auth.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import activityLogService from '../services/activityLog.service.js';
 
 class AuthController {
   // POST /api/auth/register
@@ -14,20 +13,6 @@ class AuthController {
       password,
       phone,
     });
-
-    // Log kaydı
-    if (result.user) {
-      await activityLogService.createLog({
-        userId: result.user.id,
-        action: 'user.register',
-        entityType: 'user',
-        entityId: result.user.id,
-        level: 'success',
-        message: `Benutzer hat sich registriert: ${email}`,
-        metadata: { email, firstName, lastName },
-        req,
-      });
-    }
 
     res.status(201).json({
       success: true,
@@ -43,20 +28,6 @@ class AuthController {
     const { email, password } = req.body;
 
     const result = await authService.login({ email, password });
-
-    // Log kaydı
-    if (result.user) {
-      await activityLogService.createLog({
-        userId: result.user.id,
-        action: 'user.login',
-        entityType: 'user',
-        entityId: result.user.id,
-        level: 'success',
-        message: `Benutzer hat sich angemeldet: ${email}`,
-        metadata: { email },
-        req,
-      });
-    }
 
     res.status(200).json({
       success: true,
@@ -84,24 +55,6 @@ class AuthController {
 
     const result = await authService.forgotPassword(email);
 
-    // Log kaydı - kullanıcı bulunursa
-    if (result.userId) {
-      try {
-        await activityLogService.createLog({
-          userId: result.userId,
-          action: 'user.forgot_password',
-          entityType: 'user',
-          entityId: result.userId,
-          level: 'info',
-          message: `Passwort-Reset wurde angefordert: ${email}`,
-          metadata: { email },
-          req,
-        });
-      } catch (logError) {
-        console.error('Log kaydı hatası (user.forgot_password):', logError);
-      }
-    }
-
     res.status(200).json({
       success: true,
       message: result.message,
@@ -113,24 +66,6 @@ class AuthController {
     const { token, password } = req.body;
 
     const result = await authService.resetPassword(token, password);
-
-    // Log kaydı - kullanıcı bulunursa
-    if (result.userId) {
-      try {
-        await activityLogService.createLog({
-          userId: result.userId,
-          action: 'user.reset_password',
-          entityType: 'user',
-          entityId: result.userId,
-          level: 'success',
-          message: `Passwort wurde zurückgesetzt`,
-          metadata: {},
-          req,
-        });
-      } catch (logError) {
-        console.error('Log kaydı hatası (user.reset_password):', logError);
-      }
-    }
 
     res.status(200).json({
       success: true,
@@ -151,20 +86,6 @@ class AuthController {
     });
 
     const result = await authService.verifyEmail({ email, code });
-
-    // Log kaydı
-    if (result.user) {
-      await activityLogService.createLog({
-        userId: result.user.id,
-        action: 'user.verify_email',
-        entityType: 'user',
-        entityId: result.user.id,
-        level: 'success',
-        message: `E-Mail-Adresse wurde bestätigt: ${email}`,
-        metadata: { email },
-        req,
-      });
-    }
 
     res.status(200).json({
       success: true,

@@ -1,7 +1,6 @@
 import couponService from '../services/coupon.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import prisma from '../config/prisma.js';
-import activityLogService from '../services/activityLog.service.js';
 
 class CouponController {
   // Kupon kodunu doğrula (Müşteri için)
@@ -80,20 +79,7 @@ class CouponController {
 
   // Kupon oluştur (Admin)
   createCoupon = asyncHandler(async (req, res) => {
-    const adminId = req.admin.id;
     const coupon = await couponService.createCoupon(req.body);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'coupon.create',
-      entityType: 'coupon',
-      entityId: coupon.id,
-      level: 'success',
-      message: `Gutschein wurde erstellt: ${coupon.code} (${coupon.type})`,
-      metadata: { couponId: coupon.id, code: coupon.code, type: coupon.type },
-      req,
-    });
 
     res.status(201).json({
       success: true,
@@ -105,20 +91,7 @@ class CouponController {
   // Kupon güncelle (Admin)
   updateCoupon = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const adminId = req.admin.id;
     const coupon = await couponService.updateCoupon(id, req.body);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'coupon.update',
-      entityType: 'coupon',
-      entityId: coupon.id,
-      level: 'info',
-      message: `Gutschein wurde aktualisiert: ${coupon.code}`,
-      metadata: { couponId: coupon.id, code: coupon.code },
-      req,
-    });
 
     res.json({
       success: true,
@@ -130,24 +103,7 @@ class CouponController {
   // Kupon sil (Admin)
   deleteCoupon = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const adminId = req.admin.id;
-    
-    // Önce kupon bilgisini al (log için)
-    const coupon = await couponService.getCouponById(id);
-    
     await couponService.deleteCoupon(id);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'coupon.delete',
-      entityType: 'coupon',
-      entityId: id,
-      level: 'warning',
-      message: `Gutschein wurde gelöscht: ${coupon?.code || id}`,
-      metadata: { couponId: id, code: coupon?.code },
-      req,
-    });
 
     res.json({
       success: true,

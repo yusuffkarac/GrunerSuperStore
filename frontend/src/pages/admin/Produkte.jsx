@@ -15,7 +15,6 @@ import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import BulkPriceUpdateModal from '../../components/admin/BulkPriceUpdateModal';
-import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
@@ -416,11 +415,6 @@ function Produkte() {
     values: {},
   });
   
-  // Modal scroll yönetimi - her modal için
-  useModalScroll(showModal);
-  useModalScroll(showVariantModal);
-  useModalScroll(showBulkPriceModal);
-  
   // Özel birimler için state (localStorage'dan yükle)
   const [customUnits, setCustomUnits] = useState(() => {
     const saved = localStorage.getItem('produkteCustomUnits');
@@ -481,7 +475,7 @@ function Produkte() {
     nutritionData: null,
     openfoodfactsCategories: [],
     expiryDate: '',
-    hideFromExpiryManagement: false,
+    excludeFromExpiryCheck: false,
   });
 
   // Verileri yükle fonksiyonları
@@ -532,9 +526,6 @@ function Produkte() {
 
   // Modal aç/kapat
   const openModal = useCallback((product = null) => {
-    // Sayfayı en üste scroll et
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
     setShowCustomUnitInput(false);
     setNewCustomUnit('');
     if (product) {
@@ -562,7 +553,7 @@ function Produkte() {
         nutritionData: product.nutritionData || null,
         openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
         expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
-        hideFromExpiryManagement: product.hideFromExpiryManagement || false,
+        excludeFromExpiryCheck: product.excludeFromExpiryCheck || false,
         taxRate: product.taxRate ? parseFloat(product.taxRate) : '',
       });
     } else {
@@ -588,7 +579,7 @@ function Produkte() {
         nutritionData: null,
         openfoodfactsCategories: [],
         expiryDate: '',
-        hideFromExpiryManagement: false,
+        excludeFromExpiryCheck: false,
         taxRate: '',
       });
     }
@@ -634,7 +625,7 @@ function Produkte() {
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
         expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
-        hideFromExpiryManagement: formData.hideFromExpiryManagement,
+        excludeFromExpiryCheck: formData.excludeFromExpiryCheck,
         taxRate: formData.taxRate ? parseFloat(formData.taxRate) : null,
       };
 
@@ -1574,13 +1565,13 @@ function Produkte() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1849,14 +1840,14 @@ function Produkte() {
                       </div>
                       <div>
                         <Switch
-                          id="hideFromExpiryManagement"
-                          checked={formData.hideFromExpiryManagement}
-                          onChange={(e) => setFormData({ ...formData, hideFromExpiryManagement: e.target.checked })}
-                          label="Von MHD-Verwaltung ausschließen"
+                          id="excludeFromExpiryCheck"
+                          checked={formData.excludeFromExpiryCheck}
+                          onChange={(e) => setFormData({ ...formData, excludeFromExpiryCheck: e.target.checked })}
+                          label="Von MHD-Kontrollen ausnehmen"
                           color="green"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Dieses Produkt wird in der MHD-Verwaltungsseite nicht angezeigt
+                          Dieses Produkt wird von den MHD-Management-Kontrollen ausgenommen
                         </p>
                       </div>
                     </div>
@@ -2110,13 +2101,8 @@ function Produkte() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={(e) => {
-                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-                if (e.target === e.currentTarget) {
-                  closeVariantModal();
-                }
-              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeVariantModal}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
@@ -2326,13 +2312,8 @@ function Produkte() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={(e) => {
-                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-                if (e.target === e.currentTarget) {
-                  closeOptionForm();
-                }
-              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeOptionForm}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
@@ -2499,13 +2480,8 @@ function Produkte() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={(e) => {
-                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-                if (e.target === e.currentTarget) {
-                  closeVariantForm();
-                }
-              }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={closeVariantForm}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}

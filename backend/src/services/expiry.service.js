@@ -15,6 +15,7 @@ export const getExpirySettings = async () => {
   };
 
   const result = settings?.expiryManagementSettings || defaultSettings;
+  console.log('📖 SKT Ayarları getiriliyor:', result);
 
   return result;
 };
@@ -48,61 +49,25 @@ export const getCriticalProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
-  
+  console.log('🔴 CRITICAL Products - Ayarlar:', settings);
 
   // criticalDays gün sonrasına kadar olan ürünler (DAHİL)
   // +1 gün ekleyip "lt" kullanarak sınır durumunu düzeltiyoruz
   const criticalDate = new Date(today);
   criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
 
-  
-
-  // Bugün sonu
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
+  console.log('🔴 CRITICAL Tarih Aralığı - Today:', today, 'Critical Date (<):', criticalDate);
 
   const products = await prisma.product.findMany({
     where: {
-      AND: [
-        {
-          OR: [
-            {
-              // Normal critical aralığındaki ürünler
-              expiryDate: {
-                lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
-                gte: today, // Geçmiş tarihli olanları hariç tut
-              },
-            },
-            {
-              // Bugün critical aralığında olan ama yeni tarih atanmış ürünler
-              // Son işlem bugün yapılmışsa ve o işlemdeki tarih critical aralığındaysa
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today, // Bugün yapılan işlemler
-                    lte: todayEnd, // Bugünün sonu
-                  },
-                  expiryDate: {
-                    gte: today,
-                    lt: criticalDate,
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-          OR: [
-            { excludeFromExpiryCheck: false },
-            { excludeFromExpiryCheck: true },
-          ],
-        },
-        {
-          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
-          hideFromExpiryManagement: false,
-        },
+      expiryDate: {
+        lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
+        gte: today, // Geçmiş tarihli olanları hariç tut
+      },
+      // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
+      OR: [
+        { excludeFromExpiryCheck: false },
+        { excludeFromExpiryCheck: true },
       ],
     },
     include: {
@@ -132,7 +97,7 @@ export const getCriticalProducts = async () => {
       },
     },
     orderBy: {
-      name: 'asc',
+      expiryDate: 'asc',
     },
   });
 
@@ -149,15 +114,7 @@ export const getCriticalProducts = async () => {
     return true;
   });
 
-  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
-  const uniqueProducts = {};
-  filteredProducts.forEach(product => {
-    if (!uniqueProducts[product.id]) {
-      uniqueProducts[product.id] = product;
-    }
-  });
-
-  return Object.values(uniqueProducts).map(product => ({
+  return filteredProducts.map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,
@@ -172,6 +129,7 @@ export const getWarningProducts = async () => {
   const settings = await getExpirySettings();
   const today = getToday();
 
+  console.log('🟠 WARNING Products - Ayarlar:', settings);
 
   // criticalDays'den sonra, warningDays'e kadar olan ürünler
   const criticalDate = new Date(today);
@@ -180,54 +138,19 @@ export const getWarningProducts = async () => {
   const warningDate = new Date(today);
   warningDate.setDate(warningDate.getDate() + settings.warningDays + 1);
 
+  console.log('🟠 WARNING Tarih Aralığı - Critical Date (>=):', criticalDate, 'Warning Date (<):', warningDate);
 
   // Önce tüm warning aralığındaki ürünleri getir
-  // Ayrıca bugün warning aralığında olan ama yeni tarih atanmış ürünleri de dahil et
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
-  
   const products = await prisma.product.findMany({
     where: {
-      AND: [
-        {
-          OR: [
-            {
-              // Normal warning aralığındaki ürünler
-              expiryDate: {
-                gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
-                lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
-              },
-            },
-            {
-              // Bugün warning aralığında olan ama yeni tarih atanmış ürünler
-              // Son işlem bugün yapılmışsa ve o işlemdeki tarih warning aralığındaysa
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today, // Bugün yapılan işlemler
-                    lte: todayEnd, // Bugünün sonu
-                  },
-                  expiryDate: {
-                    gte: criticalDate,
-                    lt: warningDate,
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-          OR: [
-            { excludeFromExpiryCheck: false },
-            { excludeFromExpiryCheck: true },
-          ],
-        },
-        {
-          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
-          hideFromExpiryManagement: false,
-        },
+      expiryDate: {
+        gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
+        lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
+      },
+      // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
+      OR: [
+        { excludeFromExpiryCheck: false },
+        { excludeFromExpiryCheck: true },
       ],
     },
     include: {
@@ -257,7 +180,7 @@ export const getWarningProducts = async () => {
       },
     },
     orderBy: {
-      name: 'asc',
+      expiryDate: 'asc',
     },
   });
 
@@ -274,15 +197,7 @@ export const getWarningProducts = async () => {
     return true;
   });
 
-  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
-  const uniqueProducts = {};
-  filteredProducts.forEach(product => {
-    if (!uniqueProducts[product.id]) {
-      uniqueProducts[product.id] = product;
-    }
-  });
-
-  return Object.values(uniqueProducts).map(product => ({
+  return filteredProducts.map(product => ({
     ...product,
     daysUntilExpiry: getDaysDifference(product.expiryDate, today),
     lastAction: product.expiryActions[0] || null,
@@ -473,16 +388,9 @@ export const getActionHistory = async (filters = {}) => {
           },
         },
       },
-      orderBy: [
-        {
-          product: {
-            name: 'asc',
-          },
-        },
-        {
-          createdAt: 'desc',
-        },
-      ],
+      orderBy: {
+        createdAt: 'desc',
+      },
       take: limit,
       skip: offset,
     }),
@@ -516,10 +424,6 @@ export const undoAction = async (actionId, adminId) => {
     throw new BadRequestError('Bu işlem zaten geri alınmış');
   }
 
-  if (action.actionType === 'undone') {
-    throw new BadRequestError('Geri alma işlemi tekrar geri alınamaz');
-  }
-
   // İşlemi geri alındı olarak işaretle
   await prisma.expiryAction.update({
     where: { id: actionId },
@@ -530,55 +434,11 @@ export const undoAction = async (actionId, adminId) => {
     },
   });
 
-  // Eğer bu bir "removed" işlemi ise, ürünü eski haline getir
-  if (action.actionType === 'removed') {
-    let previousExpiryDate = null;
-    
-    // Eğer bu bir tarih güncellemesi ise (excludedFromCheck: false), note'dan eski tarihi al
-    if (action.excludedFromCheck === false && action.note) {
-      const oldDateMatch = action.note.match(/OLD_DATE:([^\s|]+)/);
-      if (oldDateMatch && oldDateMatch[1]) {
-        try {
-          previousExpiryDate = new Date(oldDateMatch[1]);
-          // Geçerli bir tarih mi kontrol et
-          if (isNaN(previousExpiryDate.getTime())) {
-            previousExpiryDate = null;
-          }
-        } catch (e) {
-          previousExpiryDate = null;
-        }
-      }
-    }
-    
-    // Eğer note'dan eski tarih bulunamadıysa, önceki action'ı bul
-    if (!previousExpiryDate) {
-      const previousAction = await prisma.expiryAction.findFirst({
-        where: {
-          productId: action.productId,
-          createdAt: {
-            lt: action.createdAt,
-          },
-          isUndone: false,
-          actionType: {
-            not: 'undone',
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      
-      // Eğer önceki action varsa onun tarihini kullan, yoksa action'daki tarihi kullan
-      previousExpiryDate = previousAction ? previousAction.expiryDate : action.expiryDate;
-    }
-    
-    // Ürünü güncelle: eski tarihi geri yükle ve excludeFromCheck'i false yap
+  // Eğer bu bir "removed" işlemi ve excludeFromCheck yapılmışsa, onu geri al
+  if (action.actionType === 'removed' && action.excludedFromCheck) {
     await prisma.product.update({
       where: { id: action.productId },
-      data: { 
-        expiryDate: previousExpiryDate,
-        excludeFromExpiryCheck: false,
-      },
+      data: { excludeFromExpiryCheck: false },
     });
   }
 
@@ -634,9 +494,6 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
   const newDate = new Date(newExpiryDate);
   const daysUntilExpiry = getDaysDifference(newDate, today);
 
-  // Eski tarihi kaydet (geri alma işlemi için)
-  const oldExpiryDate = product.expiryDate;
-
   // Ürünün expiryDate'ini güncelle ve excludeFromExpiryCheck'i false yap
   await prisma.product.update({
     where: { id: productId },
@@ -647,12 +504,6 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
   });
 
   // İşlemi kaydet - Tarih güncelleme için 'removed' action type kullanıyoruz ama filtreleme mantığında özel olarak ele alınacak
-  // Eski tarihi note'a JSON formatında ekle (geri alma için)
-  const actionNote = note || 'SKT tarihi güncellendi';
-  const noteWithOldDate = oldExpiryDate 
-    ? `${actionNote} | OLD_DATE:${oldExpiryDate.toISOString()}`
-    : actionNote;
-
   const action = await prisma.expiryAction.create({
     data: {
       productId,
@@ -661,7 +512,7 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
       expiryDate: newDate,
       daysUntilExpiry,
       excludedFromCheck: false,
-      note: noteWithOldDate,
+      note: note || 'SKT tarihi güncellendi',
     },
     include: {
       product: {
@@ -695,6 +546,7 @@ export const updateExpirySettings = async (newSettings) => {
     throw new NotFoundError('Ayarlar bulunamadı');
   }
 
+  console.log('📝 Yeni ayarlar kaydediliyor:', newSettings);
 
   const updatedSettings = await prisma.settings.update({
     where: { id: settings.id },
@@ -703,6 +555,7 @@ export const updateExpirySettings = async (newSettings) => {
     },
   });
 
+  console.log('✅ Ayarlar kaydedildi:', updatedSettings.expiryManagementSettings);
 
   return updatedSettings.expiryManagementSettings;
 };
@@ -712,46 +565,27 @@ export const updateExpirySettings = async (newSettings) => {
  * işlem yapılmamış kritik ürün sayısını hesapla
  */
 const getUnprocessedCriticalCount = async () => {
-  
+  console.log('🔍 getUnprocessedCriticalCount çağrıldı');
   const products = await getCriticalProducts();
-  const today = getToday();
+  console.log(`📦 Toplam kritik ürün sayısı: ${products.length}`);
   
   const unprocessed = products.filter(product => {
-    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
-    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
+    // Deaktif edilmişse sayma
     if (product.excludeFromExpiryCheck === true) {
-      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
-      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-        const actionDate = new Date(product.lastAction.createdAt);
-        actionDate.setHours(0, 0, 0, 0);
-        const todayDate = new Date(today);
-        todayDate.setHours(0, 0, 0, 0);
-        
-        if (actionDate.getTime() === todayDate.getTime()) {
-          return false; // Bugün deaktif edildi, sayma
-        }
-      }
-      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
-      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
+      console.log(`  ⏭️  Ürün deaktif: ${product.name} (ID: ${product.id})`);
+      return false;
     }
-    
-    // İşlem yapılmışsa ve bugün yapıldıysa sayma
+    // İşlem yapılmışsa ve geri alınmamışsa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      const actionDate = new Date(product.lastAction.createdAt);
-      actionDate.setHours(0, 0, 0, 0);
-      const todayDate = new Date(today);
-      todayDate.setHours(0, 0, 0, 0);
-      
-      if (actionDate.getTime() === todayDate.getTime()) {
-        return false; // Bugün işlem yapıldı, sayma
-      }
+      console.log(`  ⏭️  Ürün işlem yapılmış: ${product.name} (ID: ${product.id}, Action: ${product.lastAction.actionType})`);
+      return false;
     }
-    
+    console.log(`  ✅ İşlem yapılmamış ürün: ${product.name} (ID: ${product.id})`);
     return true;
   });
   
   const count = unprocessed.length;
-  
+  console.log(`📊 İşlem yapılmamış kritik ürün sayısı: ${count}`);
   return count;
 };
 
@@ -760,46 +594,27 @@ const getUnprocessedCriticalCount = async () => {
  * işlem yapılmamış warning ürün sayısını hesapla
  */
 const getUnprocessedWarningCount = async () => {
-  
+  console.log('🔍 getUnprocessedWarningCount çağrıldı');
   const products = await getWarningProducts();
-  const today = getToday();
+  console.log(`📦 Toplam warning ürün sayısı: ${products.length}`);
   
   const unprocessed = products.filter(product => {
-    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
-    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
+    // Deaktif edilmişse sayma
     if (product.excludeFromExpiryCheck === true) {
-      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
-      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-        const actionDate = new Date(product.lastAction.createdAt);
-        actionDate.setHours(0, 0, 0, 0);
-        const todayDate = new Date(today);
-        todayDate.setHours(0, 0, 0, 0);
-        
-        if (actionDate.getTime() === todayDate.getTime()) {
-          return false; // Bugün deaktif edildi, sayma
-        }
-      }
-      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
-      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
+      console.log(`  ⏭️  Ürün deaktif: ${product.name} (ID: ${product.id})`);
+      return false;
     }
-    
-    // İşlem yapılmışsa ve bugün yapıldıysa sayma
+    // İşlem yapılmışsa ve geri alınmamışsa sayma
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      const actionDate = new Date(product.lastAction.createdAt);
-      actionDate.setHours(0, 0, 0, 0);
-      const todayDate = new Date(today);
-      todayDate.setHours(0, 0, 0, 0);
-      
-      if (actionDate.getTime() === todayDate.getTime()) {
-        return false; // Bugün işlem yapıldı, sayma
-      }
+      console.log(`  ⏭️  Ürün işlem yapılmış: ${product.name} (ID: ${product.id}, Action: ${product.lastAction.actionType})`);
+      return false;
     }
-    
+    console.log(`  ✅ İşlem yapılmamış ürün: ${product.name} (ID: ${product.id})`);
     return true;
   });
   
   const count = unprocessed.length;
-  
+  console.log(`📊 İşlem yapılmamış warning ürün sayısı: ${count}`);
   return count;
 };
 
@@ -809,9 +624,9 @@ const getUnprocessedWarningCount = async () => {
  */
 export const notifyDailyExpiryProducts = async () => {
   try {
-    
-    
-    
+    console.log('🌅 ============================================');
+    console.log('🌅 notifyDailyExpiryProducts FONKSİYONU ÇAĞRILDI');
+    console.log('🌅 ============================================');
     
     const today = getToday();
     const todayStart = new Date(today);
@@ -832,8 +647,8 @@ export const notifyDailyExpiryProducts = async () => {
     });
 
     if (existingEmail) {
-      
-      
+      console.log('📧 Bugün bu mail zaten gönderilmiş, tekrar gönderilmiyor.');
+      console.log(`📧 Önceki gönderim: ${existingEmail.sentAt}`);
       return {
         success: true,
         message: 'Bugün bu mail zaten gönderilmiş',
@@ -847,7 +662,7 @@ export const notifyDailyExpiryProducts = async () => {
     const unprocessedWarningCount = await getUnprocessedWarningCount();
     const totalCount = unprocessedCriticalCount + unprocessedWarningCount;
 
-    
+    console.log(`📊 Bugün işlenecek ürün sayıları - Kritik: ${unprocessedCriticalCount}, Warning: ${unprocessedWarningCount}, Toplam: ${totalCount}`);
 
     // Settings'den admin email listesini al
     const allSettings = await prisma.settings.findFirst();
@@ -866,7 +681,7 @@ export const notifyDailyExpiryProducts = async () => {
       return { success: false, message: 'Geçerli admin email adresi bulunamadı', count: 0 };
     }
 
-    
+    console.log(`📧 Admin email adresleri: ${adminEmails.length} adet`, adminEmails);
 
     // Her admin'e mail gönder
     const emailPromises = adminEmails.map(async (email) => {
@@ -888,7 +703,7 @@ export const notifyDailyExpiryProducts = async () => {
           },
           priority: 2,
         });
-        
+        console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
         return { email, success: true };
       } catch (emailError) {
         console.error(`❌ Email gönderim hatası (${email}):`, emailError);
@@ -899,7 +714,7 @@ export const notifyDailyExpiryProducts = async () => {
     const results = await Promise.all(emailPromises);
     const successCount = results.filter((r) => r.success).length;
 
-    
+    console.log(`✅ ${successCount}/${adminEmails.length} admin'e mail gönderildi`);
 
     return {
       success: true,
@@ -925,15 +740,15 @@ export const notifyDailyExpiryProducts = async () => {
  */
 export const checkExpiredProductsAndNotifyAdmins = async () => {
   try {
-    
-    
-    
+    console.log('🚀 ============================================');
+    console.log('🚀 checkExpiredProductsAndNotifyAdmins FONKSİYONU ÇAĞRILDI');
+    console.log('🚀 ============================================');
     
     const today = getToday();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    
+    console.log('📧 MHD kontrolü başlatılıyor...', { today, tomorrow });
 
     // Bugün bu mail daha önce gönderilmiş mi kontrol et
     const todayStart = new Date(today);
@@ -953,8 +768,8 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     });
 
     if (existingEmail) {
-      
-      
+      console.log('📧 Bugün bu mail zaten gönderilmiş, tekrar gönderilmiyor.');
+      console.log(`📧 Önceki gönderim: ${existingEmail.sentAt}`);
       return {
         success: true,
         message: 'Bugün bu mail zaten gönderilmiş',
@@ -964,24 +779,24 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     }
 
     // Frontend'deki mantığı kullanarak işlem yapılmamış ürün sayılarını hesapla
-    
+    console.log('📊 Kritik ürün sayısı hesaplanıyor...');
     const unprocessedCriticalCount = await getUnprocessedCriticalCount();
     
-    
+    console.log('📊 Warning ürün sayısı hesaplanıyor...');
     const unprocessedWarningCount = await getUnprocessedWarningCount();
 
-    
-    
-    
-    
-    
-    
+    console.log(`📊 ============================================`);
+    console.log(`📊 SONUÇ: İşlem yapılmamış ürün sayıları`);
+    console.log(`📊 Kritik: ${unprocessedCriticalCount}`);
+    console.log(`📊 Warning: ${unprocessedWarningCount}`);
+    console.log(`📊 Toplam: ${unprocessedCriticalCount + unprocessedWarningCount}`);
+    console.log(`📊 ============================================`);
 
     // Eğer her iki tabloda da işlem yapılmamış ürün varsa, mail gönderme
     if (unprocessedCriticalCount > 0 || unprocessedWarningCount > 0) {
-      
-      
-      
+      console.log('⚠️ ============================================');
+      console.log('⚠️ İşlem yapılmamış kritik veya warning ürünler var, mail gönderilmiyor.');
+      console.log('⚠️ ============================================');
       return {
         success: true,
         message: `Hala işlem yapılmamış ürünler var (Kritik: ${unprocessedCriticalCount}, Warning: ${unprocessedWarningCount})`,
@@ -992,9 +807,9 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     }
 
     // Her iki tabloda da işlem yapılmamış ürün yoksa, mail gönder
-    
-    
-    
+    console.log('✅ ============================================');
+    console.log('✅ Tüm ürünler için işlem yapılmış, adminlere mail gönderiliyor...');
+    console.log('✅ ============================================');
 
     // Settings'den admin email listesini al
     const allSettings = await prisma.settings.findFirst();
@@ -1013,7 +828,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
       return { success: false, message: 'Geçerli admin email adresi bulunamadı', count: 0 };
     }
 
-    
+    console.log(`📧 Admin email adresleri: ${adminEmails.length} adet`, adminEmails);
 
     // Bugün biten ve işlem yapılmış ürünleri bul (mail içeriği için)
     const todayExpiredProducts = await prisma.product.findMany({
@@ -1102,7 +917,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
           },
           priority: 2,
         });
-        
+        console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
         return { email, success: true };
       } catch (emailError) {
         console.error(`❌ Email gönderim hatası (${email}):`, emailError);
@@ -1113,7 +928,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     const results = await Promise.all(emailPromises);
     const successCount = results.filter((r) => r.success).length;
 
-    
+    console.log(`✅ ${successCount}/${adminEmails.length} admin'e mail gönderildi`);
 
     return {
       success: true,

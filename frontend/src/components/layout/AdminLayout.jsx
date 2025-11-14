@@ -92,6 +92,14 @@ function AdminLayout() {
     const currentIsSuperAdmin = adminData?.role?.toString().trim().toLowerCase() === 'superadmin';
     const currentPermissions = getAdminPermissions(adminData);
 
+    // Süper admin kontrolü (sadece admin ve rol yönetimi için)
+    const restrictedPaths = ['/admin/admins', '/admin/roles'];
+    if (restrictedPaths.includes(pathname) && !currentIsSuperAdmin) {
+      navigate('/admin/dashboard');
+      toast.error('Zugriff verweigert - Nur für Super-Administratoren');
+      return false;
+    }
+
     // İzin kontrolü - sayfa bazlı
     const pathPermissionMap = {
       '/admin/products': 'product_management_view',
@@ -108,16 +116,7 @@ function AdminLayout() {
       '/admin/email-templates': 'email_template_management_view',
       '/admin/notification-templates': 'notification_template_management_view',
       '/admin/barcode-labels': 'barcode_label_view',
-      '/admin/activity-logs': 'admin_management',
     };
-
-    // Super admin kontrolü - sayfa bazlı
-    const superAdminOnlyPaths = ['/admin/admins', '/admin/roles', '/admin/activity-logs'];
-    if (superAdminOnlyPaths.includes(pathname) && !currentIsSuperAdmin) {
-      navigate('/admin/dashboard');
-      toast.error('Zugriff verweigert - Nur für Super-Administratoren');
-      return false;
-    }
 
     const requiredPermission = pathPermissionMap[pathname];
     if (requiredPermission && !currentIsSuperAdmin && !currentPermissions.includes(requiredPermission)) {
@@ -246,7 +245,6 @@ function AdminLayout() {
   const topMenuItems = [
     { path: '/admin/tasks', label: 'Görevler', icon: FiCheckSquare, permission: 'product_management_view', isAction: false }, // En solda
     { path: '/admin/users', label: 'Kullanıcılar', icon: FiUsers, permission: 'user_management_view', isAction: false },
-    { path: '/admin/activity-logs', label: 'Logs', icon: FiClock, permission: 'admin_management', superAdminOnly: true, isAction: false },
     { path: '/admin/notifications', label: 'Bildirim', icon: FiBell, permission: 'notification_management_view', isAction: false },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view', isAction: false },
     { path: null, label: 'Çıkış', icon: FiLogOut, permission: null, isAction: true }, // Logout action
@@ -283,11 +281,6 @@ function AdminLayout() {
       // İzin kontrolü
       if (item.permission === null) {
         return true;
-      }
-
-      // Super admin kontrolü
-      if (item.superAdminOnly && !currentIsSuperAdmin) {
-        return false;
       }
 
       // İzin kontrolü yap
@@ -361,7 +354,7 @@ function AdminLayout() {
   }
 
   return (
-    <div className="admin-layout h-screen bg-gray-100 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* Top Menu Bar - Desktop */}
       <div className="hidden lg:flex bg-white shadow-sm border-b px-6 py-3 flex-shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
@@ -479,14 +472,14 @@ function AdminLayout() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
           className={`fixed lg:static inset-y-0 right-0 z-50 bg-white shadow-lg transform transition-all duration-300 flex flex-col h-screen lg:h-full ${
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           } ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'} w-64`}
         >
-          <nav className={`p-4 space-y-2 flex-1 overflow-y-auto min-h-0 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
+          <nav className={`p-4 space-y-2 flex-1 overflow-y-auto ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
             {/* Toggle Button - Desktop Only */}
             
             {menuItems.map((item) => {
@@ -570,14 +563,7 @@ function AdminLayout() {
         )}
 
         {/* Main Content */}
-        <main
-          className="flex-1 px-4 py-2 md:p-6 lg:p-8 w-full overflow-y-auto min-h-0"
-          style={{
-            willChange: 'scroll-position',
-            transform: 'translateZ(0)',
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
+        <main className="flex-1 px-4 py-2 md:p-6 lg:p-8 w-full overflow-y-auto">
           <Outlet />
         </main>
       </div>

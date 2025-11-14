@@ -277,22 +277,13 @@ function Profil() {
     setSavingProfile(true);
     try {
       const response = await userService.updateProfile(profileFormData);
-      // API interceptor zaten response.data döndürüyor
-      // Backend'den gelen: { success: true, message: '...', data: { user: {...} } }
-      // Interceptor'dan gelen: { success: true, message: '...', data: { user: {...} } }
-      // userService.updateProfile() direkt response döndürüyor
-      if (response?.data?.user) {
-        const { user: updatedUser } = response.data;
-        useAuthStore.getState().setUser(updatedUser);
-        // Profil bilgilerini yeniden yükle (güncel bilgiler için)
-        await useAuthStore.getState().refreshProfile();
-        toast.success('Profil erfolgreich aktualisiert');
-        setIsEditingProfile(false);
-      } else {
-        // Debug için log ekle
-        console.error('Unexpected response format:', response);
-        throw new Error('Ungültige Antwort vom Server');
-      }
+      // Kullanıcı bilgilerini güncelle
+      const { user: updatedUser } = response.data;
+      useAuthStore.getState().setUser(updatedUser);
+      // Profil bilgilerini yeniden yükle (güncel bilgiler için)
+      await useAuthStore.getState().refreshProfile();
+      toast.success('Profil erfolgreich aktualisiert');
+      setIsEditingProfile(false);
     } catch (error) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Aktualisieren des Profils';
       toast.error(errorMessage);

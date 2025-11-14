@@ -13,12 +13,8 @@ const userService = {
 
   // Profil güncelle
   updateProfile: async (data) => {
-    // API interceptor zaten response.data döndürüyor
-    // Backend'den gelen: { success: true, message: '...', data: { user: {...} } }
-    // Interceptor'dan gelen: { success: true, message: '...', data: { user: {...} } }
-    // Bu yüzden direkt response'u döndürüyoruz
     const response = await api.put('/user/profile', data);
-    return response;
+    return response.data;
   },
 
   // Şifre değiştir

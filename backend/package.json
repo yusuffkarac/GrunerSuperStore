@@ -26,12 +26,9 @@
     "rollback-categories": "node src/scripts/rollbackCategories.js",
     "db:dump": "node scripts/dumpDatabase.js",
     "db:restore": "node scripts/restoreDatabase.js",
-    "merge-categories": "node scripts/mergeDuplicateCategories.js",
-    "fix:prisma": "node scripts/fix-prisma-client.js",
-    "prisma:refresh": "node scripts/fix-prisma-client.js"
+    "merge-categories": "node scripts/mergeDuplicateCategories.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
@@ -42,7 +39,6 @@
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
-    "express-session": "^1.18.2",
     "express-validator": "^7.0.1",
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
@@ -51,11 +47,12 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.1",
-    "openai": "^4.28.0",
     "pdfkit": "^0.17.2",
     "pg": "^8.11.3",
     "prisma": "^5.9.0",
-    "serpapi": "^2.2.1"
+    "serpapi": "^2.2.1",
+    "@google/generative-ai": "^0.21.0",
+    "openai": "^4.28.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

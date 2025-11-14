@@ -13,7 +13,6 @@ import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import SwitchListItem from '../../components/common/SwitchListItem';
 import MultipleSelect from '../../components/common/MultipleSelect';
-import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Coupons() {
   const { showConfirm } = useAlert();
@@ -32,9 +31,6 @@ function Coupons() {
     const savedViewMode = localStorage.getItem('couponsViewMode');
     return savedViewMode || 'grid';
   });
-
-  // Modal scroll yönetimi
-  useModalScroll(showModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -730,13 +726,8 @@ function Coupons() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4 mt-0"
-            onClick={(e) => {
-              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-              if (e.target === e.currentTarget) {
-                closeModal();
-              }
-            }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={closeModal}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}

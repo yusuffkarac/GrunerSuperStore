@@ -1,6 +1,5 @@
 import campaignService from '../services/campaign.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import activityLogService from '../services/activityLog.service.js';
 
 class CampaignController {
   // ===============================
@@ -81,20 +80,7 @@ class CampaignController {
 
   // POST /api/admin/campaigns - Yeni kampanya oluştur
   createCampaign = asyncHandler(async (req, res) => {
-    const adminId = req.admin.id;
     const campaign = await campaignService.createCampaign(req.body);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'campaign.create',
-      entityType: 'campaign',
-      entityId: campaign.id,
-      level: 'success',
-      message: `Kampagne wurde erstellt: ${campaign.name} (${campaign.type})`,
-      metadata: { campaignId: campaign.id, name: campaign.name, type: campaign.type },
-      req,
-    });
 
     res.status(201).json({
       success: true,
@@ -106,20 +92,7 @@ class CampaignController {
   // PUT /api/admin/campaigns/:id - Kampanya güncelle
   updateCampaign = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const adminId = req.admin.id;
     const campaign = await campaignService.updateCampaign(id, req.body);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'campaign.update',
-      entityType: 'campaign',
-      entityId: campaign.id,
-      level: 'info',
-      message: `Kampagne wurde aktualisiert: ${campaign.name}`,
-      metadata: { campaignId: campaign.id, name: campaign.name },
-      req,
-    });
 
     res.status(200).json({
       success: true,
@@ -131,24 +104,7 @@ class CampaignController {
   // DELETE /api/admin/campaigns/:id - Kampanya sil
   deleteCampaign = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const adminId = req.admin.id;
-    
-    // Önce kampanya bilgisini al (log için)
-    const campaign = await campaignService.getCampaignById(id);
-    
     await campaignService.deleteCampaign(id);
-
-    // Log kaydı
-    await activityLogService.createLog({
-      adminId,
-      action: 'campaign.delete',
-      entityType: 'campaign',
-      entityId: id,
-      level: 'warning',
-      message: `Kampagne wurde gelöscht: ${campaign?.name || id}`,
-      metadata: { campaignId: id, name: campaign?.name },
-      req,
-    });
 
     res.status(200).json({
       success: true,

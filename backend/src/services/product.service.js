@@ -614,7 +614,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'hideFromExpiryManagement', 'taxRate'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck', 'taxRate'
     ];
     
     const createData = {};
@@ -717,7 +717,7 @@ class ProductService {
       'name', 'description', 'price', 'stock', 'lowStockLevel', 
       'unit', 'barcode', 'brand', 'imageUrls', 'isActive', 'isFeatured', 'showStock',
       'ingredientsText', 'allergens', 'nutriscoreGrade', 'ecoscoreGrade', 
-      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'hideFromExpiryManagement', 'taxRate'
+      'nutritionData', 'openfoodfactsCategories', 'expiryDate', 'excludeFromExpiryCheck', 'taxRate'
     ];
     
     const updateData = {};

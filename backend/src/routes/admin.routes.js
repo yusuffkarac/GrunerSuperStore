@@ -16,7 +16,6 @@ import {
   orderIdValidation,
   adminCancelOrderValidation,
 } from '../validators/order.validators.js';
-import { createAddressValidation, updateAddressValidation } from '../validators/user.validator.js';
 
 const router = express.Router();
 
@@ -246,31 +245,6 @@ router.put('/users/:id', requirePermission('user_management_edit'), updateUserVa
 
 // PUT /api/admin/users/:id/status - Kullanıcı aktif/pasif yap
 router.put('/users/:id/status', requirePermission('user_management_edit'), adminController.toggleUserStatus);
-
-// POST /api/admin/users/:userId/addresses - Kullanıcıya adres ekle
-router.post(
-  '/users/:userId/addresses',
-  requirePermission('user_management_edit'),
-  createAddressValidation,
-  validate,
-  adminController.createUserAddress
-);
-
-// PUT /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini güncelle
-router.put(
-  '/users/:userId/addresses/:addressId',
-  requirePermission('user_management_edit'),
-  updateAddressValidation,
-  validate,
-  adminController.updateUserAddress
-);
-
-// DELETE /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini sil
-router.delete(
-  '/users/:userId/addresses/:addressId',
-  requirePermission('user_management_edit'),
-  adminController.deleteUserAddress
-);
 
 // ===============================
 // ADMIN MANAGEMENT (Super Admin Only)

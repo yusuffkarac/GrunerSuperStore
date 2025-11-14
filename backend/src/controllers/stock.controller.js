@@ -1,7 +1,6 @@
 import * as stockService from '../services/stock.service.js';
 import stockPdfService from '../services/stock-pdf.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import activityLogService from '../services/activityLog.service.js';
 
 /**
  * Kritik stoklu ürünleri getir
@@ -46,18 +45,6 @@ export const createStockOrder = asyncHandler(async (req, res) => {
     status, // Status parametresini ekle
   });
 
-  // Log kaydı
-  await activityLogService.createLog({
-    adminId,
-    action: 'stock.order.create',
-    entityType: 'stock_order',
-    entityId: order.id,
-    level: 'success',
-    message: `Lagerbestellung wurde erstellt: Produkt ${productId} (Menge: ${orderQuantity})`,
-    metadata: { orderId: order.id, productId, orderQuantity, status },
-    req,
-  });
-
   res.status(201).json({
     success: true,
     data: order,
@@ -78,18 +65,6 @@ export const updateStockOrderStatus = asyncHandler(async (req, res) => {
     actualDeliveryDate,
     note,
     orderQuantity, // Miktar parametresini ekle
-  });
-
-  // Log kaydı
-  await activityLogService.createLog({
-    adminId,
-    action: 'stock.order.update',
-    entityType: 'stock_order',
-    entityId: order.id,
-    level: 'info',
-    message: `Lagerbestellung Status wurde aktualisiert: ${orderId} → ${status}`,
-    metadata: { orderId: order.id, status, previousStatus: order.previousStatus },
-    req,
   });
 
   res.json({
@@ -121,21 +96,8 @@ export const undoStockOrder = asyncHandler(async (req, res) => {
 export const updateProductSupplier = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   const { supplier } = req.body;
-  const adminId = req.admin.id;
 
   const product = await stockService.updateProductSupplier(productId, supplier);
-
-  // Log kaydı
-  await activityLogService.createLog({
-    adminId,
-    action: 'product.supplier.update',
-    entityType: 'product',
-    entityId: productId,
-    level: 'info',
-    message: `Produktlieferant wurde aktualisiert: Produkt ${productId} → ${supplier}`,
-    metadata: { productId, supplier },
-    req,
-  });
 
   res.json({
     success: true,
@@ -158,18 +120,6 @@ export const createStockOrderList = asyncHandler(async (req, res) => {
     sendToAdmins,
     sendToSupplier,
     orders,
-  });
-
-  // Log kaydı
-  await activityLogService.createLog({
-    adminId,
-    action: 'stock.list.create',
-    entityType: 'stock_order_list',
-    entityId: orderList.id,
-    level: 'success',
-    message: `Bestellliste wurde erstellt: ${name} (${orders?.length || 0} Bestellungen)`,
-    metadata: { listId: orderList.id, name, orderCount: orders?.length || 0 },
-    req,
   });
 
   res.status(201).json({
@@ -254,18 +204,6 @@ export const deleteStockOrderList = asyncHandler(async (req, res) => {
   const adminId = req.admin.id;
 
   await stockService.deleteStockOrderList(listId, adminId);
-
-  // Log kaydı
-  await activityLogService.createLog({
-    adminId,
-    action: 'stock.list.delete',
-    entityType: 'stock_order_list',
-    entityId: listId,
-    level: 'warning',
-    message: `Bestellliste wurde gelöscht: ${listId}`,
-    metadata: { listId },
-    req,
-  });
 
   res.json({
     success: true,

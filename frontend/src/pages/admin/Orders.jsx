@@ -10,7 +10,6 @@ import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 import { normalizeImageUrl } from '../../utils/imageUtils';
-import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Order Item Component with image placeholder
 const OrderItemRow = ({ item }) => {
@@ -75,10 +74,6 @@ function Orders() {
     cancellationCustomerMessage: '',
     showCancellationReasonToCustomer: false,
   });
-
-  // Modal scroll yönetimi - her modal için
-  useModalScroll(showModal);
-  useModalScroll(showCancelModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -935,13 +930,13 @@ function Orders() {
                 closeModal();
                 setOpenStatusDropdown(null);
               }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+              className="fixed inset-0 bg-black bg-opacity-50 z-50"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -1269,13 +1264,8 @@ function Orders() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={(e) => {
-              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-              if (e.target === e.currentTarget) {
-                closeInvoicePopup();
-              }
-            }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={closeInvoicePopup}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1394,13 +1384,8 @@ function Orders() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={(e) => {
-              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
-              if (e.target === e.currentTarget) {
-                closeCancelModal();
-              }
-            }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={closeCancelModal}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
