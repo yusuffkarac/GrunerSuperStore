@@ -646,37 +646,106 @@ function ExpiryManagement() {
     }
     
     // Bugün bir işlem yapılmışsa ve geri alınmamışsa işlem yapılmış sayılır
-    // AMA: Eğer işlem "tarih güncelleme" ise, bu sayılmaz çünkü ürün yeni tarih için tekrar işlenmeli
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      // Eğer note'da "MHD aktualisiert" geçiyorsa, bu tarih güncelleme işlemidir
-      // Tarih güncelleme yapıldığında ürün yeni bir ürün gibi tekrar işlenmeli
-      if (product.lastAction.note && product.lastAction.note.includes('MHD aktualisiert')) {
-        return true; // Tarih güncellendi, yeni tarih için işlenmemiş sayılır
-      }
-      
       // Son işlemin tarihini al
       const actionDate = new Date(product.lastAction.createdAt);
       actionDate.setHours(0, 0, 0, 0);
       
-      // Eğer bugün yapıldıysa, işlem yapılmış sayılır
+      // Eğer bugün yapıldıysa
       if (actionDate.getTime() === today.getTime()) {
+        // Eğer bugün tarih güncellemesi yapılmışsa (note'da "MHD aktualisiert" varsa)
+        if (product.lastAction.note && product.lastAction.note.includes('MHD aktualisiert')) {
+          // Eğer ürün hala critical veya warning aralığındaysa, yeni işlem gerekiyor (soluk olmamalı)
+          if (product.daysUntilExpiry <= settings.warningDays) {
+            return true; // Soluk olmamalı - yeni tarihine göre işlem gerekiyor
+          }
+          // Eğer ürün her iki aralığın dışındaysa (30 gün sonraya atıldı), işlenmiş sayılır (soluk olmalı)
+          return false; // Soluk olmalı - bugün için işlenmiş
+        }
+        // Diğer işlemler için işlenmiş sayılır
         return false;
       }
     }
     return true;
   };
 
-  // Kritik ve uyarı ürünlerini deduplicate et (bir ürün hem kritik hem uyarı olabilir, kritik öncelikli)
+  // Kritik ve uyarı ürünlerini deduplicate et (bir ürün hem kritik hem uyarı olabilir, güncel tarihine göre ayır)
   const getDeduplicatedProducts = () => {
-    // Önce kritik ürünleri al
-    const criticalIds = new Set(criticalProducts.map(p => p.id));
+    // Her ürünü ilk hangi listede gördüğümüzü işaretle
+    const productMap = {};
     
-    // Uyarı ürünlerinden kritik olanları çıkar
-    const uniqueWarningProducts = warningProducts.filter(p => !criticalIds.has(p.id));
+    // Önce tüm ürünleri map'e ekle
+    criticalProducts.forEach(product => {
+      if (!productMap[product.id]) {
+        productMap[product.id] = { ...product, seenInCritical: true, seenInWarning: false };
+      } else {
+        productMap[product.id].seenInCritical = true;
+      }
+    });
+    
+    warningProducts.forEach(product => {
+      if (!productMap[product.id]) {
+        productMap[product.id] = { ...product, seenInCritical: false, seenInWarning: true };
+      } else {
+        productMap[product.id].seenInWarning = true;
+      }
+    });
+    
+    const uniqueProducts = Object.values(productMap);
+    
+    // Ürünleri güncel tarihine göre ayır, ama aralık dışındakiler için eski tarihine göre karar ver
+    const uniqueCritical = [];
+    const uniqueWarning = [];
+    
+    uniqueProducts.forEach(p => {
+      if (p.daysUntilExpiry <= settings.criticalDays) {
+        // Critical aralığında
+        uniqueCritical.push(p);
+      } else if (p.daysUntilExpiry <= settings.warningDays) {
+        // Warning aralığında
+        uniqueWarning.push(p);
+      } else {
+        // Her iki aralığın dışında - işlem öncesi eski tarihine göre karar ver
+        // Eğer sadece critical listesinde gördüysek (warning'de yok), critical'de tut
+        // Eğer sadece warning listesinde gördüysek (critical'de yok), warning'de tut
+        // Eğer her ikisinde de gördüysek, eski tarihi kontrol et
+        if (p.seenInCritical && !p.seenInWarning) {
+          uniqueCritical.push(p);
+        } else if (p.seenInWarning && !p.seenInCritical) {
+          uniqueWarning.push(p);
+        } else {
+          // Her iki listede de var - eski tarihten karar ver
+          // lastAction note'unda OLD_DATE varsa onu kullan
+          let oldDaysUntilExpiry = p.daysUntilExpiry;
+          if (p.lastAction?.note && p.lastAction.note.includes('OLD_DATE:')) {
+            const oldDateMatch = p.lastAction.note.match(/OLD_DATE:([^\s|]+)/);
+            if (oldDateMatch && oldDateMatch[1]) {
+              try {
+                const oldDate = new Date(oldDateMatch[1]);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                oldDate.setHours(0, 0, 0, 0);
+                const diffTime = oldDate - today;
+                oldDaysUntilExpiry = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              } catch (e) {
+                // Eski tarih parse edilemezse, şu anki tarihe göre karar ver
+              }
+            }
+          }
+          
+          // Eski tarih hangi aralıktaysa o listede tut
+          if (oldDaysUntilExpiry <= settings.criticalDays) {
+            uniqueCritical.push(p);
+          } else {
+            uniqueWarning.push(p);
+          }
+        }
+      }
+    });
     
     return {
-      uniqueCritical: criticalProducts,
-      uniqueWarning: uniqueWarningProducts
+      uniqueCritical,
+      uniqueWarning
     };
   };
 

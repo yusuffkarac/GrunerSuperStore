@@ -55,15 +55,55 @@ export const getCriticalProducts = async () => {
   const criticalDate = new Date(today);
   criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
 
+  
+
+  // Bugün sonu
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
+
   const products = await prisma.product.findMany({
     where: {
       AND: [
         {
-          // Normal critical aralığındaki ürünler (tarih güncelleme sonrası da buradan gelir)
-          expiryDate: {
-            lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
-            gte: today, // Geçmiş tarihli olanları hariç tut
-          },
+          OR: [
+            {
+              // Normal critical aralığındaki ürünler
+              expiryDate: {
+                lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
+                gte: today, // Geçmiş tarihli olanları hariç tut
+              },
+            },
+            {
+              // Bugün critical aralığında olan ama yeni tarih atanmış ürünler
+              // Son işlem bugün yapılmışsa ve o işlemdeki tarih critical aralığındaysa
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today, // Bugün yapılan işlemler
+                    lte: todayEnd, // Bugünün sonu
+                  },
+                  expiryDate: {
+                    gte: today,
+                    lt: criticalDate,
+                  },
+                },
+              },
+            },
+            {
+              // Bugün işlem yapılan TÜM ürünler (tarih fark etmeksizin)
+              // Bugün listede görünen bir ürün, ne tarihe atanırsa atansın bugün için listede kalmalı
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today,
+                    lte: todayEnd,
+                  },
+                },
+              },
+            },
+          ],
         },
         {
           // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
@@ -153,15 +193,55 @@ export const getWarningProducts = async () => {
   const warningDate = new Date(today);
   warningDate.setDate(warningDate.getDate() + settings.warningDays + 1);
 
+
+  // Önce tüm warning aralığındaki ürünleri getir
+  // Ayrıca bugün warning aralığında olan ama yeni tarih atanmış ürünleri de dahil et
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999);
+  
   const products = await prisma.product.findMany({
     where: {
       AND: [
         {
-          // Normal warning aralığındaki ürünler (tarih güncelleme sonrası da buradan gelir)
-          expiryDate: {
-            gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
-            lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
-          },
+          OR: [
+            {
+              // Normal warning aralığındaki ürünler
+              expiryDate: {
+                gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
+                lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
+              },
+            },
+            {
+              // Bugün warning aralığında olan ama yeni tarih atanmış ürünler
+              // Son işlem bugün yapılmışsa ve o işlemdeki tarih warning aralığındaysa
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today, // Bugün yapılan işlemler
+                    lte: todayEnd, // Bugünün sonu
+                  },
+                  expiryDate: {
+                    gte: criticalDate,
+                    lt: warningDate,
+                  },
+                },
+              },
+            },
+            {
+              // Bugün işlem yapılan TÜM ürünler (tarih fark etmeksizin)
+              // Bugün listede görünen bir ürün, ne tarihe atanırsa atansın bugün için listede kalmalı
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                    gte: today,
+                    lte: todayEnd,
+                  },
+                },
+              },
+            },
+          ],
         },
         {
           // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
