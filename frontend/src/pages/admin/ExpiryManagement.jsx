@@ -646,7 +646,14 @@ function ExpiryManagement() {
     }
     
     // Bugün bir işlem yapılmışsa ve geri alınmamışsa işlem yapılmış sayılır
+    // AMA: Eğer işlem "tarih güncelleme" ise, bu sayılmaz çünkü ürün yeni tarih için tekrar işlenmeli
     if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
+      // Eğer note'da "MHD aktualisiert" geçiyorsa, bu tarih güncelleme işlemidir
+      // Tarih güncelleme yapıldığında ürün yeni bir ürün gibi tekrar işlenmeli
+      if (product.lastAction.note && product.lastAction.note.includes('MHD aktualisiert')) {
+        return true; // Tarih güncellendi, yeni tarih için işlenmemiş sayılır
+      }
+      
       // Son işlemin tarihini al
       const actionDate = new Date(product.lastAction.createdAt);
       actionDate.setHours(0, 0, 0, 0);
