@@ -659,22 +659,40 @@ function ExpiryManagement() {
     return true;
   };
 
+  // Kritik ve uyarı ürünlerini deduplicate et (bir ürün hem kritik hem uyarı olabilir, kritik öncelikli)
+  const getDeduplicatedProducts = () => {
+    // Önce kritik ürünleri al
+    const criticalIds = new Set(criticalProducts.map(p => p.id));
+    
+    // Uyarı ürünlerinden kritik olanları çıkar
+    const uniqueWarningProducts = warningProducts.filter(p => !criticalIds.has(p.id));
+    
+    return {
+      uniqueCritical: criticalProducts,
+      uniqueWarning: uniqueWarningProducts
+    };
+  };
+
   // İşlem yapılmamış ürünleri say
   const getUnprocessedCriticalCount = () => {
-    return criticalProducts.filter(product => isUnprocessed(product)).length;
+    const { uniqueCritical } = getDeduplicatedProducts();
+    return uniqueCritical.filter(product => isUnprocessed(product)).length;
   };
 
   const getUnprocessedWarningCount = () => {
-    return warningProducts.filter(product => isUnprocessed(product)).length;
+    const { uniqueWarning } = getDeduplicatedProducts();
+    return uniqueWarning.filter(product => isUnprocessed(product)).length;
   };
 
   // Toplam ürün sayılarını al (sadece işlem yapılmamış ürünler)
   const getTotalCriticalCount = () => {
-    return criticalProducts.filter(product => isUnprocessed(product)).length;
+    const { uniqueCritical } = getDeduplicatedProducts();
+    return uniqueCritical.filter(product => isUnprocessed(product)).length;
   };
 
   const getTotalWarningCount = () => {
-    return warningProducts.filter(product => isUnprocessed(product)).length;
+    const { uniqueWarning } = getDeduplicatedProducts();
+    return uniqueWarning.filter(product => isUnprocessed(product)).length;
   };
 
   // Bugün yapılan işlemlerin sayısını al
@@ -980,7 +998,9 @@ function ExpiryManagement() {
       )}
 
       {/* KRİTİK ÜRÜNLER TABLOSU */}
-      {viewMode === 'criticality' && activeTab === 0 && (
+      {viewMode === 'criticality' && activeTab === 0 && (() => {
+        const { uniqueCritical } = getDeduplicatedProducts();
+        return (
         <>
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="bg-red-50 px-4 py-3 border-b border-red-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -988,7 +1008,7 @@ function ExpiryManagement() {
                 <FiAlertCircle className="w-4 h-4 md:w-5 md:h-5" />
                 <span className="text-sm md:text-base">Produkte am letzten Tag</span>
               </h2>
-              {criticalProducts.length > 0 && (
+              {uniqueCritical.length > 0 && (
                 <button
                   onClick={() => openBarcodeScanner('critical')}
                   className="flex items-center justify-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs md:text-sm font-medium"
@@ -999,7 +1019,7 @@ function ExpiryManagement() {
               )}
             </div>
 
-            {criticalProducts.length === 0 ? (
+            {uniqueCritical.length === 0 ? (
               <EmptyState
                 icon={FiAlertCircle}
                 title="Keine Produkte auf kritischer Stufe"
@@ -1024,7 +1044,7 @@ function ExpiryManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {criticalProducts.map((product) => (
+                  {uniqueCritical.map((product) => (
                     <tr key={product.id} className="hover:bg-red-50 transition-colors">
                       <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -1103,7 +1123,7 @@ function ExpiryManagement() {
 
             {/* Mobil Kart Görünümü - Kritik */}
             <div className="md:hidden divide-y divide-gray-200">
-              {criticalProducts.map((product) => (
+              {uniqueCritical.map((product) => (
                 <div key={product.id} className="p-4 hover:bg-red-50 transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
@@ -1182,10 +1202,13 @@ function ExpiryManagement() {
             )}
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* UYARI ÜRÜNLERİ TABLOSU */}
-      {viewMode === 'criticality' && activeTab === 1 && (
+      {viewMode === 'criticality' && activeTab === 1 && (() => {
+        const { uniqueWarning } = getDeduplicatedProducts();
+        return (
         <>
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="bg-amber-50 px-4 py-3 border-b border-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1193,7 +1216,7 @@ function ExpiryManagement() {
                 <FiAlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
                 <span className="text-sm md:text-base">Rabattetikett sollte angebracht werden</span>
               </h2>
-              {warningProducts.length > 0 && (
+              {uniqueWarning.length > 0 && (
                 <button
                   onClick={() => openBarcodeScanner('warning')}
                   className="flex items-center justify-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-xs md:text-sm font-medium"
@@ -1204,7 +1227,7 @@ function ExpiryManagement() {
               )}
             </div>
 
-            {warningProducts.length === 0 ? (
+            {uniqueWarning.length === 0 ? (
               <EmptyState
                 icon={FiAlertTriangle}
                 title="Keine Produkte auf Warnstufe"
@@ -1229,7 +1252,7 @@ function ExpiryManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {warningProducts.map((product) => (
+                  {uniqueWarning.map((product) => (
                     <tr key={product.id} className="hover:bg-amber-50 transition-colors">
                       <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -1327,7 +1350,7 @@ function ExpiryManagement() {
 
             {/* Mobil Kart Görünümü - Warning */}
             <div className="md:hidden divide-y divide-gray-200">
-              {warningProducts.map((product) => (
+              {uniqueWarning.map((product) => (
                 <div key={product.id} className="p-4 hover:bg-amber-50 transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
@@ -1427,7 +1450,8 @@ function ExpiryManagement() {
             )}
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* KATEGORİ GÖRÜNÜMÜ */}
       {viewMode === 'category' && activeTab !== 2 && (
