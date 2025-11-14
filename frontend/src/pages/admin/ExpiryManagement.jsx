@@ -817,28 +817,18 @@ function ExpiryManagement() {
 
   // Kategoriye göre ürünleri grupla
   const getProductsGroupedByCategory = () => {
-    // Tüm kritik ve uyarı ürünlerini birleştir
+    // Önce deduplicate mantığını kullan (Kritikalität görünümü ile aynı mantık)
+    const { uniqueCritical, uniqueWarning } = getDeduplicatedProducts();
+    
+    // Tüm ürünleri birleştir ve type'larını ekle
     const allProducts = [
-      ...criticalProducts.map(p => ({ ...p, type: 'critical' })),
-      ...warningProducts.map(p => ({ ...p, type: 'warning' }))
+      ...uniqueCritical.map(p => ({ ...p, type: 'critical' })),
+      ...uniqueWarning.map(p => ({ ...p, type: 'warning' }))
     ];
-
-    // Aynı ID'li ürünleri deduplicate et (critical öncelikli)
-    const uniqueProducts = {};
-    allProducts.forEach(product => {
-      if (!uniqueProducts[product.id]) {
-        uniqueProducts[product.id] = product;
-      } else {
-        // Eğer ürün zaten varsa ve yeni gelen critical ise, onu kullan
-        if (product.type === 'critical') {
-          uniqueProducts[product.id] = product;
-        }
-      }
-    });
 
     // Kategorilere göre grupla ve sırala
     const grouped = {};
-    Object.values(uniqueProducts).forEach(product => {
+    allProducts.forEach(product => {
       const categoryName = product.category?.name || 'Keine Kategorie';
       if (!grouped[categoryName]) {
         grouped[categoryName] = {
