@@ -2111,7 +2111,12 @@ function Produkte() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={closeVariantModal}
+              onClick={(e) => {
+                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+                if (e.target === e.currentTarget) {
+                  closeVariantModal();
+                }
+              }}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
@@ -2322,7 +2327,12 @@ function Produkte() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={closeOptionForm}
+              onClick={(e) => {
+                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+                if (e.target === e.currentTarget) {
+                  closeOptionForm();
+                }
+              }}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
@@ -2490,7 +2500,12 @@ function Produkte() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-              onClick={closeVariantForm}
+              onClick={(e) => {
+                // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+                if (e.target === e.currentTarget) {
+                  closeVariantForm();
+                }
+              }}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}

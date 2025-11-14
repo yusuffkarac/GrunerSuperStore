@@ -910,8 +910,13 @@ function ActivityLogs() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4"
-            onClick={closeModal}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998] p-4 mt-0"
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

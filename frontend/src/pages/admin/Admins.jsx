@@ -629,7 +629,12 @@ function Admins() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={closeModal}
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -720,7 +725,12 @@ function Admins() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={closeFormModal}
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeFormModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}

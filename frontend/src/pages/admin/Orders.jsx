@@ -1270,7 +1270,12 @@ function Orders() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={closeInvoicePopup}
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeInvoicePopup();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1390,7 +1395,12 @@ function Orders() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
-            onClick={closeCancelModal}
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeCancelModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
