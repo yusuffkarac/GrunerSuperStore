@@ -208,7 +208,8 @@ model Product {
   supplier                String?   // Tedarikçi bilgisi
   // Son Kullanma Tarihi (SKT) yönetimi
   expiryDate              DateTime? @map("expiry_date") // Son kullanma tarihi
-  excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf
+  excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf (sadece ExpiryManagement'tan değiştirilebilir)
+  hideFromExpiryManagement Boolean  @default(false) @map("hide_from_expiry_management") // ExpiryManagement sayfasında hiç gözükmesin
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 

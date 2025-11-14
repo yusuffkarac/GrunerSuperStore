@@ -481,7 +481,7 @@ function Produkte() {
     nutritionData: null,
     openfoodfactsCategories: [],
     expiryDate: '',
-    excludeFromExpiryCheck: false,
+    hideFromExpiryManagement: false,
   });
 
   // Verileri yükle fonksiyonları
@@ -562,7 +562,7 @@ function Produkte() {
         nutritionData: product.nutritionData || null,
         openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
         expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
-        excludeFromExpiryCheck: product.excludeFromExpiryCheck || false,
+        hideFromExpiryManagement: product.hideFromExpiryManagement || false,
         taxRate: product.taxRate ? parseFloat(product.taxRate) : '',
       });
     } else {
@@ -588,7 +588,7 @@ function Produkte() {
         nutritionData: null,
         openfoodfactsCategories: [],
         expiryDate: '',
-        excludeFromExpiryCheck: false,
+        hideFromExpiryManagement: false,
         taxRate: '',
       });
     }
@@ -634,7 +634,7 @@ function Produkte() {
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
         expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
-        excludeFromExpiryCheck: formData.excludeFromExpiryCheck,
+        hideFromExpiryManagement: formData.hideFromExpiryManagement,
         taxRate: formData.taxRate ? parseFloat(formData.taxRate) : null,
       };
 
@@ -1849,14 +1849,14 @@ function Produkte() {
                       </div>
                       <div>
                         <Switch
-                          id="excludeFromExpiryCheck"
-                          checked={formData.excludeFromExpiryCheck}
-                          onChange={(e) => setFormData({ ...formData, excludeFromExpiryCheck: e.target.checked })}
-                          label="Von MHD-Kontrollen ausnehmen"
+                          id="hideFromExpiryManagement"
+                          checked={formData.hideFromExpiryManagement}
+                          onChange={(e) => setFormData({ ...formData, hideFromExpiryManagement: e.target.checked })}
+                          label="Von MHD-Verwaltung ausschließen"
                           color="green"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Dieses Produkt wird von den MHD-Management-Kontrollen ausgenommen
+                          Dieses Produkt wird in der MHD-Verwaltungsseite nicht angezeigt
                         </p>
                       </div>
                     </div>

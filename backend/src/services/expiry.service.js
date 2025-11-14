@@ -99,6 +99,10 @@ export const getCriticalProducts = async () => {
             { excludeFromExpiryCheck: true },
           ],
         },
+        {
+          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
+          hideFromExpiryManagement: false,
+        },
       ],
     },
     include: {
@@ -219,6 +223,10 @@ export const getWarningProducts = async () => {
             { excludeFromExpiryCheck: false },
             { excludeFromExpiryCheck: true },
           ],
+        },
+        {
+          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
+          hideFromExpiryManagement: false,
         },
       ],
     },
