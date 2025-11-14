@@ -246,6 +246,7 @@ function AdminLayout() {
   const topMenuItems = [
     { path: '/admin/tasks', label: 'Görevler', icon: FiCheckSquare, permission: 'product_management_view', isAction: false }, // En solda
     { path: '/admin/users', label: 'Kullanıcılar', icon: FiUsers, permission: 'user_management_view', isAction: false },
+    { path: '/admin/admins', label: 'Administratoren', icon: FiLock, permission: 'admin_management', superAdminOnly: true, isAction: false },
     { path: '/admin/activity-logs', label: 'Logs', icon: FiClock, permission: 'admin_management', superAdminOnly: true, isAction: false },
     { path: '/admin/notifications', label: 'Bildirim', icon: FiBell, permission: 'notification_management_view', isAction: false },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view', isAction: false },
@@ -262,7 +263,6 @@ function AdminLayout() {
     { path: '/admin/categories', label: 'Kategorien', icon: FiGrid, permission: 'product_management_view' },
     { path: '/admin/campaigns', label: 'Kampagnen', icon: FiGift, permission: 'marketing_campaigns' },
     { path: '/admin/coupons', label: 'Gutscheine', icon: FiPercent, permission: 'marketing_coupons' },
-    { path: '/admin/admins', label: 'Administratoren', icon: FiLock, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/roles', label: 'Rollen & Berechtigungen', icon: FiKey, permission: 'admin_management', superAdminOnly: true },
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
     { path: '/admin/notification-templates', label: 'Benachr.-Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },

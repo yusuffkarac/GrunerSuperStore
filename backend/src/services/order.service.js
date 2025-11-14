@@ -247,7 +247,11 @@ class OrderService {
 
       // Minimum sipariş tutarı kontrolü
       if (settings?.minOrderAmount && subtotal < parseFloat(settings.minOrderAmount)) {
-        throw new ValidationError(`Mindestbestellwert: ${settings.minOrderAmount}`);
+        const minAmount = parseFloat(settings.minOrderAmount).toFixed(2);
+        const currentAmount = subtotal.toFixed(2);
+        throw new ValidationError(
+          `Der Mindestbestellwert beträgt ${minAmount} €. Ihr aktueller Warenkorbwert beträgt ${currentAmount} €.`
+        );
       }
 
       // Kargo ücreti hesaplama

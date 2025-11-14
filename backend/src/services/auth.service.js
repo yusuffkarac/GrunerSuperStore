@@ -251,34 +251,48 @@ class AuthService {
     // Email'i lowercase'e çevir (+ karakterini korumak için normalizeEmail kullanmıyoruz)
     const normalizedEmail = email.toLowerCase().trim();
     
+    console.log('🔐 [Auth Service] Login attempt for:', normalizedEmail);
+    
     // Kullanıcıyı bul
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
     if (!user) {
+      console.error('❌ [Auth Service] Kullanıcı bulunamadı:', normalizedEmail);
       throw new UnauthorizedError('E-Mail oder Passwort ist falsch');
     }
+
+    console.log('✅ [Auth Service] Kullanıcı bulundu:', user.id);
+    console.log('🔍 [Auth Service] Email doğrulandı mı:', user.isEmailVerified);
+    console.log('🔍 [Auth Service] Kullanıcı aktif mi:', user.isActive);
 
     // Şifre kontrolü
     const isPasswordValid = await comparePassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
+      console.error('❌ [Auth Service] Şifre yanlış');
       throw new UnauthorizedError('E-Mail oder Passwort ist falsch');
     }
 
+    console.log('✅ [Auth Service] Şifre doğru');
+
     // E-posta doğrulama kontrolü
     if (!user.isEmailVerified) {
+      console.error('❌ [Auth Service] Email doğrulanmamış');
       throw new UnauthorizedError('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse');
     }
 
     // Aktif kullanıcı kontrolü
     if (!user.isActive) {
+      console.error('❌ [Auth Service] Kullanıcı aktif değil');
       throw new UnauthorizedError('Konto ist nicht aktiv');
     }
 
     // Token oluştur
     const token = generateToken({ userId: user.id });
+
+    console.log('✅ [Auth Service] Token oluşturuldu, login başarılı');
 
     // Kullanıcı bilgilerini döndür (passwordHash olmadan)
     const { passwordHash, emailVerificationCode, emailVerificationCodeExpiry, ...userWithoutPassword } = user;

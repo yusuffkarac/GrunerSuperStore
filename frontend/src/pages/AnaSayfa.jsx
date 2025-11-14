@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiChevronLeft, FiTag } from 'react-icons/fi';
+import { FiChevronRight, FiChevronLeft, FiTag, FiPackage, FiTruck, FiClock, FiCheckCircle } from 'react-icons/fi';
 import { MdLocalShipping, MdCheckCircle, MdCreditCard, MdInventory } from 'react-icons/md';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import settingsService from '../services/settingsService';
 import campaignService from '../services/campaignService';
+import orderService from '../services/orderService';
 import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
 import useAuthStore from '../store/authStore';
 import { normalizeImageUrl } from '../utils/imageUtils';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 // Ana Sayfa
 function AnaSayfa() {
@@ -23,6 +26,9 @@ function AnaSayfa() {
   const [settings, setSettings] = useState(null);
   const [homepageSettings, setHomepageSettings] = useState(null);
   const [canViewProducts, setCanViewProducts] = useState(true);
+  const [activeOrder, setActiveOrder] = useState(null);
+  const [showActiveOrderCard, setShowActiveOrderCard] = useState(true);
+  const lastScrollY = useRef(0);
 
   // Default homepage settings
   const defaultHomepageSettings = {
@@ -145,6 +151,61 @@ function AnaSayfa() {
 
     fetchData();
   }, [isAuthenticated]);
+
+  // Aktif siparişi yükle
+  useEffect(() => {
+    const fetchActiveOrder = async () => {
+      if (!isAuthenticated) {
+        setActiveOrder(null);
+        return;
+      }
+
+      try {
+        // Tüm siparişleri çek (aktif olanı bulmak için)
+        const response = await orderService.getOrders({ 
+          limit: 10,
+          page: 1 
+        });
+        
+        const orders = response.data?.orders || [];
+        // Aktif sipariş: pending, accepted, preparing, shipped durumlarında olanlar
+        const activeStatuses = ['pending', 'accepted', 'preparing', 'shipped'];
+        // En son aktif siparişi bul (zaten createdAt desc sıralı)
+        const active = orders.find(order => activeStatuses.includes(order.status));
+        
+        setActiveOrder(active || null);
+      } catch (error) {
+        console.error('Fehler beim Laden der aktiven Bestellung:', error);
+        setActiveOrder(null);
+      }
+    };
+
+    fetchActiveOrder();
+  }, [isAuthenticated]);
+
+  // Scroll takibi - aşağı kaydırınca kartı gizle
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Aşağı kaydırma (scroll pozisyonu artıyorsa)
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setShowActiveOrderCard(false);
+      } 
+      // Yukarı kaydırma (scroll pozisyonu azalıyorsa)
+      else if (currentScrollY < lastScrollY.current) {
+        setShowActiveOrderCard(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // Slider scroll fonksiyonları
   const scrollSlider = (direction) => {
@@ -591,6 +652,73 @@ function AnaSayfa() {
 
         </div>
       </div>
+
+      {/* Aktif Sipariş Kartı - Bottom menünün hemen üstünde */}
+      {activeOrder && (
+        <Link
+          to={`/siparis/${activeOrder.id}`}
+          className={`fixed bottom-20 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-md z-[999998] transition-transform duration-300 ${
+            showActiveOrderCard ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+          }`}
+          style={{ 
+            bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px) + 1rem)' 
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3">
+              {/* Durum ikonu */}
+              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                activeOrder.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
+                activeOrder.status === 'preparing' ? 'bg-purple-100 text-purple-600' :
+                activeOrder.status === 'shipped' ? 'bg-indigo-100 text-indigo-600' :
+                'bg-gray-100 text-gray-600'
+              }`}>
+                {activeOrder.status === 'pending' ? <FiClock className="w-5 h-5" /> :
+                 activeOrder.status === 'accepted' ? <FiCheckCircle className="w-5 h-5" /> :
+                 activeOrder.status === 'preparing' ? <FiPackage className="w-5 h-5" /> :
+                 activeOrder.status === 'shipped' ? (activeOrder.type === 'pickup' ? <FiCheckCircle className="w-5 h-5" /> : <FiTruck className="w-5 h-5" />) :
+                 <FiPackage className="w-5 h-5" />}
+              </div>
+
+              {/* Sipariş bilgileri */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <p className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+                    Bestellung #{activeOrder.orderNo}
+                  </p>
+                  <p className="text-sm font-bold text-primary-600 whitespace-nowrap flex-shrink-0">
+                    {activeOrder.total ? parseFloat(activeOrder.total).toFixed(2) : '0.00'} €
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-600">
+                    {activeOrder.orderItems?.length || 0} {activeOrder.orderItems?.length === 1 ? 'Produkt' : 'Produkte'}
+                  </p>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                    activeOrder.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                    activeOrder.status === 'preparing' ? 'bg-purple-100 text-purple-800' :
+                    activeOrder.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {activeOrder.status === 'pending' ? 'Ausstehend' :
+                     activeOrder.status === 'accepted' ? 'Akzeptiert' :
+                     activeOrder.status === 'preparing' ? 'In Vorbereitung' :
+                     activeOrder.status === 'shipped' ? (activeOrder.type === 'pickup' ? 'Bereit' : 'Unterwegs') :
+                     'Unbekannt'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Ok ikonu */}
+              <div className="flex-shrink-0">
+                <FiChevronRight className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+        </Link>
+      )}
     </div>
   );
 }

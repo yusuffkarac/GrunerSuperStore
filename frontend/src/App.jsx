@@ -53,6 +53,7 @@ import Admins from './pages/admin/Admins';
 import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
+import FooterSettings from './pages/admin/FooterSettings';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 import Notifications from './pages/admin/Notifications';
@@ -248,6 +249,7 @@ function AppContent() {
               <Route path="settings" element={<Settings />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
+              <Route path="footer-settings" element={<FooterSettings />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="help" element={<Help />} />
             </>

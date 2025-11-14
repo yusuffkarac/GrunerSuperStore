@@ -24,7 +24,7 @@ function Profil() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [saving, setSaving] = useState(false);
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
   const { showConfirm } = useAlert();
   const [storeLocation, setStoreLocation] = useState(null);
   const [distanceToStore, setDistanceToStore] = useState(null);
@@ -50,6 +50,14 @@ function Profil() {
   const [emailChangeStep, setEmailChangeStep] = useState('request'); // 'request' veya 'verify'
   const [sendingEmailCode, setSendingEmailCode] = useState(false);
   const [verifyingEmailCode, setVerifyingEmailCode] = useState(false);
+
+  // Giriş kontrolü - giriş yapmayan kullanıcıları login sayfasına yönlendir
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!isAuthenticated && !token && !user) {
+      navigate('/giris', { state: { from: '/profil' } });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Desktop-Prüfung
   useEffect(() => {
