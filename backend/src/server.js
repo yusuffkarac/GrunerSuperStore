@@ -28,6 +28,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import adminNotificationRoutes from './routes/admin-notification.routes.js';
 import templateRoutes from './routes/template.routes.js';
 import notificationTemplateRoutes from './routes/notification-template.routes.js';
+import activityLogRoutes from './routes/activityLog.routes.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -251,7 +252,8 @@ const limiter = rateLimit({
 });
 
 // Rate limiting - sadece API isteklerine
-app.use('/api/', limiter);
+// DEVRE DIŞI: 429 hatasını deaktif etmek için yorum satırı yapıldı
+// app.use('/api/', limiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -297,6 +299,7 @@ app.use('/api/admin/templates', templateRoutes);
 app.use('/api/admin/notification-templates', notificationTemplateRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin/notifications', adminNotificationRoutes);
+app.use('/api/admin/logs', activityLogRoutes);
 
 // Test route
 app.get('/api', (req, res) => {

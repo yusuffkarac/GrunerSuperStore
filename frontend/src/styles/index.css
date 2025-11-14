@@ -46,6 +46,12 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Admin panelde safe-area padding'i iptal et */
+  body:has(.admin-layout) {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   /* Mobil için scroll davranışı */
   html {
     @apply scroll-smooth;

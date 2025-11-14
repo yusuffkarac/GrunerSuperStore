@@ -11,12 +11,12 @@ class RoutingService {
     this.apiKey = process.env.OPENROUTESERVICE_API_KEY || null;
     this.baseUrl = 'https://api.openrouteservice.org/v2';
     
-    console.log('[RoutingService] Constructor çalıştı:', {
-      hasApiKey: !!this.apiKey,
-      apiKeyLength: this.apiKey ? this.apiKey.length : 0,
-      baseUrl: this.baseUrl,
-      envVarExists: !!process.env.OPENROUTESERVICE_API_KEY
-    });
+    // console.log('[RoutingService] Constructor çalıştı:', {
+    //   hasApiKey: !!this.apiKey,
+    //   apiKeyLength: this.apiKey ? this.apiKey.length : 0,
+    //   baseUrl: this.baseUrl,
+    //   envVarExists: !!process.env.OPENROUTESERVICE_API_KEY
+    // });
   }
 
   /**

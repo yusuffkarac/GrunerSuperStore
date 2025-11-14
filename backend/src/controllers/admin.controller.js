@@ -5,6 +5,7 @@ import categoryService from '../services/category.service.js';
 import userService from '../services/user.service.js';
 import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import activityLogService from '../services/activityLog.service.js';
 
 class AdminController {
   // POST /api/admin/auth/login - Admin girişi
@@ -12,6 +13,20 @@ class AdminController {
     const { email, password } = req.body;
 
     const result = await adminService.login({ email, password });
+
+    // Log kaydı
+    if (result.admin) {
+      await activityLogService.createLog({
+        adminId: result.admin.id,
+        action: 'admin.login',
+        entityType: 'admin',
+        entityId: result.admin.id,
+        level: 'success',
+        message: `Administrator hat sich angemeldet: ${email}`,
+        metadata: { email },
+        req,
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -257,8 +272,40 @@ class AdminController {
   updateOrderStatus = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Nicht autorisiert',
+      });
+    }
 
     const order = await orderService.updateOrderStatus(id, status);
+
+    // Log kaydı - asenkron yap (fire-and-forget)
+    activityLogService.createLog({
+      adminId,
+      action: 'order.update_status',
+      entityType: 'order',
+      entityId: order.id,
+      level: 'info',
+      message: `Bestellstatus wurde aktualisiert: ${order.orderNo} → ${status}`,
+      metadata: { 
+        orderNo: order.orderNo, 
+        orderId: order.id,
+        oldStatus: order.previousStatus || order.status, 
+        newStatus: status 
+      },
+      req,
+    }).catch((logError) => {
+      console.error('❌ [ADMIN.ORDER.UPDATE_STATUS] Log kaydı hatası (async):', {
+        error: logError.message || logError,
+        adminId,
+        orderId: order.id,
+        status,
+      });
+    });
 
     res.status(200).json({
       success: true,
@@ -271,8 +318,39 @@ class AdminController {
   cancelOrder = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const cancellationData = req.body;
+    const adminId = req.admin?.id;
+
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Nicht autorisiert',
+      });
+    }
 
     const order = await orderService.adminCancelOrder(id, cancellationData);
+
+    // Log kaydı - asenkron yap (fire-and-forget)
+    activityLogService.createLog({
+      adminId,
+      action: 'order.cancel',
+      entityType: 'order',
+      entityId: order.id,
+      level: 'warning',
+      message: `Bestellung wurde storniert: ${order.orderNo}`,
+      metadata: { 
+        orderNo: order.orderNo, 
+        orderId: order.id,
+        cancellationReason: cancellationData.cancellationReason || null,
+        showReasonToCustomer: cancellationData.showCancellationReasonToCustomer || false,
+      },
+      req,
+    }).catch((logError) => {
+      console.error('❌ [ADMIN.ORDER.CANCEL] Log kaydı hatası (async):', {
+        error: logError.message || logError,
+        adminId,
+        orderId: order.id,
+      });
+    });
 
     res.status(200).json({
       success: true,
@@ -357,7 +435,20 @@ class AdminController {
 
   // POST /api/admin/products - Ürün oluştur
   createProduct = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const product = await productService.createProduct(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.create',
+      entityType: 'product',
+      entityId: product.id,
+      level: 'success',
+      message: `Produkt wurde erstellt: ${product.name} (ID: ${product.id}${product.barcode ? `, Barcode: ${product.barcode}` : ''})`,
+      metadata: { productId: product.id, name: product.name, price: product.price, barcode: product.barcode },
+      req,
+    });
 
     res.status(201).json({
       success: true,
@@ -369,8 +460,21 @@ class AdminController {
   // PUT /api/admin/products/:id - Ürün güncelle
   updateProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
 
     const product = await productService.updateProduct(id, req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.update',
+      entityType: 'product',
+      entityId: product.id,
+      level: 'info',
+      message: `Produkt wurde aktualisiert: ${product.name} (ID: ${product.id}${product.barcode ? `, Barcode: ${product.barcode}` : ''})`,
+      metadata: { productId: product.id, name: product.name, barcode: product.barcode },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -382,8 +486,24 @@ class AdminController {
   // DELETE /api/admin/products/:id - Ürün sil
   deleteProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
 
+    // Silmeden önce product bilgisini al (log için)
+    const productBeforeDelete = await productService.getProductById(id);
+    
     const result = await productService.deleteProduct(id);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'product.delete',
+      entityType: 'product',
+      entityId: id,
+      level: 'warning',
+      message: `Produkt wurde gelöscht: ${productBeforeDelete.name} (ID: ${id}${productBeforeDelete.barcode ? `, Barcode: ${productBeforeDelete.barcode}` : ''})`,
+      metadata: { productId: id, name: productBeforeDelete.name, barcode: productBeforeDelete.barcode },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -443,7 +563,20 @@ class AdminController {
 
   // POST /api/admin/categories - Kategori oluştur
   createCategory = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const category = await categoryService.createCategory(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'category.create',
+      entityType: 'category',
+      entityId: category.id,
+      level: 'success',
+      message: `Kategorie wurde erstellt: ${category.name} (${category.id})`,
+      metadata: { categoryId: category.id, name: category.name },
+      req,
+    });
 
     res.status(201).json({
       success: true,
@@ -523,8 +656,51 @@ class AdminController {
   // PUT /api/admin/users/:id/status - Kullanıcı aktif/pasif yap
   toggleUserStatus = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
+
+    // Önce eski durumu al
+    const oldUser = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, firstName: true, lastName: true, email: true, isActive: true },
+    });
+
+    if (!oldUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Benutzer nicht gefunden',
+      });
+    }
 
     const user = await userService.toggleUserStatus(id);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.toggle_user_status',
+      entityType: 'user',
+      entityId: user.id,
+      level: 'info',
+      message: `Benutzerstatus geändert: ${user.firstName} ${user.lastName} (${user.email}) - ${oldUser.isActive ? 'Aktiv' : 'Inaktiv'} → ${user.isActive ? 'Aktiv' : 'Inaktiv'}`,
+      metadata: {
+        benutzerId: user.id,
+        email: user.email,
+        aenderungen: {
+          status: {
+            alt: oldUser.isActive ? 'Aktiv' : 'Inaktiv',
+            neu: user.isActive ? 'Aktiv' : 'Inaktiv',
+            altWert: oldUser.isActive,
+            neuWert: user.isActive,
+          },
+        },
+        vorher: {
+          status: oldUser.isActive ? 'Aktiv' : 'Inaktiv',
+        },
+        nachher: {
+          status: user.isActive ? 'Aktiv' : 'Inaktiv',
+        },
+      },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -535,7 +711,28 @@ class AdminController {
 
   // POST /api/admin/users - Yeni kullanıcı oluştur
   createUser = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const user = await userService.createUserForAdmin(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.create_user',
+      entityType: 'user',
+      entityId: user.id,
+      level: 'success',
+      message: `Neuer Benutzer erstellt: ${user.firstName} ${user.lastName} (${user.email})`,
+      metadata: {
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        isActive: user.isActive,
+        isEmailVerified: user.isEmailVerified,
+      },
+      req,
+    });
 
     res.status(201).json({
       success: true,
@@ -547,13 +744,353 @@ class AdminController {
   // PUT /api/admin/users/:id - Kullanıcı güncelle
   updateUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
+
+    // Önce eski kullanıcı bilgilerini al
+    const oldUser = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isEmailVerified: true,
+      },
+    });
+
+    if (!oldUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Benutzer nicht gefunden',
+      });
+    }
 
     const user = await userService.updateUserForAdmin(id, req.body);
+
+    // Değişiklikleri tespit et
+    const aenderungen = {};
+
+    if (req.body.firstName !== undefined && req.body.firstName !== oldUser.firstName) {
+      aenderungen.vorname = {
+        feld: 'Vorname',
+        alt: oldUser.firstName,
+        neu: user.firstName,
+      };
+    }
+    if (req.body.lastName !== undefined && req.body.lastName !== oldUser.lastName) {
+      aenderungen.nachname = {
+        feld: 'Nachname',
+        alt: oldUser.lastName,
+        neu: user.lastName,
+      };
+    }
+    if (req.body.email !== undefined && req.body.email.toLowerCase().trim() !== oldUser.email) {
+      aenderungen.email = {
+        feld: 'E-Mail',
+        alt: oldUser.email,
+        neu: user.email,
+      };
+    }
+    if (req.body.phone !== undefined && (req.body.phone || null) !== oldUser.phone) {
+      aenderungen.telefon = {
+        feld: 'Telefon',
+        alt: oldUser.phone || 'Nicht angegeben',
+        neu: user.phone || 'Nicht angegeben',
+      };
+    }
+    if (req.body.isActive !== undefined && req.body.isActive !== oldUser.isActive) {
+      aenderungen.status = {
+        feld: 'Status',
+        alt: oldUser.isActive ? 'Aktiv' : 'Inaktiv',
+        neu: user.isActive ? 'Aktiv' : 'Inaktiv',
+        altWert: oldUser.isActive,
+        neuWert: user.isActive,
+      };
+    }
+    if (req.body.isEmailVerified !== undefined && req.body.isEmailVerified !== oldUser.isEmailVerified) {
+      aenderungen.emailBestaetigt = {
+        feld: 'E-Mail bestätigt',
+        alt: oldUser.isEmailVerified ? 'Ja' : 'Nein',
+        neu: user.isEmailVerified ? 'Ja' : 'Nein',
+        altWert: oldUser.isEmailVerified,
+        neuWert: user.isEmailVerified,
+      };
+    }
+    if (req.body.password) {
+      aenderungen.passwort = {
+        feld: 'Passwort',
+        alt: '***',
+        neu: '***',
+        hinweis: 'Passwort wurde geändert',
+      };
+    }
+
+    // Log kaydı
+    const aenderungsNachrichten = Object.values(aenderungen).map(aenderung => {
+      if (aenderung.hinweis) {
+        return aenderung.hinweis;
+      }
+      return `${aenderung.feld}: "${aenderung.alt}" → "${aenderung.neu}"`;
+    });
+
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.update_user',
+      entityType: 'user',
+      entityId: user.id,
+      level: 'info',
+      message: `Benutzer aktualisiert: ${user.firstName} ${user.lastName} (${user.email})${aenderungsNachrichten.length > 0 ? ` - Änderungen: ${aenderungsNachrichten.join(', ')}` : ''}`,
+      metadata: {
+        benutzerId: user.id,
+        email: user.email,
+        aenderungen: Object.keys(aenderungen).length > 0 ? aenderungen : null,
+        vorher: {
+          vorname: oldUser.firstName,
+          nachname: oldUser.lastName,
+          email: oldUser.email,
+          telefon: oldUser.phone || 'Nicht angegeben',
+          status: oldUser.isActive ? 'Aktiv' : 'Inaktiv',
+          emailBestaetigt: oldUser.isEmailVerified ? 'Ja' : 'Nein',
+        },
+        nachher: {
+          vorname: user.firstName,
+          nachname: user.lastName,
+          email: user.email,
+          telefon: user.phone || 'Nicht angegeben',
+          status: user.isActive ? 'Aktiv' : 'Inaktiv',
+          emailBestaetigt: user.isEmailVerified ? 'Ja' : 'Nein',
+        },
+      },
+      req,
+    });
 
     res.status(200).json({
       success: true,
       message: 'Benutzer erfolgreich aktualisiert',
       data: { user },
+    });
+  });
+
+  // ===============================
+  // USER ADDRESS MANAGEMENT
+  // ===============================
+
+  // POST /api/admin/users/:userId/addresses - Kullanıcıya adres ekle
+  createUserAddress = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const adminId = req.admin.id;
+    const addressData = req.body;
+
+    const address = await userService.createAddress(userId, addressData);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.create_user_address',
+      entityType: 'address',
+      entityId: address.id,
+      level: 'info',
+      message: `Adresse für Benutzer hinzugefügt: ${address.street} ${address.houseNumber}, ${address.city}`,
+      metadata: {
+        adressId: address.id,
+        benutzerId: userId,
+        stadt: address.city,
+        strasse: address.street,
+        hausnummer: address.houseNumber,
+        plz: address.postalCode,
+      },
+      req,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Adresse erfolgreich hinzugefügt',
+      data: { address },
+    });
+  });
+
+  // PUT /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini güncelle
+  updateUserAddress = asyncHandler(async (req, res) => {
+    const { userId, addressId } = req.params;
+    const adminId = req.admin.id;
+    const addressData = req.body;
+
+    // Önce eski adres bilgilerini al
+    const oldAddress = await prisma.address.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!oldAddress) {
+      return res.status(404).json({
+        success: false,
+        message: 'Adresse nicht gefunden',
+      });
+    }
+
+    const address = await userService.updateAddress(userId, addressId, addressData);
+
+    // Değişiklikleri tespit et
+    const aenderungen = {};
+    if (addressData.title !== undefined && addressData.title !== oldAddress.title) {
+      aenderungen.titel = {
+        feld: 'Adresstitel',
+        alt: oldAddress.title,
+        neu: address.title,
+      };
+    }
+    if (addressData.street !== undefined && addressData.street !== oldAddress.street) {
+      aenderungen.strasse = {
+        feld: 'Straße',
+        alt: oldAddress.street,
+        neu: address.street,
+      };
+    }
+    if (addressData.houseNumber !== undefined && addressData.houseNumber !== oldAddress.houseNumber) {
+      aenderungen.hausnummer = {
+        feld: 'Hausnummer',
+        alt: oldAddress.houseNumber,
+        neu: address.houseNumber,
+      };
+    }
+    if (addressData.addressLine2 !== undefined && (addressData.addressLine2 || null) !== oldAddress.addressLine2) {
+      aenderungen.adresszusatz = {
+        feld: 'Adresszusatz',
+        alt: oldAddress.addressLine2 || 'Nicht angegeben',
+        neu: address.addressLine2 || 'Nicht angegeben',
+      };
+    }
+    if (addressData.district !== undefined && (addressData.district || null) !== oldAddress.district) {
+      aenderungen.stadtteil = {
+        feld: 'Stadtteil',
+        alt: oldAddress.district || 'Nicht angegeben',
+        neu: address.district || 'Nicht angegeben',
+      };
+    }
+    if (addressData.postalCode !== undefined && addressData.postalCode !== oldAddress.postalCode) {
+      aenderungen.plz = {
+        feld: 'PLZ',
+        alt: oldAddress.postalCode,
+        neu: address.postalCode,
+      };
+    }
+    if (addressData.city !== undefined && addressData.city !== oldAddress.city) {
+      aenderungen.stadt = {
+        feld: 'Stadt',
+        alt: oldAddress.city,
+        neu: address.city,
+      };
+    }
+    if (addressData.state !== undefined && (addressData.state || null) !== oldAddress.state) {
+      aenderungen.bundesland = {
+        feld: 'Bundesland',
+        alt: oldAddress.state || 'Nicht angegeben',
+        neu: address.state || 'Nicht angegeben',
+      };
+    }
+    if (addressData.description !== undefined && (addressData.description || null) !== oldAddress.description) {
+      aenderungen.beschreibung = {
+        feld: 'Beschreibung',
+        alt: oldAddress.description || 'Nicht angegeben',
+        neu: address.description || 'Nicht angegeben',
+      };
+    }
+    if (addressData.isDefault !== undefined && addressData.isDefault !== oldAddress.isDefault) {
+      aenderungen.standardAdresse = {
+        feld: 'Standardadresse',
+        alt: oldAddress.isDefault ? 'Ja' : 'Nein',
+        neu: address.isDefault ? 'Ja' : 'Nein',
+        altWert: oldAddress.isDefault,
+        neuWert: address.isDefault,
+      };
+    }
+
+    // Log kaydı
+    const aenderungsNachrichten = Object.values(aenderungen).map(aenderung => {
+      return `${aenderung.feld}: "${aenderung.alt}" → "${aenderung.neu}"`;
+    });
+
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.update_user_address',
+      entityType: 'address',
+      entityId: address.id,
+      level: 'info',
+      message: `Adresse für Benutzer aktualisiert: ${address.title} - ${address.street} ${address.houseNumber}, ${address.city}${aenderungsNachrichten.length > 0 ? ` - Änderungen: ${aenderungsNachrichten.join(', ')}` : ''}`,
+      metadata: {
+        adressId: address.id,
+        benutzerId: userId,
+        aenderungen: Object.keys(aenderungen).length > 0 ? aenderungen : null,
+        vorher: {
+          titel: oldAddress.title,
+          strasse: oldAddress.street,
+          hausnummer: oldAddress.houseNumber,
+          adresszusatz: oldAddress.addressLine2 || 'Nicht angegeben',
+          stadtteil: oldAddress.district || 'Nicht angegeben',
+          plz: oldAddress.postalCode,
+          stadt: oldAddress.city,
+          bundesland: oldAddress.state || 'Nicht angegeben',
+          beschreibung: oldAddress.description || 'Nicht angegeben',
+          standardAdresse: oldAddress.isDefault ? 'Ja' : 'Nein',
+        },
+        nachher: {
+          titel: address.title,
+          strasse: address.street,
+          hausnummer: address.houseNumber,
+          adresszusatz: address.addressLine2 || 'Nicht angegeben',
+          stadtteil: address.district || 'Nicht angegeben',
+          plz: address.postalCode,
+          stadt: address.city,
+          bundesland: address.state || 'Nicht angegeben',
+          beschreibung: address.description || 'Nicht angegeben',
+          standardAdresse: address.isDefault ? 'Ja' : 'Nein',
+        },
+      },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Adresse erfolgreich aktualisiert',
+      data: { address },
+    });
+  });
+
+  // DELETE /api/admin/users/:userId/addresses/:addressId - Kullanıcı adresini sil
+  deleteUserAddress = asyncHandler(async (req, res) => {
+    const { userId, addressId } = req.params;
+    const adminId = req.admin.id;
+
+    // Silmeden önce adres bilgisini al (log için)
+    const addressBeforeDelete = await prisma.address.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!addressBeforeDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Adresse nicht gefunden',
+      });
+    }
+
+    await userService.deleteAddress(userId, addressId);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.delete_user_address',
+      entityType: 'address',
+      entityId: addressId,
+      level: 'warning',
+      message: `Adresse für Benutzer gelöscht: ${addressBeforeDelete.street} ${addressBeforeDelete.houseNumber}, ${addressBeforeDelete.city}`,
+      metadata: { addressId, userId, city: addressBeforeDelete.city },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Adresse erfolgreich gelöscht',
     });
   });
 
@@ -740,7 +1277,27 @@ class AdminController {
 
   // POST /api/admin/admins - Yeni admin oluştur
   createAdmin = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
     const admin = await adminService.createAdminForAdmin(req.body);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.create_admin',
+      entityType: 'admin',
+      entityId: admin.id,
+      level: 'success',
+      message: `Neuer Administrator erstellt: ${admin.firstName} (${admin.email})${admin.adminRole ? ` - Rolle: ${admin.adminRole.name}` : admin.role ? ` - Rolle: ${admin.role}` : ''}`,
+      metadata: {
+        administratorId: admin.id,
+        email: admin.email,
+        vorname: admin.firstName,
+        rolle: admin.role || 'Nicht zugewiesen',
+        rollenId: admin.roleId || null,
+        rollenName: admin.adminRole?.name || null,
+      },
+      req,
+    });
 
     res.status(201).json({
       success: true,
@@ -752,8 +1309,107 @@ class AdminController {
   // PUT /api/admin/admins/:id - Admin güncelle
   updateAdmin = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
+
+    // Önce eski admin bilgilerini al
+    const oldAdmin = await prisma.admin.findUnique({
+      where: { id },
+      include: {
+        adminRole: true,
+      },
+    });
+
+    if (!oldAdmin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Administrator nicht gefunden',
+      });
+    }
 
     const admin = await adminService.updateAdminForAdmin(id, req.body);
+
+    // Değişiklikleri tespit et
+    const aenderungen = {};
+    if (req.body.firstName !== undefined && req.body.firstName !== oldAdmin.firstName) {
+      aenderungen.vorname = {
+        feld: 'Vorname',
+        alt: oldAdmin.firstName,
+        neu: admin.firstName,
+      };
+    }
+    if (req.body.email !== undefined && req.body.email.toLowerCase().trim() !== oldAdmin.email) {
+      aenderungen.email = {
+        feld: 'E-Mail',
+        alt: oldAdmin.email,
+        neu: admin.email,
+      };
+    }
+    if (req.body.roleId !== undefined) {
+      const oldRoleId = oldAdmin.roleId;
+      const newRoleId = admin.roleId;
+      if (oldRoleId !== newRoleId) {
+        const altRolle = oldRoleId ? (oldAdmin.adminRole?.name || oldRoleId) : (oldAdmin.role || 'Keine Rolle');
+        const neuRolle = newRoleId ? (admin.adminRole?.name || newRoleId) : (admin.role || 'Keine Rolle');
+        aenderungen.rolle = {
+          feld: 'Rolle',
+          alt: altRolle,
+          neu: neuRolle,
+          altRollenId: oldRoleId,
+          neuRollenId: newRoleId,
+        };
+      }
+    } else if (req.body.role !== undefined && req.body.role !== oldAdmin.role) {
+      aenderungen.rolle = {
+        feld: 'Rolle',
+        alt: oldAdmin.role || 'Nicht zugewiesen',
+        neu: admin.role || 'Nicht zugewiesen',
+      };
+    }
+    if (req.body.password) {
+      aenderungen.passwort = {
+        feld: 'Passwort',
+        alt: '***',
+        neu: '***',
+        hinweis: 'Passwort wurde geändert',
+      };
+    }
+
+    // Log kaydı
+    const aenderungsNachrichten = Object.values(aenderungen).map(aenderung => {
+      if (aenderung.hinweis) {
+        return aenderung.hinweis;
+      }
+      return `${aenderung.feld}: "${aenderung.alt}" → "${aenderung.neu}"`;
+    });
+
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.update_admin',
+      entityType: 'admin',
+      entityId: admin.id,
+      level: 'info',
+      message: `Administrator aktualisiert: ${admin.firstName} (${admin.email})${aenderungsNachrichten.length > 0 ? ` - Änderungen: ${aenderungsNachrichten.join(', ')}` : ''}`,
+      metadata: {
+        administratorId: admin.id,
+        email: admin.email,
+        aenderungen: Object.keys(aenderungen).length > 0 ? aenderungen : null,
+        vorher: {
+          vorname: oldAdmin.firstName,
+          email: oldAdmin.email,
+          rolle: oldAdmin.role || 'Nicht zugewiesen',
+          rollenId: oldAdmin.roleId || null,
+          rollenName: oldAdmin.adminRole?.name || null,
+        },
+        nachher: {
+          vorname: admin.firstName,
+          email: admin.email,
+          rolle: admin.role || 'Nicht zugewiesen',
+          rollenId: admin.roleId || null,
+          rollenName: admin.adminRole?.name || null,
+        },
+      },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -765,8 +1421,43 @@ class AdminController {
   // DELETE /api/admin/admins/:id - Admin sil
   deleteAdmin = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const adminId = req.admin.id;
+
+    // Silmeden önce admin bilgisini al (log için)
+    const adminBeforeDelete = await prisma.admin.findUnique({
+      where: { id },
+      include: {
+        adminRole: true,
+      },
+    });
+
+    if (!adminBeforeDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'Administrator nicht gefunden',
+      });
+    }
 
     const result = await adminService.deleteAdminForAdmin(id);
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'admin.delete_admin',
+      entityType: 'admin',
+      entityId: id,
+      level: 'warning',
+      message: `Administrator gelöscht: ${adminBeforeDelete.firstName} (${adminBeforeDelete.email})${adminBeforeDelete.adminRole ? ` - Rolle: ${adminBeforeDelete.adminRole.name}` : adminBeforeDelete.role ? ` - Rolle: ${adminBeforeDelete.role}` : ''}`,
+      metadata: {
+        administratorId: id,
+        email: adminBeforeDelete.email,
+        vorname: adminBeforeDelete.firstName,
+        rolle: adminBeforeDelete.role || 'Nicht zugewiesen',
+        rollenId: adminBeforeDelete.roleId || null,
+        rollenName: adminBeforeDelete.adminRole?.name || null,
+      },
+      req,
+    });
 
     res.status(200).json({
       success: true,

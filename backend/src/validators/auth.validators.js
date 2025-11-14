@@ -37,7 +37,7 @@ export const registerValidation = [
     .withMessage('Passwort muss mindestens eine Zahl enthalten'),
 
   body('phone')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
     .matches(/^(\+49|0)[1-9]\d{1,14}$/)
     .withMessage('Ungültige Telefonnummer'),

@@ -622,15 +622,17 @@ function FileUpload({
                   </div>
                 )}
                 <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                  <img
-                    src={url}
-                    alt={`Upload ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><FiImage class="text-gray-400" size={20} /></div>';
-                    }}
-                  />
+                  {url ? (
+                    <img
+                      src={url}
+                      alt={`Upload ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FiImage className="text-gray-400" size={20} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-600 truncate">{url}</p>
@@ -669,15 +671,17 @@ function FileUpload({
           ) : value ? (
             <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
               <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                <img
-                  src={value}
-                  alt="Upload"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center"><FiImage class="text-gray-400" size={20} /></div>';
-                  }}
-                />
+                {value ? (
+                  <img
+                    src={value}
+                    alt="Upload"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FiImage className="text-gray-400" size={20} />
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-600 truncate">{value}</p>

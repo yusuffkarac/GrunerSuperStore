@@ -89,6 +89,9 @@ class SettingsService {
           customerCancellationSettings: {
             allowedStatuses: ['pending', 'accepted'],
           },
+          footerSettings: {
+            blocks: [],
+          },
         },
       });
     }
@@ -148,6 +151,9 @@ class SettingsService {
     }
     if (data.customerCancellationSettings !== undefined) {
       updateData.customerCancellationSettings = data.customerCancellationSettings;
+    }
+    if (data.footerSettings !== undefined) {
+      updateData.footerSettings = data.footerSettings;
     }
     if (data.emailTemplates !== undefined) {
       updateData.emailTemplates = data.emailTemplates;
@@ -230,6 +236,9 @@ class SettingsService {
           },
           customerCancellationSettings: data.customerCancellationSettings ?? {
             allowedStatuses: ['pending', 'accepted'],
+          },
+          footerSettings: data.footerSettings ?? {
+            blocks: [],
           },
         },
       });

@@ -74,6 +74,24 @@ enum NotificationType {
   @@map("notification_type")
 }
 
+enum LogLevel {
+  info
+  warning
+  error
+  success
+  debug
+
+  @@map("log_level")
+}
+
+enum DeviceType {
+  mobile
+  desktop
+  unknown
+
+  @@map("device_type")
+}
+
 // ===================================
 // MODELS
 // ===================================
@@ -103,6 +121,7 @@ model User {
   couponUsages CouponUsage[]
   notifications Notification[]
   orderReviews OrderReview[]
+  activityLogs ActivityLog[]
 
   @@index([email])
   @@index([isActive])
@@ -189,7 +208,8 @@ model Product {
   supplier                String?   // Tedarikçi bilgisi
   // Son Kullanma Tarihi (SKT) yönetimi
   expiryDate              DateTime? @map("expiry_date") // Son kullanma tarihi
-  excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf
+  excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf (sadece ExpiryManagement'tan değiştirilebilir)
+  hideFromExpiryManagement Boolean  @default(false) @map("hide_from_expiry_management") // ExpiryManagement sayfasında hiç gözükmesin
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 
@@ -449,6 +469,7 @@ model Admin {
   stockOrdersUndone StockOrder[] @relation("StockOrderUndoneBy")
   stockOrderLists StockOrderList[] @relation("StockOrderListAdmin")
   supplierEmails SupplierEmail[] @relation("SupplierEmailAdmin")
+  activityLogs  ActivityLog[]
 
   @@index([email])
   @@index([role])
@@ -532,6 +553,8 @@ model Settings {
   customerCancellationSettings Json? @map("customer_cancellation_settings")
   // SKT yönetim ayarları
   expiryManagementSettings  Json?    @map("expiry_management_settings")
+  // Footer ayarları
+  footerSettings            Json?    @map("footer_settings")
   // Örnek: { "enabled": true, "warningDays": 3, "criticalDays": 0 }
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
@@ -912,4 +935,40 @@ model ProductTaskIgnore {
   @@index([productId, category])
   @@unique([productId, category])
   @@map("product_task_ignores")
+}
+
+// ===================================
+// ACTIVITY LOGS
+// ===================================
+
+model ActivityLog {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?    @map("user_id") @db.Uuid
+  adminId    String?    @map("admin_id") @db.Uuid
+  action     String     // Örn: "user.login", "product.create", "order.cancel"
+  entityType String?    @map("entity_type") // Örn: "product", "order", "user", "category"
+  entityId   String?    @map("entity_id") @db.Uuid
+  level      LogLevel   @default(info)
+  message    String     // Almanca log mesajı
+  metadata   Json?      // Ek bilgiler (değişiklik detayları, eski/yeni değerler, vs.)
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+  deviceType DeviceType @default(unknown) @map("device_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([adminId])
+  @@index([action])
+  @@index([entityType])
+  @@index([level])
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([adminId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([ipAddress])
+  @@map("activity_logs")
 }
