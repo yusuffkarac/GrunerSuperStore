@@ -619,7 +619,7 @@ function Help() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Hilfe & Dokumentation</h1>
+        <h1 className="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900">Hilfe & Dokumentation</h1>
         <p className="text-sm md:text-base text-gray-600 mt-2">
           Ausführliche Anleitung zur Verwendung des Admin-Panels
         </p>

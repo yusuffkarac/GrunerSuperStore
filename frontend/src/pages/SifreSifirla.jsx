@@ -128,7 +128,7 @@ function SifreSifirla() {
               <FiLock className="text-green-600 text-3xl" />
             )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {success ? 'Passwort zurückgesetzt!' : 'Neues Passwort festlegen'}
           </h1>
           <p className="text-gray-600">

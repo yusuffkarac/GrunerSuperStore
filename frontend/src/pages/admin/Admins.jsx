@@ -281,7 +281,7 @@ function Admins() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
             Administratoren
             <HelpTooltip content="Verwalten Sie Admin-Benutzer und deren Berechtigungen. Nur für Super-Administratoren zugänglich." />
           </h1>

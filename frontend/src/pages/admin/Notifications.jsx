@@ -177,7 +177,7 @@ function Notifications() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           Benachrichtigungen
           <HelpTooltip content="Senden Sie Push-Benachrichtigungen an alle Benutzer oder bestimmte Gruppen. Perfekt für Ankündigungen und Updates." />
         </h1>

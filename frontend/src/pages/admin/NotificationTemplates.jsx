@@ -252,12 +252,11 @@ function NotificationTemplates() {
   }
 
   return (
-    <div className="min-h-screen ">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Benachrichtigungs-Vorlagen</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Benachrichtigungs-Vorlagen</h1>
               <p className="text-gray-600 mt-2">
                 Bearbeiten Sie Benachrichtigungs-Vorlagen. Verwenden Sie das Format <code className="bg-gray-200 px-1 rounded">{'{{variable}}'}</code> für Variablen.
               </p>
@@ -475,7 +474,6 @@ function NotificationTemplates() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }

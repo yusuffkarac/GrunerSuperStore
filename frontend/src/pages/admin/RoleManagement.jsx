@@ -311,7 +311,7 @@ function RoleManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <FiShield className="w-6 h-6 md:w-8 md:h-8" />
             Rollen- und Berechtigungsverwaltung
           </h1>

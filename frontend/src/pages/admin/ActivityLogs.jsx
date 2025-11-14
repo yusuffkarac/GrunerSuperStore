@@ -487,7 +487,7 @@ function ActivityLogs() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
           Logs
         </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
@@ -504,7 +504,7 @@ function ActivityLogs() {
             className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200"
           >
             <div className="text-sm font-medium text-gray-600 mb-1">Gesamt</div>
-            <div className="text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="text-2xl md:text-2xl font-bold text-gray-900">
               {stats.totalLogs || 0}
             </div>
           </motion.div>
@@ -515,7 +515,7 @@ function ActivityLogs() {
             className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200"
           >
             <div className="text-sm font-medium text-gray-600 mb-1">Kunden</div>
-            <div className="text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="text-2xl md:text-2xl font-bold text-gray-900">
               {stats.userTypeStats?.customer || 0}
             </div>
           </motion.div>
@@ -526,7 +526,7 @@ function ActivityLogs() {
             className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200"
           >
             <div className="text-sm font-medium text-gray-600 mb-1">Administratoren</div>
-            <div className="text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="text-2xl md:text-2xl font-bold text-gray-900">
               {stats.userTypeStats?.admin || 0}
             </div>
           </motion.div>

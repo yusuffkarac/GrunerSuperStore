@@ -572,7 +572,7 @@ function AdminLayout() {
 
         {/* Main Content */}
         <main
-          className="flex-1 px-4 py-2 md:p-6 lg:p-8 w-full overflow-y-auto min-h-0"
+          className="flex-1 p-2 md:p-6 lg:p-8 w-full overflow-y-auto min-h-0"
           style={{
             willChange: 'scroll-position',
             transform: 'translateZ(0)',

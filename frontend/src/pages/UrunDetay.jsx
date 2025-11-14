@@ -450,7 +450,7 @@ function UrunDetay() {
           )}
 
           {/* Ürün adı */}
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3 leading-tight">{product.name}</h1>
+          <h1 className="text-2xl lg:text-2xl font-bold text-gray-900 mb-2 lg:mb-3 leading-tight">{product.name}</h1>
 
           {/* Marka */}
           {product.brand && (

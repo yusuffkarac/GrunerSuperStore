@@ -399,8 +399,7 @@ function Settings() {
 
   return (
     <div className="w-full" style={{ minHeight: '100%' }}>
-      <div className="container mx-auto px-0 py-6">
-        <div className="max-w-7xl mx-auto" style={{ contain: 'layout style paint' }}>
+      <div className="max-w-7xl mx-auto" style={{ contain: 'layout style paint' }}>
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -1869,7 +1868,6 @@ function Settings() {
               </p>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

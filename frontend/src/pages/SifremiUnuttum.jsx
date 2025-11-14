@@ -61,7 +61,7 @@ function SifremiUnuttum() {
           <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
             <FiLock className="text-green-600 text-3xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {emailSent ? 'E-Mail gesendet!' : 'Passwort vergessen?'}
           </h1>
           <p className="text-gray-600">

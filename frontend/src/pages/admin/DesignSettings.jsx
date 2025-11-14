@@ -208,8 +208,7 @@ function DesignSettings() {
   );
 
   return (
-    <div className="container mx-auto px-0 py-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -646,7 +645,6 @@ function DesignSettings() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

@@ -477,7 +477,7 @@ function BarcodeLabels() {
   if (loading) return <Loading />;
 
   return (
-    <div className=" md:p-6">
+    <div>
       {/* Header */}
       <div className="mb-4 md:mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
