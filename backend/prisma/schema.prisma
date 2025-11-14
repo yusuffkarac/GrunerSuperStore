@@ -553,6 +553,8 @@ model Settings {
   customerCancellationSettings Json? @map("customer_cancellation_settings")
   // SKT yönetim ayarları
   expiryManagementSettings  Json?    @map("expiry_management_settings")
+  // Footer ayarları
+  footerSettings            Json?    @map("footer_settings")
   // Örnek: { "enabled": true, "warningDays": 3, "criticalDays": 0 }
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")

@@ -269,6 +269,7 @@ function AdminLayout() {
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
+    { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view' },
   ];
 
   // Üst menü öğelerini filtrele (güncel admin bilgileriyle)

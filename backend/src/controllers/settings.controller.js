@@ -33,6 +33,7 @@ class SettingsController {
       emailNotificationSettings,
       barcodeLabelSettings,
       customerCancellationSettings,
+      footerSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -52,6 +53,21 @@ class SettingsController {
       emailNotificationSettings,
       barcodeLabelSettings,
       customerCancellationSettings,
+      footerSettings,
+    });
+
+    // Log kaydı - hangi ayarların değiştiğini belirle
+    const changedSettings = Object.keys(req.body).filter(key => req.body[key] !== undefined);
+    
+    await activityLogService.createLog({
+      adminId,
+      action: 'settings.update',
+      entityType: 'settings',
+      entityId: settings.id,
+      level: 'info',
+      message: `Einstellungen wurden aktualisiert: ${changedSettings.join(', ')}`,
+      metadata: { changedSettings, settingsId: settings.id },
+      req,
     });
 
     // Log kaydı - hangi ayarların değiştiğini belirle
