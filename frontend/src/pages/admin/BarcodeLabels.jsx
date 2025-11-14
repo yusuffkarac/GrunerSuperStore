@@ -9,6 +9,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import SwitchListItem from '../../components/common/SwitchListItem';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function BarcodeLabels() {
   const { showConfirm } = useAlert();
@@ -34,6 +35,10 @@ function BarcodeLabels() {
     labelBorderColor: '#059669',
     barcodeType: 'auto',
   });
+  
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showSettingsModal);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

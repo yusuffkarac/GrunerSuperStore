@@ -3,6 +3,7 @@ import routingService from '../services/routing.service.js';
 import addressSearchService from '../services/addressSearch.service.js';
 import settingsService from '../services/settings.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import activityLogService from '../services/activityLog.service.js';
 
 class UserController {
   // GET /api/user/profile
@@ -23,6 +24,18 @@ class UserController {
       firstName,
       lastName,
       phone,
+    });
+
+    // Log kaydı
+    await activityLogService.createLog({
+      userId: req.user.id,
+      action: 'user.update_profile',
+      entityType: 'user',
+      entityId: req.user.id,
+      level: 'info',
+      message: `Profil wurde aktualisiert: ${user.email}`,
+      metadata: { firstName, lastName, phone },
+      req,
     });
 
     res.status(200).json({
@@ -66,6 +79,22 @@ class UserController {
       newPassword,
     });
 
+    // Log kaydı
+    try {
+      await activityLogService.createLog({
+        userId: req.user.id,
+        action: 'user.change_password',
+        entityType: 'user',
+        entityId: req.user.id,
+        level: 'info',
+        message: `Passwort wurde geändert`,
+        metadata: {},
+        req,
+      });
+    } catch (logError) {
+      console.error('Log kaydı hatası (user.change_password):', logError);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Passwort erfolgreich geändert',
@@ -88,6 +117,18 @@ class UserController {
 
     const address = await userService.createAddress(req.user.id, addressData);
 
+    // Log kaydı
+    await activityLogService.createLog({
+      userId: req.user.id,
+      action: 'user.create_address',
+      entityType: 'address',
+      entityId: address.id,
+      level: 'info',
+      message: `Adresse wurde hinzugefügt: ${address.street} ${address.houseNumber}, ${address.city}`,
+      metadata: { addressId: address.id, city: address.city },
+      req,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Adresse erfolgreich hinzugefügt',
@@ -106,6 +147,22 @@ class UserController {
       addressData
     );
 
+    // Log kaydı
+    try {
+      await activityLogService.createLog({
+        userId: req.user.id,
+        action: 'user.update_address',
+        entityType: 'address',
+        entityId: address.id,
+        level: 'info',
+        message: `Adresse wurde aktualisiert: ${address.street} ${address.houseNumber}, ${address.city}`,
+        metadata: { addressId: address.id, city: address.city },
+        req,
+      });
+    } catch (logError) {
+      console.error('Log kaydı hatası (user.update_address):', logError);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Adresse erfolgreich aktualisiert',
@@ -119,6 +176,18 @@ class UserController {
 
     await userService.deleteAddress(req.user.id, id);
 
+    // Log kaydı
+    await activityLogService.createLog({
+      userId: req.user.id,
+      action: 'user.delete_address',
+      entityType: 'address',
+      entityId: id,
+      level: 'info',
+      message: `Adresse wurde gelöscht: ${id}`,
+      metadata: { addressId: id },
+      req,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Adresse erfolgreich gelöscht',
@@ -130,6 +199,22 @@ class UserController {
     const { id } = req.params;
 
     const address = await userService.setDefaultAddress(req.user.id, id);
+
+    // Log kaydı
+    try {
+      await activityLogService.createLog({
+        userId: req.user.id,
+        action: 'user.set_default_address',
+        entityType: 'address',
+        entityId: address.id,
+        level: 'info',
+        message: `Standard-Adresse wurde festgelegt: ${address.street} ${address.houseNumber}, ${address.city}`,
+        metadata: { addressId: address.id },
+        req,
+      });
+    } catch (logError) {
+      console.error('Log kaydı hatası (user.set_default_address):', logError);
+    }
 
     res.status(200).json({
       success: true,

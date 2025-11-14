@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFilter, FiUsers, FiEye, FiCheck, FiXCircle, FiX, FiMail, FiPhone, FiShoppingBag, FiMapPin, FiHeart, FiShoppingCart, FiPlus, FiEdit2 } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiUsers, FiEye, FiCheck, FiXCircle, FiX, FiMail, FiPhone, FiShoppingBag, FiMapPin, FiHeart, FiShoppingCart, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function Users() {
   const { showConfirm } = useAlert();
@@ -19,8 +20,16 @@ function Users() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [editingAddress, setEditingAddress] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('addresses'); // Modal tab state
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showFormModal);
+  useModalScroll(showAddressModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +54,21 @@ function Users() {
     isEmailVerified: false,
   });
   const [formErrors, setFormErrors] = useState({});
+
+  // Address form state
+  const [addressFormData, setAddressFormData] = useState({
+    title: '',
+    street: '',
+    houseNumber: '',
+    addressLine2: '',
+    district: '',
+    postalCode: '',
+    city: '',
+    state: '',
+    description: '',
+    isDefault: false,
+  });
+  const [addressFormErrors, setAddressFormErrors] = useState({});
 
   // Verileri yükle
   useEffect(() => {
@@ -101,6 +125,14 @@ function Users() {
       const response = await adminService.getUserById(user.id);
       setSelectedUser(response.data.user);
       setShowModal(true);
+      setActiveTab('addresses'); // Reset to addresses tab
+      // Scroll to top when modal opens
+      setTimeout(() => {
+        const modalContent = document.querySelector('.modal-content-scroll');
+        if (modalContent) {
+          modalContent.scrollTop = 0;
+        }
+      }, 100);
     } catch (error) {
       toast.error('Benutzerdetails konnten nicht geladen werden');
       console.error('Kullanıcı detay hatası:', error);
@@ -110,6 +142,7 @@ function Users() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedUser(null);
+    setActiveTab('addresses'); // Reset tab when closing
   };
 
   // Form modal aç/kapat
@@ -236,6 +269,168 @@ function Users() {
     setSearchQuery('');
     setIsActiveFilter('');
     setCurrentPage(1);
+  };
+
+  // Adres modal aç/kapat
+  const openAddressModal = (address = null) => {
+    if (address) {
+      setEditingAddress(address);
+      setAddressFormData({
+        title: address.title || '',
+        street: address.street || '',
+        houseNumber: address.houseNumber || '',
+        addressLine2: address.addressLine2 || '',
+        district: address.district || '',
+        postalCode: address.postalCode || '',
+        city: address.city || '',
+        state: address.state || '',
+        description: address.description || '',
+        isDefault: address.isDefault || false,
+      });
+    } else {
+      setEditingAddress(null);
+      setAddressFormData({
+        title: '',
+        street: '',
+        houseNumber: '',
+        addressLine2: '',
+        district: '',
+        postalCode: '',
+        city: '',
+        state: '',
+        description: '',
+        isDefault: false,
+      });
+    }
+    setAddressFormErrors({});
+    setShowAddressModal(true);
+  };
+
+  const closeAddressModal = () => {
+    setShowAddressModal(false);
+    setEditingAddress(null);
+    setAddressFormData({
+      title: '',
+      street: '',
+      houseNumber: '',
+      addressLine2: '',
+      district: '',
+      postalCode: '',
+      city: '',
+      state: '',
+      description: '',
+      isDefault: false,
+    });
+    setAddressFormErrors({});
+  };
+
+  // Adres validasyonu
+  const validateAddressForm = () => {
+    const errors = {};
+
+    if (!addressFormData.title.trim()) {
+      errors.title = 'Adresstitel ist erforderlich';
+    }
+
+    if (!addressFormData.street.trim()) {
+      errors.street = 'Straße ist erforderlich';
+    }
+
+    if (!addressFormData.houseNumber.trim()) {
+      errors.houseNumber = 'Hausnummer ist erforderlich';
+    }
+
+    if (!addressFormData.postalCode.trim()) {
+      errors.postalCode = 'PLZ ist erforderlich';
+    } else if (!/^\d{5}$/.test(addressFormData.postalCode)) {
+      errors.postalCode = 'PLZ muss 5 Ziffern haben';
+    }
+
+    if (!addressFormData.city.trim()) {
+      errors.city = 'Stadt ist erforderlich';
+    }
+
+    setAddressFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Adres kaydet
+  const handleAddressSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateAddressForm()) {
+      return;
+    }
+
+    if (!selectedUser) {
+      toast.error('Benutzer nicht gefunden');
+      return;
+    }
+
+    try {
+      const submitData = {
+        title: addressFormData.title.trim(),
+        street: addressFormData.street.trim(),
+        houseNumber: addressFormData.houseNumber.trim(),
+        postalCode: addressFormData.postalCode.trim(),
+        city: addressFormData.city.trim(),
+        isDefault: addressFormData.isDefault,
+      };
+
+      if (addressFormData.addressLine2.trim()) {
+        submitData.addressLine2 = addressFormData.addressLine2.trim();
+      }
+      if (addressFormData.district.trim()) {
+        submitData.district = addressFormData.district.trim();
+      }
+      if (addressFormData.state.trim()) {
+        submitData.state = addressFormData.state.trim();
+      }
+      if (addressFormData.description.trim()) {
+        submitData.description = addressFormData.description.trim();
+      }
+
+      const cleanedData = cleanRequestData(submitData);
+
+      if (editingAddress) {
+        await adminService.updateUserAddress(selectedUser.id, editingAddress.id, cleanedData);
+        toast.success('Adresse erfolgreich aktualisiert');
+      } else {
+        await adminService.createUserAddress(selectedUser.id, cleanedData);
+        toast.success('Adresse erfolgreich hinzugefügt');
+      }
+
+      closeAddressModal();
+      // Kullanıcı bilgilerini yeniden yükle
+      await openUserDetail(selectedUser);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Fehler beim Speichern der Adresse');
+      console.error('Adres kaydetme hatası:', error);
+    }
+  };
+
+  // Adres sil
+  const handleDeleteAddress = async (address) => {
+    if (!selectedUser) {
+      toast.error('Benutzer nicht gefunden');
+      return;
+    }
+
+    const confirmed = await showConfirm(
+      `Möchten Sie die Adresse "${address.title}" wirklich löschen?`,
+      { title: 'Adresse löschen' }
+    );
+
+    if (confirmed) {
+      try {
+        await adminService.deleteUserAddress(selectedUser.id, address.id);
+        toast.success('Adresse erfolgreich gelöscht');
+        // Kullanıcı bilgilerini yeniden yükle
+        await openUserDetail(selectedUser);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Fehler beim Löschen der Adresse');
+      }
+    }
   };
 
   // Aktif filtre sayısı
@@ -658,18 +853,18 @@ function Users() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       {selectedUser.firstName} {selectedUser.lastName}
@@ -685,7 +880,7 @@ function Users() {
                 </div>
 
                 {/* Modal Body */}
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1 modal-content-scroll">
                   {/* User Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -763,51 +958,193 @@ function Users() {
                     </div>
                   </div>
 
-                  {/* Addresses */}
-                  {selectedUser.addresses && selectedUser.addresses.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-3">Adressen</h3>
-                      <div className="space-y-2">
-                        {selectedUser.addresses.map((address) => (
-                          <div key={address.id} className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="font-medium text-gray-900">{address.title}</p>
-                                <p className="text-sm text-gray-600">
-                                  {address.street} {address.houseNumber}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  {address.postalCode} {address.city}
-                                </p>
-                              </div>
-                              {address.isDefault && (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  Standard
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Tabs */}
+                  <div className="border-b border-gray-200">
+                    <div className="flex gap-4 -mb-px">
+                      <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'orders'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Bestellungen
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('addresses')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'addresses'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Adressen
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('favorites')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'favorites'
+                            ? 'border-green-600 text-green-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Favoriten
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('cart')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                          activeTab === 'cart'
+                            ? 'border-gray-600 text-gray-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Warenkorb
+                      </button>
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <button
-                      onClick={() => {
-                        handleToggleStatus(selectedUser);
-                        closeModal();
-                      }}
-                      className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-                        selectedUser.isActive
-                          ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                          : 'bg-green-100 text-green-800 hover:bg-green-200'
-                      }`}
-                    >
-                      {selectedUser.isActive ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
-                    </button>
                   </div>
+
+                  {/* Tab Content */}
+                  <div className="min-h-[200px]">
+                    {/* Orders Tab */}
+                    {activeTab === 'orders' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.orders || 0} Bestellungen insgesamt
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Bestelldetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Addresses Tab */}
+                    {activeTab === 'addresses' && (
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Adressen ({selectedUser.addresses?.length || 0})
+                          </h3>
+                          <button
+                            onClick={() => openAddressModal()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm"
+                            style={{
+                              backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                            }}
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            <span>Adresse hinzufügen</span>
+                          </button>
+                        </div>
+                        {selectedUser.addresses && selectedUser.addresses.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedUser.addresses.map((address) => (
+                              <div key={address.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-medium text-gray-900">{address.title}</p>
+                                      {address.isDefault && (
+                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                                          Standard
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                      {address.street} {address.houseNumber}
+                                    </p>
+                                    {address.addressLine2 && (
+                                      <p className="text-sm text-gray-600">{address.addressLine2}</p>
+                                    )}
+                                    <p className="text-sm text-gray-600">
+                                      {address.postalCode} {address.city}
+                                    </p>
+                                    {address.district && (
+                                      <p className="text-sm text-gray-500">{address.district}</p>
+                                    )}
+                                    {address.state && (
+                                      <p className="text-sm text-gray-500">{address.state}</p>
+                                    )}
+                                    {address.description && (
+                                      <p className="text-sm text-gray-500 mt-1 italic">{address.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-4">
+                                    <button
+                                      onClick={() => openAddressModal(address)}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Bearbeiten"
+                                    >
+                                      <FiEdit2 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteAddress(address)}
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Löschen"
+                                    >
+                                      <FiTrash2 size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <FiMapPin className="mx-auto text-3xl mb-2 text-gray-400" />
+                            <p className="text-sm">Keine Adressen vorhanden</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Favorites Tab */}
+                    {activeTab === 'favorites' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.favorites || 0} Favoriten insgesamt
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Favoritdetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Cart Tab */}
+                    {activeTab === 'cart' && (
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          {selectedUser._count?.cartItems || 0} Artikel im Warenkorb
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Warenkorbdetails werden in einer zukünftigen Version angezeigt.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="border-t border-gray-200 px-6 py-4 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      handleToggleStatus(selectedUser);
+                      closeModal();
+                    }}
+                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                      selectedUser.isActive
+                        ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                        : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    }`}
+                  >
+                    {selectedUser.isActive ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -824,13 +1161,13 @@ function Users() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeFormModal}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1000,6 +1337,237 @@ function Users() {
                       }}
                     >
                       {editingUser ? 'Aktualisieren' : 'Erstellen'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Address Form Modal */}
+      <AnimatePresence>
+        {showAddressModal && selectedUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeAddressModal}
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {editingAddress ? 'Adresse bearbeiten' : 'Neue Adresse'}
+                  </h2>
+                  <button
+                    onClick={closeAddressModal}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <form onSubmit={handleAddressSubmit} className="p-6 space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Adresstitel *
+                    </label>
+                    <input
+                      type="text"
+                      value={addressFormData.title}
+                      onChange={(e) => setAddressFormData({ ...addressFormData, title: e.target.value })}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                        addressFormErrors.title ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="z.B. Zuhause, Büro"
+                    />
+                    {addressFormErrors.title && (
+                      <p className="text-red-500 text-xs mt-1">{addressFormErrors.title}</p>
+                    )}
+                  </div>
+
+                  {/* Street & House Number */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Straße *
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.street}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, street: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                          addressFormErrors.street ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Straße"
+                      />
+                      {addressFormErrors.street && (
+                        <p className="text-red-500 text-xs mt-1">{addressFormErrors.street}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hausnummer *
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.houseNumber}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, houseNumber: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                          addressFormErrors.houseNumber ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Hausnummer"
+                      />
+                      {addressFormErrors.houseNumber && (
+                        <p className="text-red-500 text-xs mt-1">{addressFormErrors.houseNumber}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Address Line 2 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Adresszusatz
+                    </label>
+                    <input
+                      type="text"
+                      value={addressFormData.addressLine2}
+                      onChange={(e) => setAddressFormData({ ...addressFormData, addressLine2: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      placeholder="z.B. Wohnung, Etage"
+                    />
+                  </div>
+
+                  {/* Postal Code & City */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        PLZ *
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.postalCode}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, postalCode: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                          addressFormErrors.postalCode ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="12345"
+                        maxLength={5}
+                      />
+                      {addressFormErrors.postalCode && (
+                        <p className="text-red-500 text-xs mt-1">{addressFormErrors.postalCode}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stadt *
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.city}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, city: e.target.value })}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                          addressFormErrors.city ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Stadt"
+                      />
+                      {addressFormErrors.city && (
+                        <p className="text-red-500 text-xs mt-1">{addressFormErrors.city}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* District & State */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stadtteil
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.district}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, district: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        placeholder="Stadtteil"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bundesland
+                      </label>
+                      <input
+                        type="text"
+                        value={addressFormData.state}
+                        onChange={(e) => setAddressFormData({ ...addressFormData, state: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        placeholder="Bundesland"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Beschreibung
+                    </label>
+                    <textarea
+                      value={addressFormData.description}
+                      onChange={(e) => setAddressFormData({ ...addressFormData, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      placeholder="Zusätzliche Informationen"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Default Address */}
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="isDefault"
+                      checked={addressFormData.isDefault}
+                      onChange={(e) => setAddressFormData({ ...addressFormData, isDefault: e.target.checked })}
+                      color="green"
+                    />
+                    <label htmlFor="isDefault" className="text-sm font-medium text-gray-700">
+                      Als Standardadresse festlegen
+                    </label>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="flex gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={closeAddressModal}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 text-white rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: themeColors?.primary?.[600] || '#16a34a'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[700] || '#15803d';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
+                      }}
+                    >
+                      {editingAddress ? 'Aktualisieren' : 'Hinzufügen'}
                     </button>
                   </div>
                 </form>

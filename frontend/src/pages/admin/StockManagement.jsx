@@ -13,6 +13,7 @@ import ProductQuantityDialog from '../../components/stock/ProductQuantityDialog'
 import CreateStockOrderListDialog from '../../components/stock/CreateStockOrderListDialog';
 import StockOrderListCard from '../../components/stock/StockOrderListCard';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function StockManagement() {
   const { themeColors } = useTheme();
@@ -93,6 +94,15 @@ function StockManagement() {
   const [newSupplierEmail, setNewSupplierEmail] = useState(''); // Yeni tedarikçi email'i
   const [statusFilter, setStatusFilter] = useState('');
   const [orderCreationStatus, setOrderCreationStatus] = useState('pending'); // 'pending' veya 'ordered'
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(quantityDialog.open);
+  useModalScroll(createListDialog);
+  useModalScroll(listDetailDialog.open);
+  useModalScroll(orderDialog.open);
+  useModalScroll(orderDetailDialog.open);
+  useModalScroll(supplierDialog.open);
+  useModalScroll(undoDialog.open);
 
   useEffect(() => {
     localStorage.setItem('stockManagement_selectedProducts', JSON.stringify(selectedProducts));
@@ -1350,7 +1360,7 @@ function StockManagement() {
                                       )}
                                     </button>
                                   </td>
-                                  <td className="px-4 py-4">
+                                  <td className="px-4 py-4" style={{ width: '500px' }} >
                                     <div className="flex items-center gap-3">
                                       {imageUrl ? (
                                         <img
@@ -2844,13 +2854,13 @@ function StockManagement() {
                 setNote('');
                 setOrderCreationStatus('pending');
               }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -3035,13 +3045,13 @@ function StockManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOrderDetailDialog({ open: false, order: null })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -3202,13 +3212,13 @@ function StockManagement() {
                 setNewSupplierName('');
                 setNewSupplierEmail('');
               }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
@@ -3326,13 +3336,13 @@ function StockManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setUndoDialog({ open: false, orderId: null, productName: '' })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4">
@@ -3400,13 +3410,13 @@ function StockManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setListDetailDialog({ open: false, list: null })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">

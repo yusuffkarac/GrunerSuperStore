@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -34,6 +35,10 @@ function RoleManagement() {
   // Dialog states
   const [roleDialog, setRoleDialog] = useState({ open: false, mode: 'create', role: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, role: null });
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(roleDialog.open);
+  useModalScroll(deleteDialog.open);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -453,13 +458,13 @@ function RoleManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={handleCloseDialog}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto my-8">
@@ -621,7 +626,7 @@ function RoleManagement() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDeleteDialog({ open: false, role: null })}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}

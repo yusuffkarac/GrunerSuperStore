@@ -406,6 +406,22 @@ const adminService = {
     return response.data;
   },
 
+  // Kullanıcı adres yönetimi
+  createUserAddress: async (userId, data) => {
+    const response = await adminApi.post(`/admin/users/${userId}/addresses`, data);
+    return response.data;
+  },
+
+  updateUserAddress: async (userId, addressId, data) => {
+    const response = await adminApi.put(`/admin/users/${userId}/addresses/${addressId}`, data);
+    return response.data;
+  },
+
+  deleteUserAddress: async (userId, addressId) => {
+    const response = await adminApi.delete(`/admin/users/${userId}/addresses/${addressId}`);
+    return response.data;
+  },
+
   // Dosya yükleme
   uploadFile: async (file, folder = 'products') => {
     const formData = new FormData();
@@ -754,6 +770,22 @@ const adminService = {
 
   addSupplierEmail: async (name, email) => {
     const response = await adminApi.post('/admin/suppliers/emails', { name, email });
+    return response.data;
+  },
+
+  // Activity Logs
+  getActivityLogs: async (params = {}) => {
+    const response = await adminApi.get('/admin/logs', { params });
+    return response.data;
+  },
+
+  getActivityLogById: async (id) => {
+    const response = await adminApi.get(`/admin/logs/${id}`);
+    return response.data;
+  },
+
+  getActivityLogStats: async (params = {}) => {
+    const response = await adminApi.get('/admin/logs/stats', { params });
     return response.data;
   },
 };

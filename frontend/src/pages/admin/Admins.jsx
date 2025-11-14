@@ -10,6 +10,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { cleanRequestData } from '../../utils/requestUtils';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import axios from 'axios';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -37,6 +38,10 @@ function Admins() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Modal scroll yönetimi - her modal için
+  useModalScroll(showModal);
+  useModalScroll(showFormModal);
 
   // Filtreler
   const [searchQuery, setSearchQuery] = useState('');
@@ -623,8 +628,13 @@ function Admins() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={closeModal}
+            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -714,8 +724,13 @@ function Admins() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={closeFormModal}
+            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center p-4"
+            onClick={(e) => {
+              // Sadece overlay'e direkt tıklanınca kapat (input selection sırasında kapanmayı önle)
+              if (e.target === e.currentTarget) {
+                closeFormModal();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}

@@ -73,7 +73,6 @@ class QueueService {
       });
 
       this.initialized = true;
-      console.log('✅ Queue service başlatıldı');
     } catch (error) {
       console.error('❌ Queue başlatma hatası:', error);
       // Redis bağlantısı yoksa hata verme, sadece log at
