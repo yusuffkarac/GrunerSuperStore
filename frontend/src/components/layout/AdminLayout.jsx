@@ -426,13 +426,13 @@ function AdminLayout() {
       </div>
 
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <img src={logo} alt="Gruner Logo" className="w-7 h-7 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
+      <div className="lg:hidden bg-white shadow-sm p-2 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <img src={logo} alt="Gruner Logo" className="w-6 h-6 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Mobile Top Menu Icons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {filteredTopMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = !item.isAction && location.pathname === item.path;
@@ -442,10 +442,10 @@ function AdminLayout() {
                   <button
                     key={item.label}
                     onClick={handleLogout}
-                    className="p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    className="p-1 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                     title={item.label}
                   >
-                    <Icon size={20} />
+                    <Icon size={16} />
                   </button>
                 );
               }
@@ -455,7 +455,7 @@ function AdminLayout() {
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-1 rounded-lg transition-colors ${
                     isActive
                       ? ''
                       : 'text-gray-700 hover:bg-gray-50'
@@ -466,16 +466,16 @@ function AdminLayout() {
                   } : {}}
                   title={item.label}
                 >
-                  <Icon size={20} />
+                  <Icon size={16} />
                 </Link>
               );
             })}
           </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100"
+            className="p-1.5 rounded-lg hover:bg-gray-100"
           >
-            {sidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
           </button>
         </div>
       </div>
