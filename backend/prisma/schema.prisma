@@ -625,7 +625,7 @@ model BarcodeLabel {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([barcode])
-  @@index([name])
+  @@index([name]) 
   @@index([createdAt(sort: Desc)])
   @@map("barcode_labels")
 }
