@@ -27,7 +27,9 @@ function StockManagement() {
   const [success, setSuccess] = useState(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const savedDate = localStorage.getItem('stockManagement_selectedDate');
-    return savedDate ? new Date(savedDate) : new Date();
+    // savedDate 'null' string'i olabilir, onu kontrol et
+    if (savedDate === 'null' || !savedDate) return null;
+    return new Date(savedDate);
   });
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem('stockManagement_activeTab');
@@ -53,6 +55,8 @@ function StockManagement() {
     const savedMode = localStorage.getItem('stockManagement_listViewMode');
     return savedMode || 'card'; // 'card' veya 'list'
   });
+  // Artık kullanıcıya seçim sunmuyoruz, her zaman updatedAt kullanıyoruz
+  const listDateFilterMode = 'updatedAt';
   const [searchQuery, setSearchQuery] = useState('');
   const [listSearchQuery, setListSearchQuery] = useState(''); // Bestelllisten için arama
 
@@ -76,6 +80,7 @@ function StockManagement() {
   const [quantityDialog, setQuantityDialog] = useState({ open: false, product: null });
   const [createListDialog, setCreateListDialog] = useState(false);
   const [listDetailDialog, setListDetailDialog] = useState({ open: false, list: null });
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({ open: false, listId: null, listName: '' });
 
   // Dialog states (eski sistem için korunuyor)
   const [orderDialog, setOrderDialog] = useState({ open: false, product: null, order: null });
@@ -99,6 +104,7 @@ function StockManagement() {
   useModalScroll(quantityDialog.open);
   useModalScroll(createListDialog);
   useModalScroll(listDetailDialog.open);
+  useModalScroll(deleteConfirmDialog.open);
   useModalScroll(orderDialog.open);
   useModalScroll(orderDetailDialog.open);
   useModalScroll(supplierDialog.open);
@@ -119,6 +125,8 @@ function StockManagement() {
   useEffect(() => {
     if (selectedDate) {
       localStorage.setItem('stockManagement_selectedDate', selectedDate.toISOString());
+    } else {
+      localStorage.setItem('stockManagement_selectedDate', 'null');
     }
   }, [selectedDate]);
 
@@ -185,13 +193,14 @@ function StockManagement() {
           setActiveOrders([]);
         }
       } else if (activeTab === 2) {
-        const dateParam = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
+        const dateParam = selectedDate ? selectedDate.toISOString().split('T')[0] : undefined;
         
         // Geçmişteki listeleri getir
         try {
           const listsResponse = await adminService.getStockOrderLists({
             status: statusFilter || undefined,
             date: dateParam,
+            dateField: dateParam ? listDateFilterMode : undefined, // Sadece tarih varsa dateField gönder
             limit: 1000,
           });
           const lists = listsResponse?.lists || listsResponse?.data?.lists || (Array.isArray(listsResponse) ? listsResponse : []);
@@ -316,15 +325,19 @@ function StockManagement() {
     }
   };
 
-  // Liste sil
-  const handleDeleteList = async (listId) => {
-    if (!window.confirm('Möchten Sie diese Bestellliste wirklich löschen?')) {
-      return;
-    }
+  // Liste sil - Onay dialogunu aç
+  const openDeleteConfirmDialog = (listId, listName) => {
+    setDeleteConfirmDialog({ open: true, listId, listName });
+  };
+
+  // Liste silme işlemini gerçekleştir
+  const handleDeleteList = async () => {
+    if (!deleteConfirmDialog.listId) return;
 
     try {
-      await adminService.deleteStockOrderList(listId);
+      await adminService.deleteStockOrderList(deleteConfirmDialog.listId);
       toast.success('Bestellliste erfolgreich gelöscht');
+      setDeleteConfirmDialog({ open: false, listId: null, listName: '' });
       fetchData();
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Fehler beim Löschen der Liste';
@@ -492,18 +505,28 @@ function StockManagement() {
   };
 
   const changeDate = (days) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + days);
-    setSelectedDate(newDate);
+    // Eğer selectedDate null ise, bugünden başla
+    const baseDate = selectedDate ? new Date(selectedDate) : new Date();
+    baseDate.setDate(baseDate.getDate() + days);
+    setSelectedDate(baseDate);
   };
 
   const goToToday = () => {
     setSelectedDate(new Date());
   };
 
+  const showAllDates = () => {
+    setSelectedDate(null);
+  };
+
   const isToday = () => {
+    if (!selectedDate) return false;
     const today = new Date();
     return selectedDate.toDateString() === today.toDateString();
+  };
+
+  const isShowingAll = () => {
+    return selectedDate === null;
   };
 
   // Checkbox seçimi handler'ları
@@ -744,7 +767,7 @@ function StockManagement() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <FiPackage className="w-4 h-4" />
-                Bestellliste erstellen ({selectedProducts.length})
+                Bestellliste({selectedProducts.length})
               </button>
             )}
           </div>
@@ -786,8 +809,8 @@ function StockManagement() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                <FiAlertCircle className="w-4 h-4" />
-                <span>Kritischer Bestand</span>
+                <FiAlertCircle className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Kritischer Bestand</span>
                 {lowStockProducts.length > 0 && (
                   <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                     activeTab === 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
@@ -804,8 +827,8 @@ function StockManagement() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                <FiPackage className="w-4 h-4" />
-                <span>Aktive Bestellungen</span>
+                <FiPackage className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Aktive Bestellungen</span>
                 {(activeLists.length > 0 || activeOrders.length > 0) && (
                   <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                     activeTab === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
@@ -822,8 +845,8 @@ function StockManagement() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                <FiClock className="w-4 h-4" />
-                <span>Verlauf</span>
+                <FiClock className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Verlauf</span>
               </button>
             </>
           ) : (
@@ -837,12 +860,11 @@ function StockManagement() {
                 }`}
               >
                 {viewMode === 'category' ? (
-                  <FiGrid className="w-4 h-4" />
+                  <FiGrid className="w-5 h-5 md:w-4 md:h-4" />
                 ) : (
-                  <FiTruck className="w-4 h-4" />
+                  <FiTruck className="w-5 h-5 md:w-4 md:h-4" />
                 )}
-                <span className="hidden sm:inline">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
-                <span className="sm:hidden">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
+                <span className="hidden md:inline">{viewMode === 'category' ? 'Kategorien' : 'Lieferanten'}</span>
               </button>
               <button
                 onClick={() => setActiveTab(1)}
@@ -852,8 +874,8 @@ function StockManagement() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                <FiPackage className="w-4 h-4" />
-                <span>Aktive Bestellungen</span>
+                <FiPackage className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Aktive Bestellungen</span>
                 {(activeLists.length > 0 || activeOrders.length > 0) && (
                   <span className={`px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium ${
                     activeTab === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
@@ -870,9 +892,8 @@ function StockManagement() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                <FiClock className="w-4 h-4" />
-                <span className="hidden sm:inline">Verlauf</span>
-                <span className="sm:hidden">Verlauf</span>
+                <FiClock className="w-5 h-5 md:w-4 md:h-4" />
+                <span className="hidden md:inline">Verlauf</span>
               </button>
             </>
           )}
@@ -2067,7 +2088,7 @@ function StockManagement() {
                         list={list}
                         onStatusUpdate={fetchData}
                         onViewDetails={(list) => setListDetailDialog({ open: true, list })}
-                        onDelete={fetchData}
+                        onDelete={(listId, listName) => openDeleteConfirmDialog(listId, listName)}
                       />
                     ))}
                   </div>
@@ -2087,6 +2108,9 @@ function StockManagement() {
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                               Erstellt am
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Aktualisiert am
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                               Produkte
@@ -2120,6 +2144,9 @@ function StockManagement() {
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">
                                 {formatDate(list.createdAt)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {formatDate(list.updatedAt)}
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">
                                 <div className="flex items-center gap-1">
@@ -2205,7 +2232,7 @@ function StockManagement() {
                                     <FiChevronRight className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteList(list.id)}
+                                    onClick={() => openDeleteConfirmDialog(list.id, list.name)}
                                     className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
                                     title="Liste löschen"
                                   >
@@ -2462,42 +2489,56 @@ function StockManagement() {
       {/* GEÇMİŞ TAB'ı */}
       {activeTab === 2 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-base md:text-lg font-semibold text-blue-900 flex items-center gap-2">
-              <FiClock className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="text-sm md:text-base">Bestellverlauf</span>
-            </h2>
-            <div className="flex items-center gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Alle Status</option>
-                <option value="pending">Ausstehend</option>
-                <option value="ordered">Bestellt</option>
-                <option value="delivered">Geliefert</option>
-                <option value="cancelled">Storniert</option>
-              </select>
-              <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
-                <button
-                  onClick={() => changeDate(-1)}
-                  className="p-1.5 hover:bg-gray-100 transition-colors"
+          <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <h2 className="text-base md:text-lg font-semibold text-blue-900 flex items-center gap-2">
+                <FiClock className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">Bestellverlauf</span>
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <FiChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={goToToday}
-                  className={`px-3 py-1.5 text-xs md:text-sm ${isToday() ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
-                >
-                  {formatDate(selectedDate)}
-                </button>
-                <button
-                  onClick={() => changeDate(1)}
-                  className="p-1.5 hover:bg-gray-100 transition-colors"
-                >
-                  <FiChevronRight className="w-4 h-4" />
-                </button>
+                  <option value="">Alle Status</option>
+                  <option value="pending">Ausstehend</option>
+                  <option value="ordered">Bestellt</option>
+                  <option value="delivered">Geliefert</option>
+                  <option value="cancelled">Storniert</option>
+                </select>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={showAllDates}
+                    className={`px-3 py-1.5 text-xs md:text-sm rounded-lg transition-colors ${
+                      isShowingAll() ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
+                    }`}
+                  >
+                    Alle anzeigen
+                  </button>
+                  <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
+                    <button
+                      onClick={() => changeDate(-1)}
+                      className={`p-1.5 transition-colors ${isShowingAll() ? 'cursor-not-allowed' : 'hover:bg-gray-100'}`}
+                      disabled={isShowingAll()}
+                    >
+                      <FiChevronLeft className={`w-4 h-4 ${isShowingAll() ? 'text-gray-400' : ''}`} />
+                    </button>
+                    <button
+                      onClick={goToToday}
+                      className={`px-3 py-1.5 text-xs md:text-sm ${isToday() ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'} transition-colors`}
+                    >
+                      {selectedDate ? formatDate(selectedDate) : 'Datum wählen'}
+                    </button>
+                    <button
+                      onClick={() => changeDate(1)}
+                      className={`p-1.5 transition-colors ${isShowingAll() ? 'cursor-not-allowed' : 'hover:bg-gray-100'}`}
+                      disabled={isShowingAll()}
+                    >
+                      <FiChevronRight className={`w-4 h-4 ${isShowingAll() ? 'text-gray-400' : ''}`} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2527,7 +2568,8 @@ function StockManagement() {
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                         />
                       </div>
-                      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                      {/* Görünüm değiştirme butonları - Sadece desktop'ta görünür */}
+                      <div className="hidden md:flex items-center gap-2 bg-gray-100 rounded-lg p-1">
                         <button
                           onClick={() => setListViewMode('card')}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
@@ -2556,23 +2598,39 @@ function StockManagement() {
                     </div>
                   </div>
 
-                  {/* Kart görünümü */}
-                  {listViewMode === 'card' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Kart görünümü - Mobilde her zaman, desktop'ta seçime bağlı */}
+                  <div className="md:hidden">
+                    <div className="grid grid-cols-1 gap-4">
                       {filterLists(historyLists).map((list) => (
                         <StockOrderListCard
                           key={list.id}
                           list={list}
                           onStatusUpdate={fetchData}
                           onViewDetails={(list) => setListDetailDialog({ open: true, list })}
-                          onDelete={fetchData}
+                          onDelete={(listId, listName) => openDeleteConfirmDialog(listId, listName)}
                         />
                       ))}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Liste görünümü */}
-                  {listViewMode === 'list' && (
+                  {/* Desktop görünüm - Kart veya Liste */}
+                  <div className="hidden md:block">
+                    {listViewMode === 'card' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filterLists(historyLists).map((list) => (
+                          <StockOrderListCard
+                            key={list.id}
+                            list={list}
+                            onStatusUpdate={fetchData}
+                            onViewDetails={(list) => setListDetailDialog({ open: true, list })}
+                            onDelete={(listId, listName) => openDeleteConfirmDialog(listId, listName)}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Liste görünümü - Sadece desktop */}
+                    {listViewMode === 'list' && (
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
@@ -2585,6 +2643,9 @@ function StockManagement() {
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                               Erstellt am
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                              Aktualisiert am
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                               Produkte
@@ -2618,6 +2679,9 @@ function StockManagement() {
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">
                                 {formatDate(list.createdAt)}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {formatDate(list.updatedAt)}
                               </td>
                               <td className="px-4 py-4 text-sm text-gray-900">
                                 <div className="flex items-center gap-1">
@@ -2684,6 +2748,13 @@ function StockManagement() {
                                   >
                                     <FiChevronRight className="w-4 h-4" />
                                   </button>
+                                  <button
+                                    onClick={() => openDeleteConfirmDialog(list.id, list.name)}
+                                    className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200"
+                                    title="Liste löschen"
+                                  >
+                                    <FiX className="w-4 h-4" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -2691,7 +2762,8 @@ function StockManagement() {
                         </tbody>
                       </table>
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -2924,6 +2996,7 @@ function StockManagement() {
                     <input
                       type="number"
                       min="1"
+                      inputMode="numeric"
                       value={orderQuantity}
                       onChange={(e) => setOrderQuantity(e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -3377,6 +3450,62 @@ function StockManagement() {
                     className="px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                   >
                     Rückgängig machen
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE CONFIRM DIALOG */}
+      <AnimatePresence>
+        {deleteConfirmDialog.open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirmDialog({ open: false, listId: null, listName: '' })}
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4">
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-sm md:text-base font-semibold text-gray-900">Bestellliste löschen</h3>
+                  <button
+                    onClick={() => setDeleteConfirmDialog({ open: false, listId: null, listName: '' })}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <div className="px-4 py-3 space-y-3">
+                  <p className="text-xs md:text-sm text-gray-700">
+                    Möchten Sie die Bestellliste <strong>{deleteConfirmDialog.listName || 'diese Liste'}</strong> wirklich löschen?
+                  </p>
+                  <p className="text-xs text-red-600">
+                    Diese Aktion kann nicht rückgängig gemacht werden.
+                  </p>
+                </div>
+                <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+                  <button
+                    onClick={() => setDeleteConfirmDialog({ open: false, listId: null, listName: '' })}
+                    className="px-3 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleDeleteList}
+                    className="px-3 py-2 text-xs md:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                  >
+                    Löschen
                   </button>
                 </div>
               </div>

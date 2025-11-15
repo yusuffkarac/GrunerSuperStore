@@ -743,6 +743,7 @@ function Categories() {
                     <input
                       type="number"
                       min="0"
+                      inputMode="numeric"
                       value={formData.sortOrder}
                       onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
                       placeholder="Niedrigere Zahlen erscheinen zuerst"

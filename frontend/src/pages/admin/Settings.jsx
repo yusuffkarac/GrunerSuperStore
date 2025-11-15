@@ -719,6 +719,7 @@ function Settings() {
                     <input
                       type="number"
                       min={1}
+                      inputMode="numeric"
                       value={orderIdFormat.startFrom ?? 1}
                       onChange={(e) =>
                         setOrderIdFormat({
@@ -792,6 +793,7 @@ function Settings() {
                   type="number"
                   min="0"
                   step="0.01"
+                  inputMode="decimal"
                   value={minOrderAmount}
                   onChange={(e) => setMinOrderAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -807,6 +809,7 @@ function Settings() {
                   type="number"
                   min="0"
                   step="0.01"
+                  inputMode="decimal"
                   value={freeShippingThreshold}
                   onChange={(e) => setFreeShippingThreshold(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -829,14 +832,14 @@ function Settings() {
                   <div key={idx} className="grid grid-cols-1 sm:grid-cols-5 gap-2 items-end">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Min</label>
-                      <input type="number" step="0.01" value={r.min ?? ''} onChange={(e)=>{
+                      <input type="number" step="0.01" inputMode="decimal" value={r.min ?? ''} onChange={(e)=>{
                         const v = e.target.value === '' ? null : parseFloat(e.target.value);
                         const copy = [...shippingRules]; copy[idx] = { ...copy[idx], min: v }; setShippingRules(copy);
                       }} className="w-full px-2 py-2 border rounded" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Max</label>
-                      <input type="number" step="0.01" value={r.max ?? ''} onChange={(e)=>{
+                      <input type="number" step="0.01" inputMode="decimal" value={r.max ?? ''} onChange={(e)=>{
                         const v = e.target.value === '' ? null : parseFloat(e.target.value);
                         const copy = [...shippingRules]; copy[idx] = { ...copy[idx], max: v }; setShippingRules(copy);
                       }} className="w-full px-2 py-2 border rounded" />
@@ -853,7 +856,7 @@ function Settings() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Wert</label>
-                      <input type="number" step="0.01" value={r.type==='percent' ? (r.percent ?? r.value ?? 0) : (r.fee ?? r.value ?? 0)} onChange={(e)=>{
+                      <input type="number" step="0.01" inputMode="decimal" value={r.type==='percent' ? (r.percent ?? r.value ?? 0) : (r.fee ?? r.value ?? 0)} onChange={(e)=>{
                         const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
                         const copy = [...shippingRules];
                         copy[idx] = r.type==='percent' ? { ...copy[idx], percent: v, fee: undefined } : { ...copy[idx], fee: v, percent: undefined };
@@ -1007,6 +1010,7 @@ function Settings() {
                                 type="number"
                                 step="0.1"
                                 min="0"
+                                inputMode="decimal"
                                 value={deliverySettings.distanceLimits?.pickupMaxDistance ?? ''}
                                 onChange={(e) =>
                                   setDeliverySettings({
@@ -1030,6 +1034,7 @@ function Settings() {
                                 type="number"
                                 step="0.1"
                                 min="0"
+                                inputMode="decimal"
                                 value={deliverySettings.distanceLimits?.deliveryMaxDistance ?? ''}
                                 onChange={(e) =>
                                   setDeliverySettings({
@@ -1192,6 +1197,7 @@ function Settings() {
                               <input
                                 type="number"
                                 step="0.01"
+                                inputMode="decimal"
                                 value={paymentOptions.kapidaOdemeUcreti?.value ?? 0}
                                 onChange={(e) =>
                                   setPaymentOptions({
@@ -1297,21 +1303,21 @@ function Settings() {
                   Max. Bestellbetrag
                   <HelpTooltip content="Die maximale Summe, die ein Kunde in einer einzigen Bestellung bestellen kann. Leer lassen für unbegrenzt." />
                 </label>
-                <input type="number" step="0.01" value={orderLimits.maxSiparisTutari ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSiparisTutari: e.target.value })} className="w-full px-3 py-2 border rounded" />
+                <input type="number" step="0.01" inputMode="decimal" value={orderLimits.maxSiparisTutari ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSiparisTutari: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Max. Produktanzahl
                   <HelpTooltip content="Die maximale Anzahl derselben Produkteinheit, die ein Kunde in einer Bestellung bestellen kann. Beispiel: 10 bedeutet maximal 10 Stück eines Produkts." />
                 </label>
-                <input type="number" value={orderLimits.maxUrunAdedi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxUrunAdedi: e.target.value })} className="w-full px-3 py-2 border rounded" />
+                <input type="number" inputMode="numeric" value={orderLimits.maxUrunAdedi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxUrunAdedi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Max. Warenkorbartikel
                   <HelpTooltip content="Die maximale Anzahl unterschiedlicher Produkte, die ein Kunde in den Warenkorb legen kann. Beispiel: 50 bedeutet maximal 50 verschiedene Produkte." />
                 </label>
-                <input type="number" value={orderLimits.maxSepetKalemi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSepetKalemi: e.target.value })} className="w-full px-3 py-2 border rounded" />
+                <input type="number" inputMode="numeric" value={orderLimits.maxSepetKalemi ?? ''} onChange={(e)=>setOrderLimits({ ...orderLimits, maxSepetKalemi: e.target.value })} className="w-full px-3 py-2 border rounded" />
               </div>
             </div>
 
@@ -1465,6 +1471,7 @@ function Settings() {
                     <input
                       type="number"
                       step="0.00000001"
+                      inputMode="decimal"
                       value={storeSettings.storeLocation?.latitude ?? ''}
                       onChange={(e) =>
                         setStoreSettings({
@@ -1487,6 +1494,7 @@ function Settings() {
                     <input
                       type="number"
                       step="0.00000001"
+                      inputMode="decimal"
                       value={storeSettings.storeLocation?.longitude ?? ''}
                       onChange={(e) =>
                         setStoreSettings({
@@ -1693,6 +1701,7 @@ function Settings() {
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     value={smtpSettings.port}
                     onChange={(e) => setSmtpSettings({ ...smtpSettings, port: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"

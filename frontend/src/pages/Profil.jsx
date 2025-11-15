@@ -1184,6 +1184,7 @@ function Profil() {
                       <input
                         type="number"
                         step="0.00000001"
+                        inputMode="decimal"
                         name="latitude"
                         value={formData.latitude ?? ''}
                         onChange={handleInputChange}
@@ -1196,6 +1197,7 @@ function Profil() {
                       <input
                         type="number"
                         step="0.00000001"
+                        inputMode="decimal"
                         name="longitude"
                         value={formData.longitude ?? ''}
                         onChange={handleInputChange}

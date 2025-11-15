@@ -589,6 +589,7 @@ function BarcodeLabels() {
           <input
             type="number"
             min="1"
+            inputMode="numeric"
             value={customItemsPerPage}
             onChange={(e) => setCustomItemsPerPage(e.target.value)}
             placeholder="Zahl"
@@ -899,6 +900,7 @@ function BarcodeLabels() {
                       onChange={handleInputChange}
                       step="0.01"
                       min="0"
+                      inputMode="decimal"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       placeholder="0.00"
                       required
@@ -1051,6 +1053,7 @@ function BarcodeLabels() {
                         type="number"
                         min="8"
                         max="32"
+                        inputMode="numeric"
                         value={labelSettings.labelHeaderFontSize}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -1082,6 +1085,7 @@ function BarcodeLabels() {
                         type="number"
                         min="20"
                         max="80"
+                        inputMode="numeric"
                         value={labelSettings.labelPriceFontSize}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -1113,6 +1117,7 @@ function BarcodeLabels() {
                         type="number"
                         min="10"
                         max="40"
+                        inputMode="numeric"
                         value={labelSettings.labelPriceCurrencyFontSize}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -1144,6 +1149,7 @@ function BarcodeLabels() {
                         type="number"
                         min="8"
                         max="20"
+                        inputMode="numeric"
                         value={labelSettings.labelSkuFontSize}
                         onChange={(e) => {
                           const value = e.target.value;

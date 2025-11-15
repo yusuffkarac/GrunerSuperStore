@@ -1655,6 +1655,7 @@ function Produkte() {
                         step="0.01"
                         required
                         min="0"
+                        inputMode="decimal"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -1674,6 +1675,7 @@ function Produkte() {
                         
                         min="0"
                         step="1"
+                        inputMode="numeric"
                         value={formData.stock}
                         onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                         onInvalid={(e) => {
@@ -1778,6 +1780,7 @@ function Produkte() {
                       <input
                         type="number"
                         min="0"
+                        inputMode="numeric"
                         value={formData.lowStockLevel}
                         onChange={(e) => setFormData({ ...formData, lowStockLevel: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -1819,6 +1822,7 @@ function Produkte() {
                       step="0.01"
                       min="0"
                       max="100"
+                      inputMode="decimal"
                       value={formData.taxRate}
                       onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
                       placeholder="z.B. 19.00 (für 19%)"
@@ -2445,6 +2449,7 @@ function Produkte() {
                             name="displayOrder"
                             defaultValue="0"
                             min="0"
+                            inputMode="numeric"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             autoComplete="off"
                           />
@@ -2618,6 +2623,7 @@ function Produkte() {
                           required
                           step="0.01"
                           min="0"
+                          inputMode="decimal"
                           defaultValue={variantFormData.price}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           autoComplete="off"
@@ -2633,6 +2639,7 @@ function Produkte() {
                           name="stock"
                           required
                           min="0"
+                          inputMode="numeric"
                           defaultValue={variantFormData.stock}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           autoComplete="off"

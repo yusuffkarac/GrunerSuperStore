@@ -252,8 +252,7 @@ const limiter = rateLimit({
 });
 
 // Rate limiting - sadece API isteklerine
-// DEVRE DIŞI: 429 hatasını deaktif etmek için yorum satırı yapıldı
-// app.use('/api/', limiter);
+app.use('/api/', limiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

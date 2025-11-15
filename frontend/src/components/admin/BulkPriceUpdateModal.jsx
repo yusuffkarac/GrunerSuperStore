@@ -240,6 +240,7 @@ function BulkPriceUpdateModal({ isOpen, onClose, onSuccess }) {
                   <input
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     value={formData.adjustmentValue}
                     onChange={(e) => setFormData({ ...formData, adjustmentValue: e.target.value })}
                     placeholder={formData.adjustmentType === 'percentage' ? 'z.B. 10 (für +10%)' : 'z.B. 2.50 (für +2,50€)'}

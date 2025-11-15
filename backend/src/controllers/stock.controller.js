@@ -183,13 +183,14 @@ export const createStockOrderList = asyncHandler(async (req, res) => {
  * GET /api/admin/stock/lists
  */
 export const getStockOrderLists = asyncHandler(async (req, res) => {
-  const { status, limit, offset, date } = req.query;
+  const { status, limit, offset, date, dateField } = req.query;
 
   const result = await stockService.getStockOrderLists({
     status,
     limit: limit ? parseInt(limit) : undefined,
     offset: offset ? parseInt(offset) : undefined,
     date,
+    dateField: dateField || undefined, // Service kendi varsayılan mantığını kullanacak
   });
 
   res.json(result);

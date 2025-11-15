@@ -528,8 +528,8 @@ function UrunListesi() {
       {!loading && !error && products.length === 0 && (
         <div className="container-mobile py-8">
           <EmptyState
-            title="Ürün bulunamadı"
-            message="Farklı filtreler deneyin"
+            title="Keine Produkte gefunden"
+            message="Versuchen Sie es mit anderen Filtern"
           />
         </div>
       )}

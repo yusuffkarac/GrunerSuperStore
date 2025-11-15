@@ -221,7 +221,7 @@ function Kayit() {
           {/* Telefon (Optional) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Telefonnummer (optional)
+              Telefonnummer
             </label>
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">

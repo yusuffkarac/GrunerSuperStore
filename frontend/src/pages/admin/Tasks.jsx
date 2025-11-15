@@ -496,6 +496,7 @@ const Tasks = () => {
                                 <input
                                   type="number"
                                   step="0.01"
+                                  inputMode="decimal"
                                   value={editValues.price || ''}
                                   onChange={(e) => setEditValues({ ...editValues, price: e.target.value })}
                                   placeholder="Preis eingeben"
@@ -521,6 +522,7 @@ const Tasks = () => {
                                   step="0.01"
                                   min="0"
                                   max="100"
+                                  inputMode="decimal"
                                   value={editValues.taxRate || ''}
                                   onChange={(e) => setEditValues({ ...editValues, taxRate: e.target.value })}
                                   placeholder="Vergi oranı (örn: 19.00)"
@@ -685,6 +687,7 @@ const Tasks = () => {
                           <input
                             type="number"
                             step="0.01"
+                            inputMode="decimal"
                             value={editValues.price || ''}
                             onChange={(e) => setEditValues({ ...editValues, price: e.target.value })}
                             placeholder="Preis eingeben"
@@ -710,6 +713,7 @@ const Tasks = () => {
                             step="0.01"
                             min="0"
                             max="100"
+                            inputMode="decimal"
                             value={editValues.taxRate || ''}
                             onChange={(e) => setEditValues({ ...editValues, taxRate: e.target.value })}
                             placeholder="Vergi oranı (örn: 19.00)"

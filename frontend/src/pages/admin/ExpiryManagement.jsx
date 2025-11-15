@@ -2339,6 +2339,7 @@ function ExpiryManagement() {
                     </label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={settings.warningDays}
                       onChange={(e) => setSettings({ ...settings, warningDays: parseInt(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -2350,6 +2351,7 @@ function ExpiryManagement() {
                     </label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={settings.criticalDays}
                       onChange={(e) => setSettings({ ...settings, criticalDays: parseInt(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"

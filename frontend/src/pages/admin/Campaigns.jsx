@@ -575,6 +575,7 @@ function Campaigns() {
                         step="0.01"
                         min="0"
                         max="100"
+                        inputMode="decimal"
                         value={formData.discountPercent}
                         onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
                         required
@@ -592,6 +593,7 @@ function Campaigns() {
                         type="number"
                         step="0.01"
                         min="0"
+                        inputMode="decimal"
                         value={formData.discountAmount}
                         onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
                         required
@@ -609,6 +611,7 @@ function Campaigns() {
                         <input
                           type="number"
                           min="1"
+                          inputMode="numeric"
                           value={formData.buyQuantity}
                           onChange={(e) => setFormData({ ...formData, buyQuantity: e.target.value })}
                           required
@@ -622,6 +625,7 @@ function Campaigns() {
                         <input
                           type="number"
                           min="1"
+                          inputMode="numeric"
                           value={formData.getQuantity}
                           onChange={(e) => setFormData({ ...formData, getQuantity: e.target.value })}
                           required
@@ -726,6 +730,7 @@ function Campaigns() {
                         type="number"
                         step="0.01"
                         min="0"
+                        inputMode="decimal"
                         value={formData.minPurchase}
                         onChange={(e) => setFormData({ ...formData, minPurchase: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -739,6 +744,7 @@ function Campaigns() {
                         type="number"
                         step="0.01"
                         min="0"
+                        inputMode="decimal"
                         value={formData.maxDiscount}
                         onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -751,6 +757,7 @@ function Campaigns() {
                       <input
                         type="number"
                         min="0"
+                        inputMode="numeric"
                         value={formData.usageLimit}
                         onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -762,6 +769,7 @@ function Campaigns() {
                       </label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         value={formData.priority}
                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"

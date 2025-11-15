@@ -831,6 +831,7 @@ function Coupons() {
                         step="0.01"
                         min="0.01"
                         max="100"
+                        inputMode="decimal"
                         value={formData.discountPercent}
                         onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -848,6 +849,7 @@ function Coupons() {
                         type="number"
                         step="0.01"
                         min="0.01"
+                        inputMode="decimal"
                         value={formData.discountAmount}
                         onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -868,6 +870,7 @@ function Coupons() {
                         type="number"
                         step="0.01"
                         min="0"
+                        inputMode="decimal"
                         value={formData.maxDiscount}
                         onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -927,6 +930,7 @@ function Coupons() {
                       type="number"
                       step="0.01"
                       min="0"
+                      inputMode="decimal"
                       value={formData.minPurchase}
                       onChange={(e) => setFormData({ ...formData, minPurchase: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -942,6 +946,7 @@ function Coupons() {
                     <input
                       type="number"
                       min="1"
+                      inputMode="numeric"
                       value={formData.usageLimit}
                       onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -957,6 +962,7 @@ function Coupons() {
                     <input
                       type="number"
                       min="1"
+                      inputMode="numeric"
                       value={formData.userUsageLimit}
                       onChange={(e) => setFormData({ ...formData, userUsageLimit: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
