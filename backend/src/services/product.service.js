@@ -212,11 +212,26 @@ class ProductService {
   }
 
   // Tek ürün getir (ID ile)
-  async getProductById(id) {
+  async getProductById(id, req = null) {
     // UUID formatını kontrol et
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!id || !uuidRegex.test(id)) {
       throw new NotFoundError('Produkt nicht gefunden');
+    }
+
+    // Guest kullanıcı kontrolü - eğer kullanıcı giriş yapmamışsa ve ayar kapalıysa
+    // req parametresi optionalAuth middleware'i ile set edilir
+    // Eğer req.user yoksa, kullanıcı giriş yapmamış demektir
+    // req her zaman gönderilir (controller'dan), ama req.user sadece token varsa set edilir
+    const isGuest = !req || !req.user;
+    if (isGuest) {
+      const settings = await settingsService.getSettings();
+      // Ayar kapalıysa (false ise) guest kullanıcılar göremez
+      // Ayar undefined veya null ise, varsayılan olarak true kabul edilir
+      const canView = settings?.guestCanViewProducts !== false;
+      if (!canView) {
+        throw new NotFoundError('Produkt nicht gefunden');
+      }
     }
 
     const product = await prisma.product.findUnique({

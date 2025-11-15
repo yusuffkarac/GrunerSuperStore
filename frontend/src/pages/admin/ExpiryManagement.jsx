@@ -11,6 +11,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import BarcodeScanner from '../../components/common/BarcodeScanner';
 import { useModalScroll } from '../../hooks/useModalScroll';
+import { getTodayInGermany, getTodayStringInGermany } from '../../utils/dateUtils';
 
 // API URL - Development'ta Vite proxy kullan, production'da environment variable veya tam URL
 const getApiUrl = () => {
@@ -38,9 +39,9 @@ function ExpiryManagement() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [selectedDate, setSelectedDate] = useState(() => {
-    // localStorage'dan seçili tarihi oku, yoksa bugün
+    // localStorage'dan seçili tarihi oku, yoksa bugün (Almanya saatine göre)
     const savedDate = localStorage.getItem('expiryManagement_selectedDate');
-    return savedDate ? new Date(savedDate) : new Date();
+    return savedDate ? new Date(savedDate) : getTodayInGermany();
   });
   const [activeTab, setActiveTab] = useState(() => {
     // localStorage'dan aktif tab'ı oku, yoksa varsayılan olarak 0 (Critical)
@@ -60,7 +61,7 @@ function ExpiryManagement() {
 
   // Dialog states
   const [removeDialog, setRemoveDialog] = useState({ open: false, product: null });
-  const [undoDialog, setUndoDialog] = useState({ open: false, actionId: null, productName: '' });
+  const [undoDialog, setUndoDialog] = useState({ open: false, actionId: null, productName: '', actionType: null });
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState(null); // 'critical' veya 'warning'
@@ -366,7 +367,7 @@ function ExpiryManagement() {
       const token = localStorage.getItem('adminToken');
       await axios.post(
         `${API_URL}/admin/expiry/label/${productId}`,
-        { note: 'Reduziert' },
+        { note: 'Reduzieren' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -517,7 +518,7 @@ function ExpiryManagement() {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + 1);
     // Geleceğe gitmeyi engelle
-    const today = new Date();
+    const today = getTodayInGermany();
     today.setHours(23, 59, 59, 999);
     if (newDate <= today) {
       setSelectedDate(newDate);
@@ -525,11 +526,11 @@ function ExpiryManagement() {
   };
 
   const goToToday = () => {
-    setSelectedDate(new Date());
+    setSelectedDate(getTodayInGermany());
   };
 
   const isToday = () => {
-    const today = new Date();
+    const today = getTodayInGermany();
     return selectedDate.toDateString() === today.toDateString();
   };
 
@@ -571,7 +572,7 @@ function ExpiryManagement() {
 
   // Bugün mail gönderilip gönderilmediğini kontrol et
   const hasMailBeenSentToday = () => {
-    const today = new Date().toDateString();
+    const today = getTodayInGermany().toDateString();
     const lastSentDate = localStorage.getItem('expiryManagement_mailSentDate');
     return lastSentDate === today;
   };
@@ -598,8 +599,8 @@ function ExpiryManagement() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Bugünün tarihini localStorage'a kaydet
-      const today = new Date().toDateString();
+      // Bugünün tarihini localStorage'a kaydet (Almanya saatine göre)
+      const today = getTodayInGermany().toDateString();
       localStorage.setItem('expiryManagement_mailSentDate', today);
 
       toast.success('E-Mail erfolgreich gesendet');
@@ -625,9 +626,8 @@ function ExpiryManagement() {
 
   // İşlem yapılmamış mı kontrol et
   const isUnprocessed = (product) => {
-    // Bugünün tarihini al (sadece tarih, saat olmadan)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Bugünün tarihini al (sadece tarih, saat olmadan, Almanya saatine göre)
+    const today = getTodayInGermany();
     
     // Deaktif edilmişse ve bugün deaktif edildiyse işlem yapılmış sayılır
     // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
@@ -722,8 +722,7 @@ function ExpiryManagement() {
             if (oldDateMatch && oldDateMatch[1]) {
               try {
                 const oldDate = new Date(oldDateMatch[1]);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const today = getTodayInGermany();
                 oldDate.setHours(0, 0, 0, 0);
                 const diffTime = oldDate - today;
                 oldDaysUntilExpiry = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -773,8 +772,7 @@ function ExpiryManagement() {
 
   // Bugün yapılan işlemlerin sayısını al
   const getTodayActionCount = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayInGermany();
     
     return getFilteredHistory().filter(action => {
       const actionDate = new Date(action.createdAt);
@@ -1155,28 +1153,54 @@ function ExpiryManagement() {
                             </>
                           ) : (
                             <>
-                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
-                                <button
-                                  onClick={() => handleUndoAction(product.lastAction.id)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                  title="Rückgängig machen"
-                                >
-                                  <FiRotateCcw className="w-4 h-4" />
-                                </button>
+                              {product.lastAction?.actionType === 'removed' && !product.lastAction?.isUndone && product.lastAction?.excludedFromCheck === false ? (
+                                <>
+                                  {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                    <button
+                                      onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Rückgängig machen"
+                                    >
+                                      <FiRotateCcw className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-sm cursor-default">
+                                    <FiTrash2 className="w-4 h-4" />
+                                    Aussortiert!
+                                  </span>
+                                  <button
+                                    onClick={() => setDateUpdateDialog({ open: true, product })}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                  >
+                                    Neues Datum
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                    <button
+                                      onClick={() => handleUndoAction(product.lastAction.id)}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Rückgängig machen"
+                                    >
+                                      <FiRotateCcw className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setRemoveDialog({ open: true, product })}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                                  >
+                                    <FiTrash2 className="w-4 h-4" />
+                                    Aussortieren
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeactivateCriticalProduct(product.id)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-42sm"
+                                  >
+                                    Deaktivieren
+                                  </button>
+                                </>
                               )}
-                              <button
-                                onClick={() => setRemoveDialog({ open: true, product })}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                              >
-                                <FiTrash2 className="w-4 h-4" />
-                                Aussortieren
-                              </button>
-                              <button
-                                onClick={() => handleDeactivateCriticalProduct(product.id)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-42sm"
-                              >
-                                Deaktivieren
-                              </button>
                             </>
                           )}
                         </div>
@@ -1234,31 +1258,58 @@ function ExpiryManagement() {
                     </div>
                   ) : (
                     <div className="flex flex-row flex-wrap gap-2">
-                      {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
-                        <button
-                          onClick={() => handleUndoAction(product.lastAction.id)}
-                          className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
-                          title="Rückgängig machen"
-                        >
-                          <FiRotateCcw className="w-3 h-3" />
-                          <span className="hidden sm:inline">Rückgängig</span>
-                        </button>
+                      {product.lastAction?.actionType === 'removed' && !product.lastAction?.isUndone && product.lastAction?.excludedFromCheck === false ? (
+                        <>
+                          {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                            <button
+                              onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
+                              className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Rückgängig machen"
+                            >
+                              <FiRotateCcw className="w-3 h-3" />
+                              <span className="hidden sm:inline">Rückgängig</span>
+                            </button>
+                          )}
+                          <span className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-red-100 text-red-800 rounded-lg text-xs font-medium">
+                            <FiTrash2 className="w-3 h-3" />
+                            Aussortiert!
+                          </span>
+                          <button
+                            onClick={() => setDateUpdateDialog({ open: true, product })}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                          >
+                            Neues Datum
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                            <button
+                              onClick={() => handleUndoAction(product.lastAction.id)}
+                              className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Rückgängig machen"
+                            >
+                              <FiRotateCcw className="w-3 h-3" />
+                              <span className="hidden sm:inline">Rückgängig</span>
+                            </button>
+                          )}
+                          <div className="flex items-center gap-2 flex-1">
+                            <button
+                              onClick={() => setRemoveDialog({ open: true, product })}
+                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+                            >
+                              <FiTrash2 className="w-3 h-3" />
+                              Aussortieren
+                            </button>
+                            <button
+                              onClick={() => handleDeactivateCriticalProduct(product.id)}
+                              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                            >
+                              Deaktivieren
+                            </button>
+                          </div>
+                        </>
                       )}
-                      <div className="flex items-center gap-2 flex-1">
-                        <button
-                          onClick={() => setRemoveDialog({ open: true, product })}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
-                        >
-                          <FiTrash2 className="w-3 h-3" />
-                          Aussortieren
-                        </button>
-                        <button
-                          onClick={() => handleDeactivateCriticalProduct(product.id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
-                        >
-                          Deaktivieren
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -1352,7 +1403,7 @@ function ExpiryManagement() {
                             <>
                               {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
                                 <button
-                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
                                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                   title="Rückgängig machen"
                                 >
@@ -1361,7 +1412,7 @@ function ExpiryManagement() {
                               )}
                               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm cursor-default">
                                 <FiTag className="w-4 h-4" />
-                                Erledigt!
+                                Reduziert!
                               </span>
                               <button
                                 onClick={() => setWarningDateUpdateDialog({ open: true, product })}
@@ -1387,7 +1438,7 @@ function ExpiryManagement() {
                                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
                                 >
                                   <FiTag className="w-4 h-4" />
-                                  Reduziert
+                                  Reduzieren
                                 </button>
                               )}
                               {!product.excludeFromExpiryCheck && (
@@ -1452,7 +1503,7 @@ function ExpiryManagement() {
                       <>
                         {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
                           <button
-                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
                             className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
                             title="Rückgängig machen"
                           >
@@ -1462,7 +1513,7 @@ function ExpiryManagement() {
                         )}
                         <span className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-medium">
                           <FiTag className="w-3 h-3" />
-                          Erledigt!
+                          Reduziert!
                         </span>
                         <button
                           onClick={() => setWarningDateUpdateDialog({ open: true, product })}
@@ -1489,7 +1540,7 @@ function ExpiryManagement() {
                             className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-[10px] font-medium whitespace-nowrap"
                           >
                             <FiTag className="w-2.5 h-2.5" />
-                            Reduziert
+                            Reduzieren
                           </button>
                         )}
                         {!product.excludeFromExpiryCheck && (
@@ -1650,28 +1701,54 @@ function ExpiryManagement() {
                                         </>
                                       ) : product.type === 'critical' ? (
                                         <>
-                                          {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
-                                            <button
-                                              onClick={() => handleUndoAction(product.lastAction.id)}
-                                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                              title="Rückgängig machen"
-                                            >
-                                              <FiRotateCcw className="w-4 h-4" />
-                                            </button>
+                                          {product.lastAction?.actionType === 'removed' && !product.lastAction?.isUndone && product.lastAction?.excludedFromCheck === false ? (
+                                            <>
+                                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                                <button
+                                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
+                                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                  title="Rückgängig machen"
+                                                >
+                                                  <FiRotateCcw className="w-4 h-4" />
+                                                </button>
+                                              )}
+                                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-sm cursor-default">
+                                                <FiTrash2 className="w-4 h-4" />
+                                                Aussortiert!
+                                              </span>
+                                              <button
+                                                onClick={() => setDateUpdateDialog({ open: true, product })}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                              >
+                                                Neues Datum
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                                <button
+                                                  onClick={() => handleUndoAction(product.lastAction.id)}
+                                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                  title="Rückgängig machen"
+                                                >
+                                                  <FiRotateCcw className="w-4 h-4" />
+                                                </button>
+                                              )}
+                                              <button
+                                                onClick={() => setRemoveDialog({ open: true, product })}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                                              >
+                                                <FiTrash2 className="w-4 h-4" />
+                                                Aussortieren
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeactivateCriticalProduct(product.id)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                                              >
+                                                Deaktivieren
+                                              </button>
+                                            </>
                                           )}
-                                          <button
-                                            onClick={() => setRemoveDialog({ open: true, product })}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                                          >
-                                            <FiTrash2 className="w-4 h-4" />
-                                            Aussortieren
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeactivateCriticalProduct(product.id)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                                          >
-                                            Deaktivieren
-                                          </button>
                                         </>
                                       ) : (
                                         <>
@@ -1684,7 +1761,7 @@ function ExpiryManagement() {
                                             <>
                                               {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
                                                 <button
-                                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                                                  onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
                                                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                   title="Rückgängig machen"
                                                 >
@@ -1693,7 +1770,7 @@ function ExpiryManagement() {
                                               )}
                                               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm cursor-default">
                                                 <FiTag className="w-4 h-4" />
-                                                Erledigt!
+                                                Reduziert!
                                               </span>
                                               <button
                                                 onClick={() => setWarningDateUpdateDialog({ open: true, product })}
@@ -1720,7 +1797,7 @@ function ExpiryManagement() {
                                                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
                                                   >
                                                     <FiTag className="w-4 h-4" />
-                                                    Reduziert
+                                                    Reduzieren
                                                   </button>
                                                   <button
                                                     onClick={() => handleDeactivateWarningProduct(product.id)}
@@ -1801,30 +1878,56 @@ function ExpiryManagement() {
                                 </div>
                               ) : product.type === 'critical' ? (
                                 <div className="flex flex-row flex-wrap gap-2">
-                                  {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
-                                    <button
-                                      onClick={() => handleUndoAction(product.lastAction.id)}
-                                      className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
-                                    >
-                                      <FiRotateCcw className="w-3 h-3" />
-                                      <span className="hidden sm:inline">Rückgängig</span>
-                                    </button>
+                                  {product.lastAction?.actionType === 'removed' && !product.lastAction?.isUndone && product.lastAction?.excludedFromCheck === false ? (
+                                    <>
+                                      {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                        <button
+                                          onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
+                                          className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                        >
+                                          <FiRotateCcw className="w-3 h-3" />
+                                          <span className="hidden sm:inline">Rückgängig</span>
+                                        </button>
+                                      )}
+                                      <span className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-red-100 text-red-800 rounded-lg text-xs font-medium">
+                                        <FiTrash2 className="w-3 h-3" />
+                                        Aussortiert!
+                                      </span>
+                                      <button
+                                        onClick={() => setDateUpdateDialog({ open: true, product })}
+                                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                                      >
+                                        Neues Datum
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
+                                        <button
+                                          onClick={() => handleUndoAction(product.lastAction.id)}
+                                          className="flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                                        >
+                                          <FiRotateCcw className="w-3 h-3" />
+                                          <span className="hidden sm:inline">Rückgängig</span>
+                                        </button>
+                                      )}
+                                      <div className="flex items-center gap-2 flex-1">
+                                        <button
+                                          onClick={() => setRemoveDialog({ open: true, product })}
+                                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+                                        >
+                                          <FiTrash2 className="w-3 h-3" />
+                                          Aussortieren
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeactivateCriticalProduct(product.id)}
+                                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                                        >
+                                          Deaktivieren
+                                        </button>
+                                      </div>
+                                    </>
                                   )}
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <button
-                                      onClick={() => setRemoveDialog({ open: true, product })}
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
-                                    >
-                                      <FiTrash2 className="w-3 h-3" />
-                                      Aussortieren
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeactivateCriticalProduct(product.id)}
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
-                                    >
-                                      Deaktivieren
-                                    </button>
-                                  </div>
                                 </div>
                               ) : (
                                 <>
@@ -1840,7 +1943,7 @@ function ExpiryManagement() {
                                       <>
                                         {product.lastAction && product.lastAction.id && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone' && (
                                           <button
-                                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name })}
+                                            onClick={() => setUndoDialog({ open: true, actionId: product.lastAction.id, productName: product.name, actionType: product.lastAction.actionType })}
                                             className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
                                           >
                                             <FiRotateCcw className="w-3 h-3" />
@@ -1849,7 +1952,7 @@ function ExpiryManagement() {
                                         )}
                                         <span className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-medium">
                                           <FiTag className="w-3 h-3" />
-                                          Erledigt!
+                                          Reduziert!
                                         </span>
                                         <button
                                           onClick={() => setWarningDateUpdateDialog({ open: true, product })}
@@ -1876,7 +1979,7 @@ function ExpiryManagement() {
                                               className="flex-1 flex items-center justify-center gap-0.5 px-1.5 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors text-[10px] font-medium whitespace-nowrap"
                                             >
                                               <FiTag className="w-2.5 h-2.5" />
-                                              Reduziert
+                                              Reduzieren
                                             </button>
                                             <button
                                               onClick={() => handleDeactivateWarningProduct(product.id)}
@@ -2247,7 +2350,7 @@ function ExpiryManagement() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+              onClick={() => setUndoDialog({ open: false, actionId: null, productName: '', actionType: null })}
               className="fixed inset-0 bg-black bg-opacity-50 z-[9998]"
             />
             <motion.div
@@ -2261,7 +2364,7 @@ function ExpiryManagement() {
                 <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 flex items-center justify-between">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900">Vorgang rückgängig machen</h3>
                   <button
-                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '', actionType: null })}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <FiX size={18} />
@@ -2269,12 +2372,12 @@ function ExpiryManagement() {
                 </div>
                 <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
                   <p className="text-xs md:text-sm text-gray-700">
-                    Möchten Sie die "Erledigt!"-Markierung für das Produkt <strong>{undoDialog.productName}</strong> wirklich rückgängig machen?
+                    Möchten Sie die "{undoDialog.actionType === 'removed' ? 'Aussortiert!' : 'Reduziert!'}"-Markierung für das Produkt <strong>{undoDialog.productName}</strong> wirklich rückgängig machen?
                   </p>
                 </div>
                 <div className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 md:gap-3">
                   <button
-                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '' })}
+                    onClick={() => setUndoDialog({ open: false, actionId: null, productName: '', actionType: null })}
                     className="px-4 py-2 text-xs md:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Abbrechen

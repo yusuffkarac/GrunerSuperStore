@@ -2769,7 +2769,7 @@ function StockManagement() {
 
               {/* Einzelne Bestellungen */}
               {history.length > 0 && (
-                <div className={`p-4 md:p-6 ${historyLists.length > 0 ? 'border-t border-gray-200' : ''}`}>
+                <div className={`p-2 md:p-4 ${historyLists.length > 0 ? 'border-t border-gray-200' : ''}`}>
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Einzelne Bestellungen</h3>
                   {/* Desktop Tablo Görünümü */}
               <div className="hidden md:block overflow-x-auto">

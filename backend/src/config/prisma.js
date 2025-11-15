@@ -24,7 +24,7 @@ const prisma = new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
-  log: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['query', 'error', 'warn'],
+  log: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['error', 'warn'],
   });
 
 // Graceful shutdown

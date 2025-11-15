@@ -45,3 +45,32 @@ export function getGermanyDate() {
   return new Date();
 }
 
+/**
+ * Almanya saatine göre bugünün tarihini al (saat bilgisi olmadan, sadece tarih)
+ * Bu fonksiyon, saat dilimi farklılıklarından kaynaklanan sorunları önlemek için
+ * Intl.DateTimeFormat kullanarak Almanya saat dilimine göre bugünün tarihini hesaplar
+ * @returns {Date} Almanya saatine göre bugünün tarihi (saat 00:00:00)
+ */
+export function getTodayInGermany() {
+  const now = new Date();
+  
+  // Almanya saat dilimine göre bugünün tarih parçalarını al
+  const germanyParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  
+  const year = parseInt(germanyParts.find(p => p.type === 'year').value);
+  const month = parseInt(germanyParts.find(p => p.type === 'month').value) - 1; // Month 0-indexed
+  const day = parseInt(germanyParts.find(p => p.type === 'day').value);
+  
+  // Almanya saat dilimine göre bugünün 00:00:00'ını oluştur
+  // process.env.TZ = 'Europe/Berlin' ayarlandığı için, new Date() Almanya saatine göre çalışır
+  // Bu yüzden doğrudan Date constructor'ını kullanabiliriz
+  const today = new Date(year, month, day, 0, 0, 0, 0);
+  
+  return today;
+}
+

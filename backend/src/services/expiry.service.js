@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js';
 import { NotFoundError, BadRequestError } from '../utils/errors.js';
 import queueService from './queue.service.js';
+import { getTodayInGermany } from '../utils/date.js';
 
 /**
  * SKT ayarlarını getir
@@ -21,11 +22,10 @@ export const getExpirySettings = async () => {
 
 /**
  * Bugünün tarihini al (saat bilgisi olmadan)
+ * Almanya saat dilimine göre çalışır
  */
 const getToday = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
+  return getTodayInGermany();
 };
 
 /**

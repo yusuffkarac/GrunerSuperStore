@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiHeart, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiArrowLeft, FiChevronLeft, FiChevronRight, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import productService from '../services/productService';
 import campaignService from '../services/campaignService';
+import settingsService from '../services/settingsService';
 import useFavoriteStore from '../store/favoriteStore';
 import useCartStore from '../store/cartStore';
+import useAuthStore from '../store/authStore';
 import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { normalizeImageUrls } from '../utils/imageUtils';
@@ -13,6 +15,8 @@ import { normalizeImageUrls } from '../utils/imageUtils';
 // Ürün Detay Sayfası
 function UrunDetay() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [product, setProduct] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +31,8 @@ function UrunDetay() {
   const [isHeartAnimating, setIsHeartAnimating] = useState(false);
   const [showZoom, setShowZoom] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [canViewProducts, setCanViewProducts] = useState(null); // null = henüz kontrol edilmedi
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const imageRef = useRef(null);
   const imageContainerRef = useRef(null);
 
@@ -35,10 +41,43 @@ function UrunDetay() {
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
   const addItem = useCartStore((state) => state.addItem);
 
-  const isProductFavorite = favoriteIds.includes(id);
+  // Sadece giriş yapmış kullanıcılar için favori kontrolü
+  const isProductFavorite = isAuthenticated && favoriteIds.includes(id);
+
+  // Ayarları kontrol et
+  useEffect(() => {
+    const checkSettings = async () => {
+      setSettingsLoading(true);
+      try {
+        const settingsRes = await settingsService.getSettings();
+        const appSettings = settingsRes.data.settings;
+
+        // Kullanıcı login değilse ve ayar kapalıysa (false ise)
+        if (!isAuthenticated && appSettings.guestCanViewProducts === false) {
+          setCanViewProducts(false);
+        } else {
+          setCanViewProducts(true);
+        }
+      } catch (err) {
+        console.error('Ayarlar yükleme hatası:', err);
+        // Hata durumunda varsayılan olarak true yap (güvenli taraf)
+        setCanViewProducts(true);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    checkSettings();
+  }, [isAuthenticated]);
 
   // Ürün verilerini yükle
   useEffect(() => {
+    // Ayarlar yüklenene kadar bekle
+    if (settingsLoading || canViewProducts === null) return;
+    
+    // Eğer görüntüleme izni yoksa, ürün yükleme
+    if (!canViewProducts) return;
+
     const fetchProduct = async () => {
       setLoading(true);
       setError(null);
@@ -73,10 +112,13 @@ function UrunDetay() {
     if (id) {
       fetchProduct();
     }
-  }, [id]);
+  }, [id, canViewProducts, settingsLoading]);
 
-  // Favori ID'lerini yükle
+  // Favori ID'lerini yükle (sadece giriş yapmış kullanıcılar için)
   useEffect(() => {
+    // Giriş yapmamış kullanıcılar için favori yükleme
+    if (!isAuthenticated) return;
+
     const loadFavoriteIds = async () => {
       try {
         await useFavoriteStore.getState().loadFavoriteIds();
@@ -85,7 +127,7 @@ function UrunDetay() {
       }
     };
     loadFavoriteIds();
-  }, []);
+  }, [isAuthenticated]);
 
   // Seçili varyantı bul
   useEffect(() => {
@@ -137,6 +179,16 @@ function UrunDetay() {
 
   // Favori toggle
   const handleToggleFavorite = useCallback(async () => {
+    // Giriş yapmamış kullanıcılar için giriş sayfasına yönlendir
+    if (!isAuthenticated) {
+      toast.info('Bitte melden Sie sich an, um Favoriten zu verwenden', {
+        position: 'bottom-center',
+        autoClose: 2000,
+      });
+      navigate('/giris');
+      return;
+    }
+
     // Heart beat animasyonu
     setIsHeartAnimating(true);
     setTimeout(() => setIsHeartAnimating(false), 600);
@@ -149,7 +201,7 @@ function UrunDetay() {
         autoClose: 2000,
       });
     }
-  }, [id, toggleFavorite]);
+  }, [id, toggleFavorite, isAuthenticated, navigate]);
 
   // Varyant seçeneği değiştir
   const handleVariantOptionChange = useCallback((optionId, value) => {
@@ -289,6 +341,48 @@ function UrunDetay() {
   const handleMouseLeave = useCallback(() => {
     setShowZoom(false);
   }, []);
+
+  // Ayarlar yüklenirken loading göster
+  if (settingsLoading || canViewProducts === null) {
+    return (
+      <div className="container-mobile py-6">
+        <Loading text="Laden..." />
+      </div>
+    );
+  }
+
+  // Eğer guest göremiyorsa
+  if (!canViewProducts) {
+    return (
+      <div className="container-mobile py-4 pb-20 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+            <div className="text-6xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Anmeldung erforderlich
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Um Produkte und Kategorien anzusehen, müssen Sie sich anmelden.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => navigate('/giris')}
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Anmelden
+              </button>
+              <button
+                onClick={() => navigate('/kayit')}
+                className="px-6 py-3 bg-white text-primary-600 border-2 border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+              >
+                Registrieren
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (loading) {
