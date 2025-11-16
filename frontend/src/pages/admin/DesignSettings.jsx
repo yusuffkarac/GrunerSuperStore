@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { HiDownload, HiUpload } from 'react-icons/hi';
 import settingsService from '../../services/settingsService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { defaultThemeColors, colorPresets } from '../../config/themeColors';
@@ -7,6 +8,7 @@ import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import FileUpload from '../../components/common/FileUpload';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Tasarım Ayarları Sayfası
 function DesignSettings() {
@@ -19,6 +21,10 @@ function DesignSettings() {
   const [logo, setLogo] = useState('');
   const [favicon, setFavicon] = useState('');
   const [settings, setSettings] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importData, setImportData] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Ayarları yükle
   useEffect(() => {
@@ -153,6 +159,111 @@ function DesignSettings() {
     }
   };
 
+  // Export Design Settings to JSON
+  const handleExport = () => {
+    try {
+      const exportData = {
+        themeColors: colors,
+        logo: logo,
+        favicon: favicon,
+      };
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `design_settings_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Design-Einstellungen erfolgreich exportiert');
+    } catch (error) {
+      console.error('Export-Fehler:', error);
+      toast.error('Fehler beim Exportieren der Design-Einstellungen');
+    }
+  };
+
+  // Import Design Settings from JSON file
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.json')) {
+      toast.error('Bitte wählen Sie eine JSON-Datei aus');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+
+      if (!importedData || typeof importedData !== 'object') {
+        toast.error('Ungültiges Dateiformat. Erwartet wird ein Design-Einstellungen-Objekt.');
+        return;
+      }
+
+      setImportData(importedData);
+      setShowImportModal(true);
+      e.target.value = '';
+    } catch (error) {
+      console.error('Import-Fehler:', error);
+      toast.error('Fehler beim Lesen der Datei. Bitte überprüfen Sie das Format.');
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importData) return;
+
+    try {
+      setImporting(true);
+
+      if (importData.themeColors) {
+        setColors(importData.themeColors);
+        if (previewMode) {
+          updateThemeColors(importData.themeColors);
+        }
+      }
+
+      if (importData.logo !== undefined) {
+        setLogo(importData.logo || '');
+      }
+
+      if (importData.favicon !== undefined) {
+        setFavicon(importData.favicon || '');
+      }
+
+      // Logo ve favicon URL'lerini normalize et
+      const logoPath = importData.logo ? (importData.logo.startsWith('http') ? importData.logo.replace(/^https?:\/\/[^/]+/, '') : importData.logo) : null;
+      const faviconPath = importData.favicon ? (importData.favicon.startsWith('http') ? importData.favicon.replace(/^https?:\/\/[^/]+/, '') : importData.favicon) : null;
+
+      const currentStoreSettings = settings?.storeSettings || {};
+      const updatedStoreSettings = {
+        ...currentStoreSettings,
+        logo: logoPath || null,
+        favicon: faviconPath || null,
+      };
+
+      await settingsService.updateSettings({
+        themeColors: importData.themeColors || colors,
+        storeSettings: updatedStoreSettings,
+      });
+
+      updateThemeColors(importData.themeColors || colors);
+
+      toast.success('Design-Einstellungen erfolgreich importiert und gespeichert');
+      setShowImportModal(false);
+      setImportData(null);
+      await fetchSettings();
+    } catch (error) {
+      console.error('Import-Fehler:', error);
+      toast.error(error.response?.data?.message || 'Fehler beim Importieren der Design-Einstellungen');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   // Vorgefertigte Kombination anwenden
   const applyPreset = (presetKey) => {
     const preset = colorPresets[presetKey];
@@ -224,42 +335,68 @@ function DesignSettings() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={togglePreview}
-            className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-all flex items-center gap-2 text-sm sm:text-base ${
               previewMode
                 ? 'bg-orange-500 text-white hover:bg-orange-600'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            {previewMode ? 'Vorschau aktiv' : 'Vorschau aktivieren'}
+            <span className="hidden sm:inline">{previewMode ? 'Vorschau aktiv' : 'Vorschau aktivieren'}</span>
+            <span className="sm:hidden">{previewMode ? 'Aktiv' : 'Vorschau'}</span>
           </button>
 
           <button
-            onClick={handleReset}
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center gap-2"
+            onClick={handleExport}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+            title="Design-Einstellungen exportieren"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <HiDownload className="w-4 h-4" />
+            <span className="hidden sm:inline">Exportieren</span>
+            <span className="sm:hidden">Export</span>
+          </button>
+
+          <label className="px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer">
+            <HiUpload className="w-4 h-4" />
+            <span className="hidden sm:inline">Importieren</span>
+            <span className="sm:hidden">Import</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
+
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center gap-2 text-sm sm:text-base"
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Zurücksetzen
+            <span className="hidden sm:inline">Zurücksetzen</span>
+            <span className="sm:hidden">Reset</span>
           </button>
 
           <div className="ml-auto">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-8 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-6 py-2 sm:px-8 sm:py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm sm:text-base"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              {saving ? 'Wird gespeichert...' : 'Änderungen speichern'}
+              <span className="hidden sm:inline">{saving ? 'Wird gespeichert...' : 'Änderungen speichern'}</span>
+              <span className="sm:hidden">{saving ? 'Speichern...' : 'Speichern'}</span>
             </button>
           </div>
         </div>
@@ -645,6 +782,116 @@ function DesignSettings() {
             </div>
           </div>
         </div>
+
+        {/* Import Modal */}
+        {showImportModal && importData && (
+          <ImportModal
+            importData={importData}
+            importing={importing}
+            onConfirm={handleImportConfirm}
+            onClose={() => {
+              setShowImportModal(false);
+              setImportData(null);
+            }}
+            isOpen={showImportModal}
+          />
+        )}
+    </div>
+  );
+}
+
+// Import Modal Component
+function ImportModal({ importData, importing, onConfirm, onClose, isOpen }) {
+  useModalScroll(isOpen);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900">Design-Einstellungen importieren</h3>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              Die Design-Einstellungen (Farben, Logo, Favicon) werden importiert und automatisch gespeichert.
+            </p>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Vorschau der zu importierenden Einstellungen:</h4>
+            <div className="space-y-2 text-sm">
+              {importData.themeColors && (
+                <div className="border-b border-gray-100 pb-2">
+                  <p className="font-medium text-gray-900">Theme-Farben:</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {Object.keys(importData.themeColors).length} Kategorie(n)
+                  </p>
+                </div>
+              )}
+              {importData.logo && (
+                <div className="border-b border-gray-100 pb-2">
+                  <p className="font-medium text-gray-900">Logo:</p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                    {importData.logo.substring(0, 100)}...
+                  </p>
+                </div>
+              )}
+              {importData.favicon && (
+                <div className="border-b border-gray-100 pb-2">
+                  <p className="font-medium text-gray-900">Favicon:</p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                    {importData.favicon.substring(0, 100)}...
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={importing}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={importing}
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {importing ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Importiere...
+                </>
+              ) : (
+                'Importieren & Speichern'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -12,6 +12,12 @@ const settingsService = {
     const response = await adminApi.put('/admin/settings', data);
     return response.data;
   },
+
+  // Footer ayarlarını default'a sıfırla (admin only)
+  resetFooterToDefaults: async () => {
+    const response = await adminApi.post('/admin/settings/footer/reset-to-defaults');
+    return response.data;
+  },
 };
 
 export default settingsService;

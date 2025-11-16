@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiFilter, FiX, FiEye, FiInfo, FiAlertCircle, FiCheckCircle, FiAlertTriangle, FiCode, FiUser, FiShield, FiGlobe } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale';
 import adminService from '../../services/adminService';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
@@ -28,8 +31,8 @@ function ActivityLogs() {
     level: '',
     action: '',
     entityType: '',
-    startDate: '',
-    endDate: '',
+    startDate: null,
+    endDate: null,
   });
 
   // Debounced filters
@@ -134,8 +137,8 @@ function ActivityLogs() {
       if (debouncedFilters.level) params.level = debouncedFilters.level;
       if (debouncedFilters.action) params.action = debouncedFilters.action;
       if (debouncedFilters.entityType) params.entityType = debouncedFilters.entityType;
-      if (debouncedFilters.startDate) params.startDate = debouncedFilters.startDate;
-      if (debouncedFilters.endDate) params.endDate = debouncedFilters.endDate;
+      if (debouncedFilters.startDate) params.startDate = debouncedFilters.startDate.toISOString().split('T')[0];
+      if (debouncedFilters.endDate) params.endDate = debouncedFilters.endDate.toISOString().split('T')[0];
 
       const response = await adminService.getActivityLogs(params);
       
@@ -192,8 +195,8 @@ function ActivityLogs() {
       level: '',
       action: '',
       entityType: '',
-      startDate: '',
-      endDate: '',
+      startDate: null,
+      endDate: null,
     };
     setFilters(emptyFilters);
     setDebouncedFilters(emptyFilters);

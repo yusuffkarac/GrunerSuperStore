@@ -299,6 +299,7 @@ function RoleManagement() {
     notifications: 'Benachrichtigungsverwaltung',
     templates: 'Vorlagenverwaltung',
     barcode: 'Barcode-Etikettenverwaltung',
+    magazines: 'Magazin-Verwaltung',
     other: 'Sonstiges',
   };
 

@@ -109,6 +109,17 @@ function Footer() {
                 </li>
               </ul>
             </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Hilfe</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/faq" className="text-gray-600 hover:text-primary-700">
+                    FAQ
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Copyright ve Cookie Link */}
@@ -136,7 +147,7 @@ function Footer() {
       <footer className="bg-gray-100 border-t border-gray-200 mt-auto">
         <div className="container-mobile py-8">
           {/* Footer Blöcke */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-6 max-w-4xl mx-auto">
             {footerData.blocks.map((block) => (
               <div key={block.id}>
                 <h3 className="font-semibold text-gray-900 mb-3">{block.title}</h3>

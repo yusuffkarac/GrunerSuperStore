@@ -1001,3 +1001,24 @@ model WeeklyMagazine {
   @@index([isActive, startDate, endDate])
   @@map("weekly_magazines")
 }
+
+// ===================================
+// FAQ (FREQUENTLY ASKED QUESTIONS)
+// ===================================
+
+model Faq {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question  String   // Soru (Almanca)
+  answer    String   // Cevap (Almanca, HTML destekli)
+  category  String?  // Kategori (opsiyonel)
+  sortOrder Int      @default(0) @map("sort_order") // Sıralama
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([category])
+  @@index([sortOrder])
+  @@index([isActive, sortOrder])
+  @@map("faqs")
+}

@@ -8,6 +8,7 @@ import * as roleController from '../controllers/role.controller.js';
 import * as expiryController from '../controllers/expiry.controller.js';
 import * as stockController from '../controllers/stock.controller.js';
 import * as supplierController from '../controllers/supplier.controller.js';
+import faqController from '../controllers/faq.controller.js';
 import { authenticateAdmin, requireSuperAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
@@ -370,22 +371,50 @@ router.post('/suppliers/emails', requirePermission(['stock_management_view', 'st
 // ===============================
 
 // GET /api/admin/magazines - Tüm dergileri listele
-router.get('/magazines', requirePermission('settings_view'), magazineController.getAllMagazines);
+router.get('/magazines', requirePermission('magazine_management_view'), magazineController.getAllMagazines);
 
 // GET /api/admin/magazines/:id - Dergi detayı
-router.get('/magazines/:id', requirePermission('settings_view'), magazineController.getMagazineById);
+router.get('/magazines/:id', requirePermission('magazine_management_view'), magazineController.getMagazineById);
 
 // POST /api/admin/magazines - Yeni dergi oluştur
-router.post('/magazines', requirePermission('settings_edit'), magazineController.createMagazine);
+router.post('/magazines', requirePermission('magazine_management_create'), magazineController.createMagazine);
 
 // PUT /api/admin/magazines/:id - Dergi güncelle
-router.put('/magazines/:id', requirePermission('settings_edit'), magazineController.updateMagazine);
+router.put('/magazines/:id', requirePermission('magazine_management_edit'), magazineController.updateMagazine);
 
 // DELETE /api/admin/magazines/:id - Dergi sil
-router.delete('/magazines/:id', requirePermission('settings_edit'), magazineController.deleteMagazine);
+router.delete('/magazines/:id', requirePermission('magazine_management_delete'), magazineController.deleteMagazine);
 
 // PATCH /api/admin/magazines/:id/toggle - Aktif/Pasif değiştir
-router.patch('/magazines/:id/toggle', requirePermission('settings_edit'), magazineController.toggleActive);
+router.patch('/magazines/:id/toggle', requirePermission('magazine_management_edit'), magazineController.toggleActive);
+
+// ===============================
+// FAQ MANAGEMENT
+// ===============================
+
+// GET /api/admin/faqs - Tüm FAQ'ları listele
+router.get('/faqs', requirePermission('settings_view'), faqController.getAllFAQs);
+
+// GET /api/admin/faqs/:id - FAQ detayı
+router.get('/faqs/:id', requirePermission('settings_view'), faqController.getFAQById);
+
+// POST /api/admin/faqs - Yeni FAQ oluştur
+router.post('/faqs', requirePermission('settings_edit'), faqController.createFAQ);
+
+// PUT /api/admin/faqs/:id - FAQ güncelle
+router.put('/faqs/:id', requirePermission('settings_edit'), faqController.updateFAQ);
+
+// DELETE /api/admin/faqs/:id - FAQ sil
+router.delete('/faqs/:id', requirePermission('settings_edit'), faqController.deleteFAQ);
+
+// PATCH /api/admin/faqs/:id/toggle - Aktif/Pasif değiştir
+router.patch('/faqs/:id/toggle', requirePermission('settings_edit'), faqController.toggleActive);
+
+// POST /api/admin/faqs/reset-to-defaults - Default FAQ'ları yükle
+router.post('/faqs/reset-to-defaults', requirePermission('settings_edit'), faqController.resetToDefaults);
+
+// POST /api/admin/faqs/bulk-import - Bulk import FAQ'ları
+router.post('/faqs/bulk-import', requirePermission('settings_edit'), faqController.bulkImport);
 
 // ===============================
 // SETTINGS MANAGEMENT
@@ -396,6 +425,9 @@ router.get('/settings', requirePermission('settings_view'), settingsController.g
 
 // PUT /api/admin/settings - Ayarları güncelle
 router.put('/settings', requirePermission('settings_edit'), settingsController.updateSettings);
+
+// POST /api/admin/settings/footer/reset-to-defaults - Footer ayarlarını default'a sıfırla
+router.post('/settings/footer/reset-to-defaults', requirePermission('settings_edit'), settingsController.resetFooterToDefaults);
 
 // ===============================
 // FILE UPLOAD

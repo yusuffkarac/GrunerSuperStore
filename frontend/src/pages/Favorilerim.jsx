@@ -100,7 +100,7 @@ function Favorilerim() {
             message="Fügen Sie Produkte, die Ihnen gefallen, zu Ihren Favoriten hinzu"
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {favoriteProducts.map((product, index) => (
               <UrunKarti
                 key={product.id}

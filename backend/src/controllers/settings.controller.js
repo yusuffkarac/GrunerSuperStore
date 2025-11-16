@@ -78,6 +78,34 @@ class SettingsController {
       data: { settings },
     });
   });
+
+  // POST /api/admin/settings/footer/reset-to-defaults - Footer ayarlarını default'a sıfırla
+  resetFooterToDefaults = asyncHandler(async (req, res) => {
+    const adminId = req.admin.id;
+
+    const settings = await settingsService.resetFooterToDefaults();
+
+    // Log kaydı
+    await activityLogService.createLog({
+      adminId,
+      action: 'settings.footer.reset_to_defaults',
+      entityType: 'settings',
+      entityId: settings.id,
+      level: 'info',
+      message: 'Footer-Einstellungen auf Standardeinstellungen zurückgesetzt',
+      metadata: { 
+        blocksCount: settings.footerSettings?.blocks?.length || 0,
+        settingsId: settings.id 
+      },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Footer-Einstellungen erfolgreich auf Standardeinstellungen zurückgesetzt',
+      data: { settings },
+    });
+  });
 }
 
 export default new SettingsController();

@@ -187,6 +187,31 @@ async function seedPermissions() {
       description: 'Berechtigung zum Löschen von Barcode-Etiketten',
       category: 'barcode',
     },
+    // Magazine Verwaltung Berechtigungen
+    {
+      name: 'magazine_management_view',
+      displayName: 'Magazine anzeigen',
+      description: 'Berechtigung zum Anzeigen der Magazine-Verwaltungsseite',
+      category: 'magazines',
+    },
+    {
+      name: 'magazine_management_create',
+      displayName: 'Magazin erstellen',
+      description: 'Berechtigung zum Erstellen eines neuen Magazins',
+      category: 'magazines',
+    },
+    {
+      name: 'magazine_management_edit',
+      displayName: 'Magazin bearbeiten',
+      description: 'Berechtigung zum Bearbeiten vorhandener Magazine',
+      category: 'magazines',
+    },
+    {
+      name: 'magazine_management_delete',
+      displayName: 'Magazin löschen',
+      description: 'Berechtigung zum Löschen von Magazinen',
+      category: 'magazines',
+    },
   ];
 
   let created = 0;

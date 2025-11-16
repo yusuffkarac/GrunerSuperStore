@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiCheck, FiXCircle, FiImage, FiTag, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale';
 import campaignService from '../../services/campaignService';
 import adminService from '../../services/adminService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -45,8 +48,8 @@ function Campaigns() {
     discountAmount: '',
     buyQuantity: '',
     getQuantity: '',
-    startDate: '',
-    endDate: '',
+    startDate: null,
+    endDate: null,
     minPurchase: '',
     maxDiscount: '',
     usageLimit: '',
@@ -114,8 +117,8 @@ function Campaigns() {
         discountAmount: campaign.discountAmount || '',
         buyQuantity: campaign.buyQuantity || '',
         getQuantity: campaign.getQuantity || '',
-        startDate: campaign.startDate ? campaign.startDate.split('T')[0] : '',
-        endDate: campaign.endDate ? campaign.endDate.split('T')[0] : '',
+        startDate: campaign.startDate ? new Date(campaign.startDate) : null,
+        endDate: campaign.endDate ? new Date(campaign.endDate) : null,
         minPurchase: campaign.minPurchase || '',
         maxDiscount: campaign.maxDiscount || '',
         usageLimit: campaign.usageLimit || '',
@@ -137,8 +140,8 @@ function Campaigns() {
         discountAmount: '',
         buyQuantity: '',
         getQuantity: '',
-        startDate: '',
-        endDate: '',
+        startDate: null,
+        endDate: null,
         minPurchase: '',
         maxDiscount: '',
         usageLimit: '',
@@ -170,8 +173,8 @@ function Campaigns() {
         type: formData.type,
         buyQuantity: formData.buyQuantity ? parseInt(formData.buyQuantity) : null,
         getQuantity: formData.getQuantity ? parseInt(formData.getQuantity) : null,
-        startDate: formData.startDate || null,
-        endDate: formData.endDate || null,
+        startDate: formData.startDate ? formData.startDate.toISOString().split('T')[0] : null,
+        endDate: formData.endDate ? formData.endDate.toISOString().split('T')[0] : null,
         minPurchase: formData.minPurchase ? parseFloat(formData.minPurchase) : null,
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : null,
         usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
@@ -645,24 +648,31 @@ function Campaigns() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Startdatum *
                       </label>
-                      <input
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        required
+                      <DatePicker
+                        selected={formData.startDate}
+                        onChange={(date) => setFormData({ ...formData, startDate: date })}
+                        dateFormat="dd/MM/yyyy"
+                        locale={de}
+                        placeholderText="dd/MM/yyyy"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        wrapperClassName="w-full"
+                        required
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Enddatum *
                       </label>
-                      <input
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                        required
+                      <DatePicker
+                        selected={formData.endDate}
+                        onChange={(date) => setFormData({ ...formData, endDate: date })}
+                        dateFormat="dd/MM/yyyy"
+                        locale={de}
+                        placeholderText="dd/MM/yyyy"
+                        minDate={formData.startDate}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        wrapperClassName="w-full"
+                        required
                       />
                     </div>
                   </div>

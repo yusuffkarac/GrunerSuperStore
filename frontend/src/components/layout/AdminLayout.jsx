@@ -106,7 +106,7 @@ function AdminLayout() {
       '/admin/settings': 'settings_view',
       '/admin/homepage-settings': 'settings_view',
       '/admin/design-settings': 'settings_view',
-      '/admin/magazines': 'settings_view',
+      '/admin/magazines': 'magazine_management_view',
       '/admin/notifications': 'notification_management_view',
       '/admin/email-templates': 'email_template_management_view',
       '/admin/notification-templates': 'notification_template_management_view',
@@ -270,11 +270,14 @@ function AdminLayout() {
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
     { path: '/admin/notification-templates', label: 'Benachr.-Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
-    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
+    { path: '/admin/seiteneinstellungen', label: 'Seiteneinstellungen', icon: FiSettings, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
-    { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view' },
-    { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: 'settings_view' },
-    { path: '/admin/magazines', label: 'Wöchentliche Magazine', icon: HiNewspaper, permission: 'settings_view' },
+    { path: '/admin/magazines', label: 'Wöchentliche Magazine', icon: HiNewspaper, permission: 'magazine_management_view' },
+    // Eski route'lar - geriye dönük uyumluluk için
+    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view', hidden: true },
+    { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view', hidden: true },
+    { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: 'settings_view', hidden: true },
+    { path: '/admin/faqs', label: 'FAQ-Verwaltung', icon: FiHelpCircle, permission: 'settings_view', hidden: true },
   ];
 
   // Üst menü öğelerini filtrele (güncel admin bilgileriyle)
@@ -307,6 +310,9 @@ function AdminLayout() {
     const currentPermissions = getAdminPermissions(admin);
 
     return allMenuItems.filter(item => {
+      // Hidden öğeleri gizle
+      if (item.hidden) return false;
+
       // Barkod-only modunda sadece izin verilen menü öğelerini göster (süper adminler hariç)
       if (BARCODE_ONLY_MODE && !currentIsSuperAdmin) {
         if (item.path === '/admin/barcode-labels') return true;

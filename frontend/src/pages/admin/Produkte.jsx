@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter, FiPackage, FiCheck, FiXCircle, FiGrid, FiList, FiLayers, FiTrendingUp, FiArchive, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
 import { useAlert } from '../../contexts/AlertContext';
@@ -480,7 +483,7 @@ function Produkte() {
     ecoscoreGrade: '',
     nutritionData: null,
     openfoodfactsCategories: [],
-    expiryDate: '',
+    expiryDate: null,
     hideFromExpiryManagement: false,
   });
 
@@ -561,7 +564,7 @@ function Produkte() {
         ecoscoreGrade: product.ecoscoreGrade || '',
         nutritionData: product.nutritionData || null,
         openfoodfactsCategories: Array.isArray(product.openfoodfactsCategories) ? product.openfoodfactsCategories : [],
-        expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
+        expiryDate: product.expiryDate ? new Date(product.expiryDate) : null,
         hideFromExpiryManagement: product.hideFromExpiryManagement || false,
         taxRate: product.taxRate ? parseFloat(product.taxRate) : '',
       });
@@ -633,7 +636,7 @@ function Produkte() {
         ecoscoreGrade: formData.ecoscoreGrade || null,
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
+        expiryDate: formData.expiryDate ? formData.expiryDate.toISOString() : null,
         hideFromExpiryManagement: formData.hideFromExpiryManagement,
         taxRate: formData.taxRate ? parseFloat(formData.taxRate) : null,
       };
@@ -1841,11 +1844,14 @@ function Produkte() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           MHD-Datum
                         </label>
-                        <input
-                          type="date"
-                          value={formData.expiryDate}
-                          onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                        <DatePicker
+                          selected={formData.expiryDate}
+                          onChange={(date) => setFormData({ ...formData, expiryDate: date })}
+                          dateFormat="dd/MM/yyyy"
+                          locale={de}
+                          placeholderText="dd/MM/yyyy"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                          wrapperClassName="w-full"
                         />
                         <p className="mt-1 text-xs text-gray-500">
                           Geben Sie das Mindesthaltbarkeitsdatum des Produkts ein (optional)

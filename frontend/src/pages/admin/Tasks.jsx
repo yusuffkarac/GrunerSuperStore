@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiEdit2, FiX, FiFilter, FiPackage, FiCheckSquare, FiImage, FiHash, FiTag, FiDollarSign, FiClock, FiUpload, FiSave, FiXCircle, FiEyeOff } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale';
 import adminService from '../../services/adminService';
 import categoryService from '../../services/categoryService';
 import Loading from '../../components/common/Loading';
@@ -698,11 +701,14 @@ const Tasks = () => {
                         </div>
                       )}
                       {activeTab === 'expiryDate' && (
-                        <input
-                          type="date"
-                          value={editValues.expiryDate ? new Date(editValues.expiryDate).toISOString().split('T')[0] : ''}
-                          onChange={(e) => setEditValues({ ...editValues, expiryDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                        <DatePicker
+                          selected={editValues.expiryDate ? new Date(editValues.expiryDate) : null}
+                          onChange={(date) => setEditValues({ ...editValues, expiryDate: date ? date.toISOString() : null })}
+                          dateFormat="dd/MM/yyyy"
+                          locale={de}
+                          placeholderText="dd/MM/yyyy"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          wrapperClassName="w-full"
                           autoFocus
                         />
                       )}

@@ -2223,7 +2223,7 @@ function ExpiryManagement() {
                   <DatePicker
                     selected={selectedDate}
                     onChange={(date) => setSelectedDate(date)}
-                    dateFormat="dd.MM.yyyy"
+                    dateFormat="dd/MM/yyyy"
                     maxDate={new Date()}
                     locale={de}
                     className="w-36 px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
@@ -2451,10 +2451,10 @@ function ExpiryManagement() {
                     <DatePicker
                       selected={newExpiryDate}
                       onChange={(date) => setNewExpiryDate(date)}
-                      dateFormat="dd.MM.yyyy"
+                      dateFormat="dd/MM/yyyy"
                       minDate={new Date()}
                       locale={de}
-                      placeholderText="dd.MM.yyyy"
+                      placeholderText="dd/MM/yyyy"
                       className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       wrapperClassName="w-full"
                       calendarClassName="!text-lg"
@@ -2788,10 +2788,10 @@ function ExpiryManagement() {
                     <DatePicker
                       selected={updateExpiryDate}
                       onChange={(date) => setUpdateExpiryDate(date)}
-                      dateFormat="dd.MM.yyyy"
+                      dateFormat="dd/MM/yyyy"
                       minDate={new Date()}
                       locale={de}
-                      placeholderText="dd.MM.yyyy"
+                      placeholderText="dd/MM/yyyy"
                       className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       wrapperClassName="w-full"
                       calendarClassName="!text-lg"
@@ -2892,10 +2892,10 @@ function ExpiryManagement() {
                     <DatePicker
                       selected={updateExpiryDate}
                       onChange={(date) => setUpdateExpiryDate(date)}
-                      dateFormat="dd.MM.yyyy"
+                      dateFormat="dd/MM/yyyy"
                       minDate={new Date()}
                       locale={de}
-                      placeholderText="dd.MM.yyyy"
+                      placeholderText="dd/MM/yyyy"
                       className="w-full px-4 py-2 text-lg md:text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       wrapperClassName="w-full"
                       calendarClassName="!text-lg"

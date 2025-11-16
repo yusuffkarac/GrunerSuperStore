@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import { defaultFooterBlocks } from '../data/defaultFooterSettings.js';
 
 class SettingsService {
   // Ayarları getir (tek satır)
@@ -250,6 +251,36 @@ class SettingsService {
       settings = await prisma.settings.update({
         where: { id: settings.id },
         data: updateData,
+      });
+    }
+
+    return settings;
+  }
+
+  // Footer ayarlarını default'a sıfırla
+  async resetFooterToDefaults() {
+    let settings = await prisma.settings.findFirst();
+
+    const defaultFooterSettings = {
+      blocks: defaultFooterBlocks,
+    };
+
+    if (!settings) {
+      // Ayarlar yoksa oluştur
+      settings = await prisma.settings.create({
+        data: {
+          guestCanViewProducts: true,
+          showOutOfStockProducts: true,
+          footerSettings: defaultFooterSettings,
+        },
+      });
+    } else {
+      // Footer ayarlarını güncelle
+      settings = await prisma.settings.update({
+        where: { id: settings.id },
+        data: {
+          footerSettings: defaultFooterSettings,
+        },
       });
     }
 

@@ -40,6 +40,7 @@ import SiparisDetay from './pages/SiparisDetay';
 import Favorilerim from './pages/Favorilerim';
 import Kampanyalar from './pages/Kampanyalar';
 import Karsilastir from './pages/Karsilastir';
+import FAQ from './pages/FAQ';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -57,6 +58,7 @@ import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
 import FooterSettings from './pages/admin/FooterSettings';
 import CookieSettings from './pages/admin/CookieSettings';
+import Seiteneinstellungen from './pages/admin/Seiteneinstellungen';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 import Notifications from './pages/admin/Notifications';
@@ -70,6 +72,7 @@ import BulkPriceUpdates from './pages/admin/BulkPriceUpdates';
 import Tasks from './pages/admin/Tasks';
 import ActivityLogs from './pages/admin/ActivityLogs';
 import Magazines from './pages/admin/Magazines';
+import FAQs from './pages/admin/FAQs';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -184,6 +187,7 @@ function AppContent() {
             <Route path="/favoriten" element={<Favorilerim />} />
             <Route path="/kampagnen" element={<Kampanyalar />} />
             <Route path="/vergleichen" element={<Karsilastir />} />
+            <Route path="/faq" element={<FAQ />} />
             {/* Eski Türkçe route'lara redirect */}
             <Route path="/urunler" element={<Navigate to="/produkte" replace />} />
             <Route path="/urun/:id" element={<RedirectWithParams to="/produkt/:id" />} />
@@ -277,11 +281,13 @@ function AppContent() {
               <Route path="email-templates" element={<EmailTemplates />} />
               <Route path="notification-templates" element={<NotificationTemplates />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="seiteneinstellungen" element={<Seiteneinstellungen />} />
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
               <Route path="footer-settings" element={<FooterSettings />} />
               <Route path="cookie-settings" element={<CookieSettings />} />
               <Route path="magazines" element={<Magazines />} />
+              <Route path="faqs" element={<FAQs />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="help" element={<Help />} />
             </>

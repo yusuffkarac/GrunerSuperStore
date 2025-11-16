@@ -3011,10 +3011,10 @@ function StockManagement() {
                       <DatePicker
                         selected={expectedDeliveryDate}
                         onChange={(date) => setExpectedDeliveryDate(date)}
-                        dateFormat="dd.MM.yyyy"
+                        dateFormat="dd/MM/yyyy"
                         minDate={new Date()}
                         locale={de}
-                        placeholderText="dd.MM.yyyy"
+                        placeholderText="dd/MM/yyyy"
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         wrapperClassName="w-full"
                       />
@@ -3028,9 +3028,9 @@ function StockManagement() {
                       <DatePicker
                         selected={actualDeliveryDate}
                         onChange={(date) => setActualDeliveryDate(date)}
-                        dateFormat="dd.MM.yyyy"
+                        dateFormat="dd/MM/yyyy"
                         locale={de}
-                        placeholderText="dd.MM.yyyy"
+                        placeholderText="dd/MM/yyyy"
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         wrapperClassName="w-full"
                       />
