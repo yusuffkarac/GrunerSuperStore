@@ -31,6 +31,11 @@ class OrderController {
       console.error('Mail gönderim hatası:', err);
     });
 
+    // Adminlere bildirim gönder (asenkron, response'u bekletmemek için)
+    orderService.sendOrderNotificationToAdmins(order).catch((err) => {
+      console.error('Admin bildirim gönderim hatası:', err);
+    });
+
     res.status(201).json({
       success: true,
       message: 'Bestellung erfolgreich aufgegeben',

@@ -86,7 +86,7 @@ function SifremiUnuttum() {
 
             <div className="pt-4">
               <Link
-                to="/giris"
+                to="/anmelden"
                 className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
                 <FiArrowLeft />
@@ -146,7 +146,7 @@ function SifremiUnuttum() {
             {/* Geri Dön */}
             <div className="text-center">
               <Link
-                to="/giris"
+                to="/anmelden"
                 className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
               >
                 <FiArrowLeft />

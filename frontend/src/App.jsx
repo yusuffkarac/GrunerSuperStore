@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -79,6 +79,16 @@ const getAdminRole = () => {
   }
 };
 
+// Parametreli route'lar için redirect component'i
+function RedirectWithParams({ to }) {
+  const params = useParams();
+  const { search } = useLocation();
+  const newPath = Object.keys(params).reduce((path, key) => {
+    return path.replace(`:${key}`, params[key]);
+  }, to);
+  return <Navigate to={`${newPath}${search}`} replace />;
+}
+
 // Sayfa geçişlerini yöneten iç bileşen
 function AppContent() {
   const location = useLocation();
@@ -154,22 +164,38 @@ function AppContent() {
         {(!BARCODE_ONLY_MODE || isSuperAdmin) && (
           <Route element={<MainLayout />}>
             <Route path="/" element={<AnaSayfa />} />
-            <Route path="/urunler" element={<UrunListesi />} />
-            <Route path="/urun/:id" element={<UrunDetay />} />
-            <Route path="/sepet" element={<Sepet />} />
-            <Route path="/siparis-ver" element={<SiparisVer />} />
-            <Route path="/giris" element={<Giris />} />
-            <Route path="/kayit" element={<Kayit />} />
-            <Route path="/email-dogrula" element={<EmailDogrula />} />
-            <Route path="/sifremi-unuttum" element={<SifremiUnuttum />} />
-            <Route path="/sifre-sifirla" element={<SifreSifirla />} />
-            <Route path="/reset-password" element={<SifreSifirla />} />
+            {/* Almanca route'lar */}
+            <Route path="/produkte" element={<UrunListesi />} />
+            <Route path="/produkt/:id" element={<UrunDetay />} />
+            <Route path="/warenkorb" element={<Sepet />} />
+            <Route path="/bestellen" element={<SiparisVer />} />
+            <Route path="/anmelden" element={<Giris />} />
+            <Route path="/registrieren" element={<Kayit />} />
+            <Route path="/email-verifizieren" element={<EmailDogrula />} />
+            <Route path="/passwort-vergessen" element={<SifremiUnuttum />} />
+            <Route path="/passwort-zuruecksetzen" element={<SifreSifirla />} />
             <Route path="/profil" element={<Profil />} />
-            <Route path="/siparislerim" element={<Siparislerim />} />
-            <Route path="/siparis/:id" element={<SiparisDetay />} />
-            <Route path="/favorilerim" element={<Favorilerim />} />
-            <Route path="/kampanyalar" element={<Kampanyalar />} />
-            <Route path="/karsilastir" element={<Karsilastir />} />
+            <Route path="/meine-bestellungen" element={<Siparislerim />} />
+            <Route path="/bestellung/:id" element={<SiparisDetay />} />
+            <Route path="/favoriten" element={<Favorilerim />} />
+            <Route path="/kampagnen" element={<Kampanyalar />} />
+            <Route path="/vergleichen" element={<Karsilastir />} />
+            {/* Eski Türkçe route'lara redirect */}
+            <Route path="/urunler" element={<Navigate to="/produkte" replace />} />
+            <Route path="/urun/:id" element={<RedirectWithParams to="/produkt/:id" />} />
+            <Route path="/sepet" element={<Navigate to="/warenkorb" replace />} />
+            <Route path="/siparis-ver" element={<Navigate to="/bestellen" replace />} />
+            <Route path="/giris" element={<Navigate to="/anmelden" replace />} />
+            <Route path="/kayit" element={<Navigate to="/registrieren" replace />} />
+            <Route path="/email-dogrula" element={<Navigate to="/email-verifizieren" replace />} />
+            <Route path="/sifremi-unuttum" element={<Navigate to="/passwort-vergessen" replace />} />
+            <Route path="/sifre-sifirla" element={<Navigate to="/passwort-zuruecksetzen" replace />} />
+            <Route path="/reset-password" element={<Navigate to="/passwort-zuruecksetzen" replace />} />
+            <Route path="/siparislerim" element={<Navigate to="/meine-bestellungen" replace />} />
+            <Route path="/siparis/:id" element={<RedirectWithParams to="/bestellung/:id" />} />
+            <Route path="/favorilerim" element={<Navigate to="/favoriten" replace />} />
+            <Route path="/kampanyalar" element={<Navigate to="/kampagnen" replace />} />
+            <Route path="/karsilastir" element={<Navigate to="/vergleichen" replace />} />
           </Route>
         )}
 

@@ -39,7 +39,8 @@ const api = axios.create({
 // Request interceptor - token ekleme
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Önce user token, yoksa admin token kullan
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -70,12 +71,17 @@ api.interceptors.response.use(
       const currentPath = window.location.pathname;
       // Eğer zaten giriş/kayıt/email doğrulama sayfasındaysak redirect yapma (sonsuz döngüyü önle)
       const publicPaths = [
+        '/anmelden',
+        '/registrieren',
+        '/email-verifizieren',
+        '/passwort-vergessen',
+        '/passwort-zuruecksetzen',
+        '/reset-password',
         '/giris',
         '/kayit',
         '/email-dogrula',
         '/sifremi-unuttum',
         '/sifre-sifirla',
-        '/reset-password',
         '/admin/login'
       ];
       
@@ -86,7 +92,7 @@ api.interceptors.response.use(
           // Token yoksa, bu beklenen bir durum - sessizce redirect et
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          window.location.href = '/giris';
+          window.location.href = '/anmelden';
           // Promise'i reject etme, sessizce işle
           return Promise.reject({
             message: 'Authentication required',
@@ -97,7 +103,7 @@ api.interceptors.response.use(
           // Token varsa ama geçersizse, normal hata handling
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          window.location.href = '/giris';
+          window.location.href = '/anmelden';
         }
       }
     }

@@ -140,7 +140,7 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
     if (e.target.closest('button') || e.target.closest('.btn-press')) {
       return;
     }
-    navigate(`/urun/${item.productId}`);
+    navigate(`/produkt/${item.productId}`);
   };
 
   return (
@@ -591,10 +591,10 @@ function Sepet() {
   const handleCheckout = () => {
     if (!isAuthenticated) {
       toast.info('Bitte melden Sie sich an, um fortzufahren');
-      navigate('/giris', { state: { from: '/sepet' } });
+      navigate('/anmelden', { state: { from: '/warenkorb' } });
       return;
     }
-    navigate('/siparis-ver');
+    navigate('/bestellen');
   };
 
   // Loading state
@@ -753,7 +753,7 @@ function Sepet() {
 
         {/* Siparişlerim butonu */}
         <button
-          onClick={() => navigate('/siparislerim')}
+          onClick={() => navigate('/meine-bestellungen')}
           className="w-full mt-1.5 border border-gray-300 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-xs"
         >
           <FiPackage className="w-3 h-3" />

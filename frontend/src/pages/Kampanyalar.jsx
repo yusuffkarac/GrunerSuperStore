@@ -330,7 +330,7 @@ function Kampanyalar() {
 
                       {/* Ürünlere git butonu */}
                       <Link
-                        to={`/urunler?campaign=${campaign.id}`}
+                        to={`/produkte?campaign=${campaign.id}`}
                         className="w-full mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <span>Jetzt einkaufen</span>

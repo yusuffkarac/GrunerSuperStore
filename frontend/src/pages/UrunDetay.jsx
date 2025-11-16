@@ -185,7 +185,7 @@ function UrunDetay() {
         position: 'bottom-center',
         autoClose: 2000,
       });
-      navigate('/giris');
+      navigate('/anmelden');
       return;
     }
 
@@ -366,13 +366,13 @@ function UrunDetay() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => navigate('/giris')}
+                onClick={() => navigate('/anmelden')}
                 className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Anmelden
               </button>
               <button
-                onClick={() => navigate('/kayit')}
+                onClick={() => navigate('/registrieren')}
                 className="px-6 py-3 bg-white text-primary-600 border-2 border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
               >
                 Registrieren
@@ -409,7 +409,7 @@ function UrunDetay() {
     <div className="container-mobile py-4 pb-24 lg:pb-6">
       {/* Geri butonu */}
       <Link
-        to="/urunler"
+        to="/produkte"
         className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 mb-4 lg:mb-6"
       >
         <FiArrowLeft className="w-4 h-4" />
@@ -536,7 +536,7 @@ function UrunDetay() {
           {/* Kategori */}
           {product.category && (
             <Link
-              to={`/urunler?category=${product.category.id}`}
+              to={`/produkte?category=${product.category.id}`}
               className="inline-block text-xs lg:text-sm text-primary-700 hover:text-primary-800 mb-2 lg:mb-3"
             >
               {product.category.name}

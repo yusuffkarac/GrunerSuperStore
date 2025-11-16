@@ -16,14 +16,16 @@ export function NotificationProvider({ children }) {
   const reconnectTimeoutRef = useRef(null);
   const lastNotificationIdRef = useRef(null);
 
-  // Admin sayfalarında bildirim sistemi çalışmasın
-  const isAdminPage = location.pathname.startsWith('/admin');
-
   // Bildirimleri yükle
   const loadData = useCallback(async () => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
+    // Admin token veya user token kabul edilir
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
+    const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const hasToken = tokenFromStorage || adminTokenFromStorage;
+    
+    // Admin panelinde isAuthenticated false olabilir, bu yüzden sadece token kontrolü yapıyoruz
+    if (!hasToken) {
       return;
     }
 
@@ -67,13 +69,18 @@ export function NotificationProvider({ children }) {
       }
       console.error('Bildirimler yüklenemedi:', error);
     }
-  }, [isAdminPage, isAuthenticated, token]);
+  }, []);
 
     // SSE bağlantısı kur
   const setupSSE = useCallback(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
+    // Admin token veya user token kabul edilir
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
+    const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const hasToken = tokenFromStorage || adminTokenFromStorage;
+    
+    // Admin panelinde isAuthenticated false olabilir, bu yüzden sadece token kontrolü yapıyoruz
+    if (!hasToken) {
       return;
     }
 
@@ -84,12 +91,15 @@ export function NotificationProvider({ children }) {
     }
 
     try {
-      // SSE bağlantısı kur - localStorage'dan token kullan
+      // SSE bağlantısı kur - önce user token, yoksa admin token kullan
       const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!tokenFromStorage) {
+      const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const tokenToUse = tokenFromStorage || adminTokenFromStorage;
+      
+      if (!tokenToUse) {
         return;
       }
-      const eventSource = notificationService.createEventSource(tokenFromStorage);
+      const eventSource = notificationService.createEventSource(tokenToUse);
     eventSourceRef.current = eventSource;
 
     // Yeni bildirim geldiğinde
@@ -131,13 +141,19 @@ export function NotificationProvider({ children }) {
       
         // Yeniden bağlanmayı dene (5 saniye sonra)
       const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!isAdminPage && isAuthenticated && token && tokenFromStorage) {
+      const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const hasToken = tokenFromStorage || adminTokenFromStorage;
+      
+      if (hasToken) {
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
           reconnectTimeoutRef.current = setTimeout(() => {
           const tokenCheck = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-          if (!isAdminPage && isAuthenticated && token && tokenCheck && !eventSourceRef.current) {
+          const adminTokenCheck = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+          const hasTokenCheck = tokenCheck || adminTokenCheck;
+          
+          if (hasTokenCheck && !eventSourceRef.current) {
               setupSSE();
           }
         }, 5000);
@@ -146,13 +162,18 @@ export function NotificationProvider({ children }) {
     } catch (error) {
       console.error('SSE bağlantısı kurulamadı:', error);
     }
-  }, [isAdminPage, isAuthenticated, token]);
+  }, []);
 
   // Polling mekanizması (SSE yedek olarak)
   const setupPolling = useCallback(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
+    // Admin token veya user token kabul edilir
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
+    const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const hasToken = tokenFromStorage || adminTokenFromStorage;
+    
+    // Admin panelinde isAuthenticated false olabilir, bu yüzden sadece token kontrolü yapıyoruz
+    if (!hasToken) {
       return;
     }
 
@@ -165,14 +186,18 @@ export function NotificationProvider({ children }) {
     pollingIntervalRef.current = setInterval(() => {
       loadData();
     }, 10000);
-  }, [isAdminPage, isAuthenticated, token, loadData]);
+  }, [loadData]);
 
   // Ana effect - SSE ve polling kurulumu
   useEffect(() => {
     // Token kontrolü - hem store'dan hem de localStorage'dan kontrol et
+    // Admin token veya user token kabul edilir
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    // Admin sayfalarında veya authenticated değilse çalışma
-    if (isAdminPage || !isAuthenticated || !token || !tokenFromStorage) {
+    const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const hasToken = tokenFromStorage || adminTokenFromStorage;
+    
+    // Admin panelinde isAuthenticated false olabilir, bu yüzden sadece token kontrolü yapıyoruz
+    if (!hasToken) {
       // Bağlantıları kapat
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -220,7 +245,7 @@ export function NotificationProvider({ children }) {
         reconnectTimeoutRef.current = null;
       }
     };
-  }, [isAuthenticated, token, location.pathname, isAdminPage, loadData, setupSSE, setupPolling]);
+  }, [location.pathname, loadData, setupSSE, setupPolling]);
 
   // Bildirimi okundu işaretle
   const markAsRead = async (notificationId) => {
@@ -267,7 +292,11 @@ export function NotificationProvider({ children }) {
   // Bildirimleri yeniden yükle
   const refreshNotifications = async () => {
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (isAdminPage || !isAuthenticated || !tokenFromStorage) return;
+    const adminTokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const hasToken = tokenFromStorage || adminTokenFromStorage;
+    
+    // Admin panelinde isAuthenticated false olabilir, bu yüzden sadece token kontrolü yapıyoruz
+    if (!hasToken) return;
     
     try {
       setLoading(true);

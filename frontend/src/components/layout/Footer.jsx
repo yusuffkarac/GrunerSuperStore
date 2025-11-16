@@ -70,17 +70,17 @@ function Footer() {
               <h3 className="font-semibold text-gray-900 mb-3">Schnelllinks</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/urunler" className="text-gray-600 hover:text-primary-700">
+                  <Link to="/produkte" className="text-gray-600 hover:text-primary-700">
                     Produkte
                   </Link>
                 </li>
                 <li>
-                  <Link to="/favorilerim" className="text-gray-600 hover:text-primary-700">
+                  <Link to="/favoriten" className="text-gray-600 hover:text-primary-700">
                     Favoriten
                   </Link>
                 </li>
                 <li>
-                  <Link to="/siparislerim" className="text-gray-600 hover:text-primary-700">
+                  <Link to="/meine-bestellungen" className="text-gray-600 hover:text-primary-700">
                     Bestellungen
                   </Link>
                 </li>
@@ -96,12 +96,12 @@ function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/giris" className="text-gray-600 hover:text-primary-700">
+                  <Link to="/anmelden" className="text-gray-600 hover:text-primary-700">
                     Anmelden
                   </Link>
                 </li>
                 <li>
-                  <Link to="/kayit" className="text-gray-600 hover:text-primary-700">
+                  <Link to="/registrieren" className="text-gray-600 hover:text-primary-700">
                     Registrieren
                   </Link>
                 </li>

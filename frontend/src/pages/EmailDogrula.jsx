@@ -73,7 +73,7 @@ function EmailDogrula() {
   const handleVerify = async (code = verificationCode) => {
     if (!email) {
       toast.error('E-Mail-Adresse fehlt');
-      navigate('/kayit');
+      navigate('/registrieren');
       return;
     }
 
@@ -128,7 +128,7 @@ function EmailDogrula() {
         toast.success('E-Mail erfolgreich bestätigt!');
         
         // Login sayfasına yönlendir
-        navigate('/giris');
+        navigate('/anmelden');
       } else {
         console.error('❌ Token bulunamadı:', response);
         throw new Error('Token nicht erhalten');
@@ -151,7 +151,7 @@ function EmailDogrula() {
   const handleResend = async () => {
     if (!email) {
       toast.error('E-Mail-Adresse fehlt');
-      navigate('/kayit');
+      navigate('/registrieren');
       return;
     }
 
@@ -176,7 +176,7 @@ function EmailDogrula() {
   useEffect(() => {
     if (!email) {
       toast.error('E-Mail-Adresse fehlt');
-      navigate('/kayit');
+      navigate('/registrieren');
       return;
     }
     document.getElementById('code-0')?.focus();
@@ -276,7 +276,7 @@ function EmailDogrula() {
           {/* Geri Dön */}
           <div className="pt-4 border-t border-gray-200">
             <Link
-              to="/kayit"
+              to="/registrieren"
               className="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900"
             >
               <FiArrowLeft />

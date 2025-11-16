@@ -104,7 +104,7 @@ function OrderCard({ order, onReorder }) {
       <div className="flex items-start justify-between mb-2">
         <div
           className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => navigate(`/siparis/${order.id}`)}
+          onClick={() => navigate(`/bestellung/${order.id}`)}
         >
           <p className="font-semibold text-sm text-gray-900 truncate">Bestellung #{order.orderNo}</p>
           <p className="text-[10px] text-gray-500 mt-0.5">
@@ -127,7 +127,7 @@ function OrderCard({ order, onReorder }) {
       {/* Ürün sayısı ve tutar */}
       <div
         className="flex items-center justify-between py-1.5 border-t border-gray-100 cursor-pointer"
-        onClick={() => navigate(`/siparis/${order.id}`)}
+        onClick={() => navigate(`/bestellung/${order.id}`)}
       >
         <div className="flex items-center gap-1.5 text-xs text-gray-600">
           <FiShoppingBag className="text-gray-400 w-3 h-3" />
@@ -148,7 +148,7 @@ function OrderCard({ order, onReorder }) {
       {/* Teslimat türü */}
       <div
         className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5 cursor-pointer"
-        onClick={() => navigate(`/siparis/${order.id}`)}
+        onClick={() => navigate(`/bestellung/${order.id}`)}
       >
         {order.type === 'delivery' ? (
           <>
@@ -196,7 +196,7 @@ function Siparislerim() {
       toast.success('Produkte wurden zum Warenkorb hinzugefügt!');
       // Kısa bir gecikme sonra sepete yönlendir
       setTimeout(() => {
-        navigate('/sepet');
+        navigate('/warenkorb');
       }, 500);
     } catch (error) {
       console.error('Reorder hatası:', error);

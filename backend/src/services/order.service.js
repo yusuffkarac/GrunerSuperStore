@@ -442,6 +442,65 @@ class OrderService {
     });
   }
 
+  // ===== ADMIN BİLDİRİM HELPERİ =====
+  async sendOrderNotificationToAdmins(order) {
+    try {
+      console.log('🔔 Admin bildirim gönderimi başlatılıyor...');
+      
+      // Tüm adminleri bul
+      const admins = await prisma.admin.findMany({
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+        },
+      });
+
+      console.log(`📋 Bulunan admin sayısı: ${admins.length}`);
+
+      if (admins.length === 0) {
+        console.log('⚠️ Admin bulunamadı, bildirim gönderilemedi');
+        return;
+      }
+
+      // Müşteri bilgilerini hazırla
+      const customerName = `${order.user.firstName} ${order.user.lastName}`;
+      const orderNo = order.orderNo;
+      const totalPrice = `${order.total.toFixed(2)}€`;
+      const orderType = order.type === 'delivery' ? 'Lieferung' : 'Abholung';
+      const itemCount = order.orderItems.length;
+
+      // Bildirim içeriği
+      const title = `Neue Bestellung: ${orderNo}`;
+      const message = `${customerName} hat eine neue Bestellung aufgegeben. ${itemCount} Artikel, ${totalPrice} (${orderType})`;
+      const actionUrl = `/admin/orders/${order.id}`;
+
+      // Tüm adminlere bildirim gönder (adminId ile)
+      const adminIds = admins.map((admin) => admin.id);
+      console.log(`📤 ${adminIds.length} admin'e bildirim gönderiliyor...`);
+      
+      const notifications = await notificationService.createBulkAdminNotifications(adminIds, {
+        type: 'info',
+        title,
+        message,
+        actionUrl,
+        metadata: {
+          orderId: order.id,
+          orderNo: order.orderNo,
+          customerName,
+          total: order.total,
+          type: order.type,
+        },
+      });
+
+      console.log(`✅ ${notifications.length} admin bildirimi başarıyla oluşturuldu`);
+    } catch (error) {
+      // Bildirim hatası kritik değil, log at
+      console.error('❌ Admin bildirim gönderim hatası:', error);
+      console.error('❌ Hata detayı:', error.stack);
+    }
+  }
+
   // ===== MAİL GÖNDERİM HELPERİ =====
   async sendOrderEmails(order) {
     try {

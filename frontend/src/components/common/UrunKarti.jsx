@@ -151,7 +151,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
   return (
     <div className="bg-white rounded-lg shadow-sm p-2 md:p-3 relative">
       {/* Ürün resmi */}
-      <Link to={`/urun/${product.id}`} className="block relative mb-2">
+      <Link to={`/produkt/${product.id}`} className="block relative mb-2">
         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
           {normalizedImageUrls && normalizedImageUrls[0] ? (
             <>
@@ -244,7 +244,7 @@ const UrunKarti = memo(function UrunKarti({ product, campaign, priority = false 
       </Link>
 
       {/* Ürün bilgileri */}
-      <Link to={`/urun/${product.id}`}>
+      <Link to={`/produkt/${product.id}`}>
         {/* Fiyat - Yeşil renkte */}
         <div className="mb-1">
           {campaign && discountedPrice !== null ? (

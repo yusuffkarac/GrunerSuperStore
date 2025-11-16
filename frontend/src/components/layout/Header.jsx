@@ -23,7 +23,7 @@ function Header() {
   const resultsRef = useRef(null);
 
   // Geri butonu gösterilecek sayfalar
-  const showBackButton = !['/', '/urunler'].includes(location.pathname);
+  const showBackButton = !['/', '/produkte'].includes(location.pathname);
 
   // Logo yükle
   useEffect(() => {
@@ -98,7 +98,7 @@ function Header() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/urunler?search=${encodeURIComponent(searchTerm.trim())}`);
+      navigate(`/produkte?search=${encodeURIComponent(searchTerm.trim())}`);
       setSearchTerm('');
       setShowResults(false);
     }
@@ -123,8 +123,8 @@ function Header() {
 
   const navItems = [
     { path: '/', icon: FiHome, label: 'Startseite' },
-    { path: '/urunler', icon: FiGrid, label: 'Produkte' },
-    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
+    { path: '/produkte', icon: FiGrid, label: 'Produkte' },
+    { path: '/favoriten', icon: FiHeart, label: 'Favoriten' },
   ];
 
   return (
@@ -172,7 +172,7 @@ function Header() {
           <div className="flex items-center gap-3">
             {isAuthenticated && <NotificationBell />}
             <Link
-              to="/sepet"
+              to="/warenkorb"
               className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Warenkorb"
             >
@@ -297,7 +297,7 @@ function Header() {
                       return (
                         <Link
                           key={product.id}
-                          to={`/urun/${product.id}`}
+                          to={`/produkt/${product.id}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSearchTerm('');
@@ -429,7 +429,7 @@ function Header() {
                       return (
                         <Link
                           key={product.id}
-                          to={`/urun/${product.id}`}
+                          to={`/produkt/${product.id}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSearchTerm('');

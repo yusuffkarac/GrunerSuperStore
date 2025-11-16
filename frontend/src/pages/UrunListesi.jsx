@@ -257,13 +257,13 @@ function UrunListesi() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => navigate('/giris')}
+                onClick={() => navigate('/anmelden')}
                 className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Anmelden
               </button>
               <button
-                onClick={() => navigate('/kayit')}
+                onClick={() => navigate('/registrieren')}
                 className="px-6 py-3 bg-white text-primary-600 border-2 border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
               >
                 Registrieren

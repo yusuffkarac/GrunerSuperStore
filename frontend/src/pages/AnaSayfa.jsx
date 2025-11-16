@@ -334,13 +334,13 @@ function AnaSayfa() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => navigate('/kayit')}
+                onClick={() => navigate('/registrieren')}
                 className="px-10 py-4 bg-white text-primary-700 rounded-xl font-bold hover:bg-primary-50 hover:scale-105 transition-all duration-300 text-lg shadow-2xl hover:shadow-primary-300/50"
               >
                 {hs.hero.registerButton}
               </button>
               <button
-                onClick={() => navigate('/giris')}
+                onClick={() => navigate('/anmelden')}
                 className="px-10 py-4 bg-transparent text-white border-2 border-white/80 rounded-xl font-bold hover:bg-white/10 hover:border-white transition-all duration-300 text-lg backdrop-blur-sm"
               >
                 {hs.hero.loginButton}
@@ -419,13 +419,13 @@ function AnaSayfa() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
-                  onClick={() => navigate('/kayit')}
+                  onClick={() => navigate('/registrieren')}
                   className="px-10 py-4 bg-white text-primary-700 rounded-xl font-bold hover:bg-primary-50 hover:scale-105 transition-all duration-300 text-lg shadow-lg"
                 >
                   {hs.cta.registerButton}
                 </button>
                 <button
-                  onClick={() => navigate('/giris')}
+                  onClick={() => navigate('/anmelden')}
                   className="px-10 py-4 bg-transparent text-white border-2 border-white/80 rounded-xl font-bold hover:bg-white/10 transition-all duration-300 text-lg"
                 >
                   {hs.cta.loginButton}
@@ -447,7 +447,7 @@ function AnaSayfa() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">Kampagnen</h2>
               <Link
-                to="/kampanyalar"
+                to="/kampagnen"
                 className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
               >
                 Alle anzeigen
@@ -472,7 +472,7 @@ function AnaSayfa() {
                   return (
                     <Link
                       key={campaign.id}
-                      to={`/urunler?campaign=${campaign.id}`}
+                      to={`/produkte?campaign=${campaign.id}`}
                       className="block w-full flex-shrink-0 group"
                     >
                       <div className="relative bg-gradient-to-br  to-primary-100 rounded-2xl overflow-hidden border border-primary-200 hover:shadow-lg transition-shadow">
@@ -565,7 +565,7 @@ function AnaSayfa() {
               {categories.map((category, index) => (
                 <Link
                   key={category.id}
-                  to={`/urunler?category=${category.id}`}
+                  to={`/produkte?category=${category.id}`}
                   className="group text-center"
                 >
                   <div className="bg-white rounded-xl p-0 md:p-4 hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-primary-200 hover:shadow-md h-full flex flex-col">
@@ -602,7 +602,7 @@ function AnaSayfa() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Empfohlene Produkte</h2>
                 <Link
-                  to="/urunler"
+                  to="/produkte"
                   className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
                 >
                   Alle anzeigen
@@ -629,7 +629,7 @@ function AnaSayfa() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Bestseller</h2>
                 <Link
-                  to="/urunler"
+                  to="/produkte"
                   className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1 group"
                 >
                   Alle anzeigen
@@ -656,7 +656,7 @@ function AnaSayfa() {
       {/* Aktif Sipariş Kartı - Bottom menünün hemen üstünde */}
       {activeOrder && (
         <Link
-          to={`/siparis/${activeOrder.id}`}
+          to={`/bestellung/${activeOrder.id}`}
           className={`fixed bottom-20 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-md z-[999998] transition-transform duration-300 ${
             showActiveOrderCard ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
           }`}

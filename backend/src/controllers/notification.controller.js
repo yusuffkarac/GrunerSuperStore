@@ -1,57 +1,134 @@
 import notificationService from '../services/notification.service.js';
 import realtimeService from '../services/realtime.service.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import prisma from '../config/prisma.js';
 
 class NotificationController {
-  // GET /api/notifications - Kullanıcı bildirimlerini listele
+  // GET /api/notifications - Kullanıcı veya admin bildirimlerini listele
   getNotifications = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
     const { page, limit, unreadOnly } = req.query;
 
-    const result = await notificationService.getUserNotifications(userId, {
-      page: page ? parseInt(page) : 1,
-      limit: limit ? parseInt(limit) : 20,
-      unreadOnly: unreadOnly === 'true',
-    });
+    // User token varsa user bildirimleri
+    if (req.user) {
+      const result = await notificationService.getUserNotifications(req.user.id, {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 20,
+        unreadOnly: unreadOnly === 'true',
+      });
 
-    res.status(200).json({
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    }
+
+    // Admin token varsa admin bildirimleri
+    if (req.admin) {
+      const result = await notificationService.getAdminNotifications(req.admin.id, {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 20,
+        unreadOnly: unreadOnly === 'true',
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    }
+
+    // Token yoksa boş liste
+    return res.status(200).json({
       success: true,
-      data: result,
+      data: {
+        notifications: [],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 0,
+        },
+      },
     });
   });
 
   // GET /api/notifications/unread-count - Okunmamış sayı
   getUnreadCount = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const count = await notificationService.getUnreadCount(userId);
+    // User token varsa user okunmamış sayısı
+    if (req.user) {
+      const count = await notificationService.getUnreadCount(req.user.id);
+      return res.status(200).json({
+        success: true,
+        data: { count },
+      });
+    }
 
-    res.status(200).json({
+    // Admin token varsa admin okunmamış sayısı
+    if (req.admin) {
+      const count = await notificationService.getAdminUnreadCount(req.admin.id);
+      return res.status(200).json({
+        success: true,
+        data: { count },
+      });
+    }
+
+    // Token yoksa 0
+    return res.status(200).json({
       success: true,
-      data: { count },
+      data: { count: 0 },
     });
   });
 
   // PUT /api/notifications/:id/read - Bildirimi okundu işaretle
   markAsRead = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const userId = req.user.id;
 
-    const notification = await notificationService.markAsRead(id, userId);
+    // User token varsa user bildirimi
+    if (req.user) {
+      const notification = await notificationService.markAsRead(id, req.user.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Benachrichtigung als gelesen markiert',
+        data: { notification },
+      });
+    }
 
-    res.status(200).json({
-      success: true,
-      message: 'Benachrichtigung als gelesen markiert',
-      data: { notification },
+    // Admin token varsa admin bildirimi
+    if (req.admin) {
+      const notification = await notificationService.markAdminNotificationAsRead(id, req.admin.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Benachrichtigung als gelesen markiert',
+        data: { notification },
+      });
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: 'Benachrichtigung nicht gefunden',
     });
   });
 
   // PUT /api/notifications/read-all - Tümünü okundu işaretle
   markAllAsRead = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    // User token varsa user bildirimleri
+    if (req.user) {
+      await notificationService.markAllAsRead(req.user.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Alle Benachrichtigungen als gelesen markiert',
+      });
+    }
 
-    await notificationService.markAllAsRead(userId);
+    // Admin token varsa admin bildirimleri
+    if (req.admin) {
+      await notificationService.markAllAdminNotificationsAsRead(req.admin.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Alle Benachrichtigungen als gelesen markiert',
+      });
+    }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Alle Benachrichtigungen als gelesen markiert',
     });
@@ -59,16 +136,24 @@ class NotificationController {
 
   // GET /api/notifications/stream - SSE stream
   getStream = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    // User token varsa user SSE
+    if (req.user) {
+      realtimeService.addClient(req.user.id, res);
+      const unreadCount = await notificationService.getUnreadCount(req.user.id);
+      realtimeService.broadcastUnreadCount(req.user.id, unreadCount);
+      return;
+    }
 
-    // SSE bağlantısı ekle
-    realtimeService.addClient(userId, res);
+    // Admin token varsa admin SSE
+    if (req.admin) {
+      realtimeService.addAdminClient(req.admin.id, res);
+      const unreadCount = await notificationService.getAdminUnreadCount(req.admin.id);
+      realtimeService.broadcastAdminUnreadCount(req.admin.id, unreadCount);
+      return;
+    }
 
-    // İlk okunmamış sayıyı gönder
-    const unreadCount = await notificationService.getUnreadCount(userId);
-    realtimeService.broadcastUnreadCount(userId, unreadCount);
-
-    // Bağlantı kapandığında temizleme zaten realtimeService'de yapılıyor
+    // Token yoksa bağlantıyı kapat
+    res.status(200).end();
   });
 
   // ===============================

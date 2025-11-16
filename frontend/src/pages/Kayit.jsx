@@ -106,9 +106,9 @@ function Kayit() {
       console.log('📧 [Kayit] Email doğrulama sayfasına yönlendiriliyor:', {
         originalEmail: formData.email,
         encodedEmail: encodedEmail,
-        url: `/email-dogrula?email=${encodedEmail}`
+        url: `/email-verifizieren?email=${encodedEmail}`
       });
-      navigate(`/email-dogrula?email=${encodedEmail}`);
+      navigate(`/email-verifizieren?email=${encodedEmail}`);
     } catch (error) {
       console.error('Kayıt hatası:', error);
       toast.error(
@@ -337,7 +337,7 @@ function Kayit() {
             <p className="text-gray-600">
               Haben Sie bereits ein Konto?{' '}
               <Link
-                to="/giris"
+                to="/anmelden"
                 className="text-green-600 font-medium hover:text-green-700"
               >
                 Jetzt anmelden

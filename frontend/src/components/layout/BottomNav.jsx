@@ -11,9 +11,9 @@ function BottomNav() {
 
   const navItems = useMemo(() => [
     { path: '/', icon: FiHome, label: 'Startseite' },
-    { path: '/urunler', icon: FiGrid, label: 'Produkte' },
-    { path: '/sepet', icon: FiShoppingCart, label: 'Warenkorb', badge: itemCount },
-    { path: '/favorilerim', icon: FiHeart, label: 'Favoriten' },
+    { path: '/produkte', icon: FiGrid, label: 'Produkte' },
+    { path: '/warenkorb', icon: FiShoppingCart, label: 'Warenkorb', badge: itemCount },
+    { path: '/favoriten', icon: FiHeart, label: 'Favoriten' },
     { path: '/profil', icon: FiUser, label: 'Profil' },
   ], [itemCount]);
 

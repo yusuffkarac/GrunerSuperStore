@@ -24,7 +24,7 @@ function SifreSifirla() {
   useEffect(() => {
     if (!token) {
       toast.error('Ungültiger oder fehlender Zurücksetzungslink');
-      navigate('/giris');
+      navigate('/anmelden');
     }
   }, [token, navigate]);
 
@@ -100,7 +100,7 @@ function SifreSifirla() {
 
       // 3 saniye sonra login sayfasına yönlendir
       setTimeout(() => {
-        navigate('/giris');
+        navigate('/anmelden');
       }, 3000);
     } catch (error) {
       console.error('Şifre sıfırlama hatası:', error);
@@ -151,7 +151,7 @@ function SifreSifirla() {
             </div>
 
             <Link
-              to="/giris"
+              to="/anmelden"
               className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
               Jetzt anmelden
@@ -265,7 +265,7 @@ function SifreSifirla() {
             {/* Geri Dön */}
             <div className="text-center">
               <Link
-                to="/giris"
+                to="/anmelden"
                 className="text-sm text-gray-600 hover:text-gray-900"
               >
                 Zurück zur Anmeldung

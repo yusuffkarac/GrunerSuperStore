@@ -32,6 +32,7 @@ project-root/
 │   │   ├── controllers/
 │   │   ├── models/
 │   │   ├── routes/
+/Users/yusuf/Documents/GitHub/GrunerSuperStore/claude.md
 │   │   ├── middleware/
 │   │   ├── services/
 │   │   ├── utils/

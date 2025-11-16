@@ -35,6 +35,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 import adminService from '../../services/adminService';
 import settingsService from '../../services/settingsService';
+import NotificationBell from '../common/NotificationBell';
 
 function AdminLayout() {
   const navigate = useNavigate();
@@ -386,6 +387,7 @@ function AdminLayout() {
           )}
         </div>
         <div className="flex items-center gap-4">
+          <NotificationBell />
           {filteredTopMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = !item.isAction && location.pathname === item.path;
@@ -433,6 +435,7 @@ function AdminLayout() {
         <div className="flex items-center gap-1">
           {/* Mobile Top Menu Icons */}
           <div className="flex items-center gap-1">
+            <NotificationBell />
             {filteredTopMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = !item.isAction && location.pathname === item.path;

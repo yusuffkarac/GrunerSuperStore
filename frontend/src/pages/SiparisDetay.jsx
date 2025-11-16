@@ -160,7 +160,7 @@ function SiparisDetay() {
       toast.success('Produkte wurden zum Warenkorb hinzugefügt!');
       // Nach kurzer Verzögerung zum Warenkorb weiterleiten
       setTimeout(() => {
-        navigate('/sepet');
+        navigate('/warenkorb');
       }, 500);
     } catch (error) {
       console.error('Fehler beim erneuten Bestellen:', error);
@@ -231,7 +231,7 @@ function SiparisDetay() {
     <div className="container-mobile py-4 pb-20">
       {/* Header */}
       <button
-        onClick={() => navigate('/siparislerim')}
+        onClick={() => navigate('/meine-bestellungen')}
         className="flex items-center gap-2 text-green-600 mb-4 hover:text-green-700 transition-colors"
       >
         <FiArrowLeft className="text-lg" />
@@ -401,7 +401,7 @@ function SiparisDetay() {
             <div 
               key={item.id} 
               className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors"
-              onClick={() => navigate(`/urun/${item.productId}`)}
+              onClick={() => navigate(`/produkt/${item.productId}`)}
             >
               <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                 {item.imageUrl ? (

@@ -187,7 +187,7 @@ function SiparisVer() {
 
       // Kısa bir süre sonra yönlendir (animasyon için)
       setTimeout(() => {
-        navigate(`/siparis/${response.data.order.id}`);
+        navigate(`/bestellung/${response.data.order.id}`);
       }, 500);
     } catch (error) {
       console.error('Sipariş hatası:', error);
@@ -274,7 +274,7 @@ function SiparisVer() {
               <span>Lieferadresse</span>
             </h2>
             <button
-              onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/siparis-ver' } })}
+              onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/bestellen' } })}
               className="text-green-600 text-xs flex items-center gap-1"
             >
               <FiPlus className="w-3 h-3" />
@@ -290,7 +290,7 @@ function SiparisVer() {
             <div className="text-center py-4">
               <p className="text-gray-600 text-xs mb-2">Keine Adresse gefunden</p>
               <button
-                onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/siparis-ver' } })}
+                onClick={() => navigate('/profil?tab=addresses', { state: { returnTo: '/bestellen' } })}
                 className="text-green-600 text-xs"
               >
                 Neue Adresse hinzufügen
@@ -524,7 +524,7 @@ function SiparisVer() {
             <div 
               key={`${item.productId}-${item.variantId || 'no-variant'}`} 
               className="flex justify-between text-xs cursor-pointer hover:bg-gray-50 -mx-1 px-1 py-1 rounded transition-colors"
-              onClick={() => navigate(`/urun/${item.productId}`)}
+              onClick={() => navigate(`/produkt/${item.productId}`)}
             >
               <div className="flex-1">
                 <span className="text-gray-600">

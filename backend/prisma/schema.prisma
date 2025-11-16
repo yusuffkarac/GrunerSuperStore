@@ -114,14 +114,14 @@ model User {
   updatedAt                   DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  addresses    Address[]
-  cartItems    CartItem[]
-  orders       Order[]
-  favorites    Favorite[]
-  couponUsages CouponUsage[]
+  addresses     Address[]
+  cartItems     CartItem[]
+  orders        Order[]
+  favorites     Favorite[]
+  couponUsages  CouponUsage[]
   notifications Notification[]
-  orderReviews OrderReview[]
-  activityLogs ActivityLog[]
+  orderReviews  OrderReview[]
+  activityLogs  ActivityLog[]
 
   @@index([email])
   @@index([isActive])
@@ -149,7 +149,7 @@ model Address {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveryOrders Order[] @relation("OrderDeliveryAddress")
   billingOrders  Order[] @relation("OrderBillingAddress")
 
@@ -181,37 +181,37 @@ model Category {
 }
 
 model Product {
-  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  categoryId              String    @map("category_id") @db.Uuid
-  name                    String
-  slug                    String    @unique
-  description             String?
-  price                   Decimal   @db.Decimal(12, 2)
-  temporaryPrice          Decimal?  @map("temporary_price") @db.Decimal(12, 2)
-  temporaryPriceEndDate   DateTime? @map("temporary_price_end_date")
-  taxRate                 Decimal?  @map("tax_rate") @db.Decimal(5, 2) // Vergi oranı (örn: 19.00 = %19)
-  stock                   Int       @default(0)
-  lowStockLevel           Int?      @map("low_stock_level")
-  unit                    String?
-  barcode                 String?
-  brand                   String?
-  imageUrls               Json      @default("[]") @map("image_urls")
-  ingredientsText         String?   @map("ingredients_text")
-  allergens               Json?     @default("[]")
-  nutriscoreGrade         String?   @map("nutriscore_grade")
-  ecoscoreGrade           String?   @map("ecoscore_grade")
-  nutritionData           Json?     @map("nutrition_data")
-  openfoodfactsCategories Json?     @map("openfoodfacts_categories")
-  isActive                Boolean   @default(true) @map("is_active")
-  isFeatured              Boolean   @default(false) @map("is_featured")
-  showStock               Boolean   @default(false) @map("show_stock")
-  supplier                String?   // Tedarikçi bilgisi
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId               String    @map("category_id") @db.Uuid
+  name                     String
+  slug                     String    @unique
+  description              String?
+  price                    Decimal   @db.Decimal(12, 2)
+  temporaryPrice           Decimal?  @map("temporary_price") @db.Decimal(12, 2)
+  temporaryPriceEndDate    DateTime? @map("temporary_price_end_date")
+  taxRate                  Decimal?  @map("tax_rate") @db.Decimal(5, 2) // Vergi oranı (örn: 19.00 = %19)
+  stock                    Int       @default(0)
+  lowStockLevel            Int?      @map("low_stock_level")
+  unit                     String?
+  barcode                  String?
+  brand                    String?
+  imageUrls                Json      @default("[]") @map("image_urls")
+  ingredientsText          String?   @map("ingredients_text")
+  allergens                Json?     @default("[]")
+  nutriscoreGrade          String?   @map("nutriscore_grade")
+  ecoscoreGrade            String?   @map("ecoscore_grade")
+  nutritionData            Json?     @map("nutrition_data")
+  openfoodfactsCategories  Json?     @map("openfoodfacts_categories")
+  isActive                 Boolean   @default(true) @map("is_active")
+  isFeatured               Boolean   @default(false) @map("is_featured")
+  showStock                Boolean   @default(false) @map("show_stock")
+  supplier                 String? // Tedarikçi bilgisi
   // Son Kullanma Tarihi (SKT) yönetimi
-  expiryDate              DateTime? @map("expiry_date") // Son kullanma tarihi
-  excludeFromExpiryCheck  Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf (sadece ExpiryManagement'tan değiştirilebilir)
-  hideFromExpiryManagement Boolean  @default(false) @map("hide_from_expiry_management") // ExpiryManagement sayfasında hiç gözükmesin
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
+  expiryDate               DateTime? @map("expiry_date") // Son kullanma tarihi
+  excludeFromExpiryCheck   Boolean   @default(false) @map("exclude_from_expiry_check") // SKT kontrolünden muaf (sadece ExpiryManagement'tan değiştirilebilir)
+  hideFromExpiryManagement Boolean   @default(false) @map("hide_from_expiry_management") // ExpiryManagement sayfasında hiç gözükmesin
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
 
   // Relations
   category       Category               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -261,28 +261,28 @@ model CartItem {
 }
 
 model Order {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String      @map("user_id") @db.Uuid
-  orderNo     String      @unique @map("order_no")
-  type        OrderType
-  status      OrderStatus @default(pending)
-  addressId   String?     @map("address_id") @db.Uuid
-  billingAddressId String? @map("billing_address_id") @db.Uuid // Fatura adresi
-  deliveryFee Decimal     @default(0) @map("delivery_fee") @db.Decimal(12, 2)
-  subtotal    Decimal     @map("subtotal") @db.Decimal(12, 2)
-  discount    Decimal     @default(0) @db.Decimal(12, 2) // Kupon indirimi
-  total       Decimal     @db.Decimal(12, 2)
-  paymentType PaymentType @default(none) @map("payment_type")
-  couponId    String?     @map("coupon_id") @db.Uuid
-  couponCode  String?     @map("coupon_code") // Snapshot
-  note        String?
+  id                               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                           String      @map("user_id") @db.Uuid
+  orderNo                          String      @unique @map("order_no")
+  type                             OrderType
+  status                           OrderStatus @default(pending)
+  addressId                        String?     @map("address_id") @db.Uuid
+  billingAddressId                 String?     @map("billing_address_id") @db.Uuid // Fatura adresi
+  deliveryFee                      Decimal     @default(0) @map("delivery_fee") @db.Decimal(12, 2)
+  subtotal                         Decimal     @map("subtotal") @db.Decimal(12, 2)
+  discount                         Decimal     @default(0) @db.Decimal(12, 2) // Kupon indirimi
+  total                            Decimal     @db.Decimal(12, 2)
+  paymentType                      PaymentType @default(none) @map("payment_type")
+  couponId                         String?     @map("coupon_id") @db.Uuid
+  couponCode                       String?     @map("coupon_code") // Snapshot
+  note                             String?
   // İptal bilgileri (Admin tarafından doldurulur)
-  cancellationReason              String?  @map("cancellation_reason") // İptal sebebi (müşteriye gösterilebilir)
-  cancellationInternalNote        String?  @map("cancellation_internal_note") // Internal not (müşteriye gösterilmez)
-  cancellationCustomerMessage     String?  @map("cancellation_customer_message") // Müşteriye özel mesaj
-  showCancellationReasonToCustomer Boolean @default(false) @map("show_cancellation_reason_to_customer") // İptal sebebini müşteriye göster
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  cancellationReason               String?     @map("cancellation_reason") // İptal sebebi (müşteriye gösterilebilir)
+  cancellationInternalNote         String?     @map("cancellation_internal_note") // Internal not (müşteriye gösterilmez)
+  cancellationCustomerMessage      String?     @map("cancellation_customer_message") // Müşteriye özel mesaj
+  showCancellationReasonToCustomer Boolean     @default(false) @map("show_cancellation_reason_to_customer") // İptal sebebini müşteriye göster
+  createdAt                        DateTime    @default(now()) @map("created_at")
+  updatedAt                        DateTime    @updatedAt @map("updated_at")
 
   // Relations
   user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -463,13 +463,14 @@ model Admin {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  adminRole     AdminRole?     @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  expiryActions ExpiryAction[]
-  stockOrders   StockOrder[]   @relation("StockOrderAdmin")
-  stockOrdersUndone StockOrder[] @relation("StockOrderUndoneBy")
-  stockOrderLists StockOrderList[] @relation("StockOrderListAdmin")
-  supplierEmails SupplierEmail[] @relation("SupplierEmailAdmin")
-  activityLogs  ActivityLog[]
+  adminRole         AdminRole?       @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  expiryActions     ExpiryAction[]
+  stockOrders       StockOrder[]     @relation("StockOrderAdmin")
+  stockOrdersUndone StockOrder[]     @relation("StockOrderUndoneBy")
+  stockOrderLists   StockOrderList[] @relation("StockOrderListAdmin")
+  supplierEmails    SupplierEmail[]  @relation("SupplierEmailAdmin")
+  activityLogs      ActivityLog[]
+  notifications     Notification[]
 
   @@index([email])
   @@index([role])
@@ -528,36 +529,36 @@ model RolePermission {
 }
 
 model Settings {
-  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  guestCanViewProducts      Boolean  @default(true) @map("guest_can_view_products")
-  showOutOfStockProducts    Boolean  @default(true) @map("show_out_of_stock_products")
-  homepageSettings          Json?    @map("homepage_settings")
-  orderIdFormat             Json?    @map("order_id_format")
-  themeColors               Json?    @map("theme_colors")
+  id                           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guestCanViewProducts         Boolean  @default(true) @map("guest_can_view_products")
+  showOutOfStockProducts       Boolean  @default(true) @map("show_out_of_stock_products")
+  homepageSettings             Json?    @map("homepage_settings")
+  orderIdFormat                Json?    @map("order_id_format")
+  themeColors                  Json?    @map("theme_colors")
   // Business ayarları
-  minOrderAmount            Decimal? @map("min_order_amount") @db.Decimal(12, 2)
-  freeShippingThreshold     Decimal? @map("free_shipping_threshold") @db.Decimal(12, 2)
-  shippingRules             Json?    @map("shipping_rules")
-  deliverySettings          Json?    @map("delivery_settings")
-  paymentOptions            Json?    @map("payment_options")
-  orderLimits               Json?    @map("order_limits")
-  storeSettings             Json?    @map("store_settings")
+  minOrderAmount               Decimal? @map("min_order_amount") @db.Decimal(12, 2)
+  freeShippingThreshold        Decimal? @map("free_shipping_threshold") @db.Decimal(12, 2)
+  shippingRules                Json?    @map("shipping_rules")
+  deliverySettings             Json?    @map("delivery_settings")
+  paymentOptions               Json?    @map("payment_options")
+  orderLimits                  Json?    @map("order_limits")
+  storeSettings                Json?    @map("store_settings")
   // Mail ayarları
-  smtpSettings              Json?    @map("smtp_settings")
-  emailNotificationSettings Json?    @map("email_notification_settings")
-  emailTemplates            Json?    @map("email_templates")
-  notificationTemplates      Json?    @map("notification_templates")
+  smtpSettings                 Json?    @map("smtp_settings")
+  emailNotificationSettings    Json?    @map("email_notification_settings")
+  emailTemplates               Json?    @map("email_templates")
+  notificationTemplates        Json?    @map("notification_templates")
   // Barkod etiket ayarları
-  barcodeLabelSettings      Json?    @map("barcode_label_settings")
+  barcodeLabelSettings         Json?    @map("barcode_label_settings")
   // Kunden Stornierung Einstellungen
-  customerCancellationSettings Json? @map("customer_cancellation_settings")
+  customerCancellationSettings Json?    @map("customer_cancellation_settings")
   // SKT yönetim ayarları
-  expiryManagementSettings  Json?    @map("expiry_management_settings")
+  expiryManagementSettings     Json?    @map("expiry_management_settings")
   // Footer ayarları
-  footerSettings            Json?    @map("footer_settings")
+  footerSettings               Json?    @map("footer_settings")
   // Örnek: { "enabled": true, "warningDays": 3, "criticalDays": 0 }
-  createdAt                 DateTime @default(now()) @map("created_at")
-  updatedAt                 DateTime @updatedAt @map("updated_at")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
 }
@@ -625,7 +626,7 @@ model BarcodeLabel {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([barcode])
-  @@index([name]) 
+  @@index([name])
   @@index([createdAt(sort: Desc)])
   @@map("barcode_labels")
 }
@@ -722,26 +723,31 @@ model EmailLog {
 // ===================================
 
 model Notification {
-  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String          @map("user_id") @db.Uuid
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?          @map("user_id") @db.Uuid
+  adminId   String?          @map("admin_id") @db.Uuid
   type      NotificationType @default(info)
   title     String
   message   String
-  actionUrl String?         @map("action_url")
-  isRead    Boolean         @default(false) @map("is_read")
-  readAt    DateTime?       @map("read_at")
-  metadata  Json?           // orderId, campaignId vb. ek bilgiler
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  actionUrl String?          @map("action_url")
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  metadata  Json? // orderId, campaignId vb. ek bilgiler
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([adminId])
   @@index([isRead])
   @@index([createdAt(sort: Desc)])
   @@index([userId, isRead])
+  @@index([adminId, isRead])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([adminId, createdAt(sort: Desc)])
   @@map("notifications")
 }
 
@@ -758,23 +764,23 @@ enum ExpiryActionType {
 }
 
 model ExpiryAction {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId      String           @map("product_id") @db.Uuid
-  adminId        String           @map("admin_id") @db.Uuid
-  actionType     ExpiryActionType @map("action_type")
-  expiryDate     DateTime         @map("expiry_date") // İşlem sırasındaki SKT
-  daysUntilExpiry Int             @map("days_until_expiry") // İşlem sırasında kalan gün sayısı
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId         String           @map("product_id") @db.Uuid
+  adminId           String           @map("admin_id") @db.Uuid
+  actionType        ExpiryActionType @map("action_type")
+  expiryDate        DateTime         @map("expiry_date") // İşlem sırasındaki SKT
+  daysUntilExpiry   Int              @map("days_until_expiry") // İşlem sırasında kalan gün sayısı
   // Kaldırma işlemi için
-  excludedFromCheck Boolean?      @default(false) @map("excluded_from_check") // Deaktif edildi mi?
+  excludedFromCheck Boolean?         @default(false) @map("excluded_from_check") // Deaktif edildi mi?
   // Geri alma için
-  previousActionId String?        @map("previous_action_id") @db.Uuid
-  isUndone        Boolean         @default(false) @map("is_undone") // Bu işlem geri alındı mı?
-  undoneAt        DateTime?       @map("undone_at")
-  undoneBy        String?         @map("undone_by") @db.Uuid
+  previousActionId  String?          @map("previous_action_id") @db.Uuid
+  isUndone          Boolean          @default(false) @map("is_undone") // Bu işlem geri alındı mı?
+  undoneAt          DateTime?        @map("undone_at")
+  undoneBy          String?          @map("undone_by") @db.Uuid
   // Ek bilgiler
-  note            String?
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+  note              String?
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
   // Relations
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -795,39 +801,39 @@ model ExpiryAction {
 // ===================================
 
 enum StockOrderStatus {
-  pending    // Beklemede
-  ordered    // Sipariş edildi
-  delivered  // Teslim edildi
-  cancelled  // İptal edildi
+  pending // Beklemede
+  ordered // Sipariş edildi
+  delivered // Teslim edildi
+  cancelled // İptal edildi
 
   @@map("stock_order_status")
 }
 
 model StockOrder {
-  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId           String          @map("product_id") @db.Uuid
-  adminId             String          @map("admin_id") @db.Uuid
-  orderListId         String?         @map("order_list_id") @db.Uuid
-  status              StockOrderStatus @default(pending)
-  orderQuantity       Int             @map("order_quantity")
-  orderUnit           String?         @map("order_unit") // karton/adet/kilo/palet
-  expectedDeliveryDate DateTime?      @map("expected_delivery_date") @db.Date
-  actualDeliveryDate  DateTime?      @map("actual_delivery_date") @db.Date
-  note                String?
-  previousOrderId     String?         @map("previous_order_id") @db.Uuid
-  isUndone            Boolean         @default(false) @map("is_undone")
-  undoneAt            DateTime?      @map("undone_at")
-  undoneBy            String?         @map("undone_by") @db.Uuid
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId            String           @map("product_id") @db.Uuid
+  adminId              String           @map("admin_id") @db.Uuid
+  orderListId          String?          @map("order_list_id") @db.Uuid
+  status               StockOrderStatus @default(pending)
+  orderQuantity        Int              @map("order_quantity")
+  orderUnit            String?          @map("order_unit") // karton/adet/kilo/palet
+  expectedDeliveryDate DateTime?        @map("expected_delivery_date") @db.Date
+  actualDeliveryDate   DateTime?        @map("actual_delivery_date") @db.Date
+  note                 String?
+  previousOrderId      String?          @map("previous_order_id") @db.Uuid
+  isUndone             Boolean          @default(false) @map("is_undone")
+  undoneAt             DateTime?        @map("undone_at")
+  undoneBy             String?          @map("undone_by") @db.Uuid
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  admin         Admin   @relation("StockOrderAdmin", fields: [adminId], references: [id], onDelete: Restrict)
-  orderList     StockOrderList? @relation(fields: [orderListId], references: [id], onDelete: SetNull)
-  previousOrder StockOrder? @relation("PreviousStockOrder", fields: [previousOrderId], references: [id], onDelete: SetNull)
-  reversedOrders StockOrder[] @relation("PreviousStockOrder")
-  undoneByAdmin Admin? @relation("StockOrderUndoneBy", fields: [undoneBy], references: [id], onDelete: SetNull)
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  admin          Admin           @relation("StockOrderAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  orderList      StockOrderList? @relation(fields: [orderListId], references: [id], onDelete: SetNull)
+  previousOrder  StockOrder?     @relation("PreviousStockOrder", fields: [previousOrderId], references: [id], onDelete: SetNull)
+  reversedOrders StockOrder[]    @relation("PreviousStockOrder")
+  undoneByAdmin  Admin?          @relation("StockOrderUndoneBy", fields: [undoneBy], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([adminId])
@@ -841,16 +847,16 @@ model StockOrder {
 }
 
 model StockOrderList {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String
-  note          String?
-  supplierEmail String?         @map("supplier_email")
-  sendToAdmins  Boolean         @default(false) @map("send_to_admins")
-  sendToSupplier Boolean        @default(false) @map("send_to_supplier")
-  adminId       String          @map("admin_id") @db.Uuid
-  status        StockOrderStatus @default(pending)
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  note           String?
+  supplierEmail  String?          @map("supplier_email")
+  sendToAdmins   Boolean          @default(false) @map("send_to_admins")
+  sendToSupplier Boolean          @default(false) @map("send_to_supplier")
+  adminId        String           @map("admin_id") @db.Uuid
+  status         StockOrderStatus @default(pending)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
   // Relations
   admin  Admin        @relation("StockOrderListAdmin", fields: [adminId], references: [id], onDelete: Restrict)
@@ -865,7 +871,7 @@ model StockOrderList {
 
 model SupplierEmail {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String?  // Tedarikçi ismi
+  name      String? // Tedarikçi ismi
   email     String   @unique
   createdBy String   @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
@@ -886,12 +892,13 @@ model SupplierEmail {
 enum BulkPriceUpdateType {
   PERMANENT
   TEMPORARY
+
   @@map("bulk_price_update_type")
 }
 
 model BulkPriceUpdate {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type                  String              // 'all' | 'category' | 'products'
+  type                  String // 'all' | 'category' | 'products'
   categoryId            String?             @map("category_id") @db.Uuid
   productIds            Json?               @map("product_ids") // ["uuid1", "uuid2"]
   adjustmentType        String              @map("adjustment_type") // 'percentage' | 'fixed'
@@ -923,17 +930,17 @@ model BulkPriceUpdate {
 model ProductTaskIgnore {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId String   @map("product_id") @db.Uuid
-  category  String   // 'image', 'barcode', 'category', 'price', 'expiryDate'
+  category  String // 'image', 'barcode', 'category', 'price', 'expiryDate'
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@unique([productId, category])
   @@index([productId])
   @@index([category])
   @@index([productId, category])
-  @@unique([productId, category])
   @@map("product_task_ignores")
 }
 
@@ -945,14 +952,14 @@ model ActivityLog {
   id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId     String?    @map("user_id") @db.Uuid
   adminId    String?    @map("admin_id") @db.Uuid
-  action     String     // Örn: "user.login", "product.create", "order.cancel"
+  action     String // Örn: "user.login", "product.create", "order.cancel"
   entityType String?    @map("entity_type") // Örn: "product", "order", "user", "category"
   entityId   String?    @map("entity_id") @db.Uuid
   level      LogLevel   @default(info)
-  message    String     // Almanca log mesajı
-  metadata   Json?      // Ek bilgiler (değişiklik detayları, eski/yeni değerler, vs.)
-  ipAddress  String?   @map("ip_address")
-  userAgent  String?   @map("user_agent")
+  message    String // Almanca log mesajı
+  metadata   Json? // Ek bilgiler (değişiklik detayları, eski/yeni değerler, vs.)
+  ipAddress  String?    @map("ip_address")
+  userAgent  String?    @map("user_agent")
   deviceType DeviceType @default(unknown) @map("device_type")
   createdAt  DateTime   @default(now()) @map("created_at")
 

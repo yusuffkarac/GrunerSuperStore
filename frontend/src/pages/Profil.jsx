@@ -55,7 +55,7 @@ function Profil() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!isAuthenticated && !token && !user) {
-      navigate('/giris', { state: { from: '/profil' } });
+      navigate('/anmelden', { state: { from: '/profil' } });
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -689,7 +689,7 @@ function Profil() {
 
       {/* Schnellzugriff auf Bestellungen */}
       <button
-        onClick={() => navigate('/siparislerim')}
+        onClick={() => navigate('/meine-bestellungen')}
         className="w-full mb-4 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
       >
         <FiPackage />

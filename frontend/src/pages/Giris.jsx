@@ -157,7 +157,7 @@ function Giris() {
           {/* Şifremi Unuttum */}
           <div className="text-right">
             <Link
-              to="/sifremi-unuttum"
+              to="/passwort-vergessen"
               className="text-sm text-green-600 hover:text-green-700"
             >
               Passwort vergessen?
@@ -188,7 +188,7 @@ function Giris() {
             <p className="text-gray-600">
               Noch kein Konto?{' '}
               <Link
-                to="/kayit"
+                to="/registrieren"
                 className="text-green-600 font-medium hover:text-green-700"
               >
                 Jetzt registrieren

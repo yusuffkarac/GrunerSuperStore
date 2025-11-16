@@ -1,6 +1,6 @@
 import express from 'express';
 import notificationController from '../controllers/notification.controller.js';
-import { authenticate, authenticateSSE } from '../middleware/auth.js';
+import { authenticate, authenticateSSE, authenticateFlexible } from '../middleware/auth.js';
 import { authenticateAdmin } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -14,11 +14,11 @@ const router = express.Router();
 // KULLANICI ENDPOINTS
 // ===============================
 
-// GET /api/notifications/stream - SSE stream (özel auth)
-router.get('/stream', authenticateSSE, notificationController.getStream);
+// GET /api/notifications/stream - SSE stream (özel auth - admin token destekli)
+router.get('/stream', authenticateFlexible, notificationController.getStream);
 
-// Diğer route'lar authentication gerektirir
-router.use(authenticate);
+// Diğer route'lar authentication gerektirir (admin token destekli)
+router.use(authenticateFlexible);
 
 // GET /api/notifications - Kullanıcı bildirimlerini listele
 router.get('/', notificationController.getNotifications);
