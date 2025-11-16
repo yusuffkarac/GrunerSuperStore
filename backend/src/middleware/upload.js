@@ -66,12 +66,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer yapılandırması - max 50MB
+// Multer yapılandırması - max 100MB (PDF'ler için artırıldı)
 const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
+    fileSize: 100 * 1024 * 1024, // 100MB
   },
 });
 

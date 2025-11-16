@@ -109,8 +109,8 @@ app.use(helmet({
 }));
 
 app.use(compression()); // Response sıkıştırma
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' })); // PDF'ler için artırıldı
+app.use(express.urlencoded({ extended: true, limit: '100mb' })); // PDF'ler için artırıldı
 app.use(cookieParser());
 
 // Statik dosya servisi - uploads klasörünü serve et (route'lardan ÖNCE olmalı)
