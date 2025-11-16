@@ -114,10 +114,12 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
 
       // Mobil kontrolü - her seferinde güncel değeri al
       const currentIsMobile = window.innerWidth < 786;
-    
+      console.log('[MagazineViewer] İlk yükleme - isMobile:', currentIsMobile, 'window.innerWidth:', window.innerWidth);
 
       // PDF URL'ini normalize et (backend URL'ine çevir)
       let normalizedPdfUrl = normalizeImageUrl(pdfUrl);
+      console.log('[MagazineViewer] Orijinal PDF URL:', pdfUrl);
+      console.log('[MagazineViewer] Normalize edilmiş PDF URL:', normalizedPdfUrl);
 
       // Eğer hala normalize edilmemişse (startsWith kontrolü)
       if (normalizedPdfUrl && !normalizedPdfUrl.startsWith('http://') && !normalizedPdfUrl.startsWith('https://')) {
@@ -133,6 +135,7 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
           // Production'da window.location.origin kullan (sunucu URL'ini al)
           API_BASE = typeof window !== 'undefined' ? window.location.origin : '';
         }
+        console.log('[MagazineViewer] API_BASE:', API_BASE);
         
         if (normalizedPdfUrl.startsWith('/uploads')) {
           normalizedPdfUrl = `${API_BASE}/api${normalizedPdfUrl}`;
@@ -141,11 +144,13 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
         } else {
           normalizedPdfUrl = `${API_BASE}${normalizedPdfUrl}`;
         }
+        console.log('[MagazineViewer] Final PDF URL:', normalizedPdfUrl);
       }
 
       // PDF'i fetch ile blob olarak yükle (CORS sorunlarını önlemek için)
       let pdfData;
       try {
+        console.log('[MagazineViewer] PDF fetch başlıyor...');
         const response = await fetch(normalizedPdfUrl, {
           mode: 'cors',
           credentials: 'omit',
@@ -157,26 +162,65 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
         
         const arrayBuffer = await response.arrayBuffer();
         pdfData = { data: arrayBuffer };
+        console.log('[MagazineViewer] PDF fetch başarılı, boyut:', arrayBuffer.byteLength, 'bytes');
       } catch (fetchError) {
-        console.error('PDF fetch hatası:', fetchError);
+        console.error('[MagazineViewer] PDF fetch hatası:', fetchError);
         // Fetch başarısız olursa direkt URL ile dene
         pdfData = normalizedPdfUrl;
+        console.log('[MagazineViewer] Direkt URL ile denenecek:', normalizedPdfUrl);
       }
 
       // PDF yükle
+      console.log('[MagazineViewer] PDF.js ile yükleme başlıyor...');
       const loadingTask = pdfjsLib.getDocument(pdfData);
       const pdf = await loadingTask.promise;
       const numPages = pdf.numPages;
       setTotalPages(numPages);
+      console.log('[MagazineViewer] PDF yüklendi, sayfa sayısı:', numPages);
 
-      // Container boyutlarını al
+      // Container boyutlarını al - biraz bekle ki container render olsun
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        console.error('[MagazineViewer] Container bulunamadı!');
+        // Container yoksa biraz bekle ve tekrar dene
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const containerRetry = containerRef.current;
+        if (!containerRetry) {
+          throw new Error('Container bulunamadı');
+        }
+      }
+
+      // Container'ın boyutlarını al - birkaç kez dene
+      let containerWidth = 0;
+      let containerHeight = 0;
+      for (let i = 0; i < 10; i++) {
+        const container = containerRef.current;
+        if (container) {
+          containerWidth = container.clientWidth;
+          containerHeight = container.clientHeight;
+          if (containerWidth > 0 && containerHeight > 0) {
+            break;
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
 
       // Padding düşüldükten sonraki gerçek kullanılabilir alan
       const padding = 32; // p-4 = 16px * 2 (her iki taraf)
-      const containerWidth = container.clientWidth - padding;
-      const containerHeight = container.clientHeight - padding;
+      const finalContainerWidth = containerWidth - padding;
+      const finalContainerHeight = containerHeight - padding;
+      
+      console.log('[MagazineViewer] Container boyutları:', {
+        containerWidth,
+        containerHeight,
+        finalContainerWidth,
+        finalContainerHeight,
+        currentIsMobile
+      });
+
+      if (finalContainerWidth <= 0 || finalContainerHeight <= 0) {
+        throw new Error(`Container boyutları geçersiz: ${finalContainerWidth}x${finalContainerHeight}`);
+      }
 
       // Her sayfa için canvas oluştur - yüksek kalite için devicePixelRatio kullan
       const devicePixelRatio = window.devicePixelRatio || 1;
@@ -190,9 +234,18 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
         // Mobil: 1 sayfa (containerWidth)
         const pagesPerSpread = currentIsMobile ? 1 : 2;
         const displayScale = Math.min(
-          (containerWidth / pagesPerSpread / viewport.width) * 0.95,
-          (containerHeight / viewport.height) * 0.95
+          (finalContainerWidth / pagesPerSpread / viewport.width) * 0.95,
+          (finalContainerHeight / viewport.height) * 0.95
         );
+        
+        if (pageNum === 1) {
+          console.log('[MagazineViewer] Sayfa boyutları:', {
+            viewportWidth: viewport.width,
+            viewportHeight: viewport.height,
+            pagesPerSpread,
+            displayScale
+          });
+        }
 
         // Render scale (yüksek kalite için devicePixelRatio kullan ama görüntülenen boyut aynı kalacak)
         const renderScale = displayScale * devicePixelRatio;
@@ -221,10 +274,15 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
 
       // StPageFlip başlat
       if (bookRef.current) {
+        console.log('[MagazineViewer] PageFlip başlatılıyor, sayfa sayısı:', pages.length);
         initPageFlip(pages, currentIsMobile);
+        console.log('[MagazineViewer] PageFlip başlatıldı');
+      } else {
+        console.error('[MagazineViewer] bookRef.current bulunamadı!');
       }
 
       setLoading(false);
+      console.log('[MagazineViewer] PDF yükleme tamamlandı');
     } catch (err) {
       console.error('PDF yükleme hatası:', err);
       const errorMessage = err.message || 'PDF konnte nicht geladen werden';
@@ -234,12 +292,20 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
   };
 
   const initPageFlip = (pages, currentIsMobile) => {
+    console.log('[MagazineViewer] initPageFlip çağrıldı, pages:', pages.length, 'isMobile:', currentIsMobile);
+    
     // Mevcut instance'ı temizle
     if (pageFlipInstance) {
+      console.log('[MagazineViewer] Mevcut PageFlip instance temizleniyor');
       pageFlipInstance.destroy();
     }
 
     // Book container'ı temizle
+    if (!bookRef.current) {
+      console.error('[MagazineViewer] bookRef.current yok!');
+      return;
+    }
+    
     bookRef.current.innerHTML = '';
 
     // Sayfaları book container'a ekle
@@ -254,6 +320,8 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
     const firstCanvas = pages[0];
     const pageWidth = firstCanvas ? parseInt(firstCanvas.style.width) : 400;
     const pageHeight = firstCanvas ? parseInt(firstCanvas.style.height) : 600;
+    
+    console.log('[MagazineViewer] PageFlip boyutları:', { pageWidth, pageHeight });
 
 
     const pageFlip = new PageFlip(bookRef.current, {
@@ -281,10 +349,17 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
       disableFlipByClick: false,
     });
 
-    pageFlip.loadFromHTML(Array.from(bookRef.current.children));
+    try {
+      pageFlip.loadFromHTML(Array.from(bookRef.current.children));
+      console.log('[MagazineViewer] PageFlip HTML yüklendi');
+    } catch (loadError) {
+      console.error('[MagazineViewer] PageFlip loadFromHTML hatası:', loadError);
+      throw loadError;
+    }
 
     // Event listeners
     pageFlip.on('flip', (e) => {
+      console.log('[MagazineViewer] Sayfa çevrildi:', e.data);
       setCurrentPage(e.data);
 
       // Sayfa çevirme sesi çal - ref kullanarak güncel değeri kontrol et
@@ -295,6 +370,7 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
     });
 
     setPageFlipInstance(pageFlip);
+    console.log('[MagazineViewer] PageFlip instance ayarlandı');
   };
 
   const handlePrevPage = () => {
