@@ -271,6 +271,7 @@ function AdminLayout() {
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
     { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view' },
+    { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: 'settings_view' },
   ];
 
   // Üst menü öğelerini filtrele (güncel admin bilgileriyle)
@@ -490,7 +491,7 @@ function AdminLayout() {
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           } ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'} w-64`}
         >
-          <nav className={`p-4 space-y-2 flex-1 overflow-y-auto min-h-0 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
+          <nav className={`p-3 space-y-1.5 flex-1 overflow-y-auto min-h-0 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
             {/* Toggle Button - Desktop Only */}
             
             {menuItems.map((item) => {
@@ -526,7 +527,7 @@ function AdminLayout() {
                   <Link
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
                       sidebarCollapsed ? 'lg:px-2 lg:justify-center' : ''
                     } ${
                       isActive

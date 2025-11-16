@@ -10,6 +10,7 @@ import { BARCODE_ONLY_MODE } from './config/appConfig';
 import { AlertProvider } from './contexts/AlertContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { CookieConsentProvider } from './contexts/CookieConsentContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -17,6 +18,7 @@ import AdminLayout from './components/layout/AdminLayout';
 
 // Components
 import InstallPrompt from './components/common/InstallPrompt';
+import CookieConsent from './components/common/CookieConsent';
 import PageLoading from './components/common/PageLoading';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import SuperAdminRoute from './components/common/SuperAdminRoute';
@@ -54,6 +56,7 @@ import Settings from './pages/admin/Settings';
 import HomePageSettings from './pages/admin/HomePageSettings';
 import DesignSettings from './pages/admin/DesignSettings';
 import FooterSettings from './pages/admin/FooterSettings';
+import CookieSettings from './pages/admin/CookieSettings';
 import BarcodeLabels from './pages/admin/BarcodeLabels';
 import BarcodeLabelsPrint from './pages/admin/BarcodeLabelsPrint';
 import Notifications from './pages/admin/Notifications';
@@ -276,6 +279,7 @@ function AppContent() {
               <Route path="homepage-settings" element={<HomePageSettings />} />
               <Route path="design-settings" element={<DesignSettings />} />
               <Route path="footer-settings" element={<FooterSettings />} />
+              <Route path="cookie-settings" element={<CookieSettings />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="help" element={<Help />} />
             </>
@@ -296,23 +300,28 @@ function App() {
         <ErrorBoundary>
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <NotificationProvider>
-              <AppContent />
-              <ToastContainer
-              position="bottom-center"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-              limit={2}
-            />
+              <CookieConsentProvider>
+                <AppContent />
+                <ToastContainer
+                position="bottom-center"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+                limit={2}
+              />
 
-              {/* PWA Install Prompt */}
-              <InstallPrompt />
+                {/* Cookie Consent Banner */}
+                <CookieConsent />
+
+                {/* PWA Install Prompt */}
+                <InstallPrompt />
+              </CookieConsentProvider>
             </NotificationProvider>
           </Router>
         </ErrorBoundary>

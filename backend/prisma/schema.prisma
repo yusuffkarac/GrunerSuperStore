@@ -556,6 +556,8 @@ model Settings {
   expiryManagementSettings     Json?    @map("expiry_management_settings")
   // Footer ayarları
   footerSettings               Json?    @map("footer_settings")
+  // Cookie ayarları
+  cookieSettings               Json?    @map("cookie_settings")
   // Örnek: { "enabled": true, "warningDays": 3, "criticalDays": 0 }
   createdAt                    DateTime @default(now()) @map("created_at")
   updatedAt                    DateTime @updatedAt @map("updated_at")

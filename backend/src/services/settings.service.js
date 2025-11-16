@@ -155,6 +155,9 @@ class SettingsService {
     if (data.footerSettings !== undefined) {
       updateData.footerSettings = data.footerSettings;
     }
+    if (data.cookieSettings !== undefined) {
+      updateData.cookieSettings = data.cookieSettings;
+    }
     if (data.emailTemplates !== undefined) {
       updateData.emailTemplates = data.emailTemplates;
     }

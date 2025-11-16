@@ -34,6 +34,7 @@ class SettingsController {
       barcodeLabelSettings,
       customerCancellationSettings,
       footerSettings,
+      cookieSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -54,6 +55,7 @@ class SettingsController {
       barcodeLabelSettings,
       customerCancellationSettings,
       footerSettings,
+      cookieSettings,
     });
 
     // Log kaydı - hangi ayarların değiştiğini belirle

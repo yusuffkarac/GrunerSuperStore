@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import settingsService from '../../services/settingsService';
+import { useCookieConsent } from '../../contexts/CookieConsentContext';
 
 // Footer Componenti
 function Footer() {
@@ -8,6 +9,7 @@ function Footer() {
   const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(null);
   const navigate = useNavigate();
+  const { openSettings } = useCookieConsent();
 
   useEffect(() => {
     fetchFooterData();
@@ -109,9 +111,17 @@ function Footer() {
             </div>
           </div>
 
-          {/* Copyright */}
-          <div className="pt-6 border-t border-gray-300 text-center text-sm text-gray-600">
-            <p>&copy; 2025 Gruner SuperStore. Alle Rechte vorbehalten.</p>
+          {/* Copyright ve Cookie Link */}
+          <div className="pt-6 border-t border-gray-300">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-600">
+              <p>&copy; 2025 Gruner SuperStore. Alle Rechte vorbehalten.</p>
+              <button
+                onClick={openSettings}
+                className="text-primary-600 hover:text-primary-700 hover:underline"
+              >
+                Cookie-Einstellungen
+              </button>
+            </div>
           </div>
         </div>
 
@@ -146,9 +156,17 @@ function Footer() {
             ))}
           </div>
 
-          {/* Copyright */}
-          <div className="pt-6 border-t border-gray-300 text-center text-sm text-gray-600">
-            <p>&copy; 2025 Gruner SuperStore. Alle Rechte vorbehalten.</p>
+          {/* Copyright ve Cookie Link */}
+          <div className="pt-6 border-t border-gray-300">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-600">
+              <p>&copy; 2025 Gruner SuperStore. Alle Rechte vorbehalten.</p>
+              <button
+                onClick={openSettings}
+                className="text-primary-600 hover:text-primary-700 hover:underline"
+              >
+                Cookie-Einstellungen
+              </button>
+            </div>
           </div>
         </div>
 
