@@ -179,7 +179,7 @@ function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 bg-white shadow-sm" style={{ zIndex: 99999999 }}>
       <div className="container-mobile">
         {/* Desktop Navigasyon Menüsü */}
         <div className="hidden md:flex items-center justify-between py-3 border-b border-gray-200">
