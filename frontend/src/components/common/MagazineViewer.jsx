@@ -95,11 +95,33 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
   }, [pageFlipInstance]);
 
   useEffect(() => {
-    if (pdfUrl) {
-      loadPDF();
-    }
+    if (!pdfUrl) return;
+
+    // Modal render olduktan sonra PDF yüklemesini başlat
+    // containerRef ve bookRef hazır olana kadar bekle
+    const initPDF = async () => {
+      // Önce container ve bookRef'in hazır olmasını bekle (artık bookRef her zaman render ediliyor)
+      let retries = 0;
+      while (retries < 20) {
+        if (containerRef.current && bookRef.current) {
+          console.log('[MagazineViewer] Container ve bookRef hazır, PDF yükleme başlatılıyor');
+          await loadPDF();
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+        retries++;
+      }
+      console.warn('[MagazineViewer] Container veya bookRef hazır değil, yine de PDF yükleme deneniyor');
+      await loadPDF();
+    };
+
+    // Biraz bekle ki modal render olsun
+    const timer = setTimeout(() => {
+      initPDF();
+    }, 100);
 
     return () => {
+      clearTimeout(timer);
       // Cleanup
       if (pageFlipInstance) {
         pageFlipInstance.destroy();
@@ -272,14 +294,15 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
         pages.push(canvas);
       }
 
-      // StPageFlip başlat
-      if (bookRef.current) {
-        console.log('[MagazineViewer] PageFlip başlatılıyor, sayfa sayısı:', pages.length);
-        initPageFlip(pages, currentIsMobile);
-        console.log('[MagazineViewer] PageFlip başlatıldı');
-      } else {
-        console.error('[MagazineViewer] bookRef.current bulunamadı!');
+      // bookRef hazır olmalı (useEffect içinde kontrol edildi)
+      if (!bookRef.current) {
+        throw new Error('bookRef.current hazır değil - bu bir bug olmalı');
       }
+
+      // StPageFlip başlat
+      console.log('[MagazineViewer] PageFlip başlatılıyor, sayfa sayısı:', pages.length);
+      initPageFlip(pages, currentIsMobile);
+      console.log('[MagazineViewer] PageFlip başlatıldı');
 
       setLoading(false);
       console.log('[MagazineViewer] PDF yükleme tamamlandı');
@@ -477,15 +500,26 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
 
       {/* Content */}
       <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden p-4">
+        {/* bookRef her zaman render edilmeli ki PDF yüklenirken hazır olsun */}
+        <div
+          ref={bookRef}
+          className="magazine-container"
+          style={{ 
+            transform: `scale(${zoom})`, 
+            transition: 'transform 0.2s ease-in-out',
+            display: (!loading && !error) ? 'block' : 'none'
+          }}
+        ></div>
+
         {loading && (
-          <div className="text-center text-white">
+          <div className="text-center text-white absolute">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
             <p>Prospekt wird geladen...</p>
           </div>
         )}
 
         {error && (
-          <div className="text-center text-white">
+          <div className="text-center text-white absolute">
             <p className="text-red-400 text-xl mb-4">{error}</p>
             <button
               onClick={onClose}
@@ -494,14 +528,6 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
               Schließen
             </button>
           </div>
-        )}
-
-        {!loading && !error && (
-          <div
-            ref={bookRef}
-            className="magazine-container"
-            style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s ease-in-out' }}
-          ></div>
         )}
       </div>
 
