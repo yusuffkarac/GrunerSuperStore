@@ -13,6 +13,7 @@ import useAuthStore from '../store/authStore';
 import { normalizeImageUrl } from '../utils/imageUtils';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import WeeklyDiscountMagazineModal from '../components/common/WeeklyDiscountMagazineModal';
 
 // Ana Sayfa
 function AnaSayfa() {
@@ -29,6 +30,7 @@ function AnaSayfa() {
   const [activeOrder, setActiveOrder] = useState(null);
   const [showActiveOrderCard, setShowActiveOrderCard] = useState(true);
   const lastScrollY = useRef(0);
+  const [showMagazineModal, setShowMagazineModal] = useState(false);
 
   // Default homepage settings
   const defaultHomepageSettings = {
@@ -438,8 +440,35 @@ function AnaSayfa() {
     );
   }
 
+  // Weekly discount magazine bilgisi
+  const weeklyDiscountMagazine = settings?.storeSettings?.weeklyDiscountMagazine;
+
   return (
     <div className="pb-20 bg-white">
+      {/* Haftalık İndirimler Dergisi Butonu */}
+      {weeklyDiscountMagazine?.enabled && weeklyDiscountMagazine?.pdfUrl && (
+        <section className="bg-primary-50 border-b border-primary-200 py-3">
+          <div className="container-mobile">
+            <button
+              onClick={() => setShowMagazineModal(true)}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <FiTag className="w-5 h-5" />
+              <span>{weeklyDiscountMagazine.buttonText || 'Haftalık İndirimleri Görüntüle'}</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Weekly Discount Magazine Modal */}
+      {showMagazineModal && weeklyDiscountMagazine?.pdfUrl && (
+        <WeeklyDiscountMagazineModal
+          pdfUrl={weeklyDiscountMagazine.pdfUrl}
+          title={weeklyDiscountMagazine.title || 'Haftalık İndirimler Dergisi'}
+          onClose={() => setShowMagazineModal(false)}
+        />
+      )}
+
       {/* Kampanyalar Bölümü - Üstte */}
       {campaigns.length > 0 && (
         <section className="bg-white py-4 md:py-6 border-b border-gray-100">
