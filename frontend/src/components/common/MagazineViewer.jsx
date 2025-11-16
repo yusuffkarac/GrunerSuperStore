@@ -121,10 +121,18 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
 
       // Eğer hala normalize edilmemişse (startsWith kontrolü)
       if (normalizedPdfUrl && !normalizedPdfUrl.startsWith('http://') && !normalizedPdfUrl.startsWith('https://')) {
-        // API base URL'i al
-        const API_BASE = import.meta.env.VITE_API_URL
-          ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
-          : (import.meta.env.DEV ? 'http://localhost:5001' : '');
+        // API base URL'i al - sunucuda window.location.origin kullan
+        let API_BASE = '';
+        if (import.meta.env.VITE_API_URL) {
+          API_BASE = import.meta.env.VITE_API_URL.endsWith('/api') 
+            ? import.meta.env.VITE_API_URL.slice(0, -4) 
+            : import.meta.env.VITE_API_URL;
+        } else if (import.meta.env.DEV) {
+          API_BASE = 'http://localhost:5001';
+        } else {
+          // Production'da window.location.origin kullan (sunucu URL'ini al)
+          API_BASE = typeof window !== 'undefined' ? window.location.origin : '';
+        }
         
         if (normalizedPdfUrl.startsWith('/uploads')) {
           normalizedPdfUrl = `${API_BASE}/api${normalizedPdfUrl}`;

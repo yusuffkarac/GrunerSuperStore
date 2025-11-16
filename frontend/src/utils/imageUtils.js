@@ -23,9 +23,9 @@ export const normalizeImageUrl = (url) => {
       return 'http://localhost:5001';
     }
     
-    // Production'da nginx üzerinden git (port kullanma)
+    // Production'da window.location.origin kullan (sunucu URL'ini al)
     // Nginx /api/uploads isteklerini backend'e yönlendirir
-    return '';
+    return typeof window !== 'undefined' ? window.location.origin : '';
   };
   
   const API_BASE = getApiBaseUrl();
