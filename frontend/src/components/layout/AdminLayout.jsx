@@ -29,6 +29,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
 } from 'react-icons/fi';
+import { HiNewspaper } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import { useAlert } from '../../contexts/AlertContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -105,6 +106,7 @@ function AdminLayout() {
       '/admin/settings': 'settings_view',
       '/admin/homepage-settings': 'settings_view',
       '/admin/design-settings': 'settings_view',
+      '/admin/magazines': 'settings_view',
       '/admin/notifications': 'notification_management_view',
       '/admin/email-templates': 'email_template_management_view',
       '/admin/notification-templates': 'notification_template_management_view',
@@ -272,6 +274,7 @@ function AdminLayout() {
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
     { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view' },
     { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: 'settings_view' },
+    { path: '/admin/magazines', label: 'Wöchentliche Magazine', icon: HiNewspaper, permission: 'settings_view' },
   ];
 
   // Üst menü öğelerini filtrele (güncel admin bilgileriyle)

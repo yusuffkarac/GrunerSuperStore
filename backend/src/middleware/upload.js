@@ -43,7 +43,7 @@ const storage = multer.diskStorage({
   },
 });
 
-// Dosya filtresi - sadece resim dosyaları
+// Dosya filtresi - resim dosyaları ve PDF
 const fileFilter = (req, file, cb) => {
   const allowedMimes = [
     'image/jpeg',
@@ -51,6 +51,7 @@ const fileFilter = (req, file, cb) => {
     'image/png',
     'image/gif',
     'image/webp',
+    'application/pdf',
   ];
 
   if (allowedMimes.includes(file.mimetype)) {
@@ -58,7 +59,7 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        'Nur Bilddateien sind erlaubt (JPEG, JPG, PNG, GIF, WEBP)'
+        'Nur Bilddateien und PDF-Dateien sind erlaubt (JPEG, JPG, PNG, GIF, WEBP, PDF)'
       ),
       false
     );

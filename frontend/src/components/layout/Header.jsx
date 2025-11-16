@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiSearch, FiShoppingCart, FiUser, FiArrowLeft, FiHome, FiGrid, FiHeart } from 'react-icons/fi';
+import { HiNewspaper } from 'react-icons/hi';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import productService from '../../services/productService';
 import settingsService from '../../services/settingsService';
+import magazineService from '../../services/magazineService';
 import { normalizeImageUrls } from '../../utils/imageUtils';
 import NotificationBell from '../common/NotificationBell';
+import MagazineViewer from '../common/MagazineViewer';
 
 // Header Componenti - Sticky
 function Header() {
@@ -19,8 +22,14 @@ function Header() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [logo, setLogo] = useState('/logo.png');
+  const [activeMagazines, setActiveMagazines] = useState([]);
+  const [showMagazineViewer, setShowMagazineViewer] = useState(false);
+  const [selectedMagazine, setSelectedMagazine] = useState(null);
+  const [showMagazineSelection, setShowMagazineSelection] = useState(false);
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
+  const magazineButtonRef = useRef(null);
+  const magazineDropdownRef = useRef(null);
 
   // Geri butonu gösterilecek sayfalar
   const showBackButton = !['/', '/produkte'].includes(location.pathname);
@@ -31,9 +40,9 @@ function Header() {
       try {
         const response = await settingsService.getSettings();
         const settings = response.data?.settings;
-        
+
         if (settings?.storeSettings?.logo) {
-          const API_BASE = import.meta.env.VITE_API_URL 
+          const API_BASE = import.meta.env.VITE_API_URL
             ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
             : (import.meta.env.DEV ? 'http://localhost:5001' : '');
           const logoUrl = settings.storeSettings.logo.startsWith('http')
@@ -50,6 +59,38 @@ function Header() {
     };
     loadLogo();
   }, []);
+
+  // Aktif dergileri yükle
+  useEffect(() => {
+    const loadActiveMagazines = async () => {
+      try {
+        const response = await magazineService.getActiveMagazines();
+        // Response yapısı: {magazines: [...]} veya {data: {magazines: [...]}}
+        const magazines = response?.magazines || response?.data?.magazines || [];
+        setActiveMagazines(magazines);
+      } catch (error) {
+        console.error('Aktif dergiler yüklenirken hata:', error);
+        setActiveMagazines([]);
+      }
+    };
+    loadActiveMagazines();
+  }, []);
+
+  const handleOpenMagazine = (magazine = null) => {
+    // Eğer magazine parametresi verilmediyse ve 2+ aktif dergi varsa seçim dropdown göster
+    if (!magazine && activeMagazines.length >= 2) {
+      setShowMagazineSelection(prev => !prev);
+      return;
+    }
+    
+    // Tek dergi varsa veya magazine parametresi verildiyse direkt aç
+    const magazineToOpen = magazine || activeMagazines[0];
+    if (magazineToOpen) {
+      setSelectedMagazine(magazineToOpen);
+      setShowMagazineViewer(true);
+      setShowMagazineSelection(false);
+    }
+  };
 
   // Debounced search - yazdıkça arama yap
   useEffect(() => {
@@ -88,6 +129,16 @@ function Header() {
         !resultsRef.current.contains(event.target)
       ) {
         setShowResults(false);
+      }
+      
+      // Magazine seçim dropdown'u kapat
+      if (
+        magazineButtonRef.current &&
+        !magazineButtonRef.current.contains(event.target) &&
+        magazineDropdownRef.current &&
+        !magazineDropdownRef.current.contains(event.target)
+      ) {
+        setShowMagazineSelection(false);
       }
     };
 
@@ -147,7 +198,7 @@ function Header() {
           </Link>
 
           {/* Navigasyon Butonları */}
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 relative">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -166,6 +217,82 @@ function Header() {
                 </Link>
               );
             })}
+            {/* Prospekt Button - Desktop'ta Favoriten'in yanında */}
+            {activeMagazines.length > 0 && (
+              <div className="relative z-50" ref={magazineButtonRef}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleOpenMagazine();
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 relative ${
+                    showMagazineSelection
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  aria-label="Prospekt"
+                  title="Prospekt"
+                  type="button"
+                >
+                  <HiNewspaper className="w-5 h-5" />
+                  <span className="font-medium">Prospekt</span>
+                  {activeMagazines.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-3 h-3 flex items-center justify-center animate-pulse"></span>
+                  )}
+                </button>
+                
+                {/* Dropdown - Butonun altında */}
+                {showMagazineSelection && activeMagazines.length >= 2 && (
+                  <div 
+                    ref={magazineDropdownRef}
+                    className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[200] min-w-[280px] max-w-[320px]"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <div className="p-2">
+                      <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
+                        Magazin auswählen
+                      </div>
+                      <div className="space-y-1">
+                        {activeMagazines.map((magazine) => (
+                          <button
+                            key={magazine.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleOpenMagazine(magazine);
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            className="w-full p-2 text-left border border-gray-200 rounded-md hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 group cursor-pointer"
+                          >
+                            <div className="font-medium text-sm text-gray-900 group-hover:text-primary-600">
+                              {magazine.title}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {new Date(magazine.startDate).toLocaleDateString('de-DE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })} - {new Date(magazine.endDate).toLocaleDateString('de-DE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* Sağ Taraf - Sepet ve Profil */}
@@ -353,6 +480,66 @@ function Header() {
               </div>
             )}
           </div>
+
+          {/* Dergi İkonu - Mobil */}
+          {activeMagazines.length > 0 && (
+            <div className="relative flex-shrink-0" ref={magazineButtonRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenMagazine();
+                }}
+                className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Prospekt"
+                title="Prospekt"
+              >
+                <HiNewspaper className="w-6 h-6" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-3 h-3 flex items-center justify-center animate-pulse"></span>
+              </button>
+              
+              {/* Dropdown - Mobil - Butonun altında */}
+              {showMagazineSelection && activeMagazines.length >= 2 && (
+                <div 
+                  ref={magazineDropdownRef}
+                  className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[100] min-w-[240px] max-w-[280px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2">
+                    <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
+                      Magazin auswählen
+                    </div>
+                    <div className="space-y-1">
+                      {activeMagazines.map((magazine) => (
+                        <button
+                          key={magazine.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenMagazine(magazine);
+                          }}
+                          className="w-full p-2 text-left border border-gray-200 rounded-md hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 group cursor-pointer"
+                        >
+                          <div className="font-medium text-sm text-gray-900 group-hover:text-primary-600">
+                            {magazine.title}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {new Date(magazine.startDate).toLocaleDateString('de-DE', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })} - {new Date(magazine.endDate).toLocaleDateString('de-DE', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Desktop: Arama Çubuğu - şık tasarım */}
@@ -487,6 +674,18 @@ function Header() {
           </div>
         </div>
       </div>
+
+      {/* Magazine Viewer Modal */}
+      {showMagazineViewer && selectedMagazine && (
+        <MagazineViewer
+          pdfUrl={selectedMagazine.pdfUrl}
+          title={selectedMagazine.title}
+          onClose={() => {
+            setShowMagazineViewer(false);
+            setSelectedMagazine(null);
+          }}
+        />
+      )}
     </header>
   );
 }

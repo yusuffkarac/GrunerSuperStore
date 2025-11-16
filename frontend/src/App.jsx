@@ -69,6 +69,7 @@ import StockManagement from './pages/admin/StockManagement';
 import BulkPriceUpdates from './pages/admin/BulkPriceUpdates';
 import Tasks from './pages/admin/Tasks';
 import ActivityLogs from './pages/admin/ActivityLogs';
+import Magazines from './pages/admin/Magazines';
 
 // Süper admin kontrolü için yardımcı fonksiyon
 const getAdminRole = () => {
@@ -280,6 +281,7 @@ function AppContent() {
               <Route path="design-settings" element={<DesignSettings />} />
               <Route path="footer-settings" element={<FooterSettings />} />
               <Route path="cookie-settings" element={<CookieSettings />} />
+              <Route path="magazines" element={<Magazines />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="help" element={<Help />} />
             </>

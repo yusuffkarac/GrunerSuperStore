@@ -3,6 +3,7 @@ import adminController from '../controllers/admin.controller.js';
 import orderController from '../controllers/order.controller.js';
 import settingsController from '../controllers/settings.controller.js';
 import uploadController from '../controllers/upload.controller.js';
+import magazineController from '../controllers/magazine.controller.js';
 import * as roleController from '../controllers/role.controller.js';
 import * as expiryController from '../controllers/expiry.controller.js';
 import * as stockController from '../controllers/stock.controller.js';
@@ -363,6 +364,28 @@ router.get('/stock/lists/:listId/pdf', requirePermission('stock_management_view'
 // Supplier email yönetimi
 router.get('/suppliers/emails', requirePermission('stock_management_view'), supplierController.getSupplierEmails);
 router.post('/suppliers/emails', requirePermission(['stock_management_view', 'stock_management_action']), supplierController.addSupplierEmail);
+
+// ===============================
+// MAGAZINE MANAGEMENT
+// ===============================
+
+// GET /api/admin/magazines - Tüm dergileri listele
+router.get('/magazines', requirePermission('settings_view'), magazineController.getAllMagazines);
+
+// GET /api/admin/magazines/:id - Dergi detayı
+router.get('/magazines/:id', requirePermission('settings_view'), magazineController.getMagazineById);
+
+// POST /api/admin/magazines - Yeni dergi oluştur
+router.post('/magazines', requirePermission('settings_edit'), magazineController.createMagazine);
+
+// PUT /api/admin/magazines/:id - Dergi güncelle
+router.put('/magazines/:id', requirePermission('settings_edit'), magazineController.updateMagazine);
+
+// DELETE /api/admin/magazines/:id - Dergi sil
+router.delete('/magazines/:id', requirePermission('settings_edit'), magazineController.deleteMagazine);
+
+// PATCH /api/admin/magazines/:id/toggle - Aktif/Pasif değiştir
+router.patch('/magazines/:id/toggle', requirePermission('settings_edit'), magazineController.toggleActive);
 
 // ===============================
 // SETTINGS MANAGEMENT

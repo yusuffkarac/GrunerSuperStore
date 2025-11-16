@@ -13,7 +13,7 @@ const tenantName = process.env.TENANT_NAME || null;
 export default defineConfig({
   appType: 'spa',
   optimizeDeps: {
-    include: ['@mui/material', '@mui/icons-material'],
+    include: ['@mui/material', '@mui/icons-material', 'page-flip'],
     exclude: ['jsbarcode']
   },
   plugins: [
@@ -86,6 +86,16 @@ export default defineConfig({
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+      '/uploads': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('uploads proxy error', err);
           });
         },
       }
