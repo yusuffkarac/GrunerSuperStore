@@ -10,7 +10,6 @@ import * as supplierController from '../controllers/supplier.controller.js';
 import { authenticateAdmin, requireSuperAdmin, requirePermission } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import upload from '../middleware/upload.js';
-import uploadPdf from '../middleware/uploadPdf.js';
 import { adminLoginValidation, createUserValidation, updateUserValidation, createAdminValidation, updateAdminValidation } from '../validators/admin.validators.js';
 import {
   updateOrderStatusValidation,
@@ -374,9 +373,6 @@ router.get('/settings', requirePermission('settings_view'), settingsController.g
 
 // PUT /api/admin/settings - Ayarları güncelle
 router.put('/settings', requirePermission('settings_edit'), settingsController.updateSettings);
-
-// POST /api/admin/settings/weekly-discount-magazine/upload - Haftalık indirimler dergisi PDF yükle
-router.post('/settings/weekly-discount-magazine/upload', requirePermission('settings_edit'), uploadPdf.single('pdf'), settingsController.uploadWeeklyDiscountMagazine);
 
 // ===============================
 // FILE UPLOAD

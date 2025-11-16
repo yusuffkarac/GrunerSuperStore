@@ -63,12 +63,6 @@ class SettingsService {
               longitude: null,
             },
             defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
-            weeklyDiscountMagazine: {
-              enabled: false,
-              pdfUrl: null,
-              title: 'Haftalık İndirimler Dergisi',
-              buttonText: 'Haftalık İndirimleri Görüntüle',
-            },
           },
           // Email defaults
           smtpSettings: null,
@@ -225,12 +219,6 @@ class SettingsService {
               longitude: null,
             },
             defaultCities: ['Waiblingen'], // Adres araması için varsayılan şehirler (array)
-            weeklyDiscountMagazine: {
-              enabled: false,
-              pdfUrl: null,
-              title: 'Haftalık İndirimler Dergisi',
-              buttonText: 'Haftalık İndirimleri Görüntüle',
-            },
           },
           smtpSettings: data.smtpSettings ?? null,
           emailNotificationSettings: data.emailNotificationSettings ?? {

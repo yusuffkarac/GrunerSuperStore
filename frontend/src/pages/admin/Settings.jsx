@@ -71,14 +71,7 @@ function Settings() {
       taxNumber: '',
       registrationNumber: '',
     },
-    weeklyDiscountMagazine: {
-      enabled: false,
-      pdfUrl: null,
-      title: 'Haftalık İndirimler Dergisi',
-      buttonText: 'Haftalık İndirimleri Görüntüle',
-    },
   });
-  const [uploadingPdf, setUploadingPdf] = useState(false);
   const [newCityInput, setNewCityInput] = useState(''); // Yeni şehir ekleme input'u
 
   // E-Mail-Einstellungen
@@ -178,12 +171,6 @@ function Settings() {
           taxNumber: '',
           registrationNumber: '',
         },
-        weeklyDiscountMagazine: {
-          enabled: false,
-          pdfUrl: null,
-          title: 'Haftalık İndirimler Dergisi',
-          buttonText: 'Haftalık İndirimleri Görüntüle',
-        },
       });
       
       // Eski defaultCity varsa defaultCities'e çevir (geriye dönük uyumluluk)
@@ -270,59 +257,6 @@ function Settings() {
       toast.error(err.message || 'Fehler beim Speichern der Einstellungen');
     } finally {
       setSaving(false);
-    }
-  };
-
-  // PDF yükleme
-  const handlePdfUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      toast.error('Nur PDF-Dateien sind erlaubt');
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('PDF-Datei ist zu groß (max. 20MB)');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('pdf', file);
-
-    try {
-      setUploadingPdf(true);
-      const response = await fetch('/api/admin/settings/weekly-discount-magazine/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // PDF URL'ini storeSettings'e ekle
-        setStoreSettings(prev => ({
-          ...prev,
-          weeklyDiscountMagazine: {
-            ...prev.weeklyDiscountMagazine,
-            pdfUrl: data.data.pdfUrl,
-          },
-        }));
-        toast.success('PDF erfolgreich hochgeladen');
-      } else {
-        toast.error(data.message || 'Fehler beim Hochladen der PDF');
-      }
-    } catch (error) {
-      console.error('PDF-Upload-Fehler:', error);
-      toast.error('Fehler beim Hochladen der PDF');
-    } finally {
-      setUploadingPdf(false);
-      // Input'u sıfırla
-      e.target.value = '';
     }
   };
 
@@ -1907,126 +1841,6 @@ function Settings() {
               </p>
             </div>
           </div>
-
-          {/* Haftalık İndirimler Dergisi */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                Haftalık İndirimler Dergisi
-                <HelpTooltip content="Haftalık indirimler dergisini PDF olarak yükleyin. Müşteriler bu dergiyi popup olarak görüntüleyebilir." />
-              </h2>
-
-              {/* Aktif/Pasif Toggle */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-900">Dergi aktivieren</span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Wenn aktiviert, wird der Button für Kunden sichtbar
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setStoreSettings(prev => ({
-                        ...prev,
-                        weeklyDiscountMagazine: {
-                          ...prev.weeklyDiscountMagazine,
-                          enabled: !prev.weeklyDiscountMagazine.enabled,
-                        },
-                      }))
-                    }
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                      storeSettings.weeklyDiscountMagazine?.enabled
-                        ? 'bg-primary-600'
-                        : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={storeSettings.weeklyDiscountMagazine?.enabled}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        storeSettings.weeklyDiscountMagazine?.enabled
-                          ? 'translate-x-5'
-                          : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* PDF Yükleme */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PDF-Datei hochladen
-                </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handlePdfUpload}
-                    disabled={uploadingPdf}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 file:cursor-pointer disabled:opacity-50"
-                  />
-                  {uploadingPdf && (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-                  )}
-                </div>
-                {storeSettings.weeklyDiscountMagazine?.pdfUrl && (
-                  <p className="mt-2 text-sm text-green-600">
-                    ✓ PDF erfolgreich hochgeladen
-                  </p>
-                )}
-                <p className="mt-1 text-sm text-gray-500">
-                  Max. 20MB, nur PDF-Dateien
-                </p>
-              </div>
-
-              {/* Başlık */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Titel
-                </label>
-                <input
-                  type="text"
-                  value={storeSettings.weeklyDiscountMagazine?.title || ''}
-                  onChange={(e) =>
-                    setStoreSettings(prev => ({
-                      ...prev,
-                      weeklyDiscountMagazine: {
-                        ...prev.weeklyDiscountMagazine,
-                        title: e.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Haftalık İndirimler Dergisi"
-                />
-              </div>
-
-              {/* Buton Metni */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Button-Text
-                </label>
-                <input
-                  type="text"
-                  value={storeSettings.weeklyDiscountMagazine?.buttonText || ''}
-                  onChange={(e) =>
-                    setStoreSettings(prev => ({
-                      ...prev,
-                      weeklyDiscountMagazine: {
-                        ...prev.weeklyDiscountMagazine,
-                        buttonText: e.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Haftalık İndirimleri Görüntüle"
-                />
-              </div>
-            </div>
-          </div>
-
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
             <button
               onClick={handleSave}
