@@ -4,6 +4,7 @@ import templateService from '../../services/templateService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import Switch from '../../components/common/Switch';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 function EmailTemplates() {
   const [templates, setTemplates] = useState([]);
@@ -89,6 +90,9 @@ function EmailTemplates() {
     result = result.replace(/\[Variable\]/g, '{{variable}}');
     return result;
   };
+
+  // Modal scroll yönetimi
+  useModalScroll(showPreview);
 
   useEffect(() => {
     fetchTemplates();
@@ -489,13 +493,14 @@ function EmailTemplates() {
                   onClick={() => setShowPreview(false)}
                 />
                 {/* Modal */}
-                <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4 pointer-events-none">
-                  <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto">
-                    <div className="border-b border-gray-200 p-4 flex justify-between items-center">
+                <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 pointer-events-none">
+                  <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col pointer-events-auto">
+                    <div className="border-b border-gray-200 p-4 flex justify-between items-center flex-shrink-0">
                       <h3 className="text-lg font-semibold text-gray-900">E-Mail-Vorschau</h3>
                       <button
                         onClick={() => setShowPreview(false)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 hover:text-gray-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
+                        aria-label="Schließen"
                       >
                         ✕
                       </button>

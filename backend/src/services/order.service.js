@@ -4,7 +4,7 @@ import {
   ValidationError,
   ForbiddenError,
 } from '../utils/errors.js';
-import { getGermanyTimeInMinutes } from '../utils/date.js';
+import { getGermanyTimeInMinutes, getGermanyDate } from '../utils/date.js';
 import { validateDistance } from '../utils/distance.js';
 import couponService from './coupon.service.js';
 import queueService from './queue.service.js';
@@ -12,6 +12,7 @@ import notificationService from './notification.service.js';
 import notificationTemplateService from './notification-template.service.js';
 import invoiceService from './invoice.service.js';
 import productService from './product.service.js';
+import discountCalculator from '../utils/discountCalculator.js';
 
 class OrderService {
   // Sipariş oluştur
@@ -159,10 +160,21 @@ class OrderService {
           })
         : [];
 
+      // Aktif kampanyaları getir (doğrulama için)
+      const now = getGermanyDate();
+      const activeCampaigns = await tx.campaign.findMany({
+        where: {
+          isActive: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+      });
+
       // Stok kontrolü ve fiyat hesaplama
       let subtotal = 0;
       const orderItems = [];
       let totalQuantity = 0;
+      const usedCampaignIds = new Set(); // Kullanılan kampanyaları takip et
 
       for (const item of items) {
         const product = products.find((p) => p.id === item.productId);
@@ -205,8 +217,88 @@ class OrderService {
           originalPrice = priceInfo.displayPrice;
         }
 
-        // Kampanya fiyatı varsa kullan, yoksa orijinal fiyatı kullan
-        const price = item.campaignPrice || originalPrice;
+        // Kampanya doğrulama ve fiyat hesaplama
+        let price = originalPrice;
+        let campaignId = null;
+        let campaignName = null;
+
+        if (item.campaignId && item.campaignPrice) {
+          // Kampanyayı doğrula
+          const campaign = activeCampaigns.find((c) => c.id === item.campaignId);
+
+          if (!campaign) {
+            throw new ValidationError(`Kampanya ${item.campaignId} bulunamadı veya aktif değil`);
+          }
+
+          // Usage limit kontrolü
+          if (campaign.usageLimit !== null && campaign.usageCount >= campaign.usageLimit) {
+            throw new ValidationError(`Kampanya ${campaign.name} kullanım limitine ulaştı`);
+          }
+
+          // Kampanyanın bu ürüne uygulanabilir olup olmadığını kontrol et
+          let isApplicable = false;
+          if (campaign.applyToAll) {
+            isApplicable = true;
+          } else if (campaign.productIds && Array.isArray(campaign.productIds)) {
+            isApplicable = campaign.productIds.includes(item.productId);
+          } else if (campaign.categoryIds && Array.isArray(campaign.categoryIds) && product.categoryId) {
+            isApplicable = campaign.categoryIds.includes(product.categoryId);
+          }
+
+          if (!isApplicable) {
+            throw new ValidationError(`Kampanya ${campaign.name} bu ürüne uygulanamaz`);
+          }
+
+          // Minimum tutar kontrolü
+          if (campaign.minPurchase) {
+            const itemTotal = parseFloat(originalPrice) * item.quantity;
+            if (itemTotal < parseFloat(campaign.minPurchase)) {
+              throw new ValidationError(
+                `Kampanya ${campaign.name} için minimum tutar: ${parseFloat(campaign.minPurchase).toFixed(2)} €`
+              );
+            }
+          }
+
+          // Backend'de indirimi tekrar hesapla ve doğrula (güvenlik için)
+          const applicableCampaigns = activeCampaigns.filter((c) => {
+            if (c.type === 'FREE_SHIPPING') return false;
+            if (c.applyToAll) return true;
+            if (c.productIds && Array.isArray(c.productIds) && c.productIds.includes(item.productId)) return true;
+            if (c.categoryIds && Array.isArray(c.categoryIds) && product.categoryId && c.categoryIds.includes(product.categoryId)) return true;
+            return false;
+          });
+
+          const discountResult = discountCalculator.calculateProductDiscount({
+            price: parseFloat(originalPrice),
+            quantity: item.quantity,
+            campaigns: applicableCampaigns,
+          });
+
+          // Frontend'den gelen fiyat ile backend hesaplamasını karşılaştır (küçük farklara tolerans göster)
+          const frontendPrice = parseFloat(item.campaignPrice);
+          const backendPrice = discountResult.discountedPrice;
+          const priceDifference = Math.abs(frontendPrice - backendPrice);
+
+          // Fiyat farkı 0.01'den fazlaysa hata ver (yuvarlama hatalarına tolerans)
+          if (priceDifference > 0.01) {
+            console.warn(`Fiyat uyuşmazlığı: Frontend ${frontendPrice}, Backend ${backendPrice}`);
+            // Güvenlik için backend hesaplamasını kullan
+            price = backendPrice;
+            campaignId = discountResult.appliedCampaign?.id || null;
+            campaignName = discountResult.appliedCampaign?.name || null;
+          } else {
+            // Fiyatlar uyumlu, frontend'den gelen bilgileri kullan
+            price = frontendPrice;
+            campaignId = item.campaignId;
+            campaignName = item.campaignName || campaign.name;
+          }
+
+          // Kampanya kullanım sayısını artırmak için kaydet
+          if (campaignId) {
+            usedCampaignIds.add(campaignId);
+          }
+        }
+
         const itemTotal = parseFloat(price) * item.quantity;
         subtotal += itemTotal;
         totalQuantity += item.quantity;
@@ -223,13 +315,25 @@ class OrderService {
           productName: product.name,
           variantName: variant ? variant.name : null,
           price: price,
-          originalPrice: item.campaignPrice ? originalPrice : null,
-          campaignId: item.campaignId || null,
-          campaignName: item.campaignName || null,
+          originalPrice: campaignId ? originalPrice : null,
+          campaignId: campaignId,
+          campaignName: campaignName,
           quantity: item.quantity,
           unit: product.unit,
           brand: product.brand,
           imageUrl: imageUrl,
+        });
+      }
+
+      // Kullanılan kampanyaların kullanım sayısını artır
+      for (const campaignId of usedCampaignIds) {
+        await tx.campaign.update({
+          where: { id: campaignId },
+          data: {
+            usageCount: {
+              increment: 1,
+            },
+          },
         });
       }
 
@@ -776,6 +880,9 @@ class OrderService {
               variantName: true,
               quantity: true,
               price: true,
+              originalPrice: true,
+              campaignId: true,
+              campaignName: true,
               imageUrl: true,
             },
           },

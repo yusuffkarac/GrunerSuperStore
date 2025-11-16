@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -18,6 +18,8 @@ import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
+import campaignService from '../services/campaignService';
+import settingsService from '../services/settingsService';
 
 function SiparisVer() {
   const navigate = useNavigate();
@@ -40,11 +42,209 @@ function SiparisVer() {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [campaigns, setCampaigns] = useState([]);
+  const [settings, setSettings] = useState(null);
 
   const subtotal = getTotal();
-  const deliveryFee = orderType === 'delivery' ? 3.99 : 0;
-  const discount = couponDiscount;
-  const total = Math.max(0, subtotal + deliveryFee - discount);
+  
+  // Ücretsiz kargo kampanyası kontrolü
+  const isFreeShipping = useMemo(() => {
+    if (orderType !== 'delivery' || campaigns.length === 0) return false;
+    
+    // FREE_SHIPPING tipindeki kampanyaları bul
+    const freeShippingCampaigns = campaigns.filter(campaign => {
+      if (campaign.type !== 'FREE_SHIPPING') return false;
+      
+      // Minimum tutar kontrolü
+      if (campaign.minPurchase && parseFloat(campaign.minPurchase) > subtotal) return false;
+      
+      // Tüm mağazaya uygulanan kampanyalar
+      if (campaign.applyToAll) return true;
+      
+      // Ürüne özgü kampanyalar - sepetteki ürünlerden biri kampanyada varsa geçerli
+      if (campaign.productIds) {
+        const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+        const hasMatchingProduct = items.some(item => productIds.includes(item.productId));
+        if (hasMatchingProduct) return true;
+      }
+      
+      return false;
+    });
+    
+    return freeShippingCampaigns.length > 0;
+  }, [orderType, campaigns, subtotal, items]);
+  
+  // Kampanya indirimlerini hesapla
+  const calculateCampaignDiscount = () => {
+    if (campaigns.length === 0 || items.length === 0) return 0;
+
+    let totalDiscount = 0;
+
+    // Her ürün için ayrı ayrı indirim hesapla
+    items.forEach((item) => {
+      const itemPrice = parseFloat(item.price);
+      const quantity = parseInt(item.quantity);
+
+      // Bu ürün için geçerli kampanyaları bul
+      const applicableCampaigns = campaigns.filter((campaign) => {
+        // FREE_SHIPPING kampanyaları ürün bazında değil
+        if (campaign.type === 'FREE_SHIPPING') return false;
+
+        // Tüm mağazaya uygulanan kampanyalar
+        if (campaign.applyToAll) return true;
+
+        // Ürüne özgü kampanyalar
+        if (campaign.productIds) {
+          const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+          if (productIds.includes(item.productId)) return true;
+        }
+
+        return false;
+      });
+
+      if (applicableCampaigns.length === 0) return;
+
+      // En yüksek indirimi veren kampanyayı bul
+      let bestDiscount = 0;
+
+      applicableCampaigns.forEach((campaign) => {
+        const { type, discountPercent, discountAmount, buyQuantity, getQuantity, maxDiscount } = campaign;
+        let discount = 0;
+
+        switch (type) {
+          case 'PERCENTAGE':
+            // Yüzde indirim: fiyat * miktar * yüzde
+            discount = itemPrice * quantity * (parseFloat(discountPercent) / 100);
+            break;
+
+          case 'FIXED_AMOUNT':
+            // Sabit tutar indirim: miktar ile çarp
+            discount = parseFloat(discountAmount) * quantity;
+            // İndirim toplam fiyattan fazla olamaz
+            discount = Math.min(discount, itemPrice * quantity);
+            break;
+
+          case 'BUY_X_GET_Y':
+            // X Al Y Öde kampanyası
+            if (quantity >= buyQuantity) {
+              const sets = Math.floor(quantity / buyQuantity);
+              const freeItems = buyQuantity - getQuantity;
+              const totalFreeItems = sets * freeItems;
+              discount = totalFreeItems * itemPrice;
+            }
+            break;
+
+          default:
+            discount = 0;
+        }
+
+        // Max indirim kontrolü (toplam indirim limiti)
+        if (maxDiscount && discount > parseFloat(maxDiscount)) {
+          discount = parseFloat(maxDiscount);
+        }
+
+        if (discount > bestDiscount) {
+          bestDiscount = discount;
+        }
+      });
+
+      if (bestDiscount > 0) {
+        totalDiscount += bestDiscount;
+      }
+    });
+
+    return totalDiscount;
+  };
+
+  // Settings bilgisini çek
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        setSettings(response?.data?.settings || null);
+      } catch (error) {
+        console.error('Settings yükleme hatası:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Kampanyaları yükle
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (subtotal > 0) {
+        try {
+          const response = await campaignService.getActiveCampaigns();
+          const activeCampaigns = response.data.campaigns || [];
+          // Minimum tutar kontrolü
+          const applicableCampaigns = activeCampaigns.filter(c => {
+            if (c.minPurchase && parseFloat(c.minPurchase) > subtotal) return false;
+            return true;
+          });
+          setCampaigns(applicableCampaigns);
+        } catch (error) {
+          console.error('Kampanya yükleme hatası:', error);
+        }
+      }
+    };
+    fetchCampaigns();
+  }, [subtotal, items]);
+
+  const campaignDiscount = calculateCampaignDiscount();
+  const discount = couponDiscount + campaignDiscount;
+  const finalSubtotal = subtotal - discount;
+  
+  // Ücretsiz kargo kontrolü (hem kampanya hem settings)
+  const isFreeShippingFinal = useMemo(() => {
+    if (orderType !== 'delivery') return false;
+    
+    // Ücretsiz kargo kampanyası varsa
+    if (isFreeShipping) return true;
+    
+    // Settings'ten ücretsiz kargo eşiği kontrolü
+    if (settings) {
+      const freeShippingThreshold = settings.freeShippingThreshold ? parseFloat(settings.freeShippingThreshold) : null;
+      if (freeShippingThreshold && finalSubtotal >= freeShippingThreshold) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [orderType, isFreeShipping, settings, finalSubtotal]);
+  
+  // Teslimat ücreti hesaplama (settings kurallarına göre)
+  const calculatedDeliveryFee = useMemo(() => {
+    if (orderType !== 'delivery') return 0;
+    
+    // Ücretsiz kargo varsa
+    if (isFreeShippingFinal) return 0;
+    
+    if (!settings) return 3.99; // Varsayılan
+    
+    // Shipping rules'a göre hesapla
+    const shippingRules = Array.isArray(settings.shippingRules) ? settings.shippingRules : [];
+    if (shippingRules.length > 0) {
+      const rule = shippingRules.find((r) => {
+        const minOk = r.min == null || finalSubtotal >= parseFloat(r.min);
+        const maxOk = r.max == null || finalSubtotal <= parseFloat(r.max);
+        return minOk && maxOk;
+      });
+      
+      if (rule) {
+        if (rule.type === 'percent') {
+          return (finalSubtotal * parseFloat(rule.percent ?? rule.value ?? 0)) / 100;
+        } else {
+          return parseFloat(rule.fee ?? rule.value ?? 0);
+        }
+      }
+    }
+    
+    // Varsayılan teslimat ücreti
+    return 3.99;
+  }, [orderType, isFreeShippingFinal, settings, finalSubtotal]);
+  
+  const deliveryFee = calculatedDeliveryFee;
+  const total = Math.max(0, finalSubtotal + deliveryFee);
 
   // Adresleri yükle
   useEffect(() => {
@@ -151,12 +351,86 @@ function SiparisVer() {
     setLoading(true);
 
     try {
-      // Sepetteki ürünleri items formatına çevir
-      const orderItems = items.map((item) => ({
-        productId: item.productId,
-        variantId: item.variantId || null,
-        quantity: item.quantity,
-      }));
+      // Her ürün için kampanya bilgilerini hesapla
+      const orderItems = items.map((item) => {
+        const itemPrice = parseFloat(item.price);
+        const quantity = parseInt(item.quantity);
+
+        // Bu ürün için geçerli kampanyaları bul
+        const applicableCampaigns = campaigns.filter((campaign) => {
+          // FREE_SHIPPING kampanyaları ürün bazında değil
+          if (campaign.type === 'FREE_SHIPPING') return false;
+
+          // Tüm mağazaya uygulanan kampanyalar
+          if (campaign.applyToAll) return true;
+
+          // Ürüne özgü kampanyalar
+          if (campaign.productIds) {
+            const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+            if (productIds.includes(item.productId)) return true;
+          }
+
+          return false;
+        });
+
+        // En yüksek indirimi veren kampanyayı bul
+        let bestDiscount = 0;
+        let bestCampaign = null;
+
+        applicableCampaigns.forEach((campaign) => {
+          const { type, discountPercent, discountAmount, buyQuantity, getQuantity, maxDiscount } = campaign;
+          let discount = 0;
+
+          switch (type) {
+            case 'PERCENTAGE':
+              discount = itemPrice * quantity * (parseFloat(discountPercent) / 100);
+              break;
+
+            case 'FIXED_AMOUNT':
+              discount = parseFloat(discountAmount) * quantity;
+              discount = Math.min(discount, itemPrice * quantity);
+              break;
+
+            case 'BUY_X_GET_Y':
+              if (quantity >= buyQuantity) {
+                const sets = Math.floor(quantity / buyQuantity);
+                const freeItems = buyQuantity - getQuantity;
+                const totalFreeItems = sets * freeItems;
+                discount = totalFreeItems * itemPrice;
+              }
+              break;
+
+            default:
+              discount = 0;
+          }
+
+          // Max indirim kontrolü
+          if (maxDiscount && discount > parseFloat(maxDiscount)) {
+            discount = parseFloat(maxDiscount);
+          }
+
+          if (discount > bestDiscount) {
+            bestDiscount = discount;
+            bestCampaign = campaign;
+          }
+        });
+
+        // İndirimli fiyatı hesapla
+        const unitDiscount = bestDiscount > 0 ? bestDiscount / quantity : 0;
+        const campaignPrice = bestDiscount > 0 ? itemPrice - unitDiscount : null;
+
+        return {
+          productId: item.productId,
+          variantId: item.variantId || null,
+          quantity: item.quantity,
+          // Kampanya bilgilerini ekle
+          ...(bestCampaign && {
+            campaignPrice: campaignPrice,
+            campaignId: bestCampaign.id,
+            campaignName: bestCampaign.name,
+          }),
+        };
+      });
 
       const orderData = {
         type: orderType,
@@ -243,7 +517,9 @@ function SiparisVer() {
               }`}
             />
             <p className="font-medium text-xs">Lieferung</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">{deliveryFee.toFixed(2)} €</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">
+              {isFreeShippingFinal ? 'Kostenlos' : `${deliveryFee.toFixed(2)} €`}
+            </p>
           </button>
 
           <button
@@ -548,15 +824,23 @@ function SiparisVer() {
             <span className="text-gray-600">Zwischensumme</span>
             <span className="text-gray-900">{subtotal.toFixed(2)} €</span>
           </div>
-          {discount > 0 && (
+          {campaignDiscount > 0 && (
+            <div className="flex justify-between text-xs text-green-600">
+              <span>Kampagnenrabatt</span>
+              <span>-{campaignDiscount.toFixed(2)} €</span>
+            </div>
+          )}
+          {couponDiscount > 0 && (
             <div className="flex justify-between text-xs text-green-600">
               <span>Gutscheinrabatt</span>
-              <span>-{discount.toFixed(2)} €</span>
+              <span>-{couponDiscount.toFixed(2)} €</span>
             </div>
           )}
           <div className="flex justify-between text-xs">
             <span className="text-gray-600">Liefergebühr</span>
-            <span className="text-gray-900">{deliveryFee.toFixed(2)} €</span>
+            <span className={isFreeShippingFinal ? "text-green-600 font-medium" : "text-gray-900"}>
+              {isFreeShippingFinal ? 'Kostenlos' : `${deliveryFee.toFixed(2)} €`}
+            </span>
           </div>
           <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-1.5">
             <span>Gesamt</span>

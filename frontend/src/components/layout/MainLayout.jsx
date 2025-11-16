@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { FaWhatsapp } from 'react-icons/fa';
 import Header from './Header';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
@@ -14,11 +15,13 @@ function MainLayout() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [whatsappSettings, setWhatsappSettings] = useState(null);
+  const [showWhatsAppButton, setShowWhatsAppButton] = useState(false);
 
   // Admin kontrolü
   const isAdmin = !!localStorage.getItem('adminToken');
 
-  // Bakım modu kontrolü
+  // Bakım modu ve WhatsApp ayarları kontrolü
   useEffect(() => {
     const checkMaintenanceMode = async () => {
       try {
@@ -34,6 +37,11 @@ function MainLayout() {
         } else {
           setMaintenanceMode(false);
         }
+
+        // WhatsApp ayarlarını yükle
+        if (settings?.whatsappSettings) {
+          setWhatsappSettings(settings.whatsappSettings);
+        }
       } catch (error) {
         console.error('Bakım modu kontrolü hatası:', error);
       } finally {
@@ -43,6 +51,33 @@ function MainLayout() {
 
     checkMaintenanceMode();
   }, []);
+
+  // WhatsApp butonunun gösterilip gösterilmeyeceğini kontrol et (saat bazlı)
+  useEffect(() => {
+    const checkWhatsAppButtonVisibility = () => {
+      if (!whatsappSettings || !whatsappSettings.enabled || !whatsappSettings.link) {
+        setShowWhatsAppButton(false);
+        return;
+      }
+
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const startTime = whatsappSettings.showStartTime || '00:00';
+      const endTime = whatsappSettings.showEndTime || '23:59';
+
+      // Saatleri karşılaştır
+      const isWithinTimeRange = currentTime >= startTime && currentTime <= endTime;
+      setShowWhatsAppButton(isWithinTimeRange);
+    };
+
+    checkWhatsAppButtonVisibility();
+    
+    // Her dakika kontrol et
+    const interval = setInterval(checkWhatsAppButtonVisibility, 60000);
+    
+    return () => clearInterval(interval);
+  }, [whatsappSettings]);
 
   // Kullanıcı giriş yaptığında favori durumunu yükle
   useEffect(() => {
@@ -161,6 +196,19 @@ function MainLayout() {
 
       <Footer />
       <BottomNav />
+
+      {/* WhatsApp Button - Sol alt köşe */}
+      {showWhatsAppButton && whatsappSettings?.link && (
+        <a
+          href={whatsappSettings.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-50 bg-green-500/90 backdrop-blur-sm hover:bg-green-600/90 text-white rounded-full p-3 md:p-4 shadow-lg transition-all duration-300 hover:scale-110"
+          aria-label="WhatsApp kontaktieren"
+        >
+          <FaWhatsapp className="w-5 h-5 md:w-7 md:h-7" />
+        </a>
+      )}
     </div>
   );
 }

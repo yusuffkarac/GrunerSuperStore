@@ -13,7 +13,7 @@ import { useAlert } from '../contexts/AlertContext';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Sepet Item Component
-function CartItem({ item, onRemove, onUpdateQuantity }) {
+function CartItem({ item, campaigns = [], onRemove, onUpdateQuantity }) {
   const navigate = useNavigate();
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -25,6 +25,95 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
   const favoriteIds = useFavoriteStore((state) => state.favoriteIds);
   const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
   const isProductFavorite = favoriteIds.includes(item.productId);
+
+  // Bu ürün için geçerli kampanyaları bul
+  const getApplicableCampaignsForItem = (item) => {
+    return campaigns.filter((campaign) => {
+      // FREE_SHIPPING kampanyaları ürün bazında değil
+      if (campaign.type === 'FREE_SHIPPING') return false;
+
+      // Tüm mağazaya uygulanan kampanyalar
+      if (campaign.applyToAll) return true;
+
+      // Ürüne özgü kampanyalar
+      if (campaign.productIds) {
+        const productIds = Array.isArray(campaign.productIds) ? campaign.productIds : [];
+        if (productIds.includes(item.productId)) return true;
+      }
+
+      return false;
+    });
+  };
+
+  // Tek kampanya için indirim hesapla
+  const calculateSingleCampaignDiscount = (price, quantity, campaign) => {
+    const { type, discountPercent, discountAmount, buyQuantity, getQuantity, maxDiscount } = campaign;
+    let discount = 0;
+
+    switch (type) {
+      case 'PERCENTAGE':
+        // Yüzde indirim: fiyat * miktar * yüzde
+        discount = price * quantity * (parseFloat(discountPercent) / 100);
+        break;
+
+      case 'FIXED_AMOUNT':
+        // Sabit tutar indirim: miktar ile çarp
+        discount = parseFloat(discountAmount) * quantity;
+        // İndirim toplam fiyattan fazla olamaz
+        discount = Math.min(discount, price * quantity);
+        break;
+
+      case 'BUY_X_GET_Y':
+        // X Al Y Öde kampanyası
+        if (quantity >= buyQuantity) {
+          const sets = Math.floor(quantity / buyQuantity);
+          const freeItems = buyQuantity - getQuantity;
+          const totalFreeItems = sets * freeItems;
+          discount = totalFreeItems * price;
+        }
+        break;
+
+      default:
+        discount = 0;
+    }
+
+    // Max indirim kontrolü (toplam indirim limiti)
+    if (maxDiscount && discount > parseFloat(maxDiscount)) {
+      discount = parseFloat(maxDiscount);
+    }
+
+    return discount;
+  };
+
+  // Bu ürün için indirim hesapla
+  const itemDiscount = (() => {
+    if (campaigns.length === 0) return { discount: 0, campaign: null };
+
+    const itemPrice = parseFloat(item.price);
+    const quantity = parseInt(item.quantity);
+    const applicableCampaigns = getApplicableCampaignsForItem(item);
+
+    if (applicableCampaigns.length === 0) return { discount: 0, campaign: null };
+
+    let bestDiscount = 0;
+    let bestCampaign = null;
+
+    applicableCampaigns.forEach((campaign) => {
+      const discount = calculateSingleCampaignDiscount(itemPrice, quantity, campaign);
+      if (discount > bestDiscount) {
+        bestDiscount = discount;
+        bestCampaign = campaign;
+      }
+    });
+
+    return { discount: bestDiscount, campaign: bestCampaign };
+  })();
+
+  const originalTotal = parseFloat(item.price) * item.quantity;
+  const discountedTotal = originalTotal - itemDiscount.discount;
+  const hasDiscount = itemDiscount.discount > 0;
+  const unitDiscount = hasDiscount ? itemDiscount.discount / item.quantity : 0;
+  const discountedUnitPrice = parseFloat(item.price) - unitDiscount;
 
   // İlk kaydırmada ipucu göster
   useEffect(() => {
@@ -248,9 +337,23 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
               {item.variantName}
             </p>
           )}
-          <p className="text-xs text-gray-500 mt-0.5">
-            {parseFloat(item.price).toFixed(2)} € {item.unit && `/ ${item.unit}`}
-          </p>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {hasDiscount ? (
+              <div className="flex items-center gap-1.5">
+                <span className="line-through text-gray-400">
+                  {parseFloat(item.price).toFixed(2)} €
+                </span>
+                <span className="text-green-600 font-semibold">
+                  {discountedUnitPrice.toFixed(2)} €
+                </span>
+                {item.unit && <span className="text-gray-500">/ {item.unit}</span>}
+              </div>
+            ) : (
+              <span>
+                {parseFloat(item.price).toFixed(2)} € {item.unit && `/ ${item.unit}`}
+              </span>
+            )}
+          </div>
 
           {/* Miktar kontrolü */}
           <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -293,9 +396,20 @@ function CartItem({ item, onRemove, onUpdateQuantity }) {
 
         {/* Toplam fiyat */}
         <div className="text-right flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <p className="font-bold text-base text-gray-900">
-            {(parseFloat(item.price) * item.quantity).toFixed(2)} €
-          </p>
+          {hasDiscount ? (
+            <div>
+              <p className="font-bold text-base text-gray-900 line-through text-gray-400">
+                {originalTotal.toFixed(2)} €
+              </p>
+              <p className="font-bold text-base text-green-600">
+                {discountedTotal.toFixed(2)} €
+              </p>
+            </div>
+          ) : (
+            <p className="font-bold text-base text-gray-900">
+              {originalTotal.toFixed(2)} €
+            </p>
+          )}
           <button
             onClick={() => onRemove(item.productId, item.variantId)}
             className="text-red-500 mt-1 hover:text-red-700 p-1.5 rounded-full hover:bg-red-50 transition-colors"
@@ -389,12 +503,15 @@ function Sepet() {
 
     switch (type) {
       case 'PERCENTAGE':
-        discount = price * (parseFloat(discountPercent) / 100);
+        // Yüzde indirim: fiyat * miktar * yüzde
+        discount = price * quantity * (parseFloat(discountPercent) / 100);
         break;
 
       case 'FIXED_AMOUNT':
-        discount = parseFloat(discountAmount);
-        discount = Math.min(discount, price);
+        // Sabit tutar indirim: miktar ile çarp
+        discount = parseFloat(discountAmount) * quantity;
+        // İndirim toplam fiyattan fazla olamaz
+        discount = Math.min(discount, price * quantity);
         break;
 
       case 'BUY_X_GET_Y':
@@ -411,7 +528,7 @@ function Sepet() {
         discount = 0;
     }
 
-    // Max indirim kontrolü
+    // Max indirim kontrolü (toplam indirim limiti)
     if (maxDiscount && discount > parseFloat(maxDiscount)) {
       discount = parseFloat(maxDiscount);
     }
@@ -666,6 +783,7 @@ function Sepet() {
             <CartItem
               key={`${item.productId}-${item.variantId || 'no-variant'}`}
               item={item}
+              campaigns={campaigns}
               onRemove={handleRemoveItem}
               onUpdateQuantity={handleUpdateQuantity}
             />
@@ -722,11 +840,15 @@ function Sepet() {
             <div className="space-y-0.5">
               {discountDetails.map((detail, index) => (
                 <div key={index} className="flex items-center justify-between text-red-600">
-                  <div className="flex items-center gap-1">
-                    <FiTag className="w-3 h-3" />
-                    <span className="text-xs">{detail.campaignName}</span>
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <FiTag className="w-3 h-3 flex-shrink-0" />
+                    <span className="text-xs truncate">
+                      {detail.campaignName} - {detail.productName}
+                    </span>
                   </div>
-                  <span className="text-xs font-semibold">-{detail.discount.toFixed(2)} €</span>
+                  <span className="text-xs font-semibold flex-shrink-0 ml-2">
+                    -{detail.discount.toFixed(2)} €
+                  </span>
                 </div>
               ))}
             </div>

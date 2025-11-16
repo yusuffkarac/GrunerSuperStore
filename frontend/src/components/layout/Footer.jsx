@@ -8,12 +8,36 @@ function Footer() {
   const [footerData, setFooterData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(null);
+  const [logo, setLogo] = useState('/logo.png');
   const navigate = useNavigate();
   const { openSettings } = useCookieConsent();
 
   useEffect(() => {
     fetchFooterData();
+    loadLogo();
   }, []);
+
+  const loadLogo = async () => {
+    try {
+      const response = await settingsService.getSettings();
+      const settings = response.data?.settings;
+
+      if (settings?.storeSettings?.logo) {
+        const API_BASE = import.meta.env.VITE_API_URL
+          ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL.slice(0, -4) : import.meta.env.VITE_API_URL)
+          : (import.meta.env.DEV ? 'http://localhost:5001' : '');
+        const logoUrl = settings.storeSettings.logo.startsWith('http')
+          ? settings.storeSettings.logo
+          : `${API_BASE}${settings.storeSettings.logo}`;
+        setLogo(logoUrl);
+      } else {
+        setLogo('/logo.png');
+      }
+    } catch (error) {
+      console.error('Logo yüklenirken hata:', error);
+      setLogo('/logo.png');
+    }
+  };
 
   const fetchFooterData = async () => {
     try {
@@ -58,67 +82,93 @@ function Footer() {
     return (
       <footer className="bg-gray-100 border-t border-gray-200 mt-auto">
         <div className="container-mobile py-8">
-          {/* Logo ve açıklama */}
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-primary-700 mb-2">Gruner SuperStore</h2>
+          {/* Logo ve Linkler - Yan yana */}
+          <div className="flex flex-col md:flex-row gap-8 md:gap-24 mb-8 items-start">
+            {/* Logo */}
+            <div className="flex-shrink-0 md:pt-2">
+              <Link
+                to="/"
+                className="flex items-center"
+                aria-label="Ana Sayfa"
+              >
+                <img
+                  src={logo}
+                  alt="Gruner SuperStore"
+                  className="h-24 md:h-28 w-auto object-contain"
+                  onError={(e) => { e.target.src = '/logo.png'; }}
+                />
+              </Link>
+            </div>
+
+            {/* Açıklama ve Linkler */}
+            <div className="flex-1 w-full">
+              {/* Açıklama */}
+              <div className="mb-6 text-center md:text-left">
             <p className="text-sm text-gray-600">
               Online-Bestellung für Ihre Lieblings-Lebensmittel
             </p>
           </div>
 
           {/* Linkler */}
-          <div className="grid grid-cols-2 gap-8 mb-6">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Schnelllinks</h3>
-              <ul className="space-y-2 text-sm">
+              <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-8 justify-items-center md:justify-items-start">
+                <div className="min-w-0 text-center md:text-left">
+                  <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Schnelllinks</h3>
+                  <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm">
                 <li>
-                  <Link to="/produkte" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/produkte" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Produkte
                   </Link>
                 </li>
                 <li>
-                  <Link to="/favoriten" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/favoriten" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Favoriten
                   </Link>
                 </li>
                 <li>
-                  <Link to="/meine-bestellungen" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/meine-bestellungen" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Bestellungen
                   </Link>
                 </li>
               </ul>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Konto</h3>
-              <ul className="space-y-2 text-sm">
+                <div className="min-w-0 text-center md:text-left">
+                  <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Konto</h3>
+                  <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm">
                 <li>
-                  <Link to="/profil" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/profil" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Profil
                   </Link>
                 </li>
                 <li>
-                  <Link to="/anmelden" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/anmelden" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Anmelden
                   </Link>
                 </li>
                 <li>
-                  <Link to="/registrieren" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/registrieren" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     Registrieren
                   </Link>
                 </li>
               </ul>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Hilfe</h3>
-              <ul className="space-y-2 text-sm">
+                <div className="min-w-0 text-center md:text-left">
+                  <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">Hilfe</h3>
+                  <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm">
                 <li>
-                  <Link to="/faq" className="text-gray-600 hover:text-primary-700">
+                    <Link to="/faq" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
                     FAQ
                   </Link>
                 </li>
+                <li>
+                    <Link to="/kontakt" className="text-gray-600 hover:text-primary-700 transition-colors duration-200">
+                    Kontakt
+                  </Link>
+                </li>
               </ul>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -137,7 +187,7 @@ function Footer() {
         </div>
 
         {/* Bottom Nav için boşluk (mobil) */}
-        <div className="h-16 md:hidden"></div>
+        <div className="h-20 md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}></div>
       </footer>
     );
   }
@@ -146,17 +196,35 @@ function Footer() {
     <>
       <footer className="bg-gray-100 border-t border-gray-200 mt-auto">
         <div className="container-mobile py-8">
+          {/* Logo ve Footer Blöcke - Yan yana */}
+          <div className="flex flex-col md:flex-row gap-8 md:gap-24 mb-8 items-start">
+            {/* Logo */}
+            <div className="flex-shrink-0 md:pt-2" style={{ alignSelf: 'center' }}>
+              <Link
+                to="/"
+                className="flex items-center"
+                aria-label="Ana Sayfa"
+              >
+                <img
+                  src={logo}
+                  alt="Gruner SuperStore"
+                  className="h-24 md:h-28 w-auto object-contain"
+                  onError={(e) => { e.target.src = '/logo.png'; }}
+                />
+              </Link>
+            </div>
+
           {/* Footer Blöcke */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-8 flex-1 w-full justify-items-center md:justify-items-start">
             {footerData.blocks.map((block) => (
-              <div key={block.id}>
-                <h3 className="font-semibold text-gray-900 mb-3">{block.title}</h3>
-                <ul className="space-y-2 text-sm">
+              <div key={block.id} className="min-w-0 text-center md:text-left">
+                <h3 className="font-semibold text-gray-900 mb-3 md:mb-4 text-sm md:text-base">{block.title}</h3>
+                <ul className="space-y-2 md:space-y-2.5 text-xs md:text-sm">
                   {block.items.map((item) => (
                     <li key={item.id}>
                       <button
                         onClick={() => handleLinkClick(item)}
-                        className="text-gray-600 hover:text-primary-700 text-left"
+                        className="text-gray-600 hover:text-primary-700 text-center md:text-left transition-colors duration-200"
                       >
                         {item.title}
                       </button>
@@ -165,6 +233,7 @@ function Footer() {
                 </ul>
               </div>
             ))}
+            </div>
           </div>
 
           {/* Copyright ve Cookie Link */}
@@ -182,7 +251,7 @@ function Footer() {
         </div>
 
         {/* Bottom Nav için boşluk (mobil) */}
-        <div className="h-16 md:hidden"></div>
+        <div className="h-20 md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}></div>
       </footer>
 
       {/* Popup Modal */}

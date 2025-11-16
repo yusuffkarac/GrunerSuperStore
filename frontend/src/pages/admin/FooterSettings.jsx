@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { HiRefresh, HiDownload, HiUpload } from 'react-icons/hi';
+import { FiSave, FiRefreshCw } from 'react-icons/fi';
+import { HiDownload, HiUpload } from 'react-icons/hi';
 import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -32,6 +33,9 @@ function FooterSettings() {
     confirmText: 'OK',
     cancelText: 'Abbrechen',
   });
+
+  // Modal scroll yönetimi
+  useModalScroll(showItemModal || showImportModal || confirmDialog.isOpen);
 
   // Ayarları yükle
   useEffect(() => {
@@ -332,9 +336,9 @@ function FooterSettings() {
         <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={handleAddBlock}
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-2 text-sm sm:text-base"
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
           >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             <span className="hidden sm:inline">Block hinzufügen</span>
@@ -368,27 +372,22 @@ function FooterSettings() {
           <button
             onClick={handleResetToDefaults}
             disabled={resetting}
-            className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
-            title="Auf Standardeinstellungen zurücksetzen"
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
           >
-            <HiRefresh className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{resetting ? 'Zurücksetzen...' : 'Zurücksetzen'}</span>
-            <span className="sm:hidden">{resetting ? '...' : 'Reset'}</span>
+            <FiRefreshCw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Zurücksetzen</span>
+            <span className="sm:hidden">Reset</span>
           </button>
 
-          <div className="ml-auto">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2 sm:px-8 sm:py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm sm:text-base"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="hidden sm:inline">{saving ? 'Wird gespeichert...' : 'Änderungen speichern'}</span>
-              <span className="sm:hidden">{saving ? 'Speichern...' : 'Speichern'}</span>
-            </button>
-          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+          >
+            <FiSave className="w-4 h-4" />
+            <span className="hidden sm:inline">{saving ? 'Wird gespeichert...' : 'Speichern'}</span>
+            <span className="sm:hidden">{saving ? '...' : 'Save'}</span>
+          </button>
         </div>
 
         {/* Blöcke */}

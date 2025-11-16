@@ -419,14 +419,78 @@ function SiparisDetay() {
                     {item.variantName}
                   </p>
                 )}
-                <p className="text-xs text-gray-500">
-                  {parseFloat(item.price).toFixed(2)} € × {item.quantity}
-                </p>
+                {(() => {
+                  const hasDiscount = item.originalPrice && parseFloat(item.originalPrice) > parseFloat(item.price);
+                  const unitPrice = parseFloat(item.price);
+                  const originalUnitPrice = item.originalPrice ? parseFloat(item.originalPrice) : null;
+                  const totalPrice = unitPrice * item.quantity;
+                  const originalTotalPrice = originalUnitPrice ? originalUnitPrice * item.quantity : null;
+                  const discountAmount = originalTotalPrice ? originalTotalPrice - totalPrice : 0;
+                  const discountPercent = originalUnitPrice ? ((discountAmount / originalTotalPrice) * 100).toFixed(0) : 0;
+
+                  return (
+                    <>
+                      {hasDiscount && item.campaignName && (
+                        <div className="mt-1 mb-1.5 p-1.5 bg-green-50 border border-green-200 rounded text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-green-700 font-semibold">🎁 {item.campaignName}</span>
+                          </div>
+                          <div className="mt-1 text-green-600">
+                            <span className="font-medium">-{discountPercent}% Rabatt</span>
+                            <span className="ml-2">({discountAmount.toFixed(2)} € gespart)</span>
+                          </div>
+                        </div>
+                      )}
+                      {!hasDiscount && item.campaignName && (
+                        <p className="text-xs text-gray-500 mt-0.5 italic mb-1">
+                          Kampagne: {item.campaignName}
+                        </p>
+                      )}
+                      <div className="text-xs text-gray-500">
+                        {hasDiscount ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="line-through text-gray-400">
+                                Original: {item.quantity}x {originalUnitPrice.toFixed(2)} €
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-600 font-semibold">
+                                Reduziert: {item.quantity}x {unitPrice.toFixed(2)} €
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span>{item.quantity}x {unitPrice.toFixed(2)} €</span>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="flex-shrink-0">
-                <p className="font-semibold text-gray-900 text-sm whitespace-nowrap">
-                  {(parseFloat(item.price) * item.quantity).toFixed(2)} €
-                </p>
+                {(() => {
+                  const hasDiscount = item.originalPrice && parseFloat(item.originalPrice) > parseFloat(item.price);
+                  const unitPrice = parseFloat(item.price);
+                  const originalUnitPrice = item.originalPrice ? parseFloat(item.originalPrice) : null;
+                  const totalPrice = unitPrice * item.quantity;
+                  const originalTotalPrice = originalUnitPrice ? originalUnitPrice * item.quantity : null;
+
+                  return hasDiscount ? (
+                    <div className="text-right space-y-0.5">
+                      <div className="line-through text-gray-400 text-xs">
+                        {originalTotalPrice.toFixed(2)} €
+                      </div>
+                      <p className="font-bold text-green-600 text-sm whitespace-nowrap">
+                        {totalPrice.toFixed(2)} €
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="font-semibold text-gray-900 text-sm whitespace-nowrap">
+                      {totalPrice.toFixed(2)} €
+                    </p>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -434,14 +498,77 @@ function SiparisDetay() {
 
         {/* Toplam */}
         <div className="mt-5 pt-4 border-t border-gray-200 space-y-2.5">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Zwischensumme</span>
-            <span className="text-gray-900 font-medium">{parseFloat(order.subtotal).toFixed(2)} €</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Liefergebühr</span>
-            <span className="text-gray-900 font-medium">{parseFloat(order.deliveryFee).toFixed(2)} €</span>
-          </div>
+          {(() => {
+            // Toplam kampanya indirimini hesapla
+            const campaignDiscount = order.orderItems?.reduce((total, item) => {
+              if (item.originalPrice && parseFloat(item.originalPrice) > parseFloat(item.price)) {
+                const itemDiscount = (parseFloat(item.originalPrice) - parseFloat(item.price)) * item.quantity;
+                return total + itemDiscount;
+              }
+              return total;
+            }, 0) || 0;
+
+            // Kupon indirimi
+            const couponDiscount = parseFloat(order.discount || 0);
+
+            // Toplam indirim
+            const totalDiscount = campaignDiscount + couponDiscount;
+
+            // Orijinal subtotal (kampanya indirimsiz)
+            const originalSubtotal = order.orderItems?.reduce((total, item) => {
+              const itemPrice = item.originalPrice ? parseFloat(item.originalPrice) : parseFloat(item.price);
+              return total + (itemPrice * item.quantity);
+            }, 0) || parseFloat(order.subtotal);
+
+            return (
+              <>
+                {totalDiscount > 0 && (
+                  <div className="mb-3 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-sm font-semibold text-green-700">Gesamtrabatt</span>
+                      <span className="text-lg font-bold text-green-600">-{totalDiscount.toFixed(2)} €</span>
+                    </div>
+                    {campaignDiscount > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 mt-1">
+                        <span>Kampagnenrabatt:</span>
+                        <span>-{campaignDiscount.toFixed(2)} €</span>
+                      </div>
+                    )}
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 mt-0.5">
+                        <span>Gutscheinrabatt:</span>
+                        <span>-{couponDiscount.toFixed(2)} €</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Zwischensumme</span>
+                  <div className="text-right">
+                    {totalDiscount > 0 && originalSubtotal > parseFloat(order.subtotal) ? (
+                      <div>
+                        <span className="line-through text-gray-400 text-xs mr-2">
+                          {originalSubtotal.toFixed(2)} €
+                        </span>
+                        <span className="text-gray-900 font-medium">{parseFloat(order.subtotal).toFixed(2)} €</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-900 font-medium">{parseFloat(order.subtotal).toFixed(2)} €</span>
+                    )}
+                  </div>
+                </div>
+                {order.couponCode && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Gutschein: {order.couponCode}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Liefergebühr</span>
+                  <span className="text-gray-900 font-medium">{parseFloat(order.deliveryFee).toFixed(2)} €</span>
+                </div>
+              </>
+            );
+          })()}
           <div className="flex justify-between text-lg font-bold pt-3 mt-3 border-t border-gray-200">
             <span className="text-gray-900">Gesamt</span>
             <span className="text-green-600">{parseFloat(order.total).toFixed(2)} €</span>

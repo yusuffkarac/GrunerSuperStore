@@ -35,6 +35,7 @@ class SettingsController {
       customerCancellationSettings,
       footerSettings,
       cookieSettings,
+      whatsappSettings,
     } = req.body;
 
     const settings = await settingsService.updateSettings({
@@ -56,6 +57,7 @@ class SettingsController {
       customerCancellationSettings,
       footerSettings,
       cookieSettings,
+      whatsappSettings,
     });
 
     // Log kaydı - hangi ayarların değiştiğini belirle

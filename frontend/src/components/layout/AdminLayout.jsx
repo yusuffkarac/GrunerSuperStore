@@ -50,7 +50,10 @@ function AdminLayout() {
   });
   const [hoveredMenuItem, setHoveredMenuItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [hoveredTopMenuItem, setHoveredTopMenuItem] = useState(null);
+  const [topTooltipPosition, setTopTooltipPosition] = useState({ top: 0, left: 0 });
   const menuItemRefs = useRef({});
+  const topMenuBarRef = useRef(null);
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [logo, setLogo] = useState('/logo.png');
@@ -245,15 +248,20 @@ function AdminLayout() {
     checkPageAccess(admin, location.pathname);
   }, [location.pathname, admin, loading, checkPageAccess]);
 
+  // Sayfa değiştiğinde hover state'ini temizle
+  useEffect(() => {
+    setHoveredTopMenuItem(null);
+  }, [location.pathname]);
+
   // Üst menü öğeleri (soldan sağa sıralama)
   const topMenuItems = [
-    { path: '/admin/tasks', label: 'Görevler', icon: FiCheckSquare, permission: 'product_management_view', isAction: false }, // En solda
-    { path: '/admin/users', label: 'Kullanıcılar', icon: FiUsers, permission: 'user_management_view', isAction: false },
+    { path: '/admin/tasks', label: 'Aufgaben', icon: FiCheckSquare, permission: 'product_management_view', isAction: false }, // En solda
+    { path: '/admin/users', label: 'Benutzer', icon: FiUsers, permission: 'user_management_view', isAction: false },
     { path: '/admin/admins', label: 'Administratoren', icon: FiLock, permission: 'admin_management', superAdminOnly: true, isAction: false },
-    { path: '/admin/activity-logs', label: 'Logs', icon: FiClock, permission: 'admin_management', superAdminOnly: true, isAction: false },
-    { path: '/admin/notifications', label: 'Bildirim', icon: FiBell, permission: 'notification_management_view', isAction: false },
+    { path: '/admin/activity-logs', label: 'Protokolle', icon: FiClock, permission: 'admin_management', superAdminOnly: true, isAction: false },
+    { path: '/admin/notifications', label: 'Benachrichtigungen', icon: FiBell, permission: 'notification_management_view', isAction: false },
     { path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, permission: 'settings_view', isAction: false },
-    { path: null, label: 'Çıkış', icon: FiLogOut, permission: null, isAction: true }, // Logout action
+    { path: null, label: 'Abmelden', icon: FiLogOut, permission: null, isAction: true }, // Logout action
     { path: '/admin/help', label: 'Hilfe', icon: FiHelpCircle, permission: null, isAction: false }, // En sağda
   ];
 
@@ -272,7 +280,7 @@ function AdminLayout() {
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
     { path: '/admin/seiteneinstellungen', label: 'Seiteneinstellungen', icon: FiSettings, permission: 'settings_view' },
     { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
-    { path: '/admin/magazines', label: 'Wöchentliche Magazine', icon: HiNewspaper, permission: 'magazine_management_view' },
+    { path: '/admin/magazines', label: 'Wöchentliche Prospekte', icon: HiNewspaper, permission: 'magazine_management_view' },
     // Eski route'lar - geriye dönük uyumluluk için
     { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view', hidden: true },
     { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view', hidden: true },
@@ -375,7 +383,7 @@ function AdminLayout() {
   return (
     <div className="admin-layout h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* Top Menu Bar - Desktop */}
-      <div className="hidden lg:flex bg-white shadow-sm border-b px-6 py-3 flex-shrink-0 items-center justify-between">
+      <div ref={topMenuBarRef} className="hidden lg:flex bg-white shadow-sm border-b px-6 py-3 flex-shrink-0 items-center justify-between relative">
         <div className="flex items-center gap-3">
         <div className={`hidden lg:flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} mb-0`}>
               <button
@@ -397,44 +405,106 @@ function AdminLayout() {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <NotificationBell />
+          <div
+            className="relative"
+            onMouseEnter={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+
+              setTopTooltipPosition({
+                top: rect.bottom + 8,
+                left: rect.left + (rect.width / 2)
+              });
+              setHoveredTopMenuItem('notifications');
+            }}
+            onMouseLeave={() => setHoveredTopMenuItem(null)}
+          >
+            <NotificationBell />
+          </div>
           {filteredTopMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = !item.isAction && location.pathname === item.path;
+            const itemKey = item.path || item.label;
 
             if (item.isAction) {
               return (
-                <button
+                <div
                   key={item.label}
-                  onClick={handleLogout}
-                  className="p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  title={item.label}
+                  className="relative"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+
+                    setTopTooltipPosition({
+                      top: rect.bottom + 8,
+                      left: rect.left + (rect.width / 2)
+                    });
+                    setHoveredTopMenuItem(item.label);
+                  }}
+                  onMouseLeave={() => setHoveredTopMenuItem(null)}
                 >
-                  <Icon size={20} />
-                </button>
+                  <button
+                    onClick={() => {
+                      setHoveredTopMenuItem(null);
+                      handleLogout();
+                    }}
+                    className="p-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Icon size={20} />
+                  </button>
+                </div>
               );
             }
 
             return (
-              <Link
+              <div
                 key={item.path}
-                to={item.path}
-                className={`p-2 rounded-lg transition-colors ${
-                  isActive
-                    ? ''
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                style={isActive ? {
-                  backgroundColor: themeColors?.primary?.[50] || '#f0fdf4',
-                  color: themeColors?.primary?.[600] || '#16a34a'
-                } : {}}
-                title={item.label}
+                className="relative"
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+
+                  setTopTooltipPosition({
+                    top: rect.bottom + 8,
+                    left: rect.left + (rect.width / 2)
+                  });
+                  setHoveredTopMenuItem(itemKey);
+                }}
+                onMouseLeave={() => setHoveredTopMenuItem(null)}
               >
-                <Icon size={20} />
-              </Link>
+                <Link
+                  to={item.path}
+                  onClick={() => setHoveredTopMenuItem(null)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isActive
+                      ? ''
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  style={isActive ? {
+                    color: themeColors?.primary?.[600] || '#16a34a'
+                  } : {}}
+                >
+                  <Icon size={20} />
+                </Link>
+              </div>
             );
           })}
         </div>
+        
+        {/* Top Menu Tooltip */}
+        {hoveredTopMenuItem && (
+          <div 
+            className="hidden lg:block fixed z-[9999] pointer-events-none -translate-x-1/2"
+            style={{
+              left: `${topTooltipPosition.left}px`,
+              top: `${topTooltipPosition.top}px`
+            }}
+          >
+            <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl whitespace-nowrap relative">
+              {hoveredTopMenuItem === 'notifications' 
+                ? 'Benachrichtigungen'
+                : filteredTopMenuItems.find(item => (item.path || item.label) === hoveredTopMenuItem)?.label}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Header */}
@@ -474,7 +544,6 @@ function AdminLayout() {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                   style={isActive ? {
-                    backgroundColor: themeColors?.primary?.[50] || '#f0fdf4',
                     color: themeColors?.primary?.[600] || '#16a34a'
                   } : {}}
                   title={item.label}

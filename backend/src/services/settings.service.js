@@ -93,6 +93,12 @@ class SettingsService {
           footerSettings: {
             blocks: [],
           },
+          whatsappSettings: {
+            enabled: false,
+            link: '',
+            showStartTime: '09:00',
+            showEndTime: '18:00',
+          },
         },
       });
     }
@@ -158,6 +164,9 @@ class SettingsService {
     }
     if (data.cookieSettings !== undefined) {
       updateData.cookieSettings = data.cookieSettings;
+    }
+    if (data.whatsappSettings !== undefined) {
+      updateData.whatsappSettings = data.whatsappSettings;
     }
     if (data.emailTemplates !== undefined) {
       updateData.emailTemplates = data.emailTemplates;
@@ -243,6 +252,12 @@ class SettingsService {
           },
           footerSettings: data.footerSettings ?? {
             blocks: [],
+          },
+          whatsappSettings: data.whatsappSettings ?? {
+            enabled: false,
+            link: '',
+            showStartTime: '09:00',
+            showEndTime: '18:00',
           },
         },
       });

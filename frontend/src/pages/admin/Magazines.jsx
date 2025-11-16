@@ -53,8 +53,8 @@ const Magazines = () => {
       
       setActiveTodayCount(activeToday.length);
     } catch (error) {
-      console.error('Fehler beim Laden der Magazine:', error);
-      toast.error('Fehler beim Laden der Magazine');
+      console.error('Fehler beim Laden der Prospekte:', error);
+      toast.error('Fehler beim Laden der Prospekte');
     } finally {
       setLoading(false);
     }
@@ -108,10 +108,10 @@ const Magazines = () => {
 
       if (editingMagazine) {
         await magazineService.updateMagazine(editingMagazine.id, submitData);
-        toast.success('Magazin erfolgreich aktualisiert');
+        toast.success('Prospekt erfolgreich aktualisiert');
       } else {
         await magazineService.createMagazine(submitData);
-        toast.success('Magazin erfolgreich erstellt');
+        toast.success('Prospekt erfolgreich erstellt');
       }
 
       setShowModal(false);
@@ -136,15 +136,15 @@ const Magazines = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Möchten Sie dieses Magazin wirklich löschen?')) return;
+    if (!window.confirm('Möchten Sie diesen Prospekt wirklich löschen?')) return;
 
     try {
       await magazineService.deleteMagazine(id);
-      toast.success('Magazin erfolgreich gelöscht');
+      toast.success('Prospekt erfolgreich gelöscht');
       loadMagazines();
     } catch (error) {
       console.error('Fehler:', error);
-      toast.error('Fehler beim Löschen des Magazins');
+      toast.error('Fehler beim Löschen des Prospekts');
     }
   };
 
@@ -204,8 +204,8 @@ const Magazines = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8 px-4 md:px-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Wöchentliche Magazine</h1>
-          <p className="mt-2 text-sm md:text-base text-gray-600">Verwalten Sie PDF-Magazine mit Flipbook-Ansicht</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Wöchentliche Prospekte</h1>
+          <p className="mt-2 text-sm md:text-base text-gray-600">Verwalten Sie PDF-Prospekte mit Flipbook-Ansicht</p>
           
           {/* Uyarı: Bugün için 2+ aktif dergi varsa */}
           {activeTodayCount >= 2 && (
@@ -213,10 +213,10 @@ const Magazines = () => {
               <HiExclamation className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-yellow-800">
-                  Mehrere aktive Magazine heute
+                  Mehrere aktive Prospekte heute
                 </h3>
                 <p className="text-xs md:text-sm text-yellow-700 mt-1">
-                  Es sind heute {activeTodayCount} aktive Magazine aktiv. Benutzer sehen beim Klick auf das Magazin-Symbol eine Auswahl.
+                  Es sind heute {activeTodayCount} aktive Prospekte aktiv. Benutzer sehen beim Klick auf das Prospekt-Symbol eine Auswahl.
                 </p>
               </div>
             </div>
@@ -233,7 +233,7 @@ const Magazines = () => {
             className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm md:text-base"
           >
             <HiPlus className="mr-2" />
-            Neues Magazin
+            Neues Prospekt
           </button>
         </div>
 
@@ -245,7 +245,7 @@ const Magazines = () => {
           </div>
         ) : magazines.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-500">Keine Magazine vorhanden</p>
+            <p className="text-gray-500">Keine Prospekte vorhanden</p>
           </div>
         ) : (
           <>
@@ -412,10 +412,10 @@ const Magazines = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">
-                      {editingMagazine ? 'Magazin bearbeiten' : 'Neues Magazin erstellen'}
+                      {editingMagazine ? 'Prospekt bearbeiten' : 'Neues Prospekt erstellen'}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
-                      {editingMagazine ? 'Magazin-Informationen aktualisieren' : 'Erstellen Sie ein neues PDF-Magazin'}
+                      {editingMagazine ? 'Prospekt-Informationen aktualisieren' : 'Erstellen Sie ein neues PDF-Prospekt'}
                     </p>
                   </div>
                   <button
@@ -557,10 +557,10 @@ const Magazines = () => {
                       />
                       <div className="ml-3">
                         <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">
-                          Magazin aktiv schalten
+                          Prospekt aktiv schalten
                         </span>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Aktive Magazine werden auf der Website angezeigt
+                          Aktive Prospekte werden auf der Website angezeigt
                         </p>
                       </div>
                     </label>

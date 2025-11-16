@@ -225,53 +225,58 @@ function HomePageSettings() {
     <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="mb-6">
-          <div className="mb-4 md:mb-0">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              Homepage-Einstellungen
-              <HelpTooltip content="Passen Sie Ihre Startseite an: Slider-Bilder, Willkommenstexte, Slogan und hervorgehobene Kategorien bearbeiten." />
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Verwalten Sie die Texte und Inhalte der Startseite
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 md:mt-0 md:justify-end">
-            <button
-              onClick={handleExport}
-              className="w-full sm:w-auto px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm"
-              title="Homepage-Einstellungen exportieren"
-            >
-              <HiDownload className="w-4 h-4" />
-              <span className="hidden sm:inline">Exportieren</span>
-              <span className="sm:hidden">Export</span>
-            </button>
-            <label className="w-full sm:w-auto px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5 text-xs sm:text-sm cursor-pointer">
-              <HiUpload className="w-4 h-4" />
-              <span className="hidden sm:inline">Importieren</span>
-              <span className="sm:hidden">Import</span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </label>
-            <button
-              onClick={handleReset}
-              className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
-            >
-              <FiRefreshCw className="w-4 h-4" />
-              Zurücksetzen
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              <FiSave className="w-4 h-4" />
-              {saving ? 'Wird gespeichert...' : 'Speichern'}
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Homepage-Einstellungen
+            <HelpTooltip content="Passen Sie Ihre Startseite an: Slider-Bilder, Willkommenstexte, Slogan und hervorgehobene Kategorien bearbeiten." />
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Verwalten Sie die Texte und Inhalte der Startseite
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
+          <button
+            onClick={handleExport}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+            title="Homepage-Einstellungen exportieren"
+          >
+            <HiDownload className="w-4 h-4" />
+            <span className="hidden sm:inline">Exportieren</span>
+            <span className="sm:hidden">Export</span>
+          </button>
+          <label className="px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer">
+            <HiUpload className="w-4 h-4" />
+            <span className="hidden sm:inline">Importieren</span>
+            <span className="sm:hidden">Import</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={handleReset}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+          >
+            <FiRefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Zurücksetzen</span>
+            <span className="sm:hidden">Reset</span>
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+          >
+            <FiSave className="w-4 h-4" />
+            <span className="hidden sm:inline">{saving ? 'Wird gespeichert...' : 'Speichern'}</span>
+            <span className="sm:hidden">{saving ? '...' : 'Save'}</span>
+          </button>
         </div>
 
         {/* Hero Section */}

@@ -734,7 +734,7 @@ function Campaigns() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Mindestbestellwert (€)
+                        Mindestbestellwert (€) *
                       </label>
                       <input
                         type="number"
@@ -743,12 +743,13 @@ function Campaigns() {
                         inputMode="decimal"
                         value={formData.minPurchase}
                         onChange={(e) => setFormData({ ...formData, minPurchase: e.target.value })}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Max. Rabatt (€)
+                        Max. Rabatt (€) *
                       </label>
                       <input
                         type="number"
@@ -757,12 +758,13 @@ function Campaigns() {
                         inputMode="decimal"
                         value={formData.maxDiscount}
                         onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nutzungslimit
+                        Nutzungslimit *
                       </label>
                       <input
                         type="number"
@@ -770,18 +772,20 @@ function Campaigns() {
                         inputMode="numeric"
                         value={formData.usageLimit}
                         onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Priorität
+                        Priorität *
                       </label>
                       <input
                         type="number"
                         inputMode="numeric"
                         value={formData.priority}
                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
                     </div>

@@ -140,7 +140,7 @@ function CookieConsent() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 z-[999999] px-3 pb-[20%] md:px-4 md:pb-6"
+            className="fixed bottom-0 left-0 right-0 z-[999999] px-3 pb-20 md:px-4 md:pb-6"
           >
             <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-4xl mx-auto p-3 md:p-6 max-h-[85vh] md:max-h-none overflow-y-auto">
               <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
@@ -215,7 +215,7 @@ function CookieConsent() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-2 md:p-4"
+              className="fixed inset-0 z-[9999999] flex items-end md:items-center justify-center p-0 md:p-4"
               onClick={(e) => {
                 // Sadece backdrop'a (modal dışına) tıklandığında kapat
                 if (e.target === e.currentTarget) {
@@ -224,33 +224,33 @@ function CookieConsent() {
               }}
             >
               <div 
-                className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col"
+                className="bg-white rounded-t-xl md:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header */}
-                <div className="p-4 md:p-6 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                {/* Header - Sticky */}
+                <div className="sticky top-0 bg-white z-10 p-3 md:p-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-base md:text-xl font-bold text-gray-900 pr-2">
                     {cookieSettings.settingsTitle}
                   </h3>
                   <button
                     onClick={closeSettings}
-                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
+                    className="p-2 md:p-2.5 text-gray-400 hover:text-gray-600 active:text-gray-800 rounded-lg transition-colors flex-shrink-0 touch-manipulation"
                     aria-label="Schließen"
                   >
-                    <FiX size={20} className="md:w-6 md:h-6" />
+                    <FiX size={24} className="md:w-6 md:h-6" />
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-4 md:p-6 overflow-y-auto flex-1">
-                  <p className="text-xs md:text-sm text-gray-600 mb-4 md:mb-6">
+                {/* Content - Scrollable */}
+                <div className="p-3 md:p-6 overflow-y-auto flex-1 overscroll-contain">
+                  <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-6">
                     {cookieSettings.settingsDescription}
                   </p>
 
-                  <div className="space-y-3 md:space-y-4">
+                  <div className="space-y-2.5 md:space-y-4">
                     {/* Gerekli Çerezler */}
-                    <div className="border border-gray-200 rounded-lg p-3 md:p-4">
-                      <div className="flex items-start justify-between gap-3 md:gap-4">
+                    <div className="border border-gray-200 rounded-lg p-2.5 md:p-4">
+                      <div className="flex items-start justify-between gap-2.5 md:gap-4">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">
                             {cookieSettings.necessaryTitle}
@@ -268,8 +268,8 @@ function CookieConsent() {
                     </div>
 
                     {/* Analitik Çerezler */}
-                    <div className="border border-gray-200 rounded-lg p-3 md:p-4">
-                      <div className="flex items-start justify-between gap-3 md:gap-4">
+                    <div className="border border-gray-200 rounded-lg p-2.5 md:p-4">
+                      <div className="flex items-start justify-between gap-2.5 md:gap-4">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">
                             {cookieSettings.analyticsTitle}
@@ -281,7 +281,7 @@ function CookieConsent() {
                         <div className="flex-shrink-0">
                           <button
                             onClick={() => handleTogglePreference(COOKIE_CATEGORIES.ANALYTICS)}
-                            className={`relative w-11 h-6 md:w-12 md:h-6 rounded-full transition-colors ${
+                            className={`relative w-11 h-6 md:w-12 md:h-6 rounded-full transition-colors touch-manipulation ${
                               preferences.analytics ? 'bg-primary-600' : 'bg-gray-300'
                             }`}
                           >
@@ -297,8 +297,8 @@ function CookieConsent() {
                     </div>
 
                     {/* Pazarlama Çerezleri */}
-                    <div className="border border-gray-200 rounded-lg p-3 md:p-4">
-                      <div className="flex items-start justify-between gap-3 md:gap-4">
+                    <div className="border border-gray-200 rounded-lg p-2.5 md:p-4">
+                      <div className="flex items-start justify-between gap-2.5 md:gap-4">
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">
                             {cookieSettings.marketingTitle}
@@ -310,7 +310,7 @@ function CookieConsent() {
                         <div className="flex-shrink-0">
                           <button
                             onClick={() => handleTogglePreference(COOKIE_CATEGORIES.MARKETING)}
-                            className={`relative w-11 h-6 md:w-12 md:h-6 rounded-full transition-colors ${
+                            className={`relative w-11 h-6 md:w-12 md:h-6 rounded-full transition-colors touch-manipulation ${
                               preferences.marketing ? 'bg-primary-600' : 'bg-gray-300'
                             }`}
                           >
@@ -327,17 +327,17 @@ function CookieConsent() {
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 md:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-2 md:gap-3 justify-end">
+                {/* Footer - Sticky */}
+                <div className="sticky bottom-0 bg-white p-3 md:p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-2 md:gap-3 justify-end flex-shrink-0">
                   <button
                     onClick={closeSettings}
-                    className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm md:text-base"
+                    className="w-full sm:w-auto px-4 md:px-6 py-2.5 md:py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors text-sm md:text-base touch-manipulation"
                   >
                     {cookieSettings.buttonCancel}
                   </button>
                   <button
                     onClick={handleSaveSettings}
-                    className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-sm md:text-base"
+                    className="w-full sm:w-auto px-4 md:px-6 py-2.5 md:py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors flex items-center justify-center gap-2 text-sm md:text-base touch-manipulation"
                   >
                     <FiCheck size={16} className="md:w-[18px] md:h-[18px]" />
                     {cookieSettings.buttonSave}

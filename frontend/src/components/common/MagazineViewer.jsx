@@ -396,7 +396,7 @@ const MagazineViewer = ({ pdfUrl, title, onClose }) => {
         {loading && (
           <div className="text-center text-white">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-            <p>Magazin wird geladen...</p>
+            <p>Prospekt wird geladen...</p>
           </div>
         )}
 

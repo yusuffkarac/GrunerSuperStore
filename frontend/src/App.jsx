@@ -41,6 +41,7 @@ import Favorilerim from './pages/Favorilerim';
 import Kampanyalar from './pages/Kampanyalar';
 import Karsilastir from './pages/Karsilastir';
 import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
 
 // Admin Pages
@@ -188,6 +189,7 @@ function AppContent() {
             <Route path="/kampagnen" element={<Kampanyalar />} />
             <Route path="/vergleichen" element={<Karsilastir />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/kontakt" element={<Contact />} />
             {/* Eski Türkçe route'lara redirect */}
             <Route path="/urunler" element={<Navigate to="/produkte" replace />} />
             <Route path="/urun/:id" element={<RedirectWithParams to="/produkt/:id" />} />
@@ -204,6 +206,8 @@ function AppContent() {
             <Route path="/favorilerim" element={<Navigate to="/favoriten" replace />} />
             <Route path="/kampanyalar" element={<Navigate to="/kampagnen" replace />} />
             <Route path="/karsilastir" element={<Navigate to="/vergleichen" replace />} />
+            <Route path="/iletisim" element={<Navigate to="/kontakt" replace />} />
+            <Route path="/contact" element={<Navigate to="/kontakt" replace />} />
           </Route>
         )}
 

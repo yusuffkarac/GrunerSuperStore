@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { HiPlus, HiPencil, HiTrash, HiCheck, HiX, HiRefresh, HiDownload, HiUpload } from 'react-icons/hi';
+import { FiRefreshCw } from 'react-icons/fi';
+import { HiPlus, HiPencil, HiTrash, HiCheck, HiX, HiDownload, HiUpload, HiRefresh } from 'react-icons/hi';
 import faqService from '../../services/faqService';
 import Loading from '../../components/common/Loading';
 import HelpTooltip from '../../components/common/HelpTooltip';
@@ -28,6 +29,9 @@ const FAQs = () => {
     sortOrder: 0,
     isActive: true,
   });
+
+  // Modal scroll yönetimi
+  useModalScroll(showModal || showImportModal);
 
   useEffect(() => {
     loadFAQs();
@@ -86,7 +90,16 @@ const FAQs = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Möchten Sie diese FAQ wirklich löschen?')) return;
+    const confirmed = await showConfirm(
+      'Möchten Sie diese FAQ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      {
+        title: 'FAQ löschen?',
+        confirmText: 'Löschen',
+        cancelText: 'Abbrechen',
+      }
+    );
+
+    if (!confirmed) return;
 
     try {
       await faqService.deleteFAQ(id);
@@ -269,9 +282,9 @@ const FAQs = () => {
             resetForm();
             setShowModal(true);
           }}
-          className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-2 text-sm sm:text-base"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
         >
-          <HiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <HiPlus className="w-4 h-4" />
           <span className="hidden sm:inline">Neue FAQ hinzufügen</span>
           <span className="sm:hidden">Hinzufügen</span>
         </button>
@@ -300,12 +313,11 @@ const FAQs = () => {
         <button
           onClick={handleResetToDefaults}
           disabled={resetting}
-          className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
-          title="Auf Standardeinstellungen zurücksetzen"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
         >
-          <HiRefresh className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">{resetting ? 'Zurücksetzen...' : 'Zurücksetzen'}</span>
-          <span className="sm:hidden">{resetting ? '...' : 'Reset'}</span>
+          <FiRefreshCw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">Zurücksetzen</span>
+          <span className="sm:hidden">Reset</span>
         </button>
       </div>
 

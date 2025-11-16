@@ -28,14 +28,17 @@ class DiscountCalculator {
 
     // Her kampanya için indirimi hesapla ve en iyisini seç
     for (const campaign of campaigns) {
-      const discount = this._calculateSingleCampaignDiscount({
+      const totalDiscount = this._calculateSingleCampaignDiscount({
         price,
         quantity,
         campaign,
       });
 
-      if (discount > bestDiscount) {
-        bestDiscount = discount;
+      // Birim başına indirimi hesapla (bu fonksiyon birim fiyat döndürüyor)
+      const unitDiscount = totalDiscount / quantity;
+
+      if (unitDiscount > bestDiscount) {
+        bestDiscount = unitDiscount;
         bestCampaign = campaign;
       }
     }
@@ -136,15 +139,15 @@ class DiscountCalculator {
 
     switch (type) {
       case 'PERCENTAGE':
-        // Yüzde indirim
-        discount = price * (parseFloat(discountPercent) / 100);
+        // Yüzde indirim: fiyat * miktar * yüzde
+        discount = price * quantity * (parseFloat(discountPercent) / 100);
         break;
 
       case 'FIXED_AMOUNT':
-        // Sabit tutar indirim
-        discount = parseFloat(discountAmount);
-        // İndirim ürün fiyatından fazla olamaz
-        discount = Math.min(discount, price);
+        // Sabit tutar indirim: miktar ile çarp
+        discount = parseFloat(discountAmount) * quantity;
+        // İndirim toplam fiyattan fazla olamaz
+        discount = Math.min(discount, price * quantity);
         break;
 
       case 'BUY_X_GET_Y':
@@ -171,7 +174,7 @@ class DiscountCalculator {
         discount = 0;
     }
 
-    // Max indirim kontrolü
+    // Max indirim kontrolü (toplam indirim limiti)
     if (maxDiscount && discount > parseFloat(maxDiscount)) {
       discount = parseFloat(maxDiscount);
     }

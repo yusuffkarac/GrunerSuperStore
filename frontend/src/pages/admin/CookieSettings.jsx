@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import { HiDownload, HiUpload } from 'react-icons/hi';
 import settingsService from '../../services/settingsService';
 import Loading from '../../components/common/Loading';
@@ -202,39 +203,15 @@ function CookieSettings() {
       {/* Action Buttons */}
       <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
         <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-4 py-2 sm:px-6 sm:py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm sm:text-base"
-        >
-          {saving ? (
-            <>
-              <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="hidden sm:inline">Speichern...</span>
-              <span className="sm:hidden">...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="hidden sm:inline">Speichern</span>
-              <span className="sm:hidden">Save</span>
-            </>
-          )}
-        </button>
-        <button
           onClick={handleExport}
-          className="px-3 py-2 sm:px-4 sm:py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
           title="Cookie-Einstellungen exportieren"
         >
           <HiDownload className="w-4 h-4" />
           <span className="hidden sm:inline">Exportieren</span>
           <span className="sm:hidden">Export</span>
         </button>
-        <label className="px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer">
+        <label className="px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm cursor-pointer">
           <HiUpload className="w-4 h-4" />
           <span className="hidden sm:inline">Importieren</span>
           <span className="sm:hidden">Import</span>
@@ -248,10 +225,20 @@ function CookieSettings() {
         </label>
         <button
           onClick={handleReset}
-          className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-xs sm:text-sm"
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
         >
-          <span className="hidden sm:inline">Auf Standardwerte zurücksetzen</span>
+          <FiRefreshCw className="w-4 h-4" />
+          <span className="hidden sm:inline">Zurücksetzen</span>
           <span className="sm:hidden">Reset</span>
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+        >
+          <FiSave className="w-4 h-4" />
+          <span className="hidden sm:inline">{saving ? 'Wird gespeichert...' : 'Speichern'}</span>
+          <span className="sm:hidden">{saving ? '...' : 'Save'}</span>
         </button>
       </div>
 

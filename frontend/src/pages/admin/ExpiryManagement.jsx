@@ -1784,8 +1784,12 @@ function ExpiryManagement() {
                           <tbody className="bg-white divide-y divide-gray-200">
                             {categoryGroup.products.map((product) => {
                               const isProductUnprocessed = isUnprocessed(product);
-                              // Soluk göster: işlem yapılmış ama deaktif edilmemiş ürünler
-                              const shouldShowDimmed = !isProductUnprocessed && product.excludeFromExpiryCheck !== true;
+                              // "Erledigt!" durumu kontrolü
+                              const isErledigt = product.lastAction?.note && product.lastAction.note.includes('MHD aktualisiert') && !product.lastAction?.isUndone && (product.type === 'critical' ? product.daysUntilExpiry > settings.criticalDays : product.daysUntilExpiry > settings.warningDays);
+                              // "Reduziert!" durumu kontrolü
+                              const isReduziert = product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone;
+                              // Soluk göster: işlem yapılmış, deaktif edilmiş, "Erledigt!" veya "Reduziert!" durumundaki ürünler
+                              const shouldShowDimmed = !isProductUnprocessed || product.excludeFromExpiryCheck === true || isErledigt || isReduziert;
                               const badgeClass = product.type === 'critical' 
                                 ? 'bg-red-100 text-red-800' 
                                 : 'bg-amber-100 text-amber-800';
@@ -1983,8 +1987,12 @@ function ExpiryManagement() {
                       <div className="md:hidden divide-y divide-gray-200">
                         {categoryGroup.products.map((product) => {
                           const isProductUnprocessed = isUnprocessed(product);
-                          // Soluk göster: işlem yapılmış ama deaktif edilmemiş ürünler
-                          const shouldShowDimmed = !isProductUnprocessed && product.excludeFromExpiryCheck !== true;
+                          // "Erledigt!" durumu kontrolü
+                          const isErledigt = product.lastAction?.note && product.lastAction.note.includes('MHD aktualisiert') && !product.lastAction?.isUndone && (product.type === 'critical' ? product.daysUntilExpiry > settings.criticalDays : product.daysUntilExpiry > settings.warningDays);
+                          // "Reduziert!" durumu kontrolü
+                          const isReduziert = product.lastAction?.actionType === 'labeled' && !product.lastAction?.isUndone;
+                          // Soluk göster: işlem yapılmış, deaktif edilmiş, "Erledigt!" veya "Reduziert!" durumundaki ürünler
+                          const shouldShowDimmed = !isProductUnprocessed || product.excludeFromExpiryCheck === true || isErledigt || isReduziert;
                           const badgeClass = product.type === 'critical' 
                             ? 'bg-red-100 text-red-800' 
                             : 'bg-amber-100 text-amber-800';

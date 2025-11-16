@@ -1,14 +1,32 @@
-import { useState } from 'react';
-import { FiHome, FiEdit3, FiShield, FiHelpCircle } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiHome, FiEdit3, FiShield, FiHelpCircle, FiMessageCircle } from 'react-icons/fi';
 import HomePageSettings from './HomePageSettings';
 import FooterSettings from './FooterSettings';
 import CookieSettings from './CookieSettings';
 import FAQs from './FAQs';
+import WhatsAppSettings from './WhatsAppSettings';
 import HelpTooltip from '../../components/common/HelpTooltip';
+import { useModalScroll } from '../../hooks/useModalScroll';
 
 // Seiteneinstellungen - Tüm sayfa ayarlarını tek bir yerde yönet
 function Seiteneinstellungen() {
-  const [activeTab, setActiveTab] = useState('homepage');
+  // localStorage'dan aktif sekmeyi yükle, yoksa varsayılan olarak 'homepage'
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem('seiteneinstellungen_activeTab');
+    return savedTab || 'homepage';
+  });
+
+  // Sekme değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('seiteneinstellungen_activeTab', activeTab);
+  }, [activeTab]);
+
+  // Modal scroll yönetimi
+  // Alt componentlerdeki modal'lar kendi useModalScroll'larını kullanıyor
+  // Bu sayfada gelecekte bir modal eklendiğinde kullanılmak üzere hazır
+  // Şimdilik false, çünkü bu sayfada doğrudan bir modal yok
+  const [anyModalOpen] = useState(false);
+  useModalScroll(anyModalOpen);
 
   const tabs = [
     {
@@ -38,6 +56,13 @@ function Seiteneinstellungen() {
       icon: FiHelpCircle,
       component: <FAQs />,
       description: 'Häufig gestellte Fragen verwalten',
+    },
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp-Einstellungen',
+      icon: FiMessageCircle,
+      component: <WhatsAppSettings />,
+      description: 'WhatsApp-Button und Zeiteinstellungen verwalten',
     },
   ];
 

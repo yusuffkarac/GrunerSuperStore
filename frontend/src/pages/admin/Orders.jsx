@@ -16,9 +16,17 @@ import { useModalScroll } from '../../hooks/useModalScroll';
 const OrderItemRow = ({ item }) => {
   const normalizedImageUrl = item.imageUrl ? normalizeImageUrl(item.imageUrl) : null;
   const [imageError, setImageError] = useState(false);
+  
+  const hasDiscount = item.originalPrice && parseFloat(item.originalPrice) > parseFloat(item.price);
+  const unitPrice = parseFloat(item.price);
+  const originalUnitPrice = item.originalPrice ? parseFloat(item.originalPrice) : null;
+  const totalPrice = unitPrice * item.quantity;
+  const originalTotalPrice = originalUnitPrice ? originalUnitPrice * item.quantity : null;
+  const discountAmount = originalTotalPrice ? originalTotalPrice - totalPrice : 0;
+  const discountPercent = originalUnitPrice ? ((discountAmount / originalTotalPrice) * 100).toFixed(0) : 0;
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
       <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center">
         {normalizedImageUrl && !imageError ? (
           <img 
@@ -38,14 +46,59 @@ const OrderItemRow = ({ item }) => {
             {item.variantName}
           </p>
         )}
-        <p className="text-sm text-gray-600">
-          {item.quantity}x {parseFloat(item.price).toFixed(2)} €
-        </p>
+        {hasDiscount && item.campaignName && (
+          <div className="mt-1.5 p-1.5 bg-green-50 border border-green-200 rounded text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-green-700 font-semibold">🎁 {item.campaignName}</span>
+            </div>
+            <div className="mt-1 text-green-600">
+              <span className="font-medium">-{discountPercent}% Rabatt</span>
+              <span className="ml-2">({discountAmount.toFixed(2)} € gespart)</span>
+            </div>
+          </div>
+        )}
+        {!hasDiscount && item.campaignName && (
+          <p className="text-xs text-gray-500 mt-0.5 italic">
+            Kampagne: {item.campaignName}
+          </p>
+        )}
+        <div className="text-sm text-gray-600 mt-1.5">
+          {hasDiscount ? (
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="line-through text-gray-400 text-xs">
+                  Original: {item.quantity}x {originalUnitPrice.toFixed(2)} €
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 font-semibold">
+                  Reduziert: {item.quantity}x {unitPrice.toFixed(2)} €
+                </span>
+              </div>
+            </div>
+          ) : (
+            <span>{item.quantity}x {unitPrice.toFixed(2)} €</span>
+          )}
+        </div>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="font-medium text-gray-900">
-          {(parseFloat(item.price) * item.quantity).toFixed(2)} €
-        </p>
+        {hasDiscount ? (
+          <div className="space-y-1">
+            <div className="line-through text-gray-400 text-sm">
+              {originalTotalPrice.toFixed(2)} €
+            </div>
+            <p className="font-bold text-green-600 text-lg">
+              {totalPrice.toFixed(2)} €
+            </p>
+            <div className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
+              -{discountAmount.toFixed(2)} €
+            </div>
+          </div>
+        ) : (
+          <p className="font-medium text-gray-900">
+            {totalPrice.toFixed(2)} €
+          </p>
+        )}
       </div>
     </div>
   );
@@ -247,9 +300,18 @@ function Orders() {
 
   // Sipariş detayını aç
   const openOrderDetail = async (order) => {
-    setSelectedOrder(order);
     setShowModal(true);
     setOrderReview(null);
+    
+    // Sipariş detayını API'den çek (tam bilgiler için)
+    try {
+      const response = await adminService.getOrderById(order.id);
+      setSelectedOrder(response.data.order);
+    } catch (error) {
+      console.error('Sipariş detayı yüklenemedi:', error);
+      // Hata durumunda listeden gelen siparişi kullan
+      setSelectedOrder(order);
+    }
 
     // Eğer sipariş delivered ise review'ı yükle
     if (order.status === 'delivered') {
@@ -1159,22 +1221,83 @@ function Orders() {
 
                   {/* Order Summary */}
                   <div className="border-t border-gray-200 pt-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Zwischensumme</span>
-                        <span className="text-gray-900">{parseFloat(selectedOrder.subtotal).toFixed(2)} €</span>
-                      </div>
-                      {parseFloat(selectedOrder.deliveryFee) > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Liefergebühr</span>
-                          <span className="text-gray-900">{parseFloat(selectedOrder.deliveryFee).toFixed(2)} €</span>
+                    {(() => {
+                      // Toplam kampanya indirimini hesapla
+                      const campaignDiscount = selectedOrder.orderItems?.reduce((total, item) => {
+                        if (item.originalPrice && parseFloat(item.originalPrice) > parseFloat(item.price)) {
+                          const itemDiscount = (parseFloat(item.originalPrice) - parseFloat(item.price)) * item.quantity;
+                          return total + itemDiscount;
+                        }
+                        return total;
+                      }, 0) || 0;
+
+                      // Kupon indirimi
+                      const couponDiscount = parseFloat(selectedOrder.discount || 0);
+
+                      // Toplam indirim
+                      const totalDiscount = campaignDiscount + couponDiscount;
+
+                      // Orijinal subtotal (kampanya indirimsiz)
+                      const originalSubtotal = selectedOrder.orderItems?.reduce((total, item) => {
+                        const itemPrice = item.originalPrice ? parseFloat(item.originalPrice) : parseFloat(item.price);
+                        return total + (itemPrice * item.quantity);
+                      }, 0) || parseFloat(selectedOrder.subtotal);
+
+                      return (
+                        <div className="space-y-2">
+                          {totalDiscount > 0 && (
+                            <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-semibold text-green-700">Gesamtrabatt</span>
+                                <span className="text-lg font-bold text-green-600">-{totalDiscount.toFixed(2)} €</span>
+                              </div>
+                              {campaignDiscount > 0 && (
+                                <div className="flex justify-between text-xs text-green-600 mt-1">
+                                  <span>Kampagnenrabatt:</span>
+                                  <span>-{campaignDiscount.toFixed(2)} €</span>
+                                </div>
+                              )}
+                              {couponDiscount > 0 && (
+                                <div className="flex justify-between text-xs text-green-600 mt-0.5">
+                                  <span>Gutscheinrabatt:</span>
+                                  <span>-{couponDiscount.toFixed(2)} €</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Zwischensumme</span>
+                            <div className="text-right">
+                              {totalDiscount > 0 && originalSubtotal > parseFloat(selectedOrder.subtotal) ? (
+                                <div>
+                                  <span className="line-through text-gray-400 text-xs mr-2">
+                                    {originalSubtotal.toFixed(2)} €
+                                  </span>
+                                  <span className="text-gray-900">{parseFloat(selectedOrder.subtotal).toFixed(2)} €</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-900">{parseFloat(selectedOrder.subtotal).toFixed(2)} €</span>
+                              )}
+                            </div>
+                          </div>
+                          {selectedOrder.couponCode && (
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>Gutschein: {selectedOrder.couponCode}</span>
+                            </div>
+                          )}
+                          {parseFloat(selectedOrder.deliveryFee) > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Liefergebühr</span>
+                              <span className="text-gray-900">{parseFloat(selectedOrder.deliveryFee).toFixed(2)} €</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
+                            <span>Gesamt</span>
+                            <span>{parseFloat(selectedOrder.total).toFixed(2)} €</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                        <span>Gesamt</span>
-                        <span>{parseFloat(selectedOrder.total).toFixed(2)} €</span>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Status Update */}
