@@ -587,11 +587,11 @@ function ExpiryManagement() {
                         </span>
                   </div>
                 </div>
-              <div className="divide-y">
+              <div className="divide-y divide-gray-400">
                 {category.products.map((product) => (
                   <div
                     key={product.id}
-                    className={`p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between transition-opacity ${
+                    className={`px-4 py-3 sm:px-5 sm:py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between transition-opacity ${
                       product.isProcessed ? 'opacity-60' : ''
                     }`}
                   >
@@ -642,48 +642,48 @@ function ExpiryManagement() {
                     <div className="flex w-full flex-wrap gap-2 md:flex-nowrap md:justify-end">
                       {product.taskType === 'reduzieren' ? (
                         <>
-                                        <button
+                          <button
                             onClick={() => handleLabelProduct(product)}
                             disabled={pendingQuickAction === product.id || product.isProcessed}
-                            className="w-full sm:flex-1 md:flex-none md:w-auto min-w-[120px] inline-flex justify-center items-center gap-1.5 px-2.5 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-60"
-                                        >
+                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-60"
+                          >
                             <FiTag className="w-3.5 h-3.5" />
-                            Reduzieren
-                                        </button>
-                                      <button
+                            <span className="truncate max-w-[110px] md:max-w-none">Reduzieren</span>
+                          </button>
+                          <button
                             onClick={() => openActionDialog(product, 'date')}
-                            className="w-full sm:flex-1 md:flex-none md:w-auto min-w-[120px] inline-flex justify-center items-center gap-1.5 px-2.5 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
-                                      >
+                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                          >
                             <FiCalendar className="w-3.5 h-3.5" />
-                                        Neues Datum
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                        <button
+                            <span className="truncate max-w-[110px] md:max-w-none">Neues Datum</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
                             onClick={() => openActionDialog(product, 'remove')}
-                            className="w-full sm:flex-1 md:flex-none md:w-auto min-w-[120px] inline-flex justify-center items-center gap-1.5 px-2.5 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white bg-red-500 hover:bg-red-600"
+                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white bg-red-500 hover:bg-red-600"
                           >
                             <FiTrash2 className="w-3.5 h-3.5" />
-                                          Aussortieren
-                                        </button>
-                                        <button
+                            <span className="truncate max-w-[110px] md:max-w-none">Aussortieren</span>
+                          </button>
+                          <button
                             onClick={() => handleDeactivateProduct(product)}
                             disabled={pendingDeactivateId === product.id}
-                            className="w-full sm:flex-1 md:flex-none md:w-auto min-w-[120px] inline-flex justify-center items-center gap-1.5 px-2.5 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-                                        >
+                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                          >
                             <FiPower className="w-3.5 h-3.5" />
-                                          Deaktivieren
-                                        </button>
-                                          <button
+                            <span className="truncate max-w-[110px] md:max-w-none">Deaktivieren</span>
+                          </button>
+                          <button
                             onClick={() => openActionDialog(product, 'date')}
-                            className="w-full sm:flex-1 md:flex-none md:w-auto min-w-[120px] inline-flex justify-center items-center gap-1.5 px-2.5 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
                           >
                             <FiCalendar className="w-3.5 h-3.5" />
-                                          Neues Datum
-                                        </button>
-                                      </>
-                                    )}
+                            <span className="truncate max-w-[110px] md:max-w-none">Neues Datum</span>
+                          </button>
+                        </>
+                      )}
                                   </div>
                             </div>
                 ))}

@@ -410,9 +410,6 @@ export const getExpiryDashboardData = async (options = {}) => {
   });
 
   const categories = Array.from(categoriesMap.values()).sort((a, b) => {
-    if (a.pendingCount !== b.pendingCount) {
-      return b.pendingCount - a.pendingCount;
-    }
     return a.name.localeCompare(b.name, 'de');
   });
 
