@@ -227,16 +227,22 @@
   .bottom-nav-enhanced {
     @apply fixed bottom-0 left-0 right-0 bg-white;
     @apply flex items-center justify-around;
-    @apply h-16 px-2;
-    @apply safe-area-bottom;
+    @apply px-2;
     @apply shadow-[0_-2px_20px_rgba(0,0,0,0.08)];
     @apply border-t border-gray-100;
     z-index: 999999;
-    overflow: hidden;
     /* Fixed positioning için gerekli */
     position: fixed !important;
-    /* iOS Safari için güvenli alan desteği */
-    padding-bottom: env(safe-area-inset-bottom);
+    /* iOS Safari için güvenli alan desteği - min-height ile birlikte */
+    min-height: 4rem;
+    height: calc(4rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Hardware acceleration için */
+    transform: translateZ(0);
+    will-change: transform;
+    /* Overflow sadece yatayda hidden, dikeyde visible */
+    overflow-x: hidden;
+    overflow-y: visible;
   }
   
 
@@ -273,10 +279,12 @@
   /* Nav item içeriği */
   .nav-item-content {
     @apply flex flex-col items-center justify-center;
-    @apply w-full py-2;
+    @apply w-full;
     @apply transition-all duration-300;
     position: relative;
     z-index: 2;
+    padding-top: 0.5rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px) / 2);
   }
 
   /* Icon stilleri */
