@@ -4,6 +4,8 @@ import {
   FiAlertTriangle,
   FiCalendar,
   FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
   FiClock,
   FiGrid,
   FiInfo,
@@ -19,6 +21,7 @@ import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 import expiryService from '../../services/expiryService';
 import { useTheme } from '../../contexts/ThemeContext';
+import useModalScroll from '../../hooks/useModalScroll';
 
 const initialActionDialog = { type: null, product: null };
 
@@ -132,6 +135,12 @@ function ExpiryManagement() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [deadlineBannerHidden, setDeadlineBannerHidden] = useState(false);
   const [canEditSettings, setCanEditSettings] = useState(false);
+  const [previewInput, setPreviewInput] = useState('');
+  const [appliedPreviewDate, setAppliedPreviewDate] = useState(null);
+  const isActionDialogOpen = Boolean(actionDialog.type && actionDialog.product);
+  const isAnyModalOpen = isActionDialogOpen || settingsDialogOpen;
+
+  useModalScroll(isAnyModalOpen);
 
   useEffect(() => {
     const { perms, isSuperAdmin } = readAdminPermissions();
@@ -140,10 +149,12 @@ function ExpiryManagement() {
     }
   }, []);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (previewDateOverride = appliedPreviewDate) => {
     setLoading(true);
     try {
-      const data = await expiryService.getDashboard();
+      const data = await expiryService.getDashboard({
+        previewDate: previewDateOverride || undefined,
+      });
       setDashboard(data);
       setSettingsForm({
         enabled: data.settings.enabled,
@@ -171,6 +182,70 @@ function ExpiryManagement() {
   }, [dashboard]);
 
   const completionRate = dashboard?.stats?.completionRate ?? 0;
+  const isPreviewActive = Boolean(dashboard?.preview?.isPreview);
+  const todayIso = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const normalizeDateInput = (date) => {
+    if (!date) {
+      return null;
+    }
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    const year = parsed.getFullYear();
+    const month = `${parsed.getMonth() + 1}`.padStart(2, '0');
+    const day = `${parsed.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleApplyPreviewDate = () => {
+    const normalized = previewInput?.trim() ? previewInput : null;
+    setAppliedPreviewDate(normalized);
+    fetchDashboard(normalized);
+  };
+
+  const handleResetPreviewDate = () => {
+    if (previewInput) {
+      setPreviewInput('');
+    }
+    if (!appliedPreviewDate && !isPreviewActive) {
+      fetchDashboard(null);
+      return;
+    }
+    setAppliedPreviewDate(null);
+    fetchDashboard(null);
+  };
+
+  const handleShiftPreviewDate = (days) => {
+    const baseDate =
+      previewInput ||
+      appliedPreviewDate ||
+      (dashboard?.preview?.isPreview ? dashboard.preview.date : dashboard?.date) ||
+      todayIso;
+
+    const normalizedBase = normalizeDateInput(baseDate);
+    if (!normalizedBase) {
+      return;
+    }
+
+    const nextDate = new Date(normalizedBase);
+    nextDate.setDate(nextDate.getDate() + days);
+    const formattedNext = normalizeDateInput(nextDate);
+    if (!formattedNext) {
+      return;
+    }
+
+    setPreviewInput(formattedNext);
+    setAppliedPreviewDate(formattedNext);
+    fetchDashboard(formattedNext);
+  };
 
   const openActionDialog = (product, type) => {
     setActionDialog({ product, type });
@@ -332,7 +407,7 @@ function ExpiryManagement() {
           </div>
         <div className="flex flex-wrap gap-2">
                 <button
-            onClick={fetchDashboard}
+            onClick={() => fetchDashboard()}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
           >
             <FiRefreshCw className="w-4 h-4" />
@@ -351,6 +426,61 @@ function ExpiryManagement() {
             </button>
           )}
           </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3 hidden dayChange" >
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="w-full md:max-w-xs">
+            <label className="text-sm font-medium text-gray-700">Vorschau-Datum</label>
+            <div className="mt-1 flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => handleShiftPreviewDate(-1)}
+                className="inline-flex items-center justify-center px-3 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                <FiChevronLeft className="w-4 h-4" />
+              </button>
+            <input
+              type="date"
+              value={previewInput}
+              onChange={(e) => setPreviewInput(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+            />
+              <button
+                type="button"
+                onClick={() => handleShiftPreviewDate(1)}
+                className="inline-flex items-center justify-center px-3 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                <FiChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Zeige das Dashboard so an, wie es an einem zukünftigen Tag aussehen würde.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleApplyPreviewDate}
+              disabled={!previewInput && !appliedPreviewDate}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+            >
+              Vorschau anzeigen
+            </button>
+            <button
+              onClick={handleResetPreviewDate}
+              disabled={!previewInput && !appliedPreviewDate && !isPreviewActive}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              Heute anzeigen
+            </button>
+          </div>
+        </div>
+        {isPreviewActive && (
+          <div className="flex items-center gap-2 text-sm text-emerald-700">
+            <FiInfo className="w-4 h-4" />
+            <span>Vorschau aktiv: Daten für {dashboard.dateLabel}</span>
+          </div>
+        )}
       </div>
 
       {!deadlineBannerHidden && (
@@ -465,7 +595,7 @@ function ExpiryManagement() {
                       product.isProcessed ? 'opacity-60' : ''
                     }`}
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-2 w-full min-w-0 md:min-w-[520px]">
                       <div className="flex items-center gap-3">
                         <p className="text-base font-semibold text-gray-900">{product.name}</p>
                         <div className="flex flex-wrap gap-2">
@@ -509,7 +639,7 @@ function ExpiryManagement() {
                                   </span>
                                 </div>
                     </div>
-                    <div className="flex w-full flex-nowrap gap-2 overflow-x-auto md:flex-nowrap md:justify-end">
+                    <div className="flex w-full flex-wrap gap-2 md:flex-nowrap md:justify-end">
                       {product.taskType === 'reduzieren' ? (
                         <>
                                         <button

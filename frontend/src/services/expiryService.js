@@ -1,8 +1,14 @@
 import { adminApi } from './adminService';
 
 const expiryService = {
-  getDashboard: async () => {
-    const response = await adminApi.get('/admin/expiry/dashboard');
+  getDashboard: async (options = {}) => {
+    const params = {};
+    if (options.previewDate) {
+      params.previewDate = options.previewDate;
+    }
+    const response = await adminApi.get('/admin/expiry/dashboard', {
+      ...(Object.keys(params).length ? { params } : {}),
+    });
     return response.data;
   },
 

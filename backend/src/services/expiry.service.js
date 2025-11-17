@@ -84,6 +84,22 @@ const getToday = () => {
   return getTodayInGermany();
 };
 
+const resolveReferenceDate = (previewDateInput) => {
+  if (!previewDateInput) {
+    return getToday();
+  }
+
+  if (previewDateInput instanceof Date && !Number.isNaN(previewDateInput.getTime())) {
+    return previewDateInput;
+  }
+
+  const parsed = new Date(previewDateInput);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestError('Geçersiz önizleme tarihi');
+  }
+  return parsed;
+};
+
 /**
  * İki tarih arasındaki gün farkını hesapla
  */
@@ -100,28 +116,49 @@ const getDaysDifference = (date1, date2) => {
 const fetchTaskCandidates = async (todayStart, todayEnd, horizonEnd) => {
   return prisma.product.findMany({
     where: {
-              expiryDate: {
+      expiryDate: {
         not: null,
       },
       hideFromExpiryManagement: false,
       isActive: true,
       OR: [
         {
-                  expiryDate: {
+          expiryDate: {
             gte: todayStart,
             lte: horizonEnd,
+          },
+        },
+        {
+          expiryActions: {
+            some: {
+              isUndone: false,
+              createdAt: {
+                gte: todayStart,
+                lte: todayEnd,
+              },
+            },
+          },
+        },
+        {
+          AND: [
+            {
+              excludeFromExpiryCheck: true,
+            },
+            {
+              expiryDate: {
+                gte: todayStart,
               },
             },
             {
               expiryActions: {
                 some: {
                   isUndone: false,
-                  createdAt: {
-                gte: todayStart,
-                    lte: todayEnd,
-                  },
+                  actionType: 'removed',
+                  excludedFromCheck: true,
                 },
               },
+            },
+          ],
         },
       ],
     },
@@ -262,9 +299,10 @@ const mapProductToTask = (product, context) => {
   };
 };
 
-const buildTaskList = async ({ includeRawProduct = false } = {}) => {
+const buildTaskList = async ({ includeRawProduct = false, previewDate = null } = {}) => {
   const settings = await getExpirySettings();
-  const todayStart = startOfDay(getToday());
+  const referenceDate = resolveReferenceDate(previewDate);
+  const todayStart = startOfDay(referenceDate);
   const todayEnd = endOfDay(todayStart);
   const horizonEnd = endOfDay(addDays(todayStart, settings.warningDays));
 
@@ -276,7 +314,13 @@ const buildTaskList = async ({ includeRawProduct = false } = {}) => {
     .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-  return { tasks, todayStart, horizonEnd, settings };
+  return {
+    tasks,
+    todayStart,
+    horizonEnd,
+    settings,
+    isPreview: Boolean(previewDate),
+  };
 };
 
 /**
@@ -318,8 +362,8 @@ export const getWarningProducts = async () => {
 /**
  * Günlük görev panosu verilerini oluştur
  */
-export const getExpiryDashboardData = async () => {
-  const { tasks, todayStart, horizonEnd, settings } = await buildTaskList();
+export const getExpiryDashboardData = async (options = {}) => {
+  const { tasks, todayStart, horizonEnd, settings, isPreview } = await buildTaskList(options);
 
   const actionSummary = {
     removeToday: { total: 0, processed: 0 },
@@ -388,8 +432,14 @@ export const getExpiryDashboardData = async () => {
     date: todayStart.toISOString(),
     dateLabel: todayLabel,
     deadlineTime: settings.processingDeadline,
-    deadlineLabel: `Heute fällig um ${settings.processingDeadline}`,
+    deadlineLabel: isPreview
+      ? `Fällig am ${todayLabel} um ${settings.processingDeadline}`
+      : `Heute fällig um ${settings.processingDeadline}`,
     settings,
+    preview: {
+      isPreview,
+      date: isPreview ? todayStart.toISOString() : null,
+    },
     stats: {
       totalCategories: categories.length,
       totalProducts,
