@@ -428,7 +428,7 @@ function ExpiryManagement() {
           </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3  dayChange" >
+      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3  dayChange hidden" >
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="w-full md:max-w-xs">
             <label className="text-sm font-medium text-gray-700">Vorschau-Datum</label>
