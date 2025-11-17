@@ -231,13 +231,8 @@
     @apply shadow-[0_-2px_20px_rgba(0,0,0,0.08)];
     @apply border-t border-gray-100;
     z-index: 999999;
-    /* Fixed positioning için gerekli */
     position: fixed !important;
-    /* iOS Safari için güvenli alan desteği */
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    /* Hardware acceleration için */
     transform: translateZ(0);
-    will-change: transform;
   }
   
 
