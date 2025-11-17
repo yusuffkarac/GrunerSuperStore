@@ -137,8 +137,10 @@ function ExpiryManagement() {
   const [canEditSettings, setCanEditSettings] = useState(false);
   const [previewInput, setPreviewInput] = useState('');
   const [appliedPreviewDate, setAppliedPreviewDate] = useState(null);
+  const [completionConfirmDialogOpen, setCompletionConfirmDialogOpen] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
   const isActionDialogOpen = Boolean(actionDialog.type && actionDialog.product);
-  const isAnyModalOpen = isActionDialogOpen || settingsDialogOpen;
+  const isAnyModalOpen = isActionDialogOpen || settingsDialogOpen || completionConfirmDialogOpen;
 
   useModalScroll(isAnyModalOpen);
 
@@ -353,6 +355,23 @@ function ExpiryManagement() {
     }
   };
 
+  const handleSendCompletionReport = async () => {
+    setSendingReport(true);
+    try {
+      const result = await expiryService.sendCompletionReport();
+      if (result.success) {
+        toast.success(result.message || 'Bericht erfolgreich gesendet');
+        setCompletionConfirmDialogOpen(false);
+      } else {
+        toast.error(result.message || 'Bericht konnte nicht gesendet werden');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message || 'Bericht konnte nicht gesendet werden');
+    } finally {
+      setSendingReport(false);
+    }
+  };
+
   if (loading) {
     return <Loading />;
   }
@@ -413,6 +432,15 @@ function ExpiryManagement() {
             <FiRefreshCw className="w-4 h-4" />
             Aktualisieren
                 </button>
+          {completionRate === 100 && dashboard.stats.totalProducts > 0 && (
+            <button
+              onClick={() => setCompletionConfirmDialogOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
+            >
+              <FiCheckCircle className="w-4 h-4" />
+              Bericht senden
+            </button>
+          )}
           {canEditSettings && (
                 <button
               onClick={() => setSettingsDialogOpen(true)}
@@ -787,6 +815,59 @@ function ExpiryManagement() {
                   </button>
                 </div>
               </div>
+        </div>
+      )}
+
+      {/* Completion Report Confirmation Dialog */}
+      {completionConfirmDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Bericht senden</h3>
+              <button
+                onClick={() => setCompletionConfirmDialogOpen(false)}
+                disabled={sendingReport}
+                className="p-2 text-gray-400 hover:text-gray-600"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-sm text-gray-700">
+                Sind Sie sicher, dass Sie den heutigen Bearbeitungsbericht an die Administratoren senden möchten?
+              </p>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Gesamt Produkte:</span>
+                  <span className="font-semibold text-gray-900">{dashboard.stats.totalProducts}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Bearbeitet:</span>
+                  <span className="font-semibold text-emerald-600">{dashboard.stats.processedProducts}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Abschlussrate:</span>
+                  <span className="font-semibold text-emerald-600">{completionRate}%</span>
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex gap-3 justify-end">
+              <button
+                onClick={() => setCompletionConfirmDialogOpen(false)}
+                disabled={sendingReport}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleSendCompletionReport}
+                disabled={sendingReport}
+                className="px-4 py-2 text-sm rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {sendingReport ? 'Wird gesendet...' : 'Ja, senden'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

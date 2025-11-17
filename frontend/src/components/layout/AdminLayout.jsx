@@ -486,6 +486,19 @@ function AdminLayout() {
               </div>
             );
           })}
+          {/* Kullanıcı Adı - Desktop (En sağda, mobil gibi şık) */}
+          {admin?.firstName && (
+            <div className="flex items-center gap-2 ml-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-green-700 font-semibold text-sm">
+                  {admin.firstName?.[0]?.toUpperCase()}
+                </span>
+              </div>
+              <div className="text-sm font-medium text-gray-700">
+                {admin.firstName}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Top Menu Tooltip */}
@@ -569,6 +582,21 @@ function AdminLayout() {
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
           } ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'} w-64`}
         >
+          {/* Kullanıcı Adı - Mobil (Sidebar içinde) */}
+          {admin?.firstName && (
+            <div className="lg:hidden px-3 pt-4 pb-3 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-green-700 font-semibold text-sm">
+                    {admin.firstName?.[0]?.toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-sm font-medium text-gray-700">
+                  {admin.firstName}
+                </div>
+              </div>
+            </div>
+          )}
           <nav className={`p-3 space-y-1.5 flex-1 overflow-y-auto min-h-0 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
             {/* Toggle Button - Desktop Only */}
             

@@ -31,6 +31,11 @@ const expiryService = {
     const response = await adminApi.put(`/admin/expiry/update-date/${productId}`, payload);
     return response.data;
   },
+
+  sendCompletionReport: async () => {
+    const response = await adminApi.post('/admin/expiry/send-completion-report');
+    return response.data;
+  },
 };
 
 export default expiryService;

@@ -335,6 +335,7 @@ router.put('/expiry/update-date/:productId', requirePermission(['expiry_manageme
 router.get('/expiry/history', requirePermission('expiry_management_view'), expiryController.getHistory);
 router.post('/expiry/undo/:actionId', requirePermission(['expiry_management_view', 'expiry_management_action']), expiryController.undoAction);
 router.post('/expiry/check-and-notify', requirePermission('expiry_management_view'), expiryController.checkAndNotifyAdmins);
+router.post('/expiry/send-completion-report', requirePermission('expiry_management_view'), expiryController.sendCompletionReport);
 router.get('/expiry/daily-reminder', requirePermission('expiry_management_view'), expiryController.sendDailyReminder);
 
 // ===============================

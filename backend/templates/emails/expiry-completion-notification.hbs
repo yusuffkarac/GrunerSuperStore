@@ -8,13 +8,49 @@
     Die Mindesthaltbarkeitsdatum-Verwaltung für <strong>{{date}}</strong> wurde erfolgreich abgeschlossen.
 </p>
 
-<div class="info-box">
-    <h3 style="color: #111827; margin-bottom: 15px;">Zusammenfassung</h3>
+<div class="info-box" style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+    <h3 style="color: #111827; margin-bottom: 15px; margin-top: 0;">Zusammenfassung</h3>
     
-    <div class="info-row" style="font-size: 18px; font-weight: bold;">
-        <span class="info-label">Bearbeitete Produkte:</span>
-        <span class="info-value">{{productCount}}</span>
+    <div style="margin-bottom: 12px;">
+        <span style="color: #374151; font-weight: 600;">Gesamt Produkte:</span>
+        <span style="color: #111827; font-weight: bold; margin-left: 8px;">{{totalProducts}}</span>
     </div>
+    
+    <div style="margin-bottom: 12px;">
+        <span style="color: #374151; font-weight: 600;">Bearbeitete Produkte:</span>
+        <span style="color: #059669; font-weight: bold; margin-left: 8px;">{{processedCount}}</span>
+    </div>
+    
+    {{#if pendingCount}}
+    <div style="margin-bottom: 12px;">
+        <span style="color: #374151; font-weight: 600;">Offene Produkte:</span>
+        <span style="color: #dc2626; font-weight: bold; margin-left: 8px;">{{pendingCount}}</span>
+    </div>
+    {{/if}}
+    
+    {{#if actionStats}}
+    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+        <h4 style="color: #111827; margin-bottom: 10px; font-size: 14px; font-weight: 600;">Aktionen im Detail:</h4>
+        {{#if actionStats.labeled}}
+        <div style="margin-bottom: 8px;">
+            <span style="color: #92400e; background-color: #fef3c7; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Reduziert:</span>
+            <span style="color: #111827; font-weight: bold; margin-left: 8px;">{{actionStats.labeled}}</span>
+        </div>
+        {{/if}}
+        {{#if actionStats.removed}}
+        <div style="margin-bottom: 8px;">
+            <span style="color: #991b1b; background-color: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Aussortiert:</span>
+            <span style="color: #111827; font-weight: bold; margin-left: 8px;">{{actionStats.removed}}</span>
+        </div>
+        {{/if}}
+        {{#if actionStats.deactivated}}
+        <div style="margin-bottom: 8px;">
+            <span style="color: #475569; background-color: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Deaktiviert:</span>
+            <span style="color: #111827; font-weight: bold; margin-left: 8px;">{{actionStats.deactivated}}</span>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
 </div>
 
 {{#if products}}
@@ -35,19 +71,23 @@
                 <small style="color: #6b7280;">{{category}}{{#if barcode}} - {{barcode}}{{/if}}</small>
             </td>
             <td style="padding: 12px; color: #1f2937;">
-                {{#if actionType}}
-                    {{#if (eq actionType "labeled")}}
-                        <span style="background-color: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Etikettiert</span>
-                    {{else}}
-                        {{#if (eq actionType "removed")}}
-                            <span style="background-color: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Entfernt</span>
+                {{#if actionLabel}}
+                    <span style="background-color: {{#if (eq actionType "labeled")}}#fef3c7; color: #92400e;{{else}}{{#if (eq actionType "removed")}}#fee2e2; color: #991b1b;{{else}}#e5e7eb; color: #374151;{{/if}}{{/if}} padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">{{actionLabel}}</span>
+                {{else}}
+                    {{#if actionType}}
+                        {{#if (eq actionType "labeled")}}
+                            <span style="background-color: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Reduziert</span>
                         {{else}}
-                            <span style="background-color: #e5e7eb; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 12px;">{{actionType}}</span>
+                            {{#if (eq actionType "removed")}}
+                                <span style="background-color: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Aussortiert</span>
+                            {{else}}
+                                <span style="background-color: #e5e7eb; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">{{actionType}}</span>
+                            {{/if}}
                         {{/if}}
                     {{/if}}
                 {{/if}}
                 {{#if note}}
-                    <br><small style="color: #6b7280;">{{note}}</small>
+                    <br><small style="color: #6b7280; margin-top: 4px; display: block;">{{note}}</small>
                 {{/if}}
             </td>
             <td style="padding: 12px; color: #1f2937;">

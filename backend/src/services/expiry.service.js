@@ -1037,7 +1037,7 @@ export const notifyDailyExpiryProducts = async () => {
 
     return {
       success: true,
-      message: `${successCount} admin'e mail gönderildi`,
+      message: `E-Mail wurde an ${successCount} Administrator(en) gesendet`,
       criticalCount: unprocessedCriticalCount,
       warningCount: unprocessedWarningCount,
       totalCount: totalCount,
@@ -1251,7 +1251,7 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
 
     return {
       success: true,
-      message: `${successCount} admin'e mail gönderildi`,
+      message: `E-Mail wurde an ${successCount} Administrator(en) gesendet`,
       count: processedProducts.length,
       unprocessedCriticalCount: 0,
       unprocessedWarningCount: 0,
@@ -1263,6 +1263,171 @@ export const checkExpiredProductsAndNotifyAdmins = async () => {
     return {
       success: false,
       message: 'MHD kontrolü sırasında hata oluştu',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Bugünkü işlemleri topla ve adminlere mail gönder
+ * Dashboard'daki tüm işlenen ürünleri içerir
+ */
+export const sendTodayCompletionReport = async () => {
+  try {
+    const today = getToday();
+    const todayStart = startOfDay(today);
+    const todayEnd = endOfDay(today);
+
+    // Dashboard verilerini al
+    const dashboard = await getExpiryDashboardData();
+
+    // Bugün işlenen tüm ürünleri topla
+    const todayProcessedProducts = dashboard.products.filter((product) => product.isProcessed);
+
+    // Her ürün için işlem detaylarını al
+    const processedProductsDetails = await Promise.all(
+      todayProcessedProducts.map(async (product) => {
+        // Bugün yapılan son işlemi bul
+        const todayActions = await prisma.expiryAction.findMany({
+          where: {
+            productId: product.id,
+            isUndone: false,
+            createdAt: {
+              gte: todayStart,
+              lte: todayEnd,
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+          include: {
+            admin: {
+              select: {
+                id: true,
+                firstName: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        const lastAction = todayActions[0];
+        if (!lastAction) {
+          return null;
+        }
+
+        const actionDate = lastAction.createdAt;
+        let actionLabel = 'Unbekannt';
+        const excludedFromCheck = lastAction.excludedFromCheck === true;
+        if (lastAction.actionType === 'labeled') {
+          actionLabel = 'Reduziert';
+        } else if (lastAction.actionType === 'removed') {
+          if (excludedFromCheck) {
+            actionLabel = 'Deaktiviert';
+          } else {
+            actionLabel = 'Aussortiert';
+          }
+        }
+
+        return {
+          id: product.id,
+          name: product.name,
+          barcode: product.barcode,
+          category: product.category?.name || 'Allgemein',
+          expiryDate: product.expiryDate,
+          actionType: lastAction.actionType,
+          actionLabel,
+          excludedFromCheck,
+          actionDate: actionDate.toLocaleDateString('de-DE') + ' ' + actionDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+          adminName: lastAction.admin ? lastAction.admin.firstName : 'Unbekannt',
+          adminEmail: lastAction.admin ? lastAction.admin.email : null,
+          note: lastAction.note || null,
+        };
+      })
+    );
+
+    // Null değerleri filtrele
+    const validProducts = processedProductsDetails.filter(Boolean);
+
+    // Settings'den admin email listesini al
+    const allSettings = await prisma.settings.findFirst();
+    if (!allSettings || !allSettings.emailNotificationSettings?.adminEmail) {
+      console.warn('⚠️  Admin email listesi bulunamadı');
+      return { success: false, message: 'Admin email listesi bulunamadı', count: 0 };
+    }
+
+    const adminEmails = allSettings.emailNotificationSettings.adminEmail
+      .split(',')
+      .map((email) => email.trim())
+      .filter((email) => email && email.includes('@'));
+
+    if (adminEmails.length === 0) {
+      console.warn('⚠️  Geçerli admin email adresi bulunamadı');
+      return { success: false, message: 'Geçerli admin email adresi bulunamadı', count: 0 };
+    }
+
+    // İstatistikleri hesapla
+    const totalProducts = dashboard.stats.totalProducts;
+    const processedCount = dashboard.stats.processedProducts;
+    const pendingCount = dashboard.stats.pendingProducts;
+
+    // İşlem türlerine göre grupla
+    const actionStats = {
+      labeled: validProducts.filter((p) => p.actionType === 'labeled').length,
+      removed: validProducts.filter((p) => p.actionType === 'removed' && !p.excludedFromCheck).length,
+      deactivated: validProducts.filter((p) => p.actionType === 'removed' && p.excludedFromCheck === true).length,
+    };
+
+    // Her admin'e mail gönder
+    const emailPromises = adminEmails.map(async (email) => {
+      try {
+        const result = await queueService.addEmailJob({
+          to: email,
+          subject: `MHD-Verwaltung abgeschlossen - ${processedCount}/${totalProducts} Produkt(e) bearbeitet`,
+          template: 'expiry-completion-notification',
+          data: {
+            date: today.toLocaleDateString('de-DE'),
+            totalProducts,
+            processedCount,
+            pendingCount,
+            actionStats,
+            products: validProducts,
+            productCount: validProducts.length,
+            storeName: allSettings.storeSettings?.storeName || 'Gruner SuperStore',
+          },
+          metadata: {
+            type: 'expiry-completion-notification',
+            productCount: validProducts.length,
+            date: today.toISOString(),
+          },
+          priority: 2,
+        });
+
+        return { email, success: true };
+      } catch (emailError) {
+        console.error(`❌ Email gönderim hatası (${email}):`, emailError);
+        return { email, success: false, error: emailError.message };
+      }
+    });
+
+    const results = await Promise.all(emailPromises);
+    const successCount = results.filter((r) => r.success).length;
+
+    return {
+      success: true,
+      message: `E-Mail wurde an ${successCount} Administrator(en) gesendet`,
+      totalProducts,
+      processedCount,
+      pendingCount,
+      productCount: validProducts.length,
+      emailResults: results,
+    };
+  } catch (error) {
+    console.error('❌ Bugünkü işlem raporu gönderim hatası:', error);
+    return {
+      success: false,
+      message: 'Bugünkü işlem raporu gönderilirken hata oluştu',
       error: error.message,
     };
   }

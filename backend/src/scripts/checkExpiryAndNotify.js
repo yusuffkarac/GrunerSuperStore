@@ -35,7 +35,7 @@ async function main() {
       console.log(`📦 İşlem yapılan ürün sayısı: ${result.count}`);
       if (result.emailResults) {
         const successCount = result.emailResults.filter(r => r.success).length;
-        console.log(`📧 ${successCount}/${result.emailResults.length} admin'e mail gönderildi`);
+        console.log(`📧 E-Mail wurde an ${successCount} von ${result.emailResults.length} Admins gesendet`);
       }
       process.exit(0);
     } else {

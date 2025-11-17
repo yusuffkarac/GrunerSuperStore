@@ -220,3 +220,16 @@ export const checkAndNotifyAdmins = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Bugünkü işlemleri topla ve adminlere mail gönder
+ * POST /admin/expiry/send-completion-report
+ */
+export const sendCompletionReport = async (req, res, next) => {
+  try {
+    const result = await expiryService.sendTodayCompletionReport();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
