@@ -27,6 +27,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_weekly_magazines_updated_at ON weekly_magazines;
+
 CREATE TRIGGER trigger_update_weekly_magazines_updated_at
 BEFORE UPDATE ON weekly_magazines
 FOR EACH ROW

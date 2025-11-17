@@ -20,6 +20,14 @@ import Switch from '../../components/common/Switch';
 import BulkPriceUpdateModal from '../../components/admin/BulkPriceUpdateModal';
 import { useModalScroll } from '../../hooks/useModalScroll';
 
+const formatDateForApi = (date) => {
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Memoized Product Row Component
 const ProductRow = memo(({ product, onEdit, onDelete, onOpenVariants }) => {
   const imageUrl = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
@@ -590,7 +598,7 @@ function Produkte() {
         ecoscoreGrade: '',
         nutritionData: null,
         openfoodfactsCategories: [],
-        expiryDate: '',
+        expiryDate: null,
         hideFromExpiryManagement: false,
         taxRate: '',
       });
@@ -636,7 +644,7 @@ function Produkte() {
         ecoscoreGrade: formData.ecoscoreGrade || null,
         nutritionData: formData.nutritionData || null,
         openfoodfactsCategories: formData.openfoodfactsCategories && formData.openfoodfactsCategories.length > 0 ? formData.openfoodfactsCategories : null,
-        expiryDate: formData.expiryDate ? formData.expiryDate.toISOString() : null,
+        expiryDate: formatDateForApi(formData.expiryDate),
         hideFromExpiryManagement: formData.hideFromExpiryManagement,
         taxRate: formData.taxRate ? parseFloat(formData.taxRate) : null,
       };

@@ -19,7 +19,20 @@ export const getSettings = async (req, res, next) => {
  */
 export const getDashboard = async (req, res, next) => {
   try {
-    const data = await expiryService.getExpiryDashboardData();
+    const { previewDate } = req.query;
+    let normalizedPreviewDate = null;
+
+    if (previewDate) {
+      const parsedDate = new Date(previewDate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ error: 'Geçersiz önizleme tarihi' });
+      }
+      normalizedPreviewDate = parsedDate;
+    }
+
+    const data = await expiryService.getExpiryDashboardData({
+      previewDate: normalizedPreviewDate,
+    });
     res.json(data);
   } catch (error) {
     next(error);
