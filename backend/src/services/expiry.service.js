@@ -116,38 +116,33 @@ const getDaysDifference = (date1, date2) => {
 const fetchTaskCandidates = async (todayStart, todayEnd, horizonEnd) => {
   return prisma.product.findMany({
     where: {
-      expiryDate: {
+              expiryDate: {
         not: null,
       },
       hideFromExpiryManagement: false,
       isActive: true,
       OR: [
         {
-          expiryDate: {
+                  expiryDate: {
             gte: todayStart,
             lte: horizonEnd,
-          },
-        },
-        {
-          expiryActions: {
-            some: {
-              isUndone: false,
-              createdAt: {
-                gte: todayStart,
-                lte: todayEnd,
               },
             },
-          },
+            {
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                gte: todayStart,
+                    lte: todayEnd,
+                  },
+                },
+              },
         },
         {
           AND: [
             {
               excludeFromExpiryCheck: true,
-            },
-            {
-              expiryDate: {
-                gte: todayStart,
-              },
             },
             {
               expiryActions: {
@@ -218,7 +213,8 @@ const mapProductToTask = (product, context) => {
 
   let taskType = null;
   if (isPersistentDeactivated) {
-    taskType = 'aussortieren';
+    taskType =
+      daysUntilExpiry <= context.settings.criticalDays ? 'aussortieren' : 'reduzieren';
   } else if (daysUntilExpiry <= context.settings.criticalDays) {
     taskType = 'aussortieren';
   } else if (daysUntilExpiry <= context.settings.warningDays) {

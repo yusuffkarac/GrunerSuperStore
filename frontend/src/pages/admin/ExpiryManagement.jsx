@@ -428,7 +428,7 @@ function ExpiryManagement() {
           </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3 hidden dayChange" >
+      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3  dayChange" >
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="w-full md:max-w-xs">
             <label className="text-sm font-medium text-gray-700">Vorschau-Datum</label>
@@ -642,13 +642,33 @@ function ExpiryManagement() {
                     <div className="flex w-full flex-wrap gap-2 md:flex-nowrap md:justify-end">
                       {product.taskType === 'reduzieren' ? (
                         <>
+                          {!product.excludeFromExpiryCheck && (
+                            <button
+                              onClick={() => handleLabelProduct(product)}
+                              disabled={pendingQuickAction === product.id || product.isProcessed}
+                              className={`flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white ${
+                                product.isProcessed ? 'bg-emerald-200 text-emerald-800 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600'
+                              } disabled:opacity-60`}
+                            >
+                              <FiTag className="w-3.5 h-3.5" />
+                              <span className="truncate max-w-[110px] md:max-w-none">
+                                {product.isProcessed ? 'Reduziert' : 'Reduzieren'}
+                              </span>
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleLabelProduct(product)}
-                            disabled={pendingQuickAction === product.id || product.isProcessed}
-                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-60"
+                            onClick={() => handleDeactivateProduct(product)}
+                            disabled={pendingDeactivateId === product.id || (product.excludeFromExpiryCheck && product.isProcessed)}
+                            className={`flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border ${
+                              product.excludeFromExpiryCheck && product.isProcessed
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-not-allowed'
+                                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                            } disabled:opacity-60`}
                           >
-                            <FiTag className="w-3.5 h-3.5" />
-                            <span className="truncate max-w-[110px] md:max-w-none">Reduzieren</span>
+                            <FiPower className="w-3.5 h-3.5" />
+                            <span className="truncate max-w-[110px] md:max-w-none">
+                              {product.excludeFromExpiryCheck && product.isProcessed ? 'Deaktiviert' : 'Deaktivieren'}
+                            </span>
                           </button>
                           <button
                             onClick={() => openActionDialog(product, 'date')}
@@ -669,11 +689,17 @@ function ExpiryManagement() {
                           </button>
                           <button
                             onClick={() => handleDeactivateProduct(product)}
-                            disabled={pendingDeactivateId === product.id}
-                            className="flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                            disabled={pendingDeactivateId === product.id || (product.excludeFromExpiryCheck && product.isProcessed)}
+                            className={`flex-1 min-w-[90px] md:flex-none md:w-auto inline-flex justify-center items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm font-medium rounded-lg border ${
+                              product.excludeFromExpiryCheck && product.isProcessed
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-not-allowed'
+                                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                            } disabled:opacity-60`}
                           >
                             <FiPower className="w-3.5 h-3.5" />
-                            <span className="truncate max-w-[110px] md:max-w-none">Deaktivieren</span>
+                            <span className="truncate max-w-[110px] md:max-w-none">
+                              {product.excludeFromExpiryCheck && product.isProcessed ? 'Deaktiviert' : 'Deaktivieren'}
+                            </span>
                           </button>
                           <button
                             onClick={() => openActionDialog(product, 'date')}

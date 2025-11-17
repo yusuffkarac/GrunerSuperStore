@@ -1087,24 +1087,24 @@ function Produkte() {
             {total} {total === 1 ? 'Produkt' : 'Produkte'} insgesamt
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col w-full sm:w-auto sm:flex-row items-stretch sm:items-center gap-2">
           <button
             onClick={() => navigate('/admin/bulk-price-updates')}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm w-full sm:w-auto"
           >
             <FiArchive className="w-4 h-4" />
             <span>Massenaktualisierungen</span>
           </button>
           <button
             onClick={() => setShowBulkPriceModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm w-full sm:w-auto"
           >
             <FiTrendingUp className="w-4 h-4" />
             <span>Preise aktualisieren</span>
           </button>
           <button
             onClick={() => openModal()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-white rounded-lg transition-colors text-sm w-full sm:w-auto"
             style={{
               backgroundColor: themeColors?.primary?.[600] || '#16a34a'
             }}
