@@ -324,7 +324,8 @@ function UrunListesi() {
       )}
 
       {/* Filtreleme/Sıralama Bar */}
-      <div className="bg-white border-b border-primary-600  top-[73px] md:top-[105px] z-40">
+      <div className="bg-white border-b border-primary-600  top-[73px] md:top-[105px] z-40"
+        >
         <div className="container-mobile">
           <div className="flex items-center">
             {/* Filtrele butonu */}
@@ -365,7 +366,7 @@ function UrunListesi() {
       {categories.length > 0 && (
         <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
           <div className="container-mobile">
-            <div className="flex gap-2 py-3">
+            <div className="flex gap-2 py-3 justify-start w-full" style={{ overflowX: 'scroll', scrollbarWidth: 'none'}}>
               <button
                 onClick={() => handleCategoryChange('')}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
