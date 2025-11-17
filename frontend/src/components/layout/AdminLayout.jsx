@@ -394,7 +394,7 @@ function AdminLayout() {
                 {sidebarCollapsed ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
               </button>
             </div>
-          <img src={logo} alt="Gruner Logo" className="w-8 h-8 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
+          <img src={logo} alt="Gruner Logo" className="w-16 h-16 object-contain flex-shrink-0" onError={(e) => { e.target.src = '/logo.png'; }} />
           {adminPanelTitle && (
             <h1 
               className="text-xl font-bold" 

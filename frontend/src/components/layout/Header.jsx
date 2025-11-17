@@ -228,7 +228,7 @@ function Header() {
             <img
               src={logo}
               alt="Gruner SuperStore"
-              className="h-10 w-auto object-contain"
+              className="h-14 w-auto object-contain"
               onError={(e) => { e.target.src = '/logo.png'; }}
             />
           </Link>
@@ -383,7 +383,7 @@ function Header() {
               <img
                 src={logo}
                 alt="Gruner SuperStore"
-                className="h-8 w-auto object-contain"
+                className="h-12 md:h-12 w-auto object-contain"
                 onError={(e) => { e.target.src = '/logo.png'; }}
               />
             </Link>
