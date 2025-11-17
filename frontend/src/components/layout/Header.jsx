@@ -26,6 +26,7 @@ function Header() {
   const [showMagazineViewer, setShowMagazineViewer] = useState(false);
   const [selectedMagazine, setSelectedMagazine] = useState(null);
   const [showMagazineSelection, setShowMagazineSelection] = useState(false);
+  const [viewedMagazineIds, setViewedMagazineIds] = useState(new Set());
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
   const magazineButtonRef = useRef(null);
@@ -60,6 +61,19 @@ function Header() {
     loadLogo();
   }, []);
 
+  // Görüntülenen prospekt ID'lerini localStorage'dan yükle
+  useEffect(() => {
+    const stored = localStorage.getItem('viewedMagazineIds');
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored);
+        setViewedMagazineIds(new Set(ids));
+      } catch (error) {
+        console.error('Görüntülenen prospekt ID\'leri yüklenirken hata:', error);
+      }
+    }
+  }, []);
+
   // Aktif dergileri yükle
   useEffect(() => {
     const loadActiveMagazines = async () => {
@@ -68,6 +82,17 @@ function Header() {
         // Response yapısı: {magazines: [...]} veya {data: {magazines: [...]}}
         const magazines = response?.magazines || response?.data?.magazines || [];
         setActiveMagazines(magazines);
+        
+        // Yeni prospektler geldiğinde, sadece aktif prospekt ID'lerini görüntülenenler listesinde tut
+        // Eski (artık aktif olmayan) prospekt ID'lerini temizle
+        if (magazines.length > 0) {
+          setViewedMagazineIds(prev => {
+            const activeIds = new Set(magazines.map(m => m.id));
+            const filtered = new Set(Array.from(prev).filter(id => activeIds.has(id)));
+            localStorage.setItem('viewedMagazineIds', JSON.stringify(Array.from(filtered)));
+            return filtered;
+          });
+        }
       } catch (error) {
         console.error('Aktif dergiler yüklenirken hata:', error);
         setActiveMagazines([]);
@@ -86,11 +111,22 @@ function Header() {
     // Tek dergi varsa veya magazine parametresi verildiyse direkt aç
     const magazineToOpen = magazine || activeMagazines[0];
     if (magazineToOpen) {
+      // Prospekt'i görüntülenen olarak işaretle
+      const newViewedIds = new Set(viewedMagazineIds);
+      newViewedIds.add(magazineToOpen.id);
+      setViewedMagazineIds(newViewedIds);
+      
+      // localStorage'a kaydet
+      localStorage.setItem('viewedMagazineIds', JSON.stringify(Array.from(newViewedIds)));
+      
       setSelectedMagazine(magazineToOpen);
       setShowMagazineViewer(true);
       setShowMagazineSelection(false);
     }
   };
+  
+  // Görüntülenmemiş prospekt var mı kontrol et
+  const hasUnviewedMagazines = activeMagazines.some(mag => !viewedMagazineIds.has(mag.id));
 
   // Debounced search - yazdıkça arama yap
   useEffect(() => {
@@ -237,7 +273,7 @@ function Header() {
                 >
                   <HiNewspaper className="w-5 h-5" />
                   <span className="font-medium">Prospekt</span>
-                  {activeMagazines.length > 0 && (
+                  {hasUnviewedMagazines && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-3 h-3 flex items-center justify-center animate-pulse"></span>
                   )}
                 </button>
@@ -325,12 +361,12 @@ function Header() {
         </div>
 
         {/* Mobil: Geri butonu ve arama çubuğu */}
-        <div className="flex md:hidden items-center gap-3 py-3">
+        <div className="flex md:hidden items-center gap-1.5 py-3">
           {/* Geri butonu */}
           {showBackButton && (
             <button
               onClick={() => navigate(-1)}
-              className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Zurück"
             >
               <FiArrowLeft className="w-5 h-5" />
@@ -345,15 +381,16 @@ function Header() {
               aria-label="Ana Sayfa"
             >
               <img
-                src="/logo.png"
+                src={logo}
                 alt="Gruner SuperStore"
-                className="h-10 w-auto object-contain"
+                className="h-8 w-auto object-contain"
+                onError={(e) => { e.target.src = '/logo.png'; }}
               />
             </Link>
           )}
 
           {/* Arama çubuğu - şık tasarım */}
-          <div className="flex-1 relative" ref={searchRef}>
+          <div className="flex-1 relative min-w-0" ref={searchRef}>
             <form onSubmit={handleSearch} className="relative">
               <div className="relative group">
                 <input
@@ -367,21 +404,21 @@ function Header() {
                       setShowResults(true);
                     }
                   }}
-                  className="w-full px-4 py-2.5 pl-11 pr-4 bg-white text-gray-900 rounded-full 
-                             border border-gray-200 shadow-md
+                  className="w-full px-3 py-2 pl-9 pr-3 bg-white text-gray-900 rounded-full 
+                             border border-gray-200 shadow-md text-sm
                              transition-all duration-300 ease-in-out
                              focus:outline-none focus:ring-2 focus:ring-primary-500/50 
                              focus:border-primary-500 focus:shadow-lg focus:shadow-primary-500/20
                              hover:border-gray-300 hover:shadow-lg
                              placeholder:text-gray-400"
                 />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <FiSearch className={`text-gray-400 transition-colors duration-300 ${
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FiSearch className={`text-gray-400 transition-colors duration-300 w-4 h-4 ${
                     searchTerm ? 'text-primary-500' : 'group-hover:text-gray-500'
                   }`} />
                 </div>
                 {isSearching && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent"></div>
                   </div>
                 )}
@@ -392,7 +429,7 @@ function Header() {
                       setSearchTerm('');
                       setShowResults(false);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     aria-label="Temizle"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -481,21 +518,32 @@ function Header() {
             )}
           </div>
 
-          {/* Dergi İkonu - Mobil */}
-          {activeMagazines.length > 0 && (
-            <div className="relative flex-shrink-0" ref={magazineButtonRef}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenMagazine();
-                }}
-                className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Prospekt"
-                title="Prospekt"
-              >
-                <HiNewspaper className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-3 h-3 flex items-center justify-center animate-pulse"></span>
-              </button>
+          {/* Sağ Taraf - Bildirim ve Prospekt İkonları - Mobil */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Bildirim İkonu - Mobil */}
+            {isAuthenticated && (
+              <div className="flex-shrink-0">
+                <NotificationBell />
+              </div>
+            )}
+            
+            {/* Dergi İkonu - Mobil */}
+            {activeMagazines.length > 0 && (
+              <div className="relative flex-shrink-0" ref={magazineButtonRef}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenMagazine();
+                  }}
+                  className="relative p-1.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Prospekt"
+                  title="Prospekt"
+                >
+                  <HiNewspaper className="w-5 h-5" />
+                  {hasUnviewedMagazines && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full w-2.5 h-2.5 flex items-center justify-center animate-pulse"></span>
+                  )}
+                </button>
               
               {/* Dropdown - Mobil - Butonun altında */}
               {showMagazineSelection && activeMagazines.length >= 2 && (
@@ -538,8 +586,9 @@ function Header() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Desktop: Arama Çubuğu - şık tasarım */}

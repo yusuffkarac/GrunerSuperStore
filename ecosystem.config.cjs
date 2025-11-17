@@ -1,5 +1,5 @@
-// PM2 Ecosystem Config - Multi-Tenant Support
-// Her tenant için ayrı PM2 process tanımları
+// PM2 Ecosystem Config - Production (Single Tenant)
+// Tek tenant için basit PM2 config
 
 const fs = require('fs');
 const path = require('path');
@@ -43,64 +43,42 @@ function parseEnvFile(envFilePath) {
   return env;
 }
 
-/**
- * Tenant'ları otomatik olarak bul ve PM2 config oluştur
- */
-function getTenantConfigs() {
-  const backendDir = path.join(__dirname, 'backend');
-  const files = fs.readdirSync(backendDir);
-  
-  const tenants = [];
-  
-  // .env.{tenant-name} dosyalarını bul
-  files.forEach(file => {
-    if (file.startsWith('.env.') && file !== '.env.example' && !file.startsWith('.env.backup')) {
-      const tenantName = file.replace('.env.', '');
-      tenants.push(tenantName);
-    }
-  });
-  
-  return tenants.map(tenantName => {
-    const envFilePath = path.join(backendDir, `.env.${tenantName}`);
-    const envVars = parseEnvFile(envFilePath);
-    
-    return {
-      name: `${tenantName}-backend`,
+// Backend .env dosyasını oku
+const backendEnvPath = path.join(__dirname, 'backend', '.env');
+const envVars = parseEnvFile(backendEnvPath);
+
+// PM2 config export
+module.exports = {
+  apps: [
+    {
+      name: 'gruner-backend',
       script: 'src/server.js',
       cwd: path.join(__dirname, 'backend'),
       instances: 1,
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        ...envVars, // .env.{tenant-name} dosyasındaki tüm environment variable'ları ekle
+        // .env dosyasından okunan değişkenleri ekle
+        ...envVars,
+        // Eğer .env dosyasında yoksa varsayılan değerler
+        PORT: envVars.PORT || 5001,
+        DB_HOST: envVars.DB_HOST || 'localhost',
+        DB_PORT: envVars.DB_PORT || 5432,
+        DB_NAME: envVars.DB_NAME || 'gruner_superstore',
+        DB_USER: envVars.DB_USER || 'postgres',
+        CORS_ORIGIN: envVars.CORS_ORIGIN || 'https://meral.netwerkpro.de,http://meral.netwerkpro.de',
+        UPLOAD_PATH: envVars.UPLOAD_PATH || 'uploads',
       },
-      error_file: `logs/${tenantName}-error.log`,
-      out_file: `logs/${tenantName}-out.log`,
-      log_file: `logs/${tenantName}-combined.log`,
+      error_file: path.join(__dirname, 'logs', 'backend-error.log'),
+      out_file: path.join(__dirname, 'logs', 'backend-out.log'),
+      log_file: path.join(__dirname, 'logs', 'backend-combined.log'),
       time: true,
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
       merge_logs: true,
       kill_timeout: 5000,
-    };
-  });
-}
-
-// PM2 config export
-module.exports = {
-  apps: [
-    // Redis (eğer docker-compose kullanılmıyorsa)
-    // {
-    //   name: 'redis',
-    //   script: 'redis-server',
-    //   args: '--appendonly yes',
-    //   instances: 1,
-    //   exec_mode: 'fork',
-    // },
-    
-    // Tenant'ları dinamik olarak ekle
-    ...getTenantConfigs(),
+    },
   ],
 };
 

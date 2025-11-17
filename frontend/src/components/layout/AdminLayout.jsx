@@ -418,7 +418,7 @@ function AdminLayout() {
             }}
             onMouseLeave={() => setHoveredTopMenuItem(null)}
           >
-            <NotificationBell />
+            <NotificationBell alignLeft />
           </div>
           {filteredTopMenuItems.map((item) => {
             const Icon = item.icon;
@@ -515,7 +515,7 @@ function AdminLayout() {
         <div className="flex items-center gap-1">
           {/* Mobile Top Menu Icons */}
           <div className="flex items-center gap-1">
-            <NotificationBell />
+            <NotificationBell alignLeft />
             {filteredTopMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = !item.isAction && location.pathname === item.path;

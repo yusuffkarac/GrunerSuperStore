@@ -5,7 +5,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 
-function NotificationBell() {
+function NotificationBell({ alignLeft = false }) {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
   const [isOpen, setIsOpen] = useState(false);
@@ -90,10 +90,10 @@ function NotificationBell() {
       {/* Bildirim İkonu */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative p-1.5 md:p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         aria-label="Benachrichtigungen"
       >
-        <FiBell className="w-6 h-6" />
+        <FiBell className="w-5 h-5 md:w-6 md:h-6" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -103,7 +103,7 @@ function NotificationBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div style= {{marginRight: '10px'}} className="absolute left-0 md:left-auto md:right-0 top-full mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[500px] flex flex-col">
+        <div className={`absolute ${alignLeft ? 'left-0' : 'right-0'} top-full mt-2 w-[calc(100vw-2rem)] max-w-80 md:max-w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[500px] flex flex-col`}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Benachrichtigungen</h3>
