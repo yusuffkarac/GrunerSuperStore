@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js';
 import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../utils/errors.js';
 import { getGermanyDate } from '../utils/date.js';
+import { getTodayInGermany } from '../utils/date.js';
 import settingsService from './settings.service.js';
 
 class ProductService {
@@ -192,11 +193,22 @@ class ProductService {
     ]);
 
     // Her ürün için gösterilecek fiyatı hesapla
+    const today = getGermanyDate();
+    const todayKey = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
     const productsWithDisplayPrice = products.map((product) => {
       const priceInfo = this.getDisplayPrice(product);
+      let daysUntilExpiry = null;
+      if (product.expiryDate) {
+        const expiryDate = new Date(product.expiryDate);
+        const expiryKey = Date.UTC(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
+        const diffTime = expiryKey - todayKey;
+        daysUntilExpiry = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      }
       return {
         ...product,
         price: priceInfo.displayPrice, // API response'unda price alanı gösterilecek fiyatı içerir
+        daysUntilExpiry,
       };
     });
 

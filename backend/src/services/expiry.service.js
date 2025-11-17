@@ -3,21 +3,77 @@ import { NotFoundError, BadRequestError } from '../utils/errors.js';
 import queueService from './queue.service.js';
 import { getTodayInGermany } from '../utils/date.js';
 
+const defaultExpirySettings = {
+  enabled: true,
+  warningDays: 3, // Turuncu etiket için (1-3 gün)
+  criticalDays: 0, // Aynı gün
+  processingDeadline: '20:00', // Günlük kapanış uyarısı
+};
+
+const normalizeDeadlineTime = (value) => {
+  if (!value || typeof value !== 'string') {
+    return defaultExpirySettings.processingDeadline;
+  }
+
+  const trimmed = value.trim();
+  const match = trimmed.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) {
+    return defaultExpirySettings.processingDeadline;
+  }
+  return `${match[1]}:${match[2]}`;
+};
+
+const normalizeExpirySettings = (settings = {}) => {
+  const merged = {
+    ...defaultExpirySettings,
+    ...settings,
+  };
+
+  merged.enabled = merged.enabled !== undefined ? Boolean(merged.enabled) : defaultExpirySettings.enabled;
+
+  const warningDays = Number.isFinite(Number(merged.warningDays))
+    ? Math.max(parseInt(merged.warningDays, 10), 1)
+    : defaultExpirySettings.warningDays;
+  const criticalDays = Number.isFinite(Number(merged.criticalDays))
+    ? Math.max(parseInt(merged.criticalDays, 10), 0)
+    : defaultExpirySettings.criticalDays;
+  merged.warningDays = Math.max(warningDays, criticalDays);
+  merged.criticalDays = Math.min(criticalDays, merged.warningDays);
+
+  merged.processingDeadline = normalizeDeadlineTime(merged.processingDeadline);
+
+  return merged;
+};
+
+const startOfDay = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const endOfDay = (date) => {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+const isSameDay = (dateA, dateB) => {
+  if (!dateA || !dateB) return false;
+  return startOfDay(dateA).getTime() === startOfDay(dateB).getTime();
+};
+
 /**
  * SKT ayarlarını getir
  */
 export const getExpirySettings = async () => {
   const settings = await prisma.settings.findFirst();
-
-  const defaultSettings = {
-    enabled: true,
-    warningDays: 3, // Turuncu etiket için
-    criticalDays: 0, // Kırmızı (aynı gün) için
-  };
-
-  const result = settings?.expiryManagementSettings || defaultSettings;
-
-  return result;
+  return normalizeExpirySettings(settings?.expiryManagementSettings);
 };
 
 /**
@@ -32,287 +88,324 @@ const getToday = () => {
  * İki tarih arasındaki gün farkını hesapla
  */
 const getDaysDifference = (date1, date2) => {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  d1.setHours(0, 0, 0, 0);
-  d2.setHours(0, 0, 0, 0);
-  const diffTime = d1 - d2;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  const getDateKey = (inputDate) => {
+    const d = new Date(inputDate);
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  };
+
+  const diffTime = getDateKey(date1) - getDateKey(date2);
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+};
+
+const fetchTaskCandidates = async (todayStart, todayEnd, horizonEnd) => {
+  return prisma.product.findMany({
+    where: {
+              expiryDate: {
+        not: null,
+      },
+      hideFromExpiryManagement: false,
+      isActive: true,
+      OR: [
+        {
+                  expiryDate: {
+            gte: todayStart,
+            lte: horizonEnd,
+              },
+            },
+            {
+              expiryActions: {
+                some: {
+                  isUndone: false,
+                  createdAt: {
+                gte: todayStart,
+                    lte: todayEnd,
+                  },
+                },
+              },
+        },
+      ],
+    },
+    include: {
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      expiryActions: {
+        where: {
+          isUndone: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 1,
+        include: {
+          admin: {
+            select: {
+              id: true,
+              firstName: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { expiryDate: 'asc' },
+      { name: 'asc' },
+    ],
+  });
+};
+
+const mapProductToTask = (product, context) => {
+  if (!product.expiryDate) {
+    return null;
+  }
+
+  const expiryDate = startOfDay(product.expiryDate);
+  const daysUntilExpiry = getDaysDifference(expiryDate, context.todayStart);
+  const lastAction = product.expiryActions[0] || null;
+  const actionSameDay =
+    lastAction && !lastAction.isUndone && isSameDay(lastAction.createdAt, context.todayStart);
+  const isPersistentDeactivated =
+    product.excludeFromExpiryCheck === true &&
+    lastAction &&
+    !lastAction.isUndone &&
+    lastAction.actionType === 'removed' &&
+    lastAction.excludedFromCheck === true;
+
+  if (daysUntilExpiry > context.settings.warningDays && !actionSameDay && !isPersistentDeactivated) {
+    return null;
+  }
+
+  let taskType = null;
+  if (isPersistentDeactivated) {
+    taskType = 'aussortieren';
+  } else if (daysUntilExpiry <= context.settings.criticalDays) {
+    taskType = 'aussortieren';
+  } else if (daysUntilExpiry <= context.settings.warningDays) {
+    taskType = 'reduzieren';
+  } else if (actionSameDay) {
+    taskType = lastAction?.actionType === 'labeled' ? 'reduzieren' : 'aussortieren';
+  } else {
+    return null;
+  }
+
+  // Reduziert ürünler: işlem günü listede soluk kal, ertesi güne kadar gizlen
+  if (
+    taskType === 'reduzieren' &&
+    lastAction &&
+    !lastAction.isUndone &&
+    lastAction.actionType === 'labeled' &&
+    context.todayStart.getTime() < expiryDate.getTime()
+  ) {
+    if (!actionSameDay) {
+      return null;
+    }
+  }
+
+  const wasProcessedToday = (() => {
+    if (!actionSameDay || !lastAction) {
+      return false;
+    }
+
+    if (lastAction.actionType === 'labeled') {
+      return true;
+    }
+
+    if (lastAction.actionType === 'removed') {
+      if (lastAction.excludedFromCheck) {
+        return true;
+      }
+      return daysUntilExpiry > context.settings.warningDays;
+    }
+
+    return false;
+  })();
+
+  const categoryId = product.category?.id || 'uncategorized';
+  const categoryName = product.category?.name || 'Keine Kategorie';
+
+  return {
+    id: product.id,
+    name: product.name,
+    barcode: product.barcode,
+    stock: product.stock,
+    category: {
+      id: categoryId,
+      name: categoryName,
+    },
+    expiryDate: product.expiryDate,
+    daysUntilExpiry,
+    taskType,
+    isProcessed: wasProcessedToday,
+    excludeFromExpiryCheck: product.excludeFromExpiryCheck === true,
+    lastAction: lastAction
+      ? {
+          id: lastAction.id,
+          actionType: lastAction.actionType,
+          createdAt: lastAction.createdAt,
+          note: lastAction.note,
+          excludedFromCheck: lastAction.excludedFromCheck,
+          admin: lastAction.admin
+            ? {
+                id: lastAction.admin.id,
+                firstName: lastAction.admin.firstName,
+                email: lastAction.admin.email,
+              }
+            : null,
+        }
+      : null,
+    highlight: actionSameDay ? lastAction.actionType : null,
+    ...(context.includeRawProduct ? { rawProduct: product } : {}),
+  };
+};
+
+const buildTaskList = async ({ includeRawProduct = false } = {}) => {
+  const settings = await getExpirySettings();
+  const todayStart = startOfDay(getToday());
+  const todayEnd = endOfDay(todayStart);
+  const horizonEnd = endOfDay(addDays(todayStart, settings.warningDays));
+
+  const candidates = await fetchTaskCandidates(todayStart, todayEnd, horizonEnd);
+  const context = { todayStart, settings, includeRawProduct };
+
+  const tasks = candidates
+    .map((product) => mapProductToTask(product, context))
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  return { tasks, todayStart, horizonEnd, settings };
 };
 
 /**
- * Kritik ürünleri getir (son gün olanlar - kırmızı)
+ * Kritik ürünleri getir (son gün - kırmızı)
  */
 export const getCriticalProducts = async () => {
-  const settings = await getExpirySettings();
-  const today = getToday();
-
-  
-
-  // criticalDays gün sonrasına kadar olan ürünler (DAHİL)
-  // +1 gün ekleyip "lt" kullanarak sınır durumunu düzeltiyoruz
-  const criticalDate = new Date(today);
-  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
-
-  
-
-  // Bugün sonu
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
-
-  const products = await prisma.product.findMany({
-    where: {
-      AND: [
-        {
-          OR: [
-            {
-              // Normal critical aralığındaki ürünler
-              expiryDate: {
-                lt: criticalDate, // criticalDays günü DAHİL (< criticalDays+1)
-                gte: today, // Geçmiş tarihli olanları hariç tut
-              },
-            },
-            {
-              // Bugün critical aralığında olan ama yeni tarih atanmış ürünler
-              // Son işlem bugün yapılmışsa ve o işlemdeki tarih critical aralığındaysa
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today, // Bugün yapılan işlemler
-                    lte: todayEnd, // Bugünün sonu
-                  },
-                  expiryDate: {
-                    gte: today,
-                    lt: criticalDate,
-                  },
-                },
-              },
-            },
-            {
-              // Bugün işlem yapılan TÜM ürünler (tarih fark etmeksizin)
-              // Bugün listede görünen bir ürün, ne tarihe atanırsa atansın bugün için listede kalmalı
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today,
-                    lte: todayEnd,
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-          OR: [
-            { excludeFromExpiryCheck: false },
-            { excludeFromExpiryCheck: true },
-          ],
-        },
-        {
-          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
-          hideFromExpiryManagement: false,
-        },
-      ],
-    },
-    include: {
-      category: {
-        select: {
-          id: true,
-          name: true,
-        },
+  const { tasks } = await buildTaskList({ includeRawProduct: true });
+  return tasks
+    .filter((task) => task.taskType === 'aussortieren')
+    .map((task) => ({
+      ...task.rawProduct,
+      daysUntilExpiry: task.daysUntilExpiry,
+      lastAction: task.lastAction,
+      excludeFromExpiryCheck: task.excludeFromExpiryCheck,
+      taskMetadata: {
+        isProcessed: task.isProcessed,
       },
-      expiryActions: {
-        where: {
-          isUndone: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 1,
-        include: {
-          admin: {
-            select: {
-              id: true,
-              firstName: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  // Son işlemi kontrol ederek filtrele
-  // - excludeFromExpiryCheck true olanlar listede kalacak (Datum Eingeben için)
-  // - Tüm ürünler listede kalacak (geri alma için ve tarih güncellemesi sonrası doğru aralıkta görünmesi için)
-  const filteredProducts = products.filter(product => {
-    // excludeFromExpiryCheck true ise listede kalacak (Datum Eingeben için)
-    if (product.excludeFromExpiryCheck) {
-      return true;
-    }
-    
-    // Tüm ürünler listede kalacak (tarih güncellemesi sonrası doğru aralıkta görünmesi için)
-    return true;
-  });
-
-  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
-  const uniqueProducts = {};
-  filteredProducts.forEach(product => {
-    if (!uniqueProducts[product.id]) {
-      uniqueProducts[product.id] = product;
-    }
-  });
-
-  return Object.values(uniqueProducts).map(product => ({
-    ...product,
-    daysUntilExpiry: getDaysDifference(product.expiryDate, today),
-    lastAction: product.expiryActions[0] || null,
-    excludeFromExpiryCheck: product.excludeFromExpiryCheck === true, // Açıkça boolean olarak set et
   }));
 };
 
 /**
- * Uyarı gerektiren ürünleri getir (warning days kalanlar - turuncu)
+ * Uyarı gerektiren ürünleri getir (warning days - turuncu)
  */
 export const getWarningProducts = async () => {
-  const settings = await getExpirySettings();
-  const today = getToday();
-
-
-  // criticalDays'den sonra, warningDays'e kadar olan ürünler
-  const criticalDate = new Date(today);
-  criticalDate.setDate(criticalDate.getDate() + settings.criticalDays + 1);
-
-  const warningDate = new Date(today);
-  warningDate.setDate(warningDate.getDate() + settings.warningDays + 1);
-
-
-  // Önce tüm warning aralığındaki ürünleri getir
-  // Ayrıca bugün warning aralığında olan ama yeni tarih atanmış ürünleri de dahil et
-  const todayEnd = new Date(today);
-  todayEnd.setHours(23, 59, 59, 999);
-  
-  const products = await prisma.product.findMany({
-    where: {
-      AND: [
-        {
-          OR: [
-            {
-              // Normal warning aralığındaki ürünler
-              expiryDate: {
-                gte: criticalDate, // Kritik tarihten sonra (kritik günü hariç - çakışma önleme)
-                lt: warningDate, // Warning gününü DAHİL (< warningDays+1)
-              },
-            },
-            {
-              // Bugün warning aralığında olan ama yeni tarih atanmış ürünler
-              // Son işlem bugün yapılmışsa ve o işlemdeki tarih warning aralığındaysa
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today, // Bugün yapılan işlemler
-                    lte: todayEnd, // Bugünün sonu
-                  },
-                  expiryDate: {
-                    gte: criticalDate,
-                    lt: warningDate,
-                  },
-                },
-              },
-            },
-            {
-              // Bugün işlem yapılan TÜM ürünler (tarih fark etmeksizin)
-              // Bugün listede görünen bir ürün, ne tarihe atanırsa atansın bugün için listede kalmalı
-              expiryActions: {
-                some: {
-                  isUndone: false,
-                  createdAt: {
-                    gte: today,
-                    lte: todayEnd,
-                  },
-                },
-              },
-            },
-          ],
-        },
-        {
-          // excludeFromExpiryCheck: false olanları veya excludeFromExpiryCheck: true olanları da getir (deaktif edilmiş ama listede kalacak)
-          OR: [
-            { excludeFromExpiryCheck: false },
-            { excludeFromExpiryCheck: true },
-          ],
-        },
-        {
-          // hideFromExpiryManagement: false olanları getir (true olanlar ExpiryManagement'da gözükmesin)
-          hideFromExpiryManagement: false,
-        },
-      ],
-    },
-    include: {
-      category: {
-        select: {
-          id: true,
-          name: true,
-        },
+  const { tasks } = await buildTaskList({ includeRawProduct: true });
+  return tasks
+    .filter((task) => task.taskType === 'reduzieren')
+    .map((task) => ({
+      ...task.rawProduct,
+      daysUntilExpiry: task.daysUntilExpiry,
+      lastAction: task.lastAction,
+      excludeFromExpiryCheck: task.excludeFromExpiryCheck,
+      taskMetadata: {
+        isProcessed: task.isProcessed,
       },
-      expiryActions: {
-        where: {
-          isUndone: false,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 1,
-        include: {
-          admin: {
-            select: {
-              id: true,
-              firstName: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
+    }));
+};
 
-  // Son işlemi kontrol ederek filtrele
-  // - excludeFromExpiryCheck true olanlar listede kalacak (yeni tarih girilebilir)
-  // - Tüm ürünler listede kalacak (geri alma için ve tarih güncellemesi sonrası doğru aralıkta görünmesi için)
-  const filteredProducts = products.filter(product => {
-    // excludeFromExpiryCheck true ise listede kalacak (yeni tarih girilebilir)
-    if (product.excludeFromExpiryCheck) {
-      return true;
+/**
+ * Günlük görev panosu verilerini oluştur
+ */
+export const getExpiryDashboardData = async () => {
+  const { tasks, todayStart, horizonEnd, settings } = await buildTaskList();
+
+  const actionSummary = {
+    removeToday: { total: 0, processed: 0 },
+    labelSoon: { total: 0, processed: 0 },
+  };
+
+  const categoriesMap = new Map();
+
+  tasks.forEach((task) => {
+    const bucket = task.taskType === 'aussortieren' ? 'removeToday' : 'labelSoon';
+    actionSummary[bucket].total += 1;
+    if (task.isProcessed) {
+      actionSummary[bucket].processed += 1;
     }
-    
-    // Tüm ürünler listede kalacak (tarih güncellemesi sonrası doğru aralıkta görünmesi için)
-    return true;
-  });
 
-  // Unique ürünleri döndür (aynı ürün birden fazla kez gelebilir çünkü OR koşulu var)
-  const uniqueProducts = {};
-  filteredProducts.forEach(product => {
-    if (!uniqueProducts[product.id]) {
-      uniqueProducts[product.id] = product;
+    const categoryId = task.category.id;
+    if (!categoriesMap.has(categoryId)) {
+      categoriesMap.set(categoryId, {
+        id: categoryId,
+        name: task.category.name,
+        productCount: 0,
+        processedCount: 0,
+        pendingCount: 0,
+        summary: {
+          removeToday: { total: 0, processed: 0 },
+          labelSoon: { total: 0, processed: 0 },
+        },
+        products: [],
+      });
+    }
+
+    const categoryEntry = categoriesMap.get(categoryId);
+    categoryEntry.products.push(task);
+    categoryEntry.productCount += 1;
+    if (task.isProcessed) {
+      categoryEntry.processedCount += 1;
+    } else {
+      categoryEntry.pendingCount += 1;
+    }
+    categoryEntry.summary[bucket].total += 1;
+    if (task.isProcessed) {
+      categoryEntry.summary[bucket].processed += 1;
     }
   });
 
-  return Object.values(uniqueProducts).map(product => ({
-    ...product,
-    daysUntilExpiry: getDaysDifference(product.expiryDate, today),
-    lastAction: product.expiryActions[0] || null,
-  }));
+  const categories = Array.from(categoriesMap.values()).sort((a, b) => {
+    if (a.pendingCount !== b.pendingCount) {
+      return b.pendingCount - a.pendingCount;
+    }
+    return a.name.localeCompare(b.name, 'de');
+  });
+
+  const totalProducts = tasks.length;
+  const processedProducts = tasks.filter((task) => task.isProcessed).length;
+  const pendingProducts = totalProducts - processedProducts;
+  const completionRate = totalProducts === 0 ? 0 : Math.round((processedProducts / totalProducts) * 100);
+
+  const todayLabel = todayStart.toLocaleDateString('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return {
+    date: todayStart.toISOString(),
+    dateLabel: todayLabel,
+    deadlineTime: settings.processingDeadline,
+    deadlineLabel: `Heute fällig um ${settings.processingDeadline}`,
+    settings,
+    stats: {
+      totalCategories: categories.length,
+      totalProducts,
+      processedProducts,
+      pendingProducts,
+      completionRate,
+      progressLabel: `${processedProducts}/${totalProducts}`,
+    },
+    actionSummary,
+    categories,
+    products: tasks,
+    lastUpdatedAt: new Date().toISOString(),
+    horizon: {
+      end: horizonEnd.toISOString(),
+    },
+  };
 };
 
 /**
@@ -376,7 +469,14 @@ export const labelProduct = async (productId, adminId, note = null) => {
 /**
  * Ürünü raftan kaldır
  */
-export const removeProduct = async (productId, adminId, excludeFromCheck = false, note = null, newExpiryDate = null) => {
+export const removeProduct = async (
+  productId,
+  adminId,
+  excludeFromCheck = false,
+  note = null,
+  newExpiryDate = null,
+  actionMeta = {}
+) => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
   });
@@ -390,6 +490,9 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
   }
 
   const today = getToday();
+  const scenario = actionMeta.scenario || (excludeFromCheck ? 'out_of_stock' : 'temporary');
+  const actionType = actionMeta.action || (excludeFromCheck ? 'deactivate' : 'remove');
+  const shouldExcludeFromCheck = scenario === 'out_of_stock' ? true : excludeFromCheck;
   let expiryDateToUse = product.expiryDate;
   let daysUntilExpiry = getDaysDifference(product.expiryDate, today);
 
@@ -403,7 +506,7 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
   }
 
   // Eğer excludeFromCheck true ise, ürünü SKT kontrolünden muaf tut
-  if (excludeFromCheck) {
+  if (shouldExcludeFromCheck) {
     updateData.excludeFromExpiryCheck = true;
   }
 
@@ -423,8 +526,12 @@ export const removeProduct = async (productId, adminId, excludeFromCheck = false
       actionType: 'removed',
       expiryDate: expiryDateToUse,
       daysUntilExpiry,
-      excludedFromCheck: excludeFromCheck,
-      note,
+      excludedFromCheck: shouldExcludeFromCheck,
+      note: note
+        ? note.trim()
+        : actionType === 'deactivate'
+          ? (scenario === 'temporary' ? 'Ürün bugün geçici olarak devre dışı' : 'Ürün stokta yok')
+          : 'Ürün raftan kaldırıldı',
     },
     include: {
       product: {
@@ -714,71 +821,68 @@ export const updateExpiryDate = async (productId, adminId, newExpiryDate, note =
 /**
  * SKT ayarlarını güncelle
  */
-export const updateExpirySettings = async (newSettings) => {
+export const updateExpirySettings = async (newSettings = {}) => {
   const settings = await prisma.settings.findFirst();
 
   if (!settings) {
     throw new NotFoundError('Ayarlar bulunamadı');
   }
 
+  const currentSettings = await getExpirySettings();
+  const normalizedSettings = normalizeExpirySettings({
+    ...currentSettings,
+    ...newSettings,
+  });
 
   const updatedSettings = await prisma.settings.update({
     where: { id: settings.id },
     data: {
-      expiryManagementSettings: newSettings,
+      expiryManagementSettings: normalizedSettings,
     },
   });
 
 
-  return updatedSettings.expiryManagementSettings;
+  return normalizeExpirySettings(updatedSettings.expiryManagementSettings);
 };
 
 /**
  * Frontend'deki getUnprocessedCriticalCount mantığını kullanarak
  * işlem yapılmamış kritik ürün sayısını hesapla
  */
-const getUnprocessedCriticalCount = async () => {
-  
-  const products = await getCriticalProducts();
-  const today = getToday();
-  
-  const unprocessed = products.filter(product => {
-    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
-    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
-    if (product.excludeFromExpiryCheck === true) {
-      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
-      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-        const actionDate = new Date(product.lastAction.createdAt);
-        actionDate.setHours(0, 0, 0, 0);
-        const todayDate = new Date(today);
-        todayDate.setHours(0, 0, 0, 0);
-        
-        if (actionDate.getTime() === todayDate.getTime()) {
-          return false; // Bugün deaktif edildi, sayma
+let unprocessedCountsPromise = null;
+
+const getUnprocessedCounts = () => {
+  if (!unprocessedCountsPromise) {
+    unprocessedCountsPromise = (async () => {
+      const dashboard = await getExpiryDashboardData();
+      const counts = {
+        critical: 0,
+        warning: 0,
+      };
+
+      dashboard.products.forEach((task) => {
+        if (task.isProcessed) {
+          return;
         }
-      }
-      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
-      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
-    }
-    
-    // İşlem yapılmışsa ve bugün yapıldıysa sayma
-    if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      const actionDate = new Date(product.lastAction.createdAt);
-      actionDate.setHours(0, 0, 0, 0);
-      const todayDate = new Date(today);
-      todayDate.setHours(0, 0, 0, 0);
-      
-      if (actionDate.getTime() === todayDate.getTime()) {
-        return false; // Bugün işlem yapıldı, sayma
-      }
-    }
-    
-    return true;
-  });
-  
-  const count = unprocessed.length;
-  
-  return count;
+        if (task.taskType === 'aussortieren') {
+          counts.critical += 1;
+        } else if (task.taskType === 'reduzieren') {
+          counts.warning += 1;
+        }
+      });
+
+      return counts;
+    })().finally(() => {
+      unprocessedCountsPromise = null;
+    });
+  }
+
+  return unprocessedCountsPromise;
+};
+
+const getUnprocessedCriticalCount = async () => {
+  const counts = await getUnprocessedCounts();
+  return counts.critical;
 };
 
 /**
@@ -786,47 +890,8 @@ const getUnprocessedCriticalCount = async () => {
  * işlem yapılmamış warning ürün sayısını hesapla
  */
 const getUnprocessedWarningCount = async () => {
-  
-  const products = await getWarningProducts();
-  const today = getToday();
-  
-  const unprocessed = products.filter(product => {
-    // Deaktif edilmişse ve bugün deaktif edildiyse sayma
-    // Ama önceki günlerde deaktif edildiyse tekrar işlem yapılması gerekir (yarın geri gelsin)
-    if (product.excludeFromExpiryCheck === true) {
-      // Son işlem varsa ve bugün yapıldıysa, bugün için işlem yapılmış sayılır
-      if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-        const actionDate = new Date(product.lastAction.createdAt);
-        actionDate.setHours(0, 0, 0, 0);
-        const todayDate = new Date(today);
-        todayDate.setHours(0, 0, 0, 0);
-        
-        if (actionDate.getTime() === todayDate.getTime()) {
-          return false; // Bugün deaktif edildi, sayma
-        }
-      }
-      // Önceki günlerde deaktif edilmişse, yarın tekrar işlem yapılması gerekir
-      return true; // İşlem yapılmamış sayılır (yarın geri gelecek)
-    }
-    
-    // İşlem yapılmışsa ve bugün yapıldıysa sayma
-    if (product.lastAction && !product.lastAction.isUndone && product.lastAction.actionType !== 'undone') {
-      const actionDate = new Date(product.lastAction.createdAt);
-      actionDate.setHours(0, 0, 0, 0);
-      const todayDate = new Date(today);
-      todayDate.setHours(0, 0, 0, 0);
-      
-      if (actionDate.getTime() === todayDate.getTime()) {
-        return false; // Bugün işlem yapıldı, sayma
-      }
-    }
-    
-    return true;
-  });
-  
-  const count = unprocessed.length;
-  
-  return count;
+  const counts = await getUnprocessedCounts();
+  return counts.warning;
 };
 
 /**

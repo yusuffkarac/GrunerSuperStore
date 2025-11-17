@@ -320,6 +320,7 @@ router.delete('/permissions/:id', requireSuperAdmin, roleController.deletePermis
 // SKT ayarları
 router.get('/expiry/settings', requirePermission('expiry_management_view'), expiryController.getSettings);
 router.put('/expiry/settings', requirePermission('expiry_management_settings'), expiryController.updateSettings);
+router.get('/expiry/dashboard', requirePermission('expiry_management_view'), expiryController.getDashboard);
 
 // Kritik ve uyarı ürünleri
 router.get('/expiry/critical', requirePermission('expiry_management_view'), expiryController.getCritical);

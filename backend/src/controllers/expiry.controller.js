@@ -14,6 +14,19 @@ export const getSettings = async (req, res, next) => {
 };
 
 /**
+ * Günlük görev panosu
+ * GET /admin/expiry/dashboard
+ */
+export const getDashboard = async (req, res, next) => {
+  try {
+    const data = await expiryService.getExpiryDashboardData();
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * SKT ayarlarını güncelle
  * PUT /admin/expiry/settings
  */
@@ -76,15 +89,31 @@ export const labelProduct = async (req, res, next) => {
 export const removeProduct = async (req, res, next) => {
   try {
     const { productId } = req.params;
-    const { excludeFromCheck, note, newExpiryDate } = req.body;
+    const {
+      excludeFromCheck,
+      note,
+      newExpiryDate,
+      action: actionLabel,
+      mode,
+      scenario,
+    } = req.body;
     const adminId = req.admin.id;
+
+    const normalizedExclude =
+      scenario === 'out_of_stock'
+        ? true
+        : (typeof excludeFromCheck === 'boolean' ? excludeFromCheck : false);
 
     const action = await expiryService.removeProduct(
       productId,
       adminId,
-      excludeFromCheck || false,
+      normalizedExclude,
       note,
-      newExpiryDate || null
+      newExpiryDate || null,
+      {
+        action: actionLabel || mode,
+        scenario,
+      }
     );
     res.json(action);
   } catch (error) {
