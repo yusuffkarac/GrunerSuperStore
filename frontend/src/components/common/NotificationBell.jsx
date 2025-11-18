@@ -103,14 +103,14 @@ function NotificationBell({ alignLeft = false }) {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className={`absolute ${alignLeft ? 'left-0' : 'right-0'} top-full mt-2 w-[calc(100vw-2rem)] max-w-80 md:max-w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[500px] flex flex-col`}>
+        <div className={`absolute ${alignLeft ? 'left-0' : 'right-0'} top-full mt-2 w-[calc(100vw-3rem)] max-w-72 md:max-w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[500px] flex flex-col`}>
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Benachrichtigungen</h3>
+          <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Benachrichtigungen</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                className="text-xs md:text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 Alle als gelesen markieren
               </button>
@@ -130,14 +130,14 @@ function NotificationBell({ alignLeft = false }) {
                   <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                    className={`p-3 md:p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
                       !notification.isRead ? 'bg-blue-50/50' : ''
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 md:gap-3">
                       {/* Tip İkonu */}
                       <div
-                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${getTypeColor(
+                        className={`flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-bold border ${getTypeColor(
                           notification.type
                         )}`}
                       >

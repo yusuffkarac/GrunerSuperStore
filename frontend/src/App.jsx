@@ -11,6 +11,7 @@ import { AlertProvider } from './contexts/AlertContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CookieConsentProvider } from './contexts/CookieConsentContext';
+import { ModalProvider } from './contexts/ModalContext';
 
 // Layout
 import MainLayout from './components/layout/MainLayout';
@@ -309,11 +310,12 @@ function App() {
   return (
     <ThemeProvider>
       <AlertProvider>
-        <ErrorBoundary>
-          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <NotificationProvider>
-              <CookieConsentProvider>
-                <AppContent />
+        <ModalProvider allowBackdropClose={false}>
+          <ErrorBoundary>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <NotificationProvider>
+                <CookieConsentProvider>
+                  <AppContent />
                 <ToastContainer
                 position="bottom-center"
                 autoClose={3000}
@@ -337,6 +339,7 @@ function App() {
             </NotificationProvider>
           </Router>
         </ErrorBoundary>
+        </ModalProvider>
       </AlertProvider>
     </ThemeProvider>
   );

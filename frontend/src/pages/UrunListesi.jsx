@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FiFilter, FiX, FiTag } from 'react-icons/fi';
 import productService from '../services/productService';
@@ -289,6 +289,59 @@ function UrunListesi() {
   // Seçili kampanyayı bul
   const selectedCampaignData = campaigns.find((c) => c.id === selectedCampaign);
 
+  // Mouse drag için state ve ref
+  const categoryScrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  // Mouse drag handlers
+  const handleMouseDown = (e) => {
+    if (!categoryScrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - categoryScrollRef.current.offsetLeft);
+    setScrollLeft(categoryScrollRef.current.scrollLeft);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!categoryScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const currentScrollLeft = categoryScrollRef.current.scrollLeft;
+    const currentStartX = startX;
+    const walk = (x - currentStartX) * 2; // Scroll hızı
+    categoryScrollRef.current.scrollLeft = scrollLeft - walk;
+  }, [startX, scrollLeft]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Global mouse event listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
   return (
     <div className="pb-20 bg-white pt-0">
       {/* Kampanya Filtresi Aktifken Bilgi Banner'ı */}
@@ -366,9 +419,21 @@ function UrunListesi() {
       {categories.length > 0 && (
         <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
           <div className="container-mobile">
-            <div className="flex gap-2 py-3 justify-start w-full" style={{ overflowX: 'scroll', scrollbarWidth: 'none'}}>
+            <div
+              ref={categoryScrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              className={`flex gap-2 py-3 justify-start w-full select-none ${
+                isDragging ? 'cursor-grabbing' : 'cursor-grab'
+              }`}
+              style={{ overflowX: 'scroll', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+            >
               <button
-                onClick={() => handleCategoryChange('')}
+                onClick={(e) => {
+                  if (!isDragging) {
+                    handleCategoryChange('');
+                  }
+                }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                   selectedCategory === ''
                     ? 'bg-primary-600 text-white'
@@ -382,7 +447,11 @@ function UrunListesi() {
                 return (
                   <button
                     key={category.id}
-                    onClick={() => handleCategoryChange(category.id.toString())}
+                    onClick={(e) => {
+                      if (!isDragging) {
+                        handleCategoryChange(category.id.toString());
+                      }
+                    }}
                     className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                       selectedCategory === category.id.toString()
                         ? 'bg-primary-600 text-white'
