@@ -1077,7 +1077,7 @@ function StockManagement() {
                               {(!currentStatus || currentStatus === 'pending') && (
                                 <button
                                   onClick={() => openOrderDialog(product)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm hidden"
                                 >
                                   Bestellung erstellen
                                 </button>
@@ -1444,7 +1444,7 @@ function StockManagement() {
                                       {(!currentStatus || currentStatus === 'pending') && (
                                         <button
                                           onClick={() => openOrderDialog(product)}
-                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm hidden"
                                         >
                                           Bestellung erstellen
                                         </button>
@@ -1817,7 +1817,7 @@ function StockManagement() {
                                       {(!currentStatus || currentStatus === 'pending') && (
                                         <button
                                           onClick={() => openOrderDialog(product)}
-                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm hidden"
                                         >
                                           Bestellung erstellen
                                         </button>

@@ -149,7 +149,7 @@ function StockOrderListCard({ list, onStatusUpdate, onViewDetails, onDelete }) {
           )}
           <button
             onClick={handleDownloadPDF}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 hidden"
           >
             <FiDownload className="w-3.5 h-3.5" />
             PDF

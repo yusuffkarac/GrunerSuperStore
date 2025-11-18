@@ -58,6 +58,7 @@ function AdminLayout() {
   const [loading, setLoading] = useState(true);
   const [logo, setLogo] = useState('/logo.png');
   const [adminPanelTitle, setAdminPanelTitle] = useState('');
+  const [serverTime, setServerTime] = useState('');
 
   // Admin bilgilerini al
   const getAdminData = () => {
@@ -209,6 +210,28 @@ function AdminLayout() {
       window.removeEventListener('adminPermissionsUpdated', handlePermissionsUpdate);
     };
   }, [loadAdminData]);
+
+  // Sunucu saatini yükle ve her saniye güncelle
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      try {
+        const response = await adminService.getServerTime();
+        if (response?.data?.time) {
+          setServerTime(response.data.time);
+        }
+      } catch (error) {
+        console.error('Sunucu saati alınırken hata:', error);
+      }
+    };
+
+    // İlk yükleme
+    fetchServerTime();
+
+    // Her saniye güncelle
+    const interval = setInterval(fetchServerTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Logo ve admin panel başlığını yükle
   const loadLogo = useCallback(async () => {
@@ -494,8 +517,15 @@ function AdminLayout() {
                   {admin.firstName?.[0]?.toUpperCase()}
                 </span>
               </div>
-              <div className="text-sm font-medium text-gray-700">
-                {admin.firstName}
+              <div className="flex flex-col">
+                <div className="text-sm font-medium text-gray-700">
+                  {admin.firstName}
+                </div>
+                {serverTime && (
+                  <div className="text-xs text-gray-500">
+                    {serverTime}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -591,8 +621,15 @@ function AdminLayout() {
                     {admin.firstName?.[0]?.toUpperCase()}
                   </span>
                 </div>
-                <div className="text-sm font-medium text-gray-700">
-                  {admin.firstName}
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium text-gray-700">
+                    {admin.firstName}
+                  </div>
+                  {serverTime && (
+                    <div className="text-xs text-gray-500">
+                      {serverTime}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

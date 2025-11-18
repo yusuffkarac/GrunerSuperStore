@@ -6,6 +6,10 @@ import userService from '../services/user.service.js';
 import prisma from '../config/prisma.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import activityLogService from '../services/activityLog.service.js';
+import { exec, spawn } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 class AdminController {
   // POST /api/admin/auth/login - Admin girişi
@@ -1627,6 +1631,152 @@ class AdminController {
       success: true,
       data: result,
     });
+  });
+
+  // GET /api/admin/server-time - Sunucu saatini getir (sunucunun gerçek sistem saati, saniye dahil)
+  getServerTime = asyncHandler(async (req, res) => {
+    try {
+      // Sistem komutunu kullanarak gerçek saati al (process.env.TZ'den bağımsız)
+      // macOS ve Linux için
+      let formattedTime;
+      if (process.platform === 'win32') {
+        // Windows için
+        const dateCommand = 'powershell -Command "Get-Date -Format \'dd.MM.yyyy HH:mm:ss\'"';
+        const { stdout: dateOutput } = await execAsync(dateCommand);
+        formattedTime = dateOutput.trim();
+      } else {
+        // macOS ve Linux için - env -u TZ ile TZ'yi kaldırarak çalıştır
+        // Bu, sistemin gerçek timezone'unu kullanır
+        const { stdout: dateOutput } = await execAsync("env -u TZ date '+%d.%m.%Y %H:%M:%S'");
+        formattedTime = dateOutput.trim();
+      }
+      
+      // Timezone bilgisini al
+      let timezoneName = 'Unknown';
+      try {
+        if (process.platform === 'win32') {
+          const timezoneCommand = 'powershell -Command "[TimeZoneInfo]::Local.Id"';
+          const { stdout: tzOutput } = await execAsync(timezoneCommand);
+          timezoneName = tzOutput.trim();
+        } else {
+          const timezoneCommand = "env -u TZ date +%Z";
+          const { stdout: tzOutput } = await execAsync(timezoneCommand);
+          timezoneName = tzOutput.trim();
+        }
+      } catch (error) {
+        // Timezone alınamazsa sistem timezone'unu kullan
+        timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      }
+      
+      // Timestamp için normal Date kullan (UTC)
+      const now = new Date();
+      const isoString = now.toISOString();
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          time: formattedTime,
+          iso: isoString,
+          timestamp: now.getTime(),
+          timezone: timezoneName,
+        },
+      });
+    } catch (error) {
+      // Hata durumunda fallback: spawn kullanarak yeni bir process başlat
+      console.error('Sistem komutu hatası, fallback kullanılıyor:', error.message);
+      
+      try {
+        // Spawn kullanarak TZ olmadan yeni bir process başlat
+        return new Promise((resolve) => {
+          let dateOutput = '';
+          let dateError = '';
+          
+          const env = { ...process.env };
+          delete env.TZ;
+          
+          const dateProcess = spawn('date', ["+%d.%m.%Y %H:%M:%S"], {
+            env,
+            shell: false
+          });
+          
+          dateProcess.stdout.on('data', (data) => {
+            dateOutput += data.toString();
+          });
+          
+          dateProcess.stderr.on('data', (data) => {
+            dateError += data.toString();
+          });
+          
+          dateProcess.on('close', (code) => {
+            if (code === 0 && dateOutput) {
+              const formattedTime = dateOutput.trim();
+              const now = new Date();
+              
+              res.status(200).json({
+                success: true,
+                data: {
+                  time: formattedTime,
+                  iso: now.toISOString(),
+                  timestamp: now.getTime(),
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                },
+              });
+              resolve();
+            } else {
+              // Son fallback: UTC offset kullanarak hesapla
+              const now = new Date();
+              const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+              const localTime = new Date(utcTime);
+              
+              const year = localTime.getFullYear();
+              const month = String(localTime.getMonth() + 1).padStart(2, '0');
+              const day = String(localTime.getDate()).padStart(2, '0');
+              const hour = String(localTime.getHours()).padStart(2, '0');
+              const minute = String(localTime.getMinutes()).padStart(2, '0');
+              const second = String(localTime.getSeconds()).padStart(2, '0');
+              
+              const formattedTime = `${day}.${month}.${year} ${hour}:${minute}:${second}`;
+              
+              res.status(200).json({
+                success: true,
+                data: {
+                  time: formattedTime,
+                  iso: now.toISOString(),
+                  timestamp: now.getTime(),
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                },
+              });
+              resolve();
+            }
+          });
+        });
+      } catch (spawnError) {
+        // En son fallback: UTC offset kullanarak hesapla
+        console.error('Spawn hatası:', spawnError);
+        const now = new Date();
+        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const localTime = new Date(utcTime);
+        
+        const year = localTime.getFullYear();
+        const month = String(localTime.getMonth() + 1).padStart(2, '0');
+        const day = String(localTime.getDate()).padStart(2, '0');
+        const hour = String(localTime.getHours()).padStart(2, '0');
+        const minute = String(localTime.getMinutes()).padStart(2, '0');
+        const second = String(localTime.getSeconds()).padStart(2, '0');
+        
+        const formattedTime = `${day}.${month}.${year} ${hour}:${minute}:${second}`;
+        
+        res.status(200).json({
+          success: true,
+          data: {
+            time: formattedTime,
+            iso: now.toISOString(),
+            timestamp: now.getTime(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+        });
+      }
+    }
   });
 }
 

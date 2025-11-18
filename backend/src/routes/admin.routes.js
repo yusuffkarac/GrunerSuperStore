@@ -42,6 +42,9 @@ router.use(authenticateAdmin);
 // GET /api/admin/auth/me - Admin bilgilerini getir
 router.get('/auth/me', adminController.getMe);
 
+// GET /api/admin/server-time - Sunucu saatini getir
+router.get('/server-time', adminController.getServerTime);
+
 // ===============================
 // DASHBOARD
 // ===============================

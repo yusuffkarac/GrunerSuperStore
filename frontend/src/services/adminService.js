@@ -94,6 +94,12 @@ const adminService = {
     return response.data;
   },
 
+  // Sunucu saatini getir
+  getServerTime: async () => {
+    const response = await adminApi.get('/admin/server-time');
+    return response.data;
+  },
+
   // Dashboard istatistikleri
   getDashboardStats: async () => {
     const response = await adminApi.get('/admin/dashboard/stats');
