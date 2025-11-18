@@ -44,7 +44,21 @@ function NotificationBell({ alignLeft = false }) {
 
     // Action URL'e git (varsa)
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      // Eğer sipariş bildirimi ise (metadata'da orderId varsa veya actionUrl sipariş detayı ise)
+      // Orders sayfasına yönlendir ve highlight parametresi ekle
+      if (notification.metadata?.orderId) {
+        navigate(`/admin/orders?highlight=${notification.metadata.orderId}`);
+      } else if (notification.actionUrl.includes('/admin/orders/')) {
+        // Eski format: /admin/orders/{id} -> /admin/orders?highlight={id}
+        const orderId = notification.actionUrl.split('/admin/orders/')[1];
+        if (orderId) {
+          navigate(`/admin/orders?highlight=${orderId}`);
+        } else {
+          navigate(notification.actionUrl);
+        }
+      } else {
+        navigate(notification.actionUrl);
+      }
     }
   };
 

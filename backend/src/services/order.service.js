@@ -577,7 +577,7 @@ class OrderService {
       // Bildirim içeriği
       const title = `Neue Bestellung: ${orderNo}`;
       const message = `${customerName} hat eine neue Bestellung aufgegeben. ${itemCount} Artikel, ${totalPrice} (${orderType})`;
-      const actionUrl = `/admin/orders/${order.id}`;
+      const actionUrl = `/admin/orders?highlight=${order.id}`;
 
       // Tüm adminlere bildirim gönder (adminId ile)
       const adminIds = admins.map((admin) => admin.id);
@@ -636,6 +636,35 @@ class OrderService {
         none: 'Keine Zahlung',
       };
 
+      // Ürün bazında indirim bilgilerini hesapla
+      let totalProductDiscount = 0;
+      const itemsWithDiscount = orderItems.map((item) => {
+        const price = parseFloat(item.price);
+        const originalPrice = item.originalPrice ? parseFloat(item.originalPrice) : null;
+        const quantity = item.quantity;
+        
+        // Ürün bazında indirim hesapla
+        let itemDiscount = 0;
+        if (originalPrice && originalPrice > price) {
+          itemDiscount = (originalPrice - price) * quantity;
+          totalProductDiscount += itemDiscount;
+        }
+
+        return {
+          productName: item.productName,
+          variantName: item.variantName,
+          quantity: quantity,
+          price: price.toFixed(2),
+          originalPrice: originalPrice ? originalPrice.toFixed(2) : null,
+          campaignName: item.campaignName || null,
+          itemDiscount: itemDiscount > 0 ? itemDiscount.toFixed(2) : null,
+        };
+      });
+
+      // Toplam indirim: ürün indirimleri + kupon indirimi
+      const couponDiscount = order.discount ? parseFloat(order.discount) : 0;
+      const totalDiscount = totalProductDiscount + couponDiscount;
+
       // 1. Müşteriye sipariş alındı maili
       await queueService.addEmailJob({
         to: user.email,
@@ -648,14 +677,11 @@ class OrderService {
           orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
           deliveryType,
           address,
-          items: orderItems.map((item) => ({
-            productName: item.productName,
-            variantName: item.variantName,
-            quantity: item.quantity,
-            price: parseFloat(item.price).toFixed(2),
-          })),
+          items: itemsWithDiscount,
           subtotal: parseFloat(order.subtotal).toFixed(2),
-          discount: order.discount ? parseFloat(order.discount).toFixed(2) : null,
+          discount: totalDiscount > 0 ? totalDiscount.toFixed(2) : null,
+          productDiscount: totalProductDiscount > 0 ? totalProductDiscount.toFixed(2) : null,
+          couponDiscount: couponDiscount > 0 ? couponDiscount.toFixed(2) : null,
           deliveryFee: parseFloat(order.deliveryFee).toFixed(2),
           total: parseFloat(order.total).toFixed(2),
           paymentType: paymentTypeMap[order.paymentType] || '',
@@ -691,13 +717,13 @@ class OrderService {
                 customerPhone: user.phone,
                 deliveryType,
                 address,
-                items: orderItems.map((item) => ({
-                  productName: item.productName,
-                  variantName: item.variantName,
-                  quantity: item.quantity,
-                  price: parseFloat(item.price).toFixed(2),
-                })),
+                items: itemsWithDiscount,
                 itemCount: orderItems.length,
+                subtotal: parseFloat(order.subtotal).toFixed(2),
+                discount: totalDiscount > 0 ? totalDiscount.toFixed(2) : null,
+                productDiscount: totalProductDiscount > 0 ? totalProductDiscount.toFixed(2) : null,
+                couponDiscount: couponDiscount > 0 ? couponDiscount.toFixed(2) : null,
+                deliveryFee: parseFloat(order.deliveryFee).toFixed(2),
                 total: parseFloat(order.total).toFixed(2),
                 paymentType: paymentTypeMap[order.paymentType] || '',
                 note: order.note,
@@ -1194,6 +1220,16 @@ class OrderService {
       where: { id: orderId },
       include: {
         orderItems: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        address: true,
       },
     });
 
@@ -1213,7 +1249,7 @@ class OrderService {
     }
 
     // Stokları geri ekle ve sipariş durumunu güncelle
-    return await prisma.$transaction(async (tx) => {
+    const updatedOrder = await prisma.$transaction(async (tx) => {
       for (const item of order.orderItems) {
         if (item.variantId) {
           await tx.productVariant.update({
@@ -1242,9 +1278,29 @@ class OrderService {
         include: {
           orderItems: true,
           address: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
         },
       });
     });
+
+    // Admin'e bildirim ve mail gönder (asenkron, hata olsa bile sipariş iptali tamamlanmış olur)
+    this.sendOrderCancellationNotificationToAdmins(updatedOrder).catch((err) => {
+      console.error('Admin bildirim gönderim hatası:', err);
+    });
+
+    this.sendOrderCancellationEmailToAdmins(updatedOrder).catch((err) => {
+      console.error('Admin mail gönderim hatası:', err);
+    });
+
+    return updatedOrder;
   }
 
   // Admin sipariş iptali
@@ -1445,6 +1501,187 @@ class OrderService {
       console.log(`✅ Admin iptal maili kuyruğa eklendi: ${order.orderNo}`);
     } catch (error) {
       console.error('Admin iptal mail hatası:', error);
+    }
+  }
+
+  // ===== MÜŞTERİ İPTALİ - ADMIN BİLDİRİM HELPERİ =====
+  async sendOrderCancellationNotificationToAdmins(order) {
+    try {
+      console.log('🔔 Müşteri iptali - Admin bildirim gönderimi başlatılıyor...');
+      
+      // Tüm adminleri bul
+      const admins = await prisma.admin.findMany({
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+        },
+      });
+
+      console.log(`📋 Bulunan admin sayısı: ${admins.length}`);
+
+      if (admins.length === 0) {
+        console.log('⚠️ Admin bulunamadı, bildirim gönderilemedi');
+        return;
+      }
+
+      // Müşteri bilgilerini hazırla
+      const customerName = `${order.user.firstName} ${order.user.lastName}`;
+      const orderNo = order.orderNo;
+      const totalPrice = `${order.total.toFixed(2)}€`;
+      const orderType = order.type === 'delivery' ? 'Lieferung' : 'Abholung';
+      const itemCount = order.orderItems.length;
+
+      // Bildirim içeriği
+      const title = `Bestellung storniert: ${orderNo}`;
+      const message = `${customerName} hat die Bestellung ${orderNo} storniert. ${itemCount} Artikel, ${totalPrice} (${orderType})`;
+      const actionUrl = `/admin/orders?highlight=${order.id}`;
+
+      // Tüm adminlere bildirim gönder (adminId ile)
+      const adminIds = admins.map((admin) => admin.id);
+      console.log(`📤 ${adminIds.length} admin'e bildirim gönderiliyor...`);
+      
+      const notifications = await notificationService.createBulkAdminNotifications(adminIds, {
+        type: 'warning',
+        title,
+        message,
+        actionUrl,
+        metadata: {
+          orderId: order.id,
+          orderNo: order.orderNo,
+          customerName,
+          total: order.total,
+          type: order.type,
+          cancelledBy: 'customer',
+        },
+      });
+
+      console.log(`✅ ${notifications.length} admin bildirimi başarıyla oluşturuldu`);
+    } catch (error) {
+      // Bildirim hatası kritik değil, log at
+      console.error('❌ Admin bildirim gönderim hatası:', error);
+      console.error('❌ Hata detayı:', error.stack);
+    }
+  }
+
+  // ===== MÜŞTERİ İPTALİ - ADMIN MAİL HELPERİ =====
+  async sendOrderCancellationEmailToAdmins(order) {
+    try {
+      const settings = await prisma.settings.findFirst();
+
+      // SMTP ayarları yoksa mail gönderme
+      if (!settings?.smtpSettings) {
+        console.log('⚠️  SMTP ayarları yapılandırılmamış, mail gönderilmedi.');
+        return;
+      }
+
+      const user = order.user;
+      if (!user) return;
+
+      // Sipariş detaylarını hazırla
+      const orderItems = order.orderItems || [];
+      const address = order.address ?
+        `${order.address.street} ${order.address.houseNumber}, ${order.address.postalCode} ${order.address.city}` :
+        null;
+
+      const deliveryType = order.type === 'delivery' ? 'Lieferung' : 'Abholung im Laden';
+      const paymentTypeMap = {
+        cash: 'Bargeld',
+        card_on_delivery: 'Karte bei Lieferung',
+        none: 'Keine Zahlung',
+      };
+
+      // Ürün bazında indirim bilgilerini hesapla
+      let totalProductDiscount = 0;
+      const itemsWithDiscount = orderItems.map((item) => {
+        const price = parseFloat(item.price);
+        const originalPrice = item.originalPrice ? parseFloat(item.originalPrice) : null;
+        const quantity = item.quantity;
+        
+        // Ürün bazında indirim hesapla
+        let itemDiscount = 0;
+        if (originalPrice && originalPrice > price) {
+          itemDiscount = (originalPrice - price) * quantity;
+          totalProductDiscount += itemDiscount;
+        }
+
+        return {
+          productName: item.productName,
+          variantName: item.variantName,
+          quantity: quantity,
+          price: price.toFixed(2),
+          originalPrice: originalPrice ? originalPrice.toFixed(2) : null,
+          campaignName: item.campaignName || null,
+          itemDiscount: itemDiscount > 0 ? itemDiscount.toFixed(2) : null,
+        };
+      });
+
+      // Toplam indirim: ürün indirimleri + kupon indirimi
+      const couponDiscount = order.discount ? parseFloat(order.discount) : 0;
+      const totalDiscount = totalProductDiscount + couponDiscount;
+
+      // Admin'e müşteri iptal bildirimi
+      const adminEmail = settings.emailNotificationSettings?.adminEmail;
+      if (adminEmail) {
+        // Virgülle ayrılmış email adreslerini split et ve temizle
+        const adminEmails = adminEmail
+          .split(',')
+          .map((email) => email.trim())
+          .filter((email) => email && email.includes('@'));
+
+        console.log(`📧 Admin email adresleri parse edildi: ${adminEmails.length} adet`, adminEmails);
+
+        // Tüm admin email adreslerine paralel olarak bildirim gönder
+        const emailPromises = adminEmails.map(async (email) => {
+          try {
+            const result = await queueService.addEmailJob({
+              to: email,
+              subject: `Bestellung storniert: ${order.orderNo}`,
+              template: 'order-cancellation-admin',
+              data: {
+                orderNo: order.orderNo,
+                orderDate: new Date(order.createdAt).toLocaleString('de-DE'),
+                cancelDate: new Date().toLocaleString('de-DE'),
+                customerName: `${user.firstName} ${user.lastName}`,
+                customerEmail: user.email,
+                customerPhone: user.phone,
+                deliveryType,
+                address,
+                items: itemsWithDiscount,
+                itemCount: orderItems.length,
+                subtotal: parseFloat(order.subtotal).toFixed(2),
+                discount: totalDiscount > 0 ? totalDiscount.toFixed(2) : null,
+                productDiscount: totalProductDiscount > 0 ? totalProductDiscount.toFixed(2) : null,
+                couponDiscount: couponDiscount > 0 ? couponDiscount.toFixed(2) : null,
+                deliveryFee: parseFloat(order.deliveryFee).toFixed(2),
+                total: parseFloat(order.total).toFixed(2),
+                paymentType: paymentTypeMap[order.paymentType] || '',
+                note: order.note,
+                adminOrderUrl: `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/orders/${order.id}`,
+                cancellationNote: 'Diese Bestellung wurde vom Kunden storniert.',
+              },
+              metadata: { orderId: order.id, type: 'order-cancelled-admin', cancelledBy: 'customer' },
+              priority: 2,
+            });
+            console.log(`✅ Admin email kuyruğa eklendi: ${email}`, result);
+            return { email, success: true };
+          } catch (emailError) {
+            // Bir email gönderiminde hata olsa bile diğerlerine devam et
+            console.error(`❌ Admin email gönderim hatası (${email}):`, emailError);
+            return { email, success: false, error: emailError.message };
+          }
+        });
+
+        // Tüm email'lerin kuyruğa eklenmesini bekle
+        const results = await Promise.all(emailPromises);
+        const successCount = results.filter((r) => r.success).length;
+        console.log(`📊 Admin email gönderim özeti: ${successCount}/${adminEmails.length} başarılı`);
+      }
+
+      console.log(`✅ Müşteri iptal mailleri kuyruğa eklendi: ${order.orderNo}`);
+    } catch (error) {
+      // Mail hatası kritik değil, log at
+      console.error('Müşteri iptal mail gönderim hatası:', error);
     }
   }
 

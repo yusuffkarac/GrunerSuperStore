@@ -41,10 +41,25 @@
     <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span style="color: #374151; font-weight: 500;">{{this.productName}}</span>
-            <span style="color: #6b7280;">{{this.quantity}}x {{this.price}}€</span>
+            <div style="text-align: right;">
+                {{#if this.originalPrice}}
+                <div style="color: #9ca3af; font-size: 13px; text-decoration: line-through;">
+                    {{this.quantity}}x {{this.originalPrice}}€
+                </div>
+                {{/if}}
+                <span style="color: #6b7280;">{{this.quantity}}x {{this.price}}€</span>
+            </div>
         </div>
         {{#if this.variantName}}
         <div style="color: #6b7280; font-size: 14px;">Variante: {{this.variantName}}</div>
+        {{/if}}
+        {{#if this.campaignName}}
+        <div style="color: #059669; font-size: 14px; font-weight: 500; margin-top: 3px;">
+            🎉 {{this.campaignName}}
+            {{#if this.itemDiscount}}
+            <span style="color: #059669;">(-{{this.itemDiscount}}€)</span>
+            {{/if}}
+        </div>
         {{/if}}
     </div>
     {{/each}}

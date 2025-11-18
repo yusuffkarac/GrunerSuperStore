@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { FiSearch, FiFilter, FiShoppingBag, FiEye, FiCheck, FiX, FiClock, FiTruck, FiPackage, FiXCircle, FiChevronDown, FiStar, FiMail, FiDownload, FiPrinter, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import adminService from '../../services/adminService';
@@ -107,6 +108,7 @@ const OrderItemRow = ({ item }) => {
 function Orders() {
   const { showConfirm } = useAlert();
   const { themeColors } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -128,6 +130,9 @@ function Orders() {
     cancellationCustomerMessage: '',
     showCancellationReasonToCustomer: false,
   });
+  const [highlightedOrderId, setHighlightedOrderId] = useState(null);
+  const [isHighlighting, setIsHighlighting] = useState(false);
+  const highlightedOrderRef = useRef(null);
 
   // Modal scroll yönetimi - her modal için
   useModalScroll(showModal);
@@ -178,6 +183,47 @@ function Orders() {
   useEffect(() => {
     loadOrders();
   }, [currentPage, searchQuery, statusFilter, typeFilter, sortBy, sortOrder]);
+
+  // Highlight parametresini kontrol et
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId && orders.length > 0) {
+      const order = orders.find(o => o.id === highlightId);
+      if (order) {
+        setHighlightedOrderId(highlightId);
+        setIsHighlighting(true);
+        
+        // Scroll to sipariş
+        setTimeout(() => {
+          if (highlightedOrderRef.current) {
+            highlightedOrderRef.current.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }
+        }, 100);
+
+        // 3 saniye sonra highlight'ı kaldır
+        const timer = setTimeout(() => {
+          setIsHighlighting(false);
+          setTimeout(() => {
+            setHighlightedOrderId(null);
+            // URL'den highlight parametresini kaldır
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete('highlight');
+            setSearchParams(newSearchParams, { replace: true });
+          }, 500); // Animasyon bitene kadar bekle
+        }, 3000);
+
+        return () => clearTimeout(timer);
+      } else if (highlightId && !loading) {
+        // Sipariş bulunamadı, URL'den parametreyi temizle
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('highlight');
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    }
+  }, [searchParams, orders, loading, setSearchParams]);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -717,8 +763,19 @@ function Orders() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {orders.map((order) => {
                     const StatusIcon = getStatusIcon(order.status, order.type);
+                    const isHighlighted = highlightedOrderId === order.id;
                     return (
-                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <tr 
+                        key={order.id} 
+                        ref={isHighlighted ? highlightedOrderRef : null}
+                        className={`hover:bg-gray-50 transition-all duration-300 ${
+                          isHighlighted 
+                            ? isHighlighting 
+                              ? 'bg-blue-100 animate-pulse' 
+                              : 'bg-blue-50' 
+                            : ''
+                        }`}
+                      >
                         <td className="px-4 py-4">
                           <div className="font-medium text-gray-900">
                             #{order.orderNo}
@@ -841,8 +898,19 @@ function Orders() {
             <div className="md:hidden divide-y divide-gray-200">
               {orders.map((order) => {
                 const StatusIcon = getStatusIcon(order.status, order.type);
+                const isHighlighted = highlightedOrderId === order.id;
                 return (
-                  <div key={order.id} className="p-4">
+                  <div 
+                    key={order.id} 
+                    ref={isHighlighted ? highlightedOrderRef : null}
+                    className={`p-4 transition-all duration-300 ${
+                      isHighlighted 
+                        ? isHighlighting 
+                          ? 'bg-blue-100 animate-pulse' 
+                          : 'bg-blue-50' 
+                        : ''
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 mb-1">

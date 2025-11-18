@@ -36,14 +36,15 @@ function parseDate(dateString) {
  * barcodes.json verisini Product modeline dönüştür
  */
 function mapBarcodeToProduct(barcodeItem, categoryMapping, defaultCategoryId) {
-  // Image URLs array oluştur
+  // Image URLs array oluştur - Fotoğraflar işlenmiyor, boş bırakılıyor
   const imageUrls = [];
-  const imageFields = ['image_1920', 'image_1024', 'image_512', 'image_256', 'image_128'];
-  imageFields.forEach((field) => {
-    if (barcodeItem[field] && barcodeItem[field] !== false) {
-      imageUrls.push(String(barcodeItem[field]));
-    }
-  });
+  // Fotoğraf işleme devre dışı
+  // const imageFields = ['image_1920', 'image_1024', 'image_512', 'image_256', 'image_128'];
+  // imageFields.forEach((field) => {
+  //   if (barcodeItem[field] && barcodeItem[field] !== false) {
+  //     imageUrls.push(String(barcodeItem[field]));
+  //   }
+  // });
 
   // Description priority: webshop_description_long > webshop_description > website_description > description
   const description =
