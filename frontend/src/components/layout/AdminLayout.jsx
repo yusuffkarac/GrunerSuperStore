@@ -84,6 +84,19 @@ function AdminLayout() {
     return [];
   };
 
+  const hasAnyPermission = (availablePermissions, requiredPermission) => {
+    if (!requiredPermission) return true;
+    if (!Array.isArray(availablePermissions) || availablePermissions.length === 0) {
+      return false;
+    }
+
+    if (Array.isArray(requiredPermission)) {
+      return requiredPermission.some(perm => availablePermissions.includes(perm));
+    }
+
+    return availablePermissions.includes(requiredPermission);
+  };
+
   // Sayfa erişim kontrolü
   const checkPageAccess = useCallback((adminData, pathname) => {
     if (!adminData) return false;
@@ -108,8 +121,12 @@ function AdminLayout() {
       '/admin/coupons': 'marketing_coupons',
       '/admin/users': 'user_management_view',
       '/admin/settings': 'settings_view',
-      '/admin/homepage-settings': 'settings_view',
-      '/admin/design-settings': 'settings_view',
+      '/admin/homepage-settings': ['settings_view', 'site_settings_manage'],
+      '/admin/seiteneinstellungen': ['settings_view', 'site_settings_manage'],
+      '/admin/footer-settings': ['settings_view', 'site_settings_manage'],
+      '/admin/cookie-settings': ['settings_view', 'site_settings_manage'],
+      '/admin/faqs': ['settings_view', 'site_settings_manage'],
+      '/admin/design-settings': ['settings_view', 'design_settings_manage'],
       '/admin/magazines': 'magazine_management_view',
       '/admin/notifications': 'notification_management_view',
       '/admin/email-templates': 'email_template_management_view',
@@ -127,7 +144,7 @@ function AdminLayout() {
     }
 
     const requiredPermission = pathPermissionMap[pathname];
-    if (requiredPermission && !currentIsSuperAdmin && !currentPermissions.includes(requiredPermission)) {
+    if (requiredPermission && !currentIsSuperAdmin && !hasAnyPermission(currentPermissions, requiredPermission)) {
       navigate('/admin/dashboard');
       toast.error('Sie haben keine Berechtigung für diese Seite');
       return false;
@@ -301,14 +318,14 @@ function AdminLayout() {
     { path: '/admin/email-templates', label: 'E-Mail Templates', icon: FiMail, permission: 'email_template_management_view' },
     { path: '/admin/notification-templates', label: 'Benachr.-Templates', icon: FiMessageSquare, permission: 'notification_template_management_view' },
     { path: '/admin/barcode-labels', label: 'Barcode-Etiketten', icon: FiPrinter, permission: 'barcode_label_view' },
-    { path: '/admin/seiteneinstellungen', label: 'Seiteneinstellungen', icon: FiSettings, permission: 'settings_view' },
-    { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: 'settings_view' },
+    { path: '/admin/seiteneinstellungen', label: 'Seiteneinstellungen', icon: FiSettings, permission: ['settings_view', 'site_settings_manage'] },
+    { path: '/admin/design-settings', label: 'Design-Einstellungen', icon: FiDroplet, permission: ['settings_view', 'design_settings_manage'] },
     { path: '/admin/magazines', label: 'Wöchentliche Prospekte', icon: HiNewspaper, permission: 'magazine_management_view' },
     // Eski route'lar - geriye dönük uyumluluk için
-    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: 'settings_view', hidden: true },
-    { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: 'settings_view', hidden: true },
-    { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: 'settings_view', hidden: true },
-    { path: '/admin/faqs', label: 'FAQ-Verwaltung', icon: FiHelpCircle, permission: 'settings_view', hidden: true },
+    { path: '/admin/homepage-settings', label: 'Startseite', icon: FiEdit3, permission: ['settings_view', 'site_settings_manage'], hidden: true },
+    { path: '/admin/footer-settings', label: 'Footer-Einstellungen', icon: FiEdit3, permission: ['settings_view', 'site_settings_manage'], hidden: true },
+    { path: '/admin/cookie-settings', label: 'Cookie-Einstellungen', icon: FiShield, permission: ['settings_view', 'site_settings_manage'], hidden: true },
+    { path: '/admin/faqs', label: 'FAQ-Verwaltung', icon: FiHelpCircle, permission: ['settings_view', 'site_settings_manage'], hidden: true },
   ];
 
   // Üst menü öğelerini filtrele (güncel admin bilgileriyle)
@@ -331,7 +348,7 @@ function AdminLayout() {
       }
 
       // İzin kontrolü yap
-      return currentIsSuperAdmin || currentPermissions.includes(item.permission);
+      return currentIsSuperAdmin || hasAnyPermission(currentPermissions, item.permission);
     });
   })() : [];
 
@@ -363,7 +380,7 @@ function AdminLayout() {
       }
 
       // İzin kontrolü yap
-      return currentIsSuperAdmin || currentPermissions.includes(item.permission);
+      return currentIsSuperAdmin || hasAnyPermission(currentPermissions, item.permission);
     });
   })() : [];
 

@@ -2,6 +2,12 @@ import { verifyToken } from '../utils/jwt.js';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors.js';
 import prisma from '../config/prisma.js';
 
+// Belirli izinler için alias (eşdeğer) tanımları
+const permissionAliases = {
+  settings_view: ['site_settings_manage', 'design_settings_manage'],
+  settings_edit: ['site_settings_manage', 'design_settings_manage'],
+};
+
 // Admin JWT token doğrulama middleware
 export const authenticateAdmin = async (req, res, next) => {
   try {
@@ -123,10 +129,21 @@ export const requirePermission = (permissionNames) => {
       // Admin'in izinlerini kontrol et
       const adminPermissionNames = req.admin.permissions.map(p => p.name);
 
+      const hasPermission = (permName) => {
+        if (adminPermissionNames.includes(permName)) {
+          return true;
+        }
+
+        const aliases = permissionAliases[permName];
+        if (aliases && aliases.some(alias => adminPermissionNames.includes(alias))) {
+          return true;
+        }
+
+        return false;
+      };
+
       // Tüm gerekli izinler admin'de var mı?
-      const hasAllPermissions = requiredPermissions.every(
-        permName => adminPermissionNames.includes(permName)
-      );
+      const hasAllPermissions = requiredPermissions.every(hasPermission);
 
       if (!hasAllPermissions) {
         const missingPerms = requiredPermissions.filter(p => !adminPermissionNames.includes(p));

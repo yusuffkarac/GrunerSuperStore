@@ -276,6 +276,8 @@ model Order {
   couponId                         String?     @map("coupon_id") @db.Uuid
   couponCode                       String?     @map("coupon_code") // Snapshot
   note                             String?
+  scheduledFor                     DateTime?   @map("scheduled_for")
+  isPreorder                       Boolean     @default(false) @map("is_preorder")
   // İptal bilgileri (Admin tarafından doldurulur)
   cancellationReason               String?     @map("cancellation_reason") // İptal sebebi (müşteriye gösterilebilir)
   cancellationInternalNote         String?     @map("cancellation_internal_note") // Internal not (müşteriye gösterilmez)
@@ -300,6 +302,7 @@ model Order {
   @@index([addressId])
   @@index([billingAddressId])
   @@index([couponId])
+  @@index([scheduledFor])
   @@index([userId, status, createdAt(sort: Desc)])
   @@map("orders")
 }

@@ -7,6 +7,32 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import Switch from '../../components/common/Switch';
 
+const defaultOrderHoursNotice = {
+  title: 'Wir befinden uns gerade außerhalb unserer Bestellzeiten',
+  description: 'Unsere Bestellzeiten sind von {{startTime}} bis {{endTime}}.',
+  footer:
+    'Sie können trotzdem vorbestellen; Ihre Bestellung wird innerhalb der angegebenen Zeiten bearbeitet.',
+};
+
+const baseDeliverySettings = {
+  teslimatAcik: true,
+  magazadanTeslimAcik: true,
+  teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
+  siparisBaslangicSaati: '09:00',
+  siparisKapanisSaati: '19:30',
+  distanceLimits: {
+    pickupMaxDistance: null,
+    deliveryMaxDistance: null,
+  },
+  orderHoursNotice: { ...defaultOrderHoursNotice },
+};
+
+const getDefaultDeliverySettings = () => ({
+  ...baseDeliverySettings,
+  distanceLimits: { ...baseDeliverySettings.distanceLimits },
+  orderHoursNotice: { ...defaultOrderHoursNotice },
+});
+
 // Admin-Einstellungsseite
 function Settings() {
   const { themeColors } = useTheme();
@@ -29,17 +55,7 @@ function Settings() {
   const [minOrderAmount, setMinOrderAmount] = useState('');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState('');
   const [shippingRules, setShippingRules] = useState([]);
-  const [deliverySettings, setDeliverySettings] = useState({
-    teslimatAcik: true,
-    magazadanTeslimAcik: true,
-    teslimatSaatleri: [{ gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' }],
-    siparisBaslangicSaati: '09:00',
-    siparisKapanisSaati: '19:30',
-    distanceLimits: {
-      pickupMaxDistance: null,
-      deliveryMaxDistance: null,
-    },
-  });
+  const [deliverySettings, setDeliverySettings] = useState(getDefaultDeliverySettings());
   const [paymentOptions, setPaymentOptions] = useState({
     kartKapida: true,
     nakit: true,
@@ -119,21 +135,20 @@ function Settings() {
       setMinOrderAmount(s.minOrderAmount ?? '');
       setFreeShippingThreshold(s.freeShippingThreshold ?? '');
       setShippingRules(Array.isArray(s.shippingRules) ? s.shippingRules : []);
-      setDeliverySettings(
-        s.deliverySettings ?? {
-          teslimatAcik: true,
-          magazadanTeslimAcik: true,
-          teslimatSaatleri: [
-            { gun: 'Mon-Sun', baslangic: '09:00', bitis: '20:00' },
-          ],
-          siparisBaslangicSaati: '09:00',
-          siparisKapanisSaati: '19:30',
-          distanceLimits: {
-            pickupMaxDistance: null,
-            deliveryMaxDistance: null,
-          },
-        }
-      );
+      const serverDeliverySettings = s.deliverySettings || {};
+      const defaults = getDefaultDeliverySettings();
+      setDeliverySettings({
+        ...defaults,
+        ...serverDeliverySettings,
+        distanceLimits: {
+          ...defaults.distanceLimits,
+          ...(serverDeliverySettings.distanceLimits || {}),
+        },
+        orderHoursNotice: {
+          ...defaultOrderHoursNotice,
+          ...(serverDeliverySettings.orderHoursNotice || {}),
+        },
+      });
       setPaymentOptions(
         s.paymentOptions ?? {
           kartKapida: true,
@@ -993,6 +1008,74 @@ function Settings() {
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                               />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Order Hours Notice Settings */}
+                        <div className="pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1.5 flex items-center gap-2">
+                            Hinweistext bei geschlossenen Bestellzeiten
+                            <HelpTooltip content="Dieser Text wird Kunden angezeigt, wenn Bestellungen außerhalb der aktiven Zeiten liegen. Verwenden Sie die Platzhalter {{startTime}} und {{endTime}}, um die konfigurierten Zeiten automatisch einzusetzen." />
+                          </h4>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Platzhalter verfügbar: <span className="font-mono">{'{{startTime}}'}</span>,{' '}
+                            <span className="font-mono">{'{{endTime}}'}</span>
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Überschrift</label>
+                              <input
+                                type="text"
+                                value={deliverySettings.orderHoursNotice?.title || ''}
+                                onChange={(e) =>
+                                  setDeliverySettings((prev) => ({
+                                    ...prev,
+                                    orderHoursNotice: {
+                                      ...prev.orderHoursNotice,
+                                      title: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                                placeholder="z.B. Wir befinden uns außerhalb unserer Bestellzeiten"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Beschreibung</label>
+                              <textarea
+                                value={deliverySettings.orderHoursNotice?.description || ''}
+                                onChange={(e) =>
+                                  setDeliverySettings((prev) => ({
+                                    ...prev,
+                                    orderHoursNotice: {
+                                      ...prev.orderHoursNotice,
+                                      description: e.target.value,
+                                    },
+                                  }))
+                                }
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                                placeholder="Unsere Bestellzeiten sind von {{startTime}} bis {{endTime}}."
+                              ></textarea>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Hinweistext</label>
+                              <textarea
+                                value={deliverySettings.orderHoursNotice?.footer || ''}
+                                onChange={(e) =>
+                                  setDeliverySettings((prev) => ({
+                                    ...prev,
+                                    orderHoursNotice: {
+                                      ...prev.orderHoursNotice,
+                                      footer: e.target.value,
+                                    },
+                                  }))
+                                }
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                                placeholder="Sie können trotzdem vorbestellen..."
+                              ></textarea>
                             </div>
                           </div>
                         </div>

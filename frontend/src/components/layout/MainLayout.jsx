@@ -1,12 +1,60 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { FaWhatsapp } from 'react-icons/fa';
+import { FiClock } from 'react-icons/fi';
 import Header from './Header';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
 import useAuthStore from '../../store/authStore';
 import useFavoriteStore from '../../store/favoriteStore';
 import settingsService from '../../services/settingsService';
+
+const ORDER_POPUP_STORAGE_KEY = 'orderHoursPopupShownDate';
+
+const parseTimeToMinutes = (timeString) => {
+  if (!timeString || typeof timeString !== 'string') {
+    return null;
+  }
+
+  const [hours, minutes] = timeString.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+};
+
+const buildOrderHoursInfo = (deliverySettings = {}) => {
+  const startTime = deliverySettings.siparisBaslangicSaati || '00:00';
+  const endTime = deliverySettings.siparisKapanisSaati || '23:59';
+  const isDeliveryOpen = deliverySettings.teslimatAcik !== false;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+
+  let isWithinConfiguredWindow = true;
+
+  if (startMinutes !== null && endMinutes !== null) {
+    if (startMinutes <= endMinutes) {
+      isWithinConfiguredWindow = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    } else {
+      // Günlük aralık geceye taşıyorsa (örn. 22:00 - 02:00)
+      isWithinConfiguredWindow = currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+    }
+  }
+
+  return {
+    startTime,
+    endTime,
+    isDeliveryOpen,
+    isWithinOrderHours: isDeliveryOpen && isWithinConfiguredWindow,
+    lastCheckedAt: now.toISOString(),
+  };
+};
+
+const getTodayKey = () => new Date().toISOString().slice(0, 10);
 
 // Ana Layout - Header, Content, Footer, BottomNav
 function MainLayout() {
@@ -17,6 +65,9 @@ function MainLayout() {
   const [loading, setLoading] = useState(true);
   const [whatsappSettings, setWhatsappSettings] = useState(null);
   const [showWhatsAppButton, setShowWhatsAppButton] = useState(false);
+  const [settingsData, setSettingsData] = useState(null);
+  const [orderHoursInfo, setOrderHoursInfo] = useState(null);
+  const [showOrderHoursPopup, setShowOrderHoursPopup] = useState(false);
 
   // Admin kontrolü
   const isAdmin = !!localStorage.getItem('adminToken');
@@ -27,6 +78,7 @@ function MainLayout() {
       try {
         const response = await settingsService.getSettings();
         const settings = response.data.settings;
+        setSettingsData(settings);
         
         if (settings?.storeSettings?.bakimModu) {
           setMaintenanceMode(true);
@@ -78,6 +130,48 @@ function MainLayout() {
     
     return () => clearInterval(interval);
   }, [whatsappSettings]);
+
+  // Sipariş saatlerini takip et
+  useEffect(() => {
+    if (!settingsData) return;
+
+    const updateOrderHours = () => {
+      setOrderHoursInfo(buildOrderHoursInfo(settingsData.deliverySettings || {}));
+    };
+
+    updateOrderHours();
+    const intervalId = setInterval(updateOrderHours, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [settingsData]);
+
+  // Popup gösterim kontrolü
+  useEffect(() => {
+    if (!orderHoursInfo) return;
+
+    if (orderHoursInfo.isWithinOrderHours) {
+      setShowOrderHoursPopup(false);
+      return;
+    }
+
+    if (typeof window === 'undefined') return;
+
+    const todayKey = getTodayKey();
+    const storedKey = window.localStorage.getItem(ORDER_POPUP_STORAGE_KEY);
+
+    if (storedKey === todayKey) {
+      setShowOrderHoursPopup(false);
+    } else {
+      setShowOrderHoursPopup(true);
+    }
+  }, [orderHoursInfo]);
+
+  const dismissOrderHoursPopup = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ORDER_POPUP_STORAGE_KEY, getTodayKey());
+    }
+    setShowOrderHoursPopup(false);
+  };
 
   // Kullanıcı giriş yaptığında favori durumunu yükle
   useEffect(() => {
@@ -186,16 +280,52 @@ function MainLayout() {
     );
   }
 
+  const orderHoursNoticeSettings = settingsData?.deliverySettings?.orderHoursNotice || null;
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
 
       <main className="flex-1 pb-20 md:pb-4">
-        <Outlet />
+        <Outlet context={{ orderHoursInfo, orderHoursNoticeSettings }} />
       </main>
 
       <Footer />
       <BottomNav />
+
+      {showOrderHoursPopup && orderHoursInfo && (
+        <div className="fixed inset-0 z-[1000000] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+            onClick={dismissOrderHoursPopup}
+          ></div>
+          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <FiClock className="h-6 w-6" />
+            </div>
+            <h3 className="text-center text-xl font-semibold text-gray-900">
+              {orderHoursInfo.isDeliveryOpen
+                ? 'Wir befinden uns außerhalb unserer Bestellzeiten'
+                : 'Die Bestellannahme ist vorübergehend geschlossen'}
+            </h3>
+            <p className="mt-3 text-center text-sm text-gray-600">
+              {orderHoursInfo.startTime && orderHoursInfo.endTime
+                ? `Unsere Bestellzeiten sind von ${orderHoursInfo.startTime} bis ${orderHoursInfo.endTime}.`
+                : 'Unsere Bestellzeiten werden in Kürze aktualisiert.'}
+            </p>
+            <p className="mt-2 text-center text-sm font-medium text-gray-900">
+              Aktuelle Bestellungen werden als Vorbestellung eingeplant und in den angegebenen Zeiten bearbeitet.
+            </p>
+            <button
+              type="button"
+              onClick={dismissOrderHoursPopup}
+              className="mt-6 w-full rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700"
+            >
+              Verstanden
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* WhatsApp Button - Sol alt köşe */}
       {showWhatsAppButton && whatsappSettings?.link && (

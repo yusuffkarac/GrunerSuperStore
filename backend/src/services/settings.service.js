@@ -1,6 +1,13 @@
 import prisma from '../config/prisma.js';
 import { defaultFooterBlocks } from '../data/defaultFooterSettings.js';
 
+const getDefaultOrderHoursNotice = () => ({
+  title: 'Wir befinden uns gerade außerhalb unserer Bestellzeiten',
+  description: 'Unsere Bestellzeiten sind von {{startTime}} bis {{endTime}}.',
+  footer:
+    'Sie können trotzdem vorbestellen; Ihre Bestellung wird innerhalb der angegebenen Zeiten bearbeitet.',
+});
+
 class SettingsService {
   // Ayarları getir (tek satır)
   async getSettings() {
@@ -38,6 +45,7 @@ class SettingsService {
               pickupMaxDistance: null,
               deliveryMaxDistance: null,
             },
+            orderHoursNotice: getDefaultOrderHoursNotice(),
           },
           paymentOptions: {
             kartKapida: true,
@@ -205,6 +213,7 @@ class SettingsService {
               pickupMaxDistance: null,
               deliveryMaxDistance: null,
             },
+            orderHoursNotice: getDefaultOrderHoursNotice(),
           },
           paymentOptions: data.paymentOptions ?? {
             kartKapida: true,

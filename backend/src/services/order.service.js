@@ -14,10 +14,74 @@ import invoiceService from './invoice.service.js';
 import productService from './product.service.js';
 import discountCalculator from '../utils/discountCalculator.js';
 
+const MINUTES_IN_DAY = 24 * 60;
+const DEFAULT_START_MINUTES = 0;
+const DEFAULT_END_MINUTES = MINUTES_IN_DAY - 1;
+const MIN_SCHEDULE_OFFSET_MINUTES = 15;
+
+const parseTimeStringToMinutes = (timeString, fallback = null) => {
+  if (!timeString || typeof timeString !== 'string') {
+    return fallback;
+  }
+  const [hour, minute] = timeString.split(':').map(Number);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return fallback;
+  }
+  return hour * 60 + minute;
+};
+
+const isMinutesWithinWindow = (value, startMinutes = DEFAULT_START_MINUTES, endMinutes = DEFAULT_END_MINUTES) => {
+  const start = startMinutes ?? DEFAULT_START_MINUTES;
+  const end = endMinutes ?? DEFAULT_END_MINUTES;
+
+  if (start <= end) {
+    return value >= start && value <= end;
+  }
+
+  // Geceye taşan aralıklar (örn. 22:00 - 02:00)
+  return value >= start || value <= end;
+};
+
+const combineDateAndTimeToGermanyDate = (dateString, timeString) => {
+  if (!dateString || !timeString) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  const [hour, minute] = timeString.split(':').map(Number);
+
+  if ([year, month, day, hour, minute].some((part) => Number.isNaN(part))) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day, hour, minute, 0, 0);
+};
+
+const isSunday = (date) => date.getDay() === 0;
+
+const formatDateTimeForDisplay = (date) => {
+  try {
+    return new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+    }).format(date);
+  } catch (error) {
+    return date.toISOString();
+  }
+};
+
 class OrderService {
   // Sipariş oluştur
   async createOrder(userId, orderData) {
-    const { type, addressId, billingAddressId, paymentType, note, items, couponCode } = orderData;
+    const {
+      type,
+      addressId,
+      billingAddressId,
+      paymentType,
+      note,
+      items,
+      couponCode,
+      scheduledDate,
+      scheduledTime,
+      scheduledDateTime,
+    } = orderData;
 
     // Validation: items kontrolü
     if (!items || items.length === 0) {
@@ -62,38 +126,63 @@ class OrderService {
     return await prisma.$transaction(async (tx) => {
       // Ayarları çek
       const settings = await tx.settings.findFirst();
-      
-      // Sipariş saat kontrolü
-      if (settings?.deliverySettings) {
-        const { siparisBaslangicSaati, siparisKapanisSaati } = settings.deliverySettings;
-        
-        if (siparisBaslangicSaati || siparisKapanisSaati) {
-          // Almanya saatine göre zamanı al (CET/CEST otomatik olarak handle edilir)
-          const currentTime = getGermanyTimeInMinutes();
-          
-          // Başlangıç saati kontrolü
-          if (siparisBaslangicSaati) {
-            const [startHour, startMinute] = siparisBaslangicSaati.split(':').map(Number);
-            const startTime = startHour * 60 + startMinute;
-            
-            if (currentTime < startTime) {
-              throw new ValidationError(
-                `Bestellungen werden erst ab ${siparisBaslangicSaati} Uhr angenommen`
-              );
-            }
+      const deliverySettings = settings?.deliverySettings || {};
+      const siparisBaslangicSaati = deliverySettings.siparisBaslangicSaati;
+      const siparisKapanisSaati = deliverySettings.siparisKapanisSaati;
+      const hasOrderWindow = Boolean(siparisBaslangicSaati || siparisKapanisSaati);
+
+      const startMinutes = parseTimeStringToMinutes(siparisBaslangicSaati, DEFAULT_START_MINUTES);
+      const endMinutes = parseTimeStringToMinutes(siparisKapanisSaati, DEFAULT_END_MINUTES);
+      const currentTimeMinutes = getGermanyTimeInMinutes();
+      const nowGermany = getGermanyDate();
+      const isWithinOrderWindowNow = hasOrderWindow
+        ? isMinutesWithinWindow(currentTimeMinutes, startMinutes, endMinutes)
+        : true;
+
+      // İleri tarihli sipariş bilgisi
+      let scheduledFor = null;
+      if (scheduledDate && scheduledTime) {
+        scheduledFor = combineDateAndTimeToGermanyDate(scheduledDate, scheduledTime);
+      } else if (scheduledDateTime) {
+        scheduledFor = new Date(scheduledDateTime);
+      } else if ((scheduledDate && !scheduledTime) || (!scheduledDate && scheduledTime)) {
+        throw new ValidationError('Bitte wählen Sie sowohl Datum als auch Uhrzeit für die Vorbestellung');
+      }
+
+      if (scheduledFor) {
+        if (Number.isNaN(scheduledFor.getTime())) {
+          throw new ValidationError('Ungültiger Lieferzeitpunkt');
+        }
+
+        const diffMinutes = (scheduledFor.getTime() - nowGermany.getTime()) / 60000;
+        if (diffMinutes < MIN_SCHEDULE_OFFSET_MINUTES) {
+          throw new ValidationError(
+            `Vorbestellungen müssen mindestens ${MIN_SCHEDULE_OFFSET_MINUTES} Minuten in der Zukunft liegen`
+          );
+        }
+
+        if (isSunday(scheduledFor)) {
+          throw new ValidationError('Bestellungen können nicht auf einen Sonntag terminiert werden');
+        }
+
+        if (hasOrderWindow) {
+          const scheduledMinutes = scheduledFor.getHours() * 60 + scheduledFor.getMinutes();
+          if (!isMinutesWithinWindow(scheduledMinutes, startMinutes, endMinutes)) {
+            const windowLabel = `${siparisBaslangicSaati || '00:00'} - ${siparisKapanisSaati || '23:59'}`;
+            throw new ValidationError(
+              `Der gewünschte Zeitraum liegt außerhalb der Bestellzeiten (${windowLabel})`
+            );
           }
-          
-          // Kapanış saati kontrolü
-          if (siparisKapanisSaati) {
-            const [endHour, endMinute] = siparisKapanisSaati.split(':').map(Number);
-            const endTime = endHour * 60 + endMinute;
-            
-            if (currentTime >= endTime) {
-              throw new ValidationError(
-                `Bestellungen werden nach ${siparisKapanisSaati} Uhr nicht mehr angenommen`
-              );
-            }
-          }
+        }
+      } else {
+        if (isSunday(nowGermany)) {
+          throw new ValidationError('Bestellungen am Sonntag sind nur als Vorbestellung für einen anderen Tag möglich');
+        }
+
+        if (hasOrderWindow && !isWithinOrderWindowNow) {
+          throw new ValidationError(
+            `Wir befinden uns außerhalb der Bestellzeiten. Bitte wählen Sie einen gewünschten Zeitraum zwischen ${siparisBaslangicSaati || '00:00'} und ${siparisKapanisSaati || '23:59'} Uhr.`
+          );
         }
       }
 
@@ -468,6 +557,8 @@ class OrderService {
           couponId: couponId || null,
           couponCode: couponCodeSnapshot || null,
           note: note || null,
+          scheduledFor,
+          isPreorder: Boolean(scheduledFor),
           orderItems: {
             create: orderItems,
           },
@@ -570,13 +661,17 @@ class OrderService {
       // Müşteri bilgilerini hazırla
       const customerName = `${order.user.firstName} ${order.user.lastName}`;
       const orderNo = order.orderNo;
-      const totalPrice = `${order.total.toFixed(2)}€`;
+      const totalPrice = `${parseFloat(order.total).toFixed(2)}€`;
       const orderType = order.type === 'delivery' ? 'Lieferung' : 'Abholung';
       const itemCount = order.orderItems.length;
+      const scheduledDisplay = order.isPreorder && order.scheduledFor
+        ? formatDateTimeForDisplay(new Date(order.scheduledFor))
+        : null;
 
       // Bildirim içeriği
-      const title = `Neue Bestellung: ${orderNo}`;
-      const message = `${customerName} hat eine neue Bestellung aufgegeben. ${itemCount} Artikel, ${totalPrice} (${orderType})`;
+      const titlePrefix = order.isPreorder ? 'Vorbestellung' : 'Neue Bestellung';
+      const title = `${titlePrefix}: ${orderNo}`;
+      const message = `${customerName} hat eine neue Bestellung aufgegeben. ${itemCount} Artikel, ${totalPrice} (${orderType})${scheduledDisplay ? ` • Geplant: ${scheduledDisplay}` : ''}`;
       const actionUrl = `/admin/orders?highlight=${order.id}`;
 
       // Tüm adminlere bildirim gönder (adminId ile)
@@ -584,7 +679,7 @@ class OrderService {
       console.log(`📤 ${adminIds.length} admin'e bildirim gönderiliyor...`);
       
       const notifications = await notificationService.createBulkAdminNotifications(adminIds, {
-        type: 'info',
+        type: order.isPreorder ? 'warning' : 'info',
         title,
         message,
         actionUrl,
@@ -594,6 +689,8 @@ class OrderService {
           customerName,
           total: order.total,
           type: order.type,
+          scheduledFor: order.scheduledFor,
+          isPreorder: order.isPreorder,
         },
       });
 
@@ -635,6 +732,9 @@ class OrderService {
         card_on_delivery: 'Karte bei Lieferung',
         none: 'Keine Zahlung',
       };
+      const scheduledDateDisplay = order.isPreorder && order.scheduledFor
+        ? formatDateTimeForDisplay(new Date(order.scheduledFor))
+        : null;
 
       // Ürün bazında indirim bilgilerini hesapla
       let totalProductDiscount = 0;
@@ -686,6 +786,8 @@ class OrderService {
           total: parseFloat(order.total).toFixed(2),
           paymentType: paymentTypeMap[order.paymentType] || '',
           note: order.note,
+          scheduledDate: scheduledDateDisplay,
+          isPreorder: order.isPreorder,
         },
         metadata: { orderId: order.id, type: 'order-received' },
         priority: 1, // Yüksek öncelik
@@ -728,6 +830,8 @@ class OrderService {
                 paymentType: paymentTypeMap[order.paymentType] || '',
                 note: order.note,
                 adminOrderUrl: `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/orders/${order.id}`,
+              scheduledDate: scheduledDateDisplay,
+              isPreorder: order.isPreorder,
               },
               metadata: { orderId: order.id, type: 'order-notification-admin' },
               priority: 2,

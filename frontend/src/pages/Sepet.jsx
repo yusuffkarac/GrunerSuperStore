@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { toast } from 'react-toastify';
@@ -11,6 +11,7 @@ import campaignService from '../services/campaignService';
 import settingsService from '../services/settingsService';
 import { useAlert } from '../contexts/AlertContext';
 import { normalizeImageUrl } from '../utils/imageUtils';
+import OrderHoursNotice from '../components/common/OrderHoursNotice';
 
 // Sepet Item Component
 function CartItem({ item, campaigns = [], onRemove, onUpdateQuantity }) {
@@ -426,6 +427,7 @@ function CartItem({ item, campaigns = [], onRemove, onUpdateQuantity }) {
 // Ana Sepet Sayfası
 function Sepet() {
   const navigate = useNavigate();
+  const { orderHoursInfo, orderHoursNoticeSettings } = useOutletContext() || {};
   const { items, loading, getTotal, getItemCount, updateItemQuantity, removeItem, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const { showConfirm } = useAlert();
@@ -776,6 +778,12 @@ function Sepet() {
             </button>
           )}
         </div>
+
+        <OrderHoursNotice
+          orderHoursInfo={orderHoursInfo}
+          noticeSettings={orderHoursNoticeSettings}
+          className="mb-4"
+        />
 
         {/* Sepet item'ları */}
         <AnimatePresence>

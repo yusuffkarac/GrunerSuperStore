@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import {
@@ -12,7 +12,10 @@ import {
   FiCheck,
   FiTag,
   FiX,
+  FiClock,
 } from 'react-icons/fi';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import userService from '../services/userService';
@@ -26,6 +29,7 @@ function SiparisVer() {
   const location = useLocation();
   const { items, getTotal, clearCart } = useCartStore();
   const { user } = useAuthStore();
+  const { orderHoursInfo } = useOutletContext() || {};
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -44,8 +48,112 @@ function SiparisVer() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [deliveryTimingMode, setDeliveryTimingMode] = useState('ASAP'); // ASAP | SCHEDULED
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+
+  const MIN_SCHEDULE_OFFSET_MINUTES = 15;
+
+  const parseTimeToMinutes = (value) => {
+    if (!value) return null;
+    const [hour, minute] = value.split(':').map(Number);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    return hour * 60 + minute;
+  };
+
+  const minutesToTimeString = (minutes) => {
+    const normalized = Math.max(0, Math.min(minutes, 23 * 60 + 59));
+    const hour = Math.floor(normalized / 60)
+      .toString()
+      .padStart(2, '0');
+    const minute = (normalized % 60).toString().padStart(2, '0');
+    return `${hour}:${minute}`;
+  };
+
+  const formatDateInputValue = (date) => {
+    const iso = date.toISOString();
+    return iso.split('T')[0];
+  };
+
+  const isMinutesWithinWindow = (value, startMinutes, endMinutes) => {
+    if (startMinutes <= endMinutes) {
+      return value >= startMinutes && value <= endMinutes;
+    }
+    return value >= startMinutes || value <= endMinutes;
+  };
+
+  const isSundayDateString = (value) => {
+    if (!value) return false;
+    const date = new Date(`${value}T00:00:00`);
+    return date.getDay() === 0;
+  };
+
+  const getDefaultScheduleValues = () => {
+    const now = new Date();
+    const settingsStart = settings?.deliverySettings?.siparisBaslangicSaati;
+    const settingsEnd = settings?.deliverySettings?.siparisKapanisSaati;
+    const startMinutes = parseTimeToMinutes(orderHoursInfo?.startTime || settingsStart) ?? 9 * 60;
+    const endMinutes = parseTimeToMinutes(orderHoursInfo?.endTime || settingsEnd) ?? 20 * 60;
+    const bufferMinutes = 30;
+
+    const pickValidDate = (baseDate) => {
+      const candidate = new Date(baseDate);
+      while (candidate.getDay() === 0) {
+        candidate.setDate(candidate.getDate() + 1);
+      }
+      return candidate;
+    };
+
+    let candidateDate = pickValidDate(now);
+    let candidateMinutes = Math.max(
+      (now.getHours() * 60 + now.getMinutes()) + bufferMinutes,
+      startMinutes
+    );
+
+    if (candidateMinutes > endMinutes) {
+      candidateDate = pickValidDate(new Date(candidateDate.getTime() + 24 * 60 * 60 * 1000));
+      candidateMinutes = startMinutes;
+    }
+
+    return {
+      date: formatDateInputValue(candidateDate),
+      time: minutesToTimeString(candidateMinutes),
+    };
+  };
+
+  const formatScheduledLabel = (dateValue, timeValue) => {
+    const composed = new Date(`${dateValue}T${timeValue}`);
+    return format(composed, 'EEEE, dd.MM.yyyy HH:mm', { locale: de });
+  };
 
   const subtotal = getTotal();
+  const scheduleStartTime =
+    orderHoursInfo?.startTime ||
+    settings?.deliverySettings?.siparisBaslangicSaati ||
+    '00:00';
+  const scheduleEndTime =
+    orderHoursInfo?.endTime ||
+    settings?.deliverySettings?.siparisKapanisSaati ||
+    '23:59';
+  const isOutsideOrderHours = orderHoursInfo ? !orderHoursInfo.isWithinOrderHours : false;
+  const isSundayToday = useMemo(() => new Date().getDay() === 0, []);
+  const asapDisabled = isOutsideOrderHours || isSundayToday;
+  const todayDateStr = useMemo(() => formatDateInputValue(new Date()), []);
+  const maxDateStr = useMemo(() => {
+    const future = new Date();
+    future.setDate(future.getDate() + 14);
+    return formatDateInputValue(future);
+  }, []);
+  const scheduledDisplayLabel = useMemo(() => {
+    if (deliveryTimingMode !== 'SCHEDULED' || !scheduledDate || !scheduledTime) {
+      return '';
+    }
+    try {
+      return formatScheduledLabel(scheduledDate, scheduledTime);
+    } catch (error) {
+      return `${scheduledDate} ${scheduledTime}`;
+    }
+  }, [deliveryTimingMode, scheduledDate, scheduledTime]);
   
   // Ücretsiz kargo kampanyası kontrolü
   const isFreeShipping = useMemo(() => {
@@ -168,6 +276,22 @@ function SiparisVer() {
     };
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (asapDisabled) {
+      setDeliveryTimingMode('SCHEDULED');
+    }
+  }, [asapDisabled]);
+
+  useEffect(() => {
+    if (deliveryTimingMode === 'SCHEDULED') {
+      if (!scheduledDate || !scheduledTime) {
+        const defaults = getDefaultScheduleValues();
+        setScheduledDate(defaults.date);
+        setScheduledTime(defaults.time);
+      }
+    }
+  }, [deliveryTimingMode, settings, orderHoursInfo]);
 
   // Kampanyaları yükle
   useEffect(() => {
@@ -342,6 +466,26 @@ function SiparisVer() {
       return;
     }
 
+    if (deliveryTimingMode === 'SCHEDULED') {
+      if (!scheduledDate || !scheduledTime) {
+        toast.error('Bitte wählen Sie Datum und Uhrzeit für die Vorbestellung');
+        return;
+      }
+      if (isSundayDateString(scheduledDate)) {
+        toast.error('Vorbestellungen auf Sonntage sind nicht möglich');
+        return;
+      }
+    } else {
+      if (isOutsideOrderHours) {
+        toast.error('Bitte wählen Sie einen Lieferzeitpunkt, da wir uns außerhalb der Bestellzeiten befinden');
+        return;
+      }
+      if (new Date().getDay() === 0) {
+        toast.error('Am Sonntag sind nur Vorbestellungen möglich');
+        return;
+      }
+    }
+
     setShowConfirmModal(true);
   };
 
@@ -351,6 +495,43 @@ function SiparisVer() {
     setLoading(true);
 
     try {
+      if (deliveryTimingMode === 'SCHEDULED') {
+        if (!scheduledDate || !scheduledTime) {
+          toast.error('Bitte wählen Sie Datum und Uhrzeit für die Vorbestellung');
+          setLoading(false);
+          return;
+        }
+        if (isSundayDateString(scheduledDate)) {
+          toast.error('Vorbestellungen auf Sonntage sind nicht möglich');
+          setLoading(false);
+          return;
+        }
+        const selectedMinutes = parseTimeToMinutes(scheduledTime);
+        const startMinutesSetting = parseTimeToMinutes(scheduleStartTime) ?? 0;
+        const endMinutesSetting = parseTimeToMinutes(scheduleEndTime) ?? 23 * 60 + 59;
+        if (
+          selectedMinutes === null ||
+          !isMinutesWithinWindow(selectedMinutes, startMinutesSetting, endMinutesSetting)
+        ) {
+          toast.error(`Uhrzeit muss zwischen ${scheduleStartTime} und ${scheduleEndTime} liegen`);
+          setLoading(false);
+          return;
+        }
+        const selectedDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        const diffMinutes = (selectedDateTime.getTime() - Date.now()) / 60000;
+        if (diffMinutes < MIN_SCHEDULE_OFFSET_MINUTES) {
+          toast.error(
+            `Vorbestellungen müssen mindestens ${MIN_SCHEDULE_OFFSET_MINUTES} Minuten in der Zukunft liegen`
+          );
+          setLoading(false);
+          return;
+        }
+      } else if (isOutsideOrderHours || new Date().getDay() === 0) {
+        toast.error('Bitte wählen Sie einen Lieferzeitpunkt');
+        setLoading(false);
+        return;
+      }
+
       // Her ürün için kampanya bilgilerini hesapla
       const orderItems = items.map((item) => {
         const itemPrice = parseFloat(item.price);
@@ -446,6 +627,12 @@ function SiparisVer() {
             { billingAddressId: selectedBillingAddressId }),
         ...(appliedCoupon && { couponCode: appliedCoupon.code }),
         ...(note && note.trim() && { note: note.trim() }),
+        ...(deliveryTimingMode === 'SCHEDULED' &&
+          scheduledDate &&
+          scheduledTime && {
+            scheduledDate,
+            scheduledTime,
+          }),
       };
 
       console.log('Sipariş data:', orderData);
@@ -695,6 +882,106 @@ function SiparisVer() {
         </div>
       )}
 
+      {/* Lieferzeit & Vorbestellung */}
+      <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">
+            <FiClock className="w-4 h-4" />
+            <span>Lieferzeit / Vorbestellung</span>
+          </h2>
+          <span className="text-[10px] text-gray-500">
+            {scheduleStartTime} - {scheduleEndTime}
+          </span>
+        </div>
+
+        {asapDisabled && (
+          <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800 flex items-center gap-1.5">
+            <FiClock className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>
+              {isSundayToday
+                ? 'Am Sonntag sind nur Vorbestellungen möglich.'
+                : 'Wir befinden uns außerhalb der Bestellzeiten. Bitte wählen Sie einen gewünschten Zeitraum.'}
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setDeliveryTimingMode('ASAP')}
+            disabled={asapDisabled}
+            className={`p-2 rounded-lg border text-left transition-all ${
+              deliveryTimingMode === 'ASAP'
+                ? 'border-green-600 bg-green-50 text-green-800'
+                : 'border-gray-200 bg-white text-gray-700'
+            } ${asapDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <p className="font-semibold text-xs">Schnellstmöglich</p>
+            <p className="text-[10px] text-gray-500">Innerhalb der aktiven Bestellzeiten</p>
+          </button>
+
+          <button
+            onClick={() => setDeliveryTimingMode('SCHEDULED')}
+            className={`p-2 rounded-lg border text-left transition-all ${
+              deliveryTimingMode === 'SCHEDULED'
+                ? 'border-purple-600 bg-purple-50 text-purple-800'
+                : 'border-gray-200 bg-white text-gray-700'
+            }`}
+          >
+            <p className="font-semibold text-xs">Vorbestellen</p>
+            <p className="text-[10px] text-gray-500">Datum & Uhrzeit wählen</p>
+          </button>
+        </div>
+
+        {deliveryTimingMode === 'SCHEDULED' && (
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Wunschdatum
+              </label>
+              <input
+                type="date"
+                min={todayDateStr}
+                max={maxDateStr}
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+              />
+              {scheduledDate && isSundayDateString(scheduledDate) && (
+                <p className="text-[11px] text-red-600 mt-1">
+                  Sonntage sind nicht verfügbar. Bitte anderes Datum wählen.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Uhrzeit
+              </label>
+              <input
+                type="time"
+                min={scheduleStartTime}
+                max={scheduleEndTime}
+                step="900"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Nur innerhalb des angegebenen Zeitfensters möglich.
+              </p>
+            </div>
+            {scheduledDisplayLabel && (
+              <div className="flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-800">
+                <FiClock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Vorbestellung bestätigt</p>
+                  <p className="text-[11px]">{scheduledDisplayLabel}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Ödeme Yöntemi */}
       <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
         <h2 className="font-semibold text-gray-900 text-sm mb-1.5 flex items-center gap-1.5">
@@ -818,6 +1105,16 @@ function SiparisVer() {
             </div>
           ))}
         </div>
+
+        {deliveryTimingMode === 'SCHEDULED' && scheduledDisplayLabel && (
+          <div className="mb-2 flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-800">
+            <FiClock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Vorbestellung</p>
+              <p className="text-[11px]">{scheduledDisplayLabel}</p>
+            </div>
+          </div>
+        )}
 
         <div className="border-t border-gray-200 pt-1.5 space-y-1">
           <div className="flex justify-between text-xs">

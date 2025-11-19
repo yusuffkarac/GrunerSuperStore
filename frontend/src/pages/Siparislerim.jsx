@@ -110,6 +110,12 @@ function OrderCard({ order, onReorder }) {
           <p className="text-[10px] text-gray-500 mt-0.5">
             {format(new Date(order.createdAt), 'dd. MMMM yyyy, HH:mm', { locale: de })}
           </p>
+          {order.isPreorder && order.scheduledFor && (
+            <p className="text-[10px] text-purple-600 font-semibold mt-0.5 flex items-center gap-1">
+              <FiClock className="w-3 h-3" />
+              Vorbest. {format(new Date(order.scheduledFor), 'dd.MM.yyyy HH:mm', { locale: de })}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <button

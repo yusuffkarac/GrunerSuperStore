@@ -15,6 +15,7 @@ import {
   FiDownload,
   FiRefreshCw,
   FiXCircle,
+  FiClock,
 } from 'react-icons/fi';
 import orderService from '../services/orderService';
 import useCartStore from '../store/cartStore';
@@ -259,6 +260,18 @@ function SiparisDetay() {
             <OrderStatusBadge status={order.status} orderType={order.type} />
           </div>
         </div>
+
+        {order.isPreorder && order.scheduledFor && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-800">
+            <FiClock className="mt-0.5 text-base" />
+            <div>
+              <p className="text-xs uppercase tracking-wide font-semibold">Vorbestellung</p>
+              <p className="text-sm font-semibold">
+                {format(new Date(order.scheduledFor), 'EEEE, dd.MM.yyyy HH:mm', { locale: de })}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Teslimat/Ödeme Bilgileri */}
         <div className="grid grid-cols-2 gap-4 py-4 border-t border-gray-100">

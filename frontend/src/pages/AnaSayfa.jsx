@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { FiChevronRight, FiChevronLeft, FiTag, FiPackage, FiTruck, FiClock, FiCheckCircle } from 'react-icons/fi';
 import { MdLocalShipping, MdCheckCircle, MdCreditCard, MdInventory } from 'react-icons/md';
 import productService from '../services/productService';
@@ -9,6 +9,7 @@ import campaignService from '../services/campaignService';
 import orderService from '../services/orderService';
 import UrunKarti from '../components/common/UrunKarti';
 import Loading from '../components/common/Loading';
+import OrderHoursNotice from '../components/common/OrderHoursNotice';
 import useAuthStore from '../store/authStore';
 import { normalizeImageUrl } from '../utils/imageUtils';
 import { format } from 'date-fns';
@@ -18,6 +19,7 @@ import { de } from 'date-fns/locale';
 function AnaSayfa() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { orderHoursInfo, orderHoursNoticeSettings } = useOutletContext() || {};
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
@@ -440,6 +442,11 @@ function AnaSayfa() {
 
   return (
     <div className="pb-20 bg-white">
+      <OrderHoursNotice
+        orderHoursInfo={orderHoursInfo}
+        noticeSettings={orderHoursNoticeSettings}
+        className="container-mobile mt-4 mb-2"
+      />
       {/* Kampanyalar Bölümü - Üstte */}
       {campaigns.length > 0 && (
         <section className="bg-white py-4 md:py-6 border-b border-gray-100">
@@ -691,6 +698,17 @@ function AnaSayfa() {
                     {activeOrder.total ? parseFloat(activeOrder.total).toFixed(2) : '0.00'} €
                   </p>
                 </div>
+              {activeOrder.isPreorder && activeOrder.scheduledFor && (
+                <p className="text-xs text-purple-600 font-semibold mb-1">
+                  Vorbestellt für{' '}
+                  {new Date(activeOrder.scheduledFor).toLocaleString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-600">
                     {activeOrder.orderItems?.length || 0} {activeOrder.orderItems?.length === 1 ? 'Produkt' : 'Produkte'}

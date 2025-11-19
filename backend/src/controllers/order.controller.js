@@ -15,14 +15,27 @@ class OrderController {
     const order = await orderService.createOrder(userId, orderData);
 
     // Log kaydı
+    const logScheduledInfo =
+      order.isPreorder && order.scheduledFor
+        ? `, geplant für ${new Date(order.scheduledFor).toLocaleString('de-DE')}`
+        : '';
+    const logPreorderLabel = order.isPreorder ? ' [Vorbestellung]' : '';
+
     await activityLogService.createLog({
       userId,
       action: 'order.create',
       entityType: 'order',
       entityId: order.id,
       level: 'success',
-      message: `Bestellung wurde erstellt: ${order.orderNo} (${order.type}, ${order.total}€)`,
-      metadata: { orderNo: order.orderNo, type: order.type, total: order.total, status: order.status },
+      message: `Bestellung wurde erstellt${logPreorderLabel}: ${order.orderNo} (${order.type}, ${parseFloat(order.total).toFixed(2)}€${logScheduledInfo})`,
+      metadata: {
+        orderNo: order.orderNo,
+        type: order.type,
+        total: order.total,
+        status: order.status,
+        isPreorder: order.isPreorder,
+        scheduledFor: order.scheduledFor,
+      },
       req,
     });
 

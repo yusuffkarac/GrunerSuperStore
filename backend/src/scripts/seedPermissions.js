@@ -110,6 +110,18 @@ async function seedPermissions() {
       description: 'Berechtigung zum Ändern der Systemeinstellungen',
       category: 'settings',
     },
+    {
+      name: 'site_settings_manage',
+      displayName: 'Seiteneinstellungen verwalten',
+      description: 'Berechtigung zum Verwalten der Startseite, Footer, Cookie-Einstellungen und FAQs',
+      category: 'settings',
+    },
+    {
+      name: 'design_settings_manage',
+      displayName: 'Design-Einstellungen verwalten',
+      description: 'Berechtigung zum Verwalten der Design- und Markenrichtlinien (Farben, Logo, Favicon)',
+      category: 'settings',
+    },
     // Adminverwaltung Berechtigungen (nur für Super Admin, aber trotzdem angelegt)
     {
       name: 'admin_management',

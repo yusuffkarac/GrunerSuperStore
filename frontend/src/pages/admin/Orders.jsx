@@ -797,6 +797,20 @@ function Orders() {
                               </span>
                             </div>
                           )}
+                          {order.isPreorder && order.scheduledFor && (
+                            <div className="flex items-center gap-1 mt-0.5 text-[10px] text-purple-600 font-semibold">
+                              <FiClock className="w-3 h-3" />
+                              <span>
+                                {new Date(order.scheduledFor).toLocaleString('de-DE', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           <div className="text-sm">
@@ -930,6 +944,20 @@ function Orders() {
                             ))}
                             <span className="text-[9px] text-gray-500 ml-0.5">
                               {order.review.rating}/5
+                            </span>
+                          </div>
+                        )}
+                        {order.isPreorder && order.scheduledFor && (
+                          <div className="flex items-center gap-1 text-[11px] text-purple-600 font-semibold">
+                            <FiClock className="w-3 h-3" />
+                            <span>
+                              {new Date(order.scheduledFor).toLocaleString('de-DE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </span>
                           </div>
                         )}
@@ -1101,6 +1129,25 @@ function Orders() {
 
                 {/* Modal Body */}
                 <div className="p-6 space-y-6">
+                  {selectedOrder.isPreorder && selectedOrder.scheduledFor && (
+                    <div className="flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm text-purple-800">
+                      <FiClock className="mt-0.5" />
+                      <div>
+                        <p className="text-xs uppercase tracking-wide font-semibold">Vorbestellung</p>
+                        <p className="font-semibold">
+                          {new Date(selectedOrder.scheduledFor).toLocaleString('de-DE', {
+                            weekday: 'long',
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Customer Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
