@@ -63,4 +63,4 @@ temp/
 !backend/prisma/migrations/**/*.sql
 
 # Uploads (if storing locally during development)
-#uploads/
+uploads/
