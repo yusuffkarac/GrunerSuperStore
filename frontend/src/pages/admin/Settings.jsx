@@ -1678,7 +1678,7 @@ function Settings() {
                         e.currentTarget.style.backgroundColor = themeColors?.primary?.[600] || '#16a34a';
                       }}
                     >
-                      Ekle
+                      Hinzufügen
                     </button>
                   </div>
                   

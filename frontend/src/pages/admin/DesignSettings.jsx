@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { toast } from 'react-toastify';
 import { HiDownload, HiUpload } from 'react-icons/hi';
 import settingsService from '../../services/settingsService';
@@ -9,6 +9,39 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import HelpTooltip from '../../components/common/HelpTooltip';
 import FileUpload from '../../components/common/FileUpload';
 import { useModalScroll } from '../../hooks/useModalScroll';
+
+// Renk girişi komponenti - memo ile optimize edildi
+const ColorInput = memo(({ label, value, onChange, description }) => (
+  <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+    <div className="flex-1 mr-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      {description && (
+        <p className="text-xs text-gray-500">{description}</p>
+      )}
+    </div>
+    <div className="flex items-center gap-3">
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-14 h-14 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-primary-500 transition-colors"
+        style={{ padding: '2px' }}
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm uppercase"
+        placeholder="#000000"
+        pattern="^#[0-9A-Fa-f]{6}$"
+      />
+    </div>
+  </div>
+));
+
+ColorInput.displayName = 'ColorInput';
 
 // Tasarım Ayarları Sayfası
 function DesignSettings() {
@@ -77,22 +110,25 @@ function DesignSettings() {
     }
   };
 
-  // Renk değiştir
-  const handleColorChange = (category, key, value) => {
-    const newColors = {
-      ...colors,
-      [category]: {
-        ...colors[category],
-        [key]: value,
-      },
-    };
-    setColors(newColors);
+  // Renk değiştir - useCallback ile optimize edildi
+  const handleColorChange = useCallback((category, key, value) => {
+    setColors(prevColors => {
+      const newColors = {
+        ...prevColors,
+        [category]: {
+          ...prevColors[category],
+          [key]: value,
+        },
+      };
 
-    // Önizleme modundaysa hemen uygula
-    if (previewMode) {
-      updateThemeColors(newColors);
-    }
-  };
+      // Önizleme modundaysa hemen uygula
+      if (previewMode) {
+        updateThemeColors(newColors);
+      }
+
+      return newColors;
+    });
+  }, [previewMode, updateThemeColors]);
 
   // Önizleme modu toggle
   const togglePreview = () => {
@@ -286,37 +322,6 @@ function DesignSettings() {
   if (error) {
     return <ErrorMessage message={error} />;
   }
-
-  // Renk girişi komponenti
-  const ColorInput = ({ label, value, onChange, description }) => (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-      <div className="flex-1 mr-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-        {description && (
-          <p className="text-xs text-gray-500">{description}</p>
-        )}
-      </div>
-      <div className="flex items-center gap-3">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-14 h-14 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-primary-500 transition-colors"
-          style={{ padding: '2px' }}
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm uppercase"
-          placeholder="#000000"
-          pattern="^#[0-9A-Fa-f]{6}$"
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div className="max-w-7xl mx-auto">

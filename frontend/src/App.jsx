@@ -4,7 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Config
-import { BARCODE_ONLY_MODE } from './config/appConfig';
+import { BARCODE_ONLY_MODE, DEFAULT_HOME_ROUTE } from './config/appConfig';
 
 // Context
 import { AlertProvider } from './contexts/AlertContext';
@@ -172,7 +172,14 @@ function AppContent() {
         {/* User Layout - Barkod-only modda erişim engellenir (süper adminler hariç) */}
         {(!BARCODE_ONLY_MODE || isSuperAdmin) && (
           <Route element={<MainLayout />}>
-            <Route path="/" element={<AnaSayfa />} />
+            <Route 
+              path="/" 
+              element={
+                DEFAULT_HOME_ROUTE === '/admin/dashboard' 
+                  ? <Navigate to="/admin/dashboard" replace />
+                  : <AnaSayfa />
+              } 
+            />
             {/* Almanca route'lar */}
             <Route path="/produkte" element={<UrunListesi />} />
             <Route path="/produkt/:id" element={<UrunDetay />} />

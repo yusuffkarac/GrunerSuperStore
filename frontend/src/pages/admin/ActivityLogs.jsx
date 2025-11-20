@@ -482,6 +482,13 @@ function ActivityLogs() {
       // Favoriten
       'favorite.add': 'Zu Favoriten hinzufügen',
       'favorite.remove': 'Aus Favoriten entfernen',
+
+      'expiry.product.remove': 'Produkt aussortiert',
+      'expiry.product.label': 'Produkt etiketlendi',
+      'expiry.product.update_date': 'Produkt MHD-Datum aktualisiert',
+      'expiry.product.deactivate': 'Produkt deaktiviert',
+      'expiry.product.undo': 'Produkt MHD-Aktion geri alındı'
+
     };
 
     return actionLabels[action] || action;

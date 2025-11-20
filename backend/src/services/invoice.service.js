@@ -128,15 +128,6 @@ class InvoiceService {
           headerY = 80;
         }
 
-        // Şirket bilgileri
-        doc
-          .fontSize(9)
-          .font('Helvetica')
-          .fillColor('#6b7280')
-          .text(companyInfo.address || '', 50, headerY, { width: 200 })
-          .text(companyInfo.phone || '', 50, headerY + 15)
-          .text(companyInfo.email || '', 50, headerY + 27);
-
         // RECHNUNG başlığı
         doc
           .fontSize(28)
@@ -418,6 +409,23 @@ class InvoiceService {
             { align: 'center', width: 495 }
           );
 
+        // Firma bilgileri (adres, telefon, email)
+        let footerInfoY = footerY + 12;
+        if (companyInfo.address || companyInfo.phone || companyInfo.email) {
+          const footerInfo = [
+            companyInfo.address || '',
+            companyInfo.phone ? `Tel: ${companyInfo.phone}` : '',
+            companyInfo.email ? `E-Mail: ${companyInfo.email}` : '',
+          ]
+            .filter(Boolean)
+            .join(' | ');
+          
+          doc
+            .fontSize(7)
+            .text(footerInfo, 50, footerInfoY, { align: 'center', width: 495 });
+          footerInfoY += 12;
+        }
+
         if (companyInfo.taxNumber || companyInfo.registrationNumber) {
           doc
             .fontSize(7)
@@ -428,7 +436,7 @@ class InvoiceService {
                   : ''
               }`,
               50,
-              footerY + 12,
+              footerInfoY,
               { align: 'center', width: 495 }
             );
         }
@@ -554,15 +562,6 @@ class InvoiceService {
             .text(companyInfo.name || 'Gruner SuperStore', 50, headerY);
           headerY = 80;
         }
-
-        // Şirket bilgileri
-        doc
-          .fontSize(9)
-          .font('Helvetica')
-          .fillColor('#6b7280')
-          .text(companyInfo.address || '', 50, headerY, { width: 200 })
-          .text(companyInfo.phone || '', 50, headerY + 15)
-          .text(companyInfo.email || '', 50, headerY + 27);
 
         // LIEFERSCHEIN başlığı (sağ üstte)
         doc
@@ -843,8 +842,11 @@ class InvoiceService {
             { align: 'center', width: 495 }
           );
 
-        if (companyInfo.phone || companyInfo.email) {
-          const contactInfo = [
+        // Firma bilgileri (adres, telefon, email)
+        let footerInfoY = footerY + 12;
+        if (companyInfo.address || companyInfo.phone || companyInfo.email) {
+          const footerInfo = [
+            companyInfo.address || '',
             companyInfo.phone ? `Tel: ${companyInfo.phone}` : '',
             companyInfo.email ? `E-Mail: ${companyInfo.email}` : '',
           ]
@@ -853,7 +855,7 @@ class InvoiceService {
           
           doc
             .fontSize(7)
-            .text(contactInfo, 50, footerY + 12, { align: 'center', width: 495 });
+            .text(footerInfo, 50, footerInfoY, { align: 'center', width: 495 });
         }
 
         // PDF'i sonlandır

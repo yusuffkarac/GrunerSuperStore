@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   FiAlertCircle,
   FiAlertTriangle,
@@ -141,6 +141,8 @@ function ExpiryManagement() {
   const [sendingReport, setSendingReport] = useState(false);
   const isActionDialogOpen = Boolean(actionDialog.type && actionDialog.product);
   const isAnyModalOpen = isActionDialogOpen || settingsDialogOpen || completionConfirmDialogOpen;
+  const mainElementRef = useRef(null);
+  const savedScrollPositionRef = useRef(0);
 
   useModalScroll(isAnyModalOpen);
 
@@ -149,6 +151,66 @@ function ExpiryManagement() {
     if (isSuperAdmin || perms.includes('expiry_management_settings')) {
       setCanEditSettings(true);
     }
+  }, []);
+
+  // Scroll pozisyonunu kaydetme yardımcı fonksiyonu
+  const saveScrollPosition = () => {
+    const scrollContainer = document.querySelector('main.overflow-y-auto');
+    if (scrollContainer) {
+      savedScrollPositionRef.current = scrollContainer.scrollTop;
+    }
+  };
+
+  // Scroll pozisyonunu geri yükleme yardımcı fonksiyonu
+  const restoreScrollPosition = () => {
+    if (savedScrollPositionRef.current > 0) {
+      const scrollContainer = document.querySelector('main.overflow-y-auto');
+      if (scrollContainer) {
+        // Birkaç frame bekleyerek DOM'un güncellenmesini sağla
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollContainer.scrollTo({ top: savedScrollPositionRef.current, left: 0, behavior: 'auto' });
+          });
+        });
+      }
+    }
+  };
+
+  // Main element'in padding-top'ını scroll pozisyonuna göre ayarla
+  useEffect(() => {
+    // Main element'i bul
+    const findMainElement = () => {
+      let element = mainElementRef.current?.closest('main');
+      if (!element) {
+        // Eğer ref yoksa, sayfadaki main element'i bul
+        element = document.querySelector('main');
+      }
+      return element;
+    };
+
+    const mainElement = findMainElement();
+    if (!mainElement) return;
+
+    const handleScroll = () => {
+      const scrollTop = mainElement.scrollTop;
+      if (scrollTop > 0) {
+        mainElement.style.paddingTop = '0';
+      } else {
+        // Scroll top 0 ise orijinal padding'i geri yükle
+        mainElement.style.paddingTop = '';
+      }
+    };
+
+    mainElement.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // İlk kontrol
+    handleScroll();
+
+    return () => {
+      mainElement.removeEventListener('scroll', handleScroll);
+      // Cleanup: padding'i geri yükle
+      mainElement.style.paddingTop = '';
+    };
   }, []);
 
   const fetchDashboard = async (previewDateOverride = appliedPreviewDate) => {
@@ -250,6 +312,8 @@ function ExpiryManagement() {
   };
 
   const openActionDialog = (product, type) => {
+    // Modal açılmadan önce scroll pozisyonunu kaydet
+    saveScrollPosition();
     setActionDialog({ product, type });
     if (type === 'remove' || type === 'date') {
       setActionForm({ newExpiryDate: '', note: '' });
@@ -264,13 +328,27 @@ function ExpiryManagement() {
     setActionForm({});
   };
 
+  const openSettingsDialog = () => {
+    // Modal açılmadan önce scroll pozisyonunu kaydet
+    saveScrollPosition();
+    setSettingsDialogOpen(true);
+  };
+
+  const openCompletionConfirmDialog = () => {
+    // Modal açılmadan önce scroll pozisyonunu kaydet
+    saveScrollPosition();
+    setCompletionConfirmDialogOpen(true);
+  };
+
   const handleLabelProduct = async (product) => {
     if (!product) return;
+    saveScrollPosition();
     setPendingQuickAction(product.id);
     try {
       await expiryService.labelProduct(product.id, { note: 'Reduziert' });
       toast.success(`${product.name} wurde etikettiert`);
       await fetchDashboard();
+      restoreScrollPosition();
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || 'Aktion fehlgeschlagen');
     } finally {
@@ -280,6 +358,7 @@ function ExpiryManagement() {
 
   const handleDeactivateProduct = async (product) => {
     if (!product) return;
+    saveScrollPosition();
     setPendingDeactivateId(product.id);
     try {
       await expiryService.processRemoval(product.id, {
@@ -290,6 +369,7 @@ function ExpiryManagement() {
       });
       toast.success(`${product.name} wurde deaktiviert`);
       await fetchDashboard();
+      restoreScrollPosition();
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || 'Aktion fehlgeschlagen');
     } finally {
@@ -328,6 +408,8 @@ function ExpiryManagement() {
       }
       closeActionDialog();
       await fetchDashboard();
+      // Modal kapandıktan sonra scroll pozisyonunu geri yükle
+      restoreScrollPosition();
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || 'Aktion fehlgeschlagen');
     } finally {
@@ -348,6 +430,8 @@ function ExpiryManagement() {
       toast.success('Einstellungen gespeichert');
       setSettingsDialogOpen(false);
       await fetchDashboard();
+      // Modal kapandıktan sonra scroll pozisyonunu geri yükle
+      restoreScrollPosition();
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || 'Einstellungen konnten nicht gespeichert werden');
     } finally {
@@ -362,6 +446,8 @@ function ExpiryManagement() {
       if (result.success) {
         toast.success(result.message || 'Bericht erfolgreich gesendet');
         setCompletionConfirmDialogOpen(false);
+        // Modal kapandıktan sonra scroll pozisyonunu geri yükle
+        restoreScrollPosition();
       } else {
         toast.error(result.message || 'Bericht konnte nicht gesendet werden');
       }
@@ -416,7 +502,7 @@ function ExpiryManagement() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div ref={mainElementRef} className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
           <h1 className="text-2xl font-bold text-gray-900">MHD-Verwaltung</h1>
@@ -434,7 +520,7 @@ function ExpiryManagement() {
                 </button>
           {completionRate === 100 && dashboard.stats.totalProducts > 0 && (
             <button
-              onClick={() => setCompletionConfirmDialogOpen(true)}
+              onClick={openCompletionConfirmDialog}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
             >
               <FiCheckCircle className="w-4 h-4" />
@@ -443,7 +529,7 @@ function ExpiryManagement() {
           )}
           {canEditSettings && (
                 <button
-              onClick={() => setSettingsDialogOpen(true)}
+              onClick={openSettingsDialog}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white"
               style={{
                 backgroundColor: themeColors?.primary?.[600] || '#16a34a',
@@ -456,7 +542,7 @@ function ExpiryManagement() {
           </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3  dayChange " >
+      <div className="bg-white rounded-xl shadow p-4 border border-emerald-100 space-y-3  " >
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="w-full md:max-w-xs">
             <label className="text-sm font-medium text-gray-700">Vorschau-Datum</label>
@@ -548,7 +634,7 @@ function ExpiryManagement() {
         ))}
             </div>
 
-      <div className="bg-white rounded-xl shadow p-5 border border-gray-100">
+      <div className="sticky top-0 z-10 bg-white rounded-xl shadow p-5 border border-gray-100">
         <div className="flex flex-wrap gap-6 items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">Erledigt</p>

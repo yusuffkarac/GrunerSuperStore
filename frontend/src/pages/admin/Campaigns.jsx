@@ -265,10 +265,10 @@ function Campaigns() {
   }
 
   return (
-    <div className="min-h-screen @ pb-20">
+    <div className="min-h-screen pb-20">
       {/* Header */}
-      <div className="shadow-sm sticky top-0 z-10">
-        <div className=" mx-auto px-4 py-4">
+      <div className="bg-white shadow-sm">
+        <div className="mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               Kampagnen
@@ -516,7 +516,7 @@ function Campaigns() {
                     <input
                       type="text"
                       value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
@@ -528,7 +528,7 @@ function Campaigns() {
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       rows="3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
@@ -540,7 +540,7 @@ function Campaigns() {
                     </label>
                     <FileUpload
                       value={formData.imageUrl}
-                      onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                      onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
                       folder="campaigns"
                       maxFiles={1}
                     />
@@ -557,7 +557,7 @@ function Campaigns() {
                     </label>
                     <select
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     >
@@ -580,7 +580,7 @@ function Campaigns() {
                         max="100"
                         inputMode="decimal"
                         value={formData.discountPercent}
-                        onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, discountPercent: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -598,7 +598,7 @@ function Campaigns() {
                         min="0"
                         inputMode="decimal"
                         value={formData.discountAmount}
-                        onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, discountAmount: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -616,7 +616,7 @@ function Campaigns() {
                           min="1"
                           inputMode="numeric"
                           value={formData.buyQuantity}
-                          onChange={(e) => setFormData({ ...formData, buyQuantity: e.target.value })}
+                          onChange={(e) => setFormData(prev => ({ ...prev, buyQuantity: e.target.value }))}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                         />
@@ -630,7 +630,7 @@ function Campaigns() {
                           min="1"
                           inputMode="numeric"
                           value={formData.getQuantity}
-                          onChange={(e) => setFormData({ ...formData, getQuantity: e.target.value })}
+                          onChange={(e) => setFormData(prev => ({ ...prev, getQuantity: e.target.value }))}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                         />
@@ -650,7 +650,7 @@ function Campaigns() {
                       </label>
                       <DatePicker
                         selected={formData.startDate}
-                        onChange={(date) => setFormData({ ...formData, startDate: date })}
+                        onChange={(date) => setFormData(prev => ({ ...prev, startDate: date }))}
                         dateFormat="dd/MM/yyyy"
                         locale={de}
                         placeholderText="dd/MM/yyyy"
@@ -665,7 +665,7 @@ function Campaigns() {
                       </label>
                       <DatePicker
                         selected={formData.endDate}
-                        onChange={(date) => setFormData({ ...formData, endDate: date })}
+                        onChange={(date) => setFormData(prev => ({ ...prev, endDate: date }))}
                         dateFormat="dd/MM/yyyy"
                         locale={de}
                         placeholderText="dd/MM/yyyy"
@@ -686,7 +686,7 @@ function Campaigns() {
                     <Switch
                       id="applyToAll"
                       checked={formData.applyToAll}
-                      onChange={(e) => setFormData({ ...formData, applyToAll: e.target.checked })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, applyToAll: e.target.checked }))}
                       color="green"
                     />
                     <label htmlFor="applyToAll" className="text-sm font-medium text-gray-700">
@@ -701,7 +701,7 @@ function Campaigns() {
                         options={categories}
                         value={formData.categoryIds}
                         onChange={(selectedIds) => {
-                          setFormData({ ...formData, categoryIds: selectedIds });
+                          setFormData(prev => ({ ...prev, categoryIds: selectedIds }));
                         }}
                         placeholder="Kategorien suchen..."
                         optional={true}
@@ -713,7 +713,7 @@ function Campaigns() {
                         options={products}
                         value={formData.productIds}
                         onChange={(selectedIds) => {
-                          setFormData({ ...formData, productIds: selectedIds });
+                          setFormData(prev => ({ ...prev, productIds: selectedIds }));
                         }}
                         placeholder="Produkte suchen..."
                         optional={true}
@@ -742,7 +742,7 @@ function Campaigns() {
                         min="0"
                         inputMode="decimal"
                         value={formData.minPurchase}
-                        onChange={(e) => setFormData({ ...formData, minPurchase: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, minPurchase: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -757,7 +757,7 @@ function Campaigns() {
                         min="0"
                         inputMode="decimal"
                         value={formData.maxDiscount}
-                        onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, maxDiscount: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -771,7 +771,7 @@ function Campaigns() {
                         min="0"
                         inputMode="numeric"
                         value={formData.usageLimit}
-                        onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, usageLimit: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -784,7 +784,7 @@ function Campaigns() {
                         type="number"
                         inputMode="numeric"
                         value={formData.priority}
-                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
@@ -798,7 +798,7 @@ function Campaigns() {
                     <Switch
                       id="isActive"
                       checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                       color="green"
                     />
                     <label htmlFor="isActive" className="text-sm font-medium text-gray-700">

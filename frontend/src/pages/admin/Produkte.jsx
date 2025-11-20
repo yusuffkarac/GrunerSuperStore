@@ -2187,7 +2187,7 @@ function Produkte() {
                             }}
                           >
                             <FiPlus size={16} />
-                            Seçenek Ekle
+                            Option hinzufügen
                           </button>
                         </div>
                         {variantOptions.length === 0 ? (
@@ -2246,7 +2246,7 @@ function Produkte() {
                             }}
                           >
                             <FiPlus size={16} />
-                            Varyant Ekle
+                            Variante hinzufügen
                           </button>
                         </div>
                         {variants.length === 0 ? (
@@ -2361,7 +2361,7 @@ function Produkte() {
               >
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900">Varyant Seçeneği Ekle</h3>
+                    <h3 className="text-lg font-bold text-gray-900">Variante hinzufügen</h3>
                     <button
                       onClick={closeOptionForm}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2536,7 +2536,7 @@ function Produkte() {
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900">
-                      {editingVariant ? 'Varyant Düzenle' : 'Yeni Varyant Ekle'}
+                      {editingVariant ? 'Variante bearbeiten' : 'Neue Variante hinzufügen'}
                     </h3>
                     <button
                       onClick={closeVariantForm}

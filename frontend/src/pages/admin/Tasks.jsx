@@ -18,7 +18,7 @@ const TASK_TYPES = [
   { id: 'category', label: 'Kategorie', icon: FiTag, color: 'purple', colorClass: 'purple' },
   { id: 'price', label: 'Preis', icon: FiDollarSign, color: 'yellow', colorClass: 'yellow' },
   { id: 'expiryDate', label: 'MHD', icon: FiClock, color: 'red', colorClass: 'red' },
-  { id: 'taxRate', label: 'Vergi Oranı', icon: FiDollarSign, color: 'orange', colorClass: 'yellow' },
+  { id: 'taxRate', label: 'Steuersatz', icon: FiDollarSign, color: 'orange', colorClass: 'yellow' },
 ];
 
 const getColorClasses = (colorClass, isActive) => {
