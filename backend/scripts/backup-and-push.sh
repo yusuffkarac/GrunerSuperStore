@@ -124,7 +124,7 @@ run_backup_for_env() {
 
     git pull --rebase origin "$branch" || true
 
-    git add "${backend_dir#$repo/}/database-dumps/${id}"
+    git add -f "${backend_dir#$repo/}/database-dumps/${id}"
     if git diff --cached --quiet; then
       log "Yeni değişiklik yok, commit atlanıyor → $id"
     else
