@@ -465,7 +465,15 @@ function Orders() {
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        
+        // PDF'i indirmek için <a> elementi oluştur
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Rechnung_${orderNo || orderId}.pdf`; // .pdf uzantısı ile dosya adı
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
         // Cleanup after a delay
         setTimeout(() => URL.revokeObjectURL(url), 100);
       } else {
@@ -475,6 +483,25 @@ function Orders() {
     } catch (error) {
       toast.error('Fehler beim Öffnen der Rechnung');
       console.error('Fatura indirme hatası:', error);
+    }
+  };
+
+  // Fatura PDF'i yeni sekmede görüntüle
+  const handleViewInvoice = async (orderId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') ? import.meta.env.VITE_API_URL : `${import.meta.env.VITE_API_URL}/api`)
+        : (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
+      
+      // Token'ı query parametresi olarak ekle (yeni sekmede görüntüleme için)
+      const pdfUrl = `${apiUrl}/admin/orders/${orderId}/invoice?token=${encodeURIComponent(token)}`;
+      
+      // Yeni sekmede aç (tarayıcı PDF viewer'ı kullanır, indirme butonu da çalışır)
+      window.open(pdfUrl, '_blank');
+    } catch (error) {
+      toast.error('Fehler beim Öffnen der Rechnung');
+      console.error('Fatura görüntüleme hatası:', error);
     }
   };
 
@@ -1449,6 +1476,13 @@ function Orders() {
                   <div className="border-t border-gray-200 pt-4">
                     <h3 className="text-sm font-medium text-gray-700 mb-3">Rechnungsaktionen</h3>
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleViewInvoice(selectedOrder.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                      >
+                        <FiEye size={16} />
+                        PDF anzeigen
+                      </button>
                       <button
                         onClick={() => handleDownloadInvoice(selectedOrder.id, selectedOrder.orderNo)}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"

@@ -30,6 +30,7 @@ class InvoiceService {
                 name: true,
                 unit: true,
                 taxRate: true, // Vergi oranını al
+                barcode: true, // Barkod bilgisi
               },
             },
           },
@@ -209,6 +210,14 @@ class InvoiceService {
           align: 'right',
         });
 
+        // Müşteri notu (varsa)
+        if (order.note) {
+          doc.text(`Notiz: ${order.note}`, 350, orderInfoY + 60, {
+            align: 'right',
+            width: 195,
+          });
+        }
+
         // === ÜRÜN TABLOSU ===
         const tableTop = 280;
         doc.strokeColor('#e5e7eb').lineWidth(1);
@@ -220,10 +229,11 @@ class InvoiceService {
           .fillColor('#111827')
           .text('Pos', 50, tableTop)
           .text('Produkt', 75, tableTop)
-          .text('Menge', 280, tableTop, { width: 60, align: 'right' })
-          .text('Preis', 360, tableTop, { width: 80, align: 'right' })
-          .text('Gesamt', 460, tableTop, { width: 90, align: 'right' });
-
+          .text('Menge', 260, tableTop, { width: 50, align: 'right' })
+          .text('Preis (netto)', 320, tableTop, { width: 70, align: 'right' })
+          .text('MWSt', 400, tableTop, { width: 70, align: 'right' })
+          .text('Gesamt', 480, tableTop, { width: 65, align: 'right' });
+        
         // Başlık altı çizgi
         doc
           .moveTo(50, tableTop + 15)
@@ -231,56 +241,82 @@ class InvoiceService {
           .stroke();
 
         // Ürünler
-        let currentY = tableTop + 25;
+        let currentY = tableTop + 30;
         doc.fontSize(9).font('Helvetica').fillColor('#374151');
 
         // Vergi gruplarını toplamak için
-        const taxGroups = {}; // { "19": { total: 0, netTotal: 0 }, "7": { total: 0, netTotal: 0 } }
+        const taxGroups = {}; // { "19": { grossTotal: 0, netTotal: 0 }, "7": { grossTotal: 0, netTotal: 0 } }
         let totalNet = 0; // Toplam NET tutar
+        let totalGross = 0; // Toplam BRÜT tutar
 
         order.orderItems.forEach((item, index) => {
-          const productName = item.variantName
+          let productName = item.variantName
             ? `${item.productName} - ${item.variantName}`
             : item.productName;
+          
+          // Barkod bilgisini ekle (varsa)
+          if (item.product?.barcode) {
+            productName = `${productName} [${item.product.barcode}]`;
+          }
 
           // Vergi oranını al (product'tan)
           const taxRate = item.product?.taxRate ? parseFloat(item.product.taxRate) : null;
           
-          // NET fiyatı hesapla: NET = BRÜT / (1 + vergi/100)
-          let netPrice = parseFloat(item.price);
-          let netTotal = netPrice * item.quantity;
+          // BRÜT fiyat (veritabanından gelen)
+          const grossPrice = parseFloat(item.price);
+          const grossTotal = Math.round(grossPrice * item.quantity * 100) / 100;
+          
+          // NET fiyat ve toplam hesapla
+          let netPrice = grossPrice;
+          let netTotal = grossTotal;
           
           if (taxRate && taxRate > 0) {
-            // Brüt fiyattan NET'e çevir
-            netPrice = parseFloat(item.price) / (1 + taxRate / 100);
-            netTotal = netPrice * item.quantity;
+            // Brüt fiyattan NET'e çevir: NET = BRÜT / (1 + vergi/100)
+            netPrice = grossPrice / (1 + taxRate / 100);
+            netTotal = Math.round(netPrice * item.quantity * 100) / 100;
             
             // Vergi grubuna ekle
             const taxKey = taxRate.toFixed(0); // "19" veya "7" gibi
             if (!taxGroups[taxKey]) {
-              taxGroups[taxKey] = { total: 0, netTotal: 0, rate: taxRate };
+              taxGroups[taxKey] = { grossTotal: 0, netTotal: 0, rate: taxRate };
             }
-            taxGroups[taxKey].total += parseFloat(item.price) * item.quantity;
+            taxGroups[taxKey].grossTotal += grossTotal;
             taxGroups[taxKey].netTotal += netTotal;
           }
           
           totalNet += netTotal;
+          totalGross += grossTotal;
 
           // Sıra numarası
           doc.text(`${index + 1}.`, 50, currentY, { width: 25 });
           
           // Uzun ürün isimlerini kes
-          const maxWidth = 195;
+          const maxWidth = 180;
           doc.text(productName, 75, currentY, { width: maxWidth, lineBreak: false, ellipsis: true });
-          doc.text(`${item.quantity}x`, 280, currentY, { width: 60, align: 'right' });
+          doc.text(`${item.quantity}x`, 260, currentY, { width: 50, align: 'right' });
           // NET fiyatı göster
-          doc.text(`€${netPrice.toFixed(2)}`, 360, currentY, {
-            width: 80,
+          doc.text(`€${netPrice.toFixed(2)}`, 320, currentY, {
+            width: 70,
             align: 'right',
           });
+          
+          // KDV bilgisi (yüzde ve tutar)
+          if (taxRate && taxRate > 0) {
+            const itemTaxAmount = Math.round((netTotal * taxRate / 100) * 100) / 100;
+            doc.text(`${taxRate.toFixed(0)}%: €${itemTaxAmount.toFixed(2)}`, 400, currentY, {
+              width: 70,
+              align: 'right',
+            });
+          } else {
+            doc.text('-', 400, currentY, {
+              width: 70,
+              align: 'right',
+            });
+          }
+          
           // NET toplamı göster
-          doc.text(`€${netTotal.toFixed(2)}`, 460, currentY, {
-            width: 90,
+          doc.text(`€${netTotal.toFixed(2)}`, 480, currentY, {
+            width: 65,
             align: 'right',
           });
 
@@ -302,99 +338,93 @@ class InvoiceService {
           .stroke();
 
         // === TOPLAM HESAPLAMALAR ===
-        currentY += 15;
+        currentY += 20;
         doc.fontSize(10).font('Helvetica').fillColor('#374151');
 
-        // NET Ara toplam (ürünlerin NET toplamı)
-        doc.text('Zwischensumme ', 360, currentY, { width: 100, align: 'right' });
-        doc.text(`€${totalNet.toFixed(2)}`, 460, currentY, {
-          width: 90,
+        // NET Ara toplam (ürünlerin NET toplamı - KDV hariç)
+        const subtotalNet = Math.round(totalNet * 100) / 100;
+        doc.text('Zwischensumme (netto):', 350, currentY, { width: 100, align: 'right' });
+        doc.text(`€${subtotalNet.toFixed(2)}`, 460, currentY, {
+          width: 85,
           align: 'right',
         });
-        currentY += 18;
+        currentY += 20;
 
         // Kargo ücreti (vergi dahil değil, direkt göster)
         if (parseFloat(order.deliveryFee) > 0) {
-          doc.text('Liefergebühr:', 360, currentY, { width: 100, align: 'right' });
+          currentY += 10; // Üstten margin
+          doc.text('Liefergebühr:', 350, currentY, { width: 100, align: 'right' });
           doc.text(`€${parseFloat(order.deliveryFee).toFixed(2)}`, 460, currentY, {
-            width: 90,
+            width: 85,
             align: 'right',
           });
-          currentY += 18;
+          currentY += 20;
         }
 
         // İndirim
         if (order.discount && parseFloat(order.discount) > 0) {
           doc.fillColor('#059669');
-          doc.text('Rabatt:', 360, currentY, { width: 100, align: 'right' });
+          doc.text('Rabatt:', 350, currentY, { width: 100, align: 'right' });
           doc.text(`-€${parseFloat(order.discount).toFixed(2)}`, 460, currentY, {
-            width: 90,
+            width: 85,
             align: 'right',
           });
-          currentY += 18;
+          currentY += 20;
           doc.fillColor('#374151');
         }
 
-        // Vergi detayları
+        // Vergi detayları (özet) - NET toplam üzerinden hesaplanan KDV
         const taxKeys = Object.keys(taxGroups).sort((a, b) => parseFloat(b) - parseFloat(a));
         if (taxKeys.length > 0) {
-          currentY += 10;
+          currentY += 15; // Üstten margin artırıldı
           doc
             .fontSize(10)
             .font('Helvetica')
-            .fillColor('#374151')
-            .text('Mehrwertsteuer:', 360, currentY, { width: 100, align: 'right' });
-          currentY += 18;
+            .fillColor('#374151');
           
-          taxKeys.forEach((taxKey) => {
+          // Başlık ve değerleri aynı satırda göster
+          taxKeys.forEach((taxKey, index) => {
             const taxGroup = taxGroups[taxKey];
-            const taxAmount = taxGroup.total - taxGroup.netTotal;
-            // Vergi oranı ve tutarı tek satırda, daha yakın göster
+            // KDV = NET toplam * (KDV oranı / 100)
+            const taxAmount = Math.round((taxGroup.netTotal * taxGroup.rate / 100) * 100) / 100;
+            // Vergi oranı ve tutarı tek satırda göster
             const taxText = `${taxGroup.rate.toFixed(0)}%: €${taxAmount.toFixed(2)}`;
-            doc.text(taxText, 360, currentY, { width: 190, align: 'right' });
-            currentY += 18;
+            
+            if (index === 0) {
+              // İlk satırda başlık ve değer yan yana
+              doc.text('Mehrwertsteuer:', 350, currentY, { width: 100, align: 'right' });
+              doc.text(taxText, 460, currentY, { width: 85, align: 'right' });
+            } else {
+              // Sonraki satırlarda sadece değer
+              doc.text(taxText, 460, currentY, { width: 85, align: 'right' });
+            }
+            currentY += 20;
           });
         }
 
         // Toplam çizgi
-        currentY += 5;
+        currentY += 8;
         doc
           .strokeColor('#111827')
           .lineWidth(1.5)
-          .moveTo(360, currentY)
+          .moveTo(350, currentY)
           .lineTo(545, currentY)
           .stroke();
 
-        currentY += 10;
+        currentY += 12;
 
         // TOPLAM (Brüt - vergi dahil)
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
           .fillColor('#111827')
-          .text('Gesamt (brutto):', 360, currentY, { width: 100, align: 'right' });
+          .text('Gesamt (brutto):', 350, currentY, { width: 100, align: 'right' });
         doc
           .fillColor('#059669')
           .text(`€${parseFloat(order.total).toFixed(2)}`, 460, currentY, {
-            width: 90,
+            width: 85,
             align: 'right',
           });
-
-        // === NOTLAR ===
-        if (order.note) {
-          currentY += 40;
-          doc
-            .fontSize(10)
-            .font('Helvetica-Bold')
-            .fillColor('#111827')
-            .text('Notizen:', 50, currentY);
-
-          doc
-            .fontSize(9)
-            .font('Helvetica')
-            .fillColor('#374151')
-            .text(order.note, 50, currentY + 15, { width: 495 });
-        }
 
         // === FOOTER ===
         const footerY = 750;
@@ -684,6 +714,11 @@ class InvoiceService {
             : 'Keine Zahlung';
         doc.text(`Zahlung: ${paymentText}`, 50, orderInfoY + 46);
 
+        // Müşteri notu (varsa)
+        if (order.note) {
+          doc.text(`Notiz: ${order.note}`, 50, orderInfoY + 60, { width: 495 });
+        }
+
         // === ÜRÜN TABLOSU ===
         const tableTop = orderInfoY + 80;
         doc.strokeColor('#e5e7eb').lineWidth(1);
@@ -803,31 +838,6 @@ class InvoiceService {
             width: 90,
             align: 'right',
           });
-
-        // === MÜŞTERİ NOTU (KURYE İÇİN ÖNEMLİ) ===
-        if (order.note) {
-          currentY += 40;
-          // Vurgulu kutu içinde göster
-          doc
-            .rect(50, currentY, 495, 60)
-            .fillColor('#fef3c7')
-            .fill()
-            .fillColor('#111827');
-
-          doc
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .fillColor('#92400e')
-            .text('KUNDENNOTIZ ', 60, currentY + 10);
-
-          doc
-            .fontSize(10)
-            .font('Helvetica')
-            .fillColor('#78350f')
-            .text(order.note, 60, currentY + 28, { width: 475 });
-          
-          currentY += 70;
-        }
 
         // === FOOTER ===
         const footerY = 750;

@@ -605,7 +605,7 @@ export const createStockOrderList = async (adminId, data) => {
         barcode: order.product.barcode || null,
       }));
 
-      const adminOrderUrl = `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/stock/lists/${result.id}`;
+      const adminOrderUrl = `${process.env.ADMIN_URL || 'http://localhost:5173/admin'}/stock-management`;
 
       // Adminlere mail gönder
       if (sendToAdmins) {
@@ -933,16 +933,17 @@ export const deleteStockOrderList = async (listId, adminId) => {
     throw new NotFoundError('Bestellliste nicht gefunden');
   }
 
-  // Liste içindeki siparişlerin order_list_id'sini null yap (CASCADE yerine SET NULL kullanıyoruz)
-  // Bu sayede siparişler silinmez, sadece liste referansı kaldırılır
+  // Liste içindeki siparişlerin order_list_id'sini null yap ve durumlarını cancelled yap
+  // Bu sayede siparişler silinmez ama aktif siparişlerde görünmezler
   await prisma.$transaction(async (tx) => {
-    // Önce siparişlerin order_list_id'sini null yap
+    // Önce siparişlerin order_list_id'sini null yap ve durumlarını cancelled yap
     await tx.stockOrder.updateMany({
       where: {
         orderListId: listId,
       },
       data: {
         orderListId: null,
+        status: 'cancelled',
       },
     });
 

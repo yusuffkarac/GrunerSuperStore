@@ -11,6 +11,8 @@ function ProductQuantityDialog({ open, product, onClose, onSave }) {
     { value: 'adet', label: 'Stück' },
     { value: 'kilo', label: 'Kilo' },
     { value: 'palet', label: 'Palet' },
+    { value: 'kiste', label: 'Kiste' },
+    { value: 'Flasche', label: 'Flasche' },
   ];
 
   const handleSave = () => {

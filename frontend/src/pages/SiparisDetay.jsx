@@ -241,6 +241,7 @@ function SiparisDetay() {
 
       {/* Sipariş Bilgileri */}
       <div className="bg-white rounded-lg shadow-sm p-5 mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Vielen Dank für Ihre Bestellung!</h2>
         <div className="flex items-start justify-between mb-5">
           <div className="flex-1">
             <h1 className="text-xl font-bold text-gray-900 mb-1">Bestellung #{order.orderNo}</h1>

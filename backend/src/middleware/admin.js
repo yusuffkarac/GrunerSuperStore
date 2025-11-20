@@ -16,14 +16,20 @@ export const authenticateAdmin = async (req, res, next) => {
       return next();
     }
 
-    // Token'ı header'dan al
+    // Token'ı header'dan veya query parametresinden al
+    let token = null;
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedError('Kein Token bereitgestellt');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      // Query parameter'dan al (PDF görüntüleme için)
+      token = req.query.token;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedError('Kein Token bereitgestellt');
+    }
 
     // Token'ı doğrula
     const decoded = verifyToken(token);

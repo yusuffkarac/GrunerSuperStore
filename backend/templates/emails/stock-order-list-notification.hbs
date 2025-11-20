@@ -35,23 +35,31 @@
     {{/if}}
 </div>
 
-<div class="info-box">
+<div class="info-box" style="max-width: 100%; overflow-x: hidden;">
     <h3 style="color: #111827; margin-bottom: 15px;">Bestellte Artikel ({{itemCount}})</h3>
-
-    {{#each items}}
-    <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span style="color: #374151; font-weight: 500;">{{this.productName}}</span>
-            <span style="color: #6b7280;">{{this.quantity}} {{this.unit}}</span>
-        </div>
-        {{#if this.categoryName}}
-        <div style="color: #6b7280; font-size: 14px;">Kategorie: {{this.categoryName}}</div>
-        {{/if}}
-        {{#if this.barcode}}
-        <div style="color: #6b7280; font-size: 14px;">Barcode: {{this.barcode}}</div>
-        {{/if}}
-    </div>
-    {{/each}}
+    <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+        <thead>
+            <tr>
+                <th style="text-align: left; color: #374151; font-size: 14px; font-weight: 600; padding-bottom: 4px; width: 60%;">Produkt</th>
+                <th style="text-align: left; color: #374151; font-size: 14px; font-weight: 600; padding-bottom: 4px; width: 40%;">Menge</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#each items}}
+            <tr style="background: #f9fafb; border-radius: 6px;">
+                <td style="color: #374151; font-weight: 500; padding: 8px 12px 8px 0;">
+                    <div>{{this.productName}}{{#if this.categoryName}} ({{this.categoryName}}){{/if}}</div>
+                    {{#if this.barcode}}
+                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px;">[{{this.barcode}}]</div>
+                    {{/if}}
+                </td>
+                <td style="color: #6b7280; padding: 8px 0 8px 0; min-width: 90px;">
+                    {{this.quantity}} {{this.unit}}
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
 </div>
 
 {{#if adminOrderUrl}}

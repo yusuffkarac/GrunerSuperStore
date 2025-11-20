@@ -388,7 +388,8 @@ class OrderService {
           }
         }
 
-        const itemTotal = parseFloat(price) * item.quantity;
+        // Yuvarlama hatasını önlemek için itemTotal'ı yuvarla
+        const itemTotal = Math.round(parseFloat(price) * item.quantity * 100) / 100;
         subtotal += itemTotal;
         totalQuantity += item.quantity;
 
@@ -413,6 +414,9 @@ class OrderService {
           imageUrl: imageUrl,
         });
       }
+
+      // Yuvarlama hatasını önlemek için subtotal'i yuvarla
+      subtotal = Math.round(subtotal * 100) / 100;
 
       // Kullanılan kampanyaların kullanım sayısını artır
       for (const campaignId of usedCampaignIds) {
@@ -535,7 +539,8 @@ class OrderService {
         }
       }
 
-      const total = subtotal + deliveryFee - discount;
+      // Total hesaplama (subtotal zaten yuvarlanmış)
+      const total = Math.round((subtotal + deliveryFee - discount) * 100) / 100;
 
       // Sipariş numarası oluştur
       const orderNo = await this.generateOrderNumber();
