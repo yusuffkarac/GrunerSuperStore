@@ -244,12 +244,41 @@ class InvoiceService {
         let currentY = tableTop + 30;
         doc.fontSize(9).font('Helvetica').fillColor('#374151');
 
+        // Tablo başlıklarını tekrar çizmek için fonksiyon
+        const drawTableHeaders = (y) => {
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text('Pos', 50, y)
+            .text('Produkt', 75, y)
+            .text('Menge', 260, y, { width: 50, align: 'right' })
+            .text('Preis (netto)', 320, y, { width: 70, align: 'right' })
+            .text('MWSt', 400, y, { width: 70, align: 'right' })
+            .text('Gesamt', 480, y, { width: 65, align: 'right' });
+          
+          // Başlık altı çizgi
+          doc
+            .strokeColor('#e5e7eb')
+            .moveTo(50, y + 15)
+            .lineTo(545, y + 15)
+            .stroke();
+        };
+
         // Vergi gruplarını toplamak için
         const taxGroups = {}; // { "19": { grossTotal: 0, netTotal: 0 }, "7": { grossTotal: 0, netTotal: 0 } }
         let totalNet = 0; // Toplam NET tutar
         let totalGross = 0; // Toplam BRÜT tutar
 
         order.orderItems.forEach((item, index) => {
+          // Sayfa sonu kontrolü - yeni sayfada başlıkları tekrar çiz
+          if (currentY > 680) {
+            doc.addPage();
+            currentY = 50;
+            drawTableHeaders(currentY);
+            currentY = 65; // Başlık altından başla
+          }
+
           let productName = item.variantName
             ? `${item.productName} - ${item.variantName}`
             : item.productName;
@@ -287,15 +316,30 @@ class InvoiceService {
           totalNet += netTotal;
           totalGross += grossTotal;
 
+          const rowStartY = currentY;
+
           // Sıra numarası
           doc.text(`${index + 1}.`, 50, currentY, { width: 25 });
           
-          // Uzun ürün isimlerini kes
+          // Ürün ismini çok satırlı göster (maksimum 3 satır)
           const maxWidth = 180;
-          doc.text(productName, 75, currentY, { width: maxWidth, lineBreak: false, ellipsis: true });
-          doc.text(`${item.quantity}x`, 260, currentY, { width: 50, align: 'right' });
+          const productNameHeight = doc.heightOfString(productName, {
+            width: maxWidth,
+            lineBreak: true,
+          });
+          const maxProductHeight = 9 * 3; // Maksimum 3 satır (font size 9 * 3)
+          const actualProductHeight = Math.min(productNameHeight, maxProductHeight);
+          
+          doc.text(productName, 75, currentY, { 
+            width: maxWidth, 
+            lineBreak: true,
+            ellipsis: true
+          });
+          
+          // Diğer bilgileri ilk satırda göster
+          doc.text(`${item.quantity}x`, 260, rowStartY, { width: 50, align: 'right' });
           // NET fiyatı göster
-          doc.text(`€${netPrice.toFixed(2)}`, 320, currentY, {
+          doc.text(`€${netPrice.toFixed(2)}`, 320, rowStartY, {
             width: 70,
             align: 'right',
           });
@@ -303,30 +347,26 @@ class InvoiceService {
           // KDV bilgisi (yüzde ve tutar)
           if (taxRate && taxRate > 0) {
             const itemTaxAmount = Math.round((netTotal * taxRate / 100) * 100) / 100;
-            doc.text(`${taxRate.toFixed(0)}%: €${itemTaxAmount.toFixed(2)}`, 400, currentY, {
+            doc.text(`${taxRate.toFixed(0)}%: €${itemTaxAmount.toFixed(2)}`, 400, rowStartY, {
               width: 70,
               align: 'right',
             });
           } else {
-            doc.text('-', 400, currentY, {
+            doc.text('-', 400, rowStartY, {
               width: 70,
               align: 'right',
             });
           }
           
           // NET toplamı göster
-          doc.text(`€${netTotal.toFixed(2)}`, 480, currentY, {
+          doc.text(`€${netTotal.toFixed(2)}`, 480, rowStartY, {
             width: 65,
             align: 'right',
           });
 
-          currentY += 20;
-
-          // Sayfa sonu kontrolü
-          if (currentY > 700) {
-            doc.addPage();
-            currentY = 50;
-          }
+          // Satır yüksekliğini dinamik olarak ayarla (minimum 18px, ürün ismi yüksekliği + 5px padding)
+          const rowHeight = Math.max(18, actualProductHeight + 5);
+          currentY += rowHeight;
         });
 
         // Alt çizgi
@@ -743,36 +783,74 @@ class InvoiceService {
         let currentY = tableTop + 25;
         doc.fontSize(9).font('Helvetica').fillColor('#374151');
 
+        // Tablo başlıklarını tekrar çizmek için fonksiyon
+        const drawDeliveryTableHeaders = (y) => {
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .fillColor('#111827')
+            .text('Produkt', 50, y)
+            .text('Menge', 280, y, { width: 60, align: 'right' })
+            .text('Preis', 360, y, { width: 80, align: 'right' })
+            .text('Gesamt', 460, y, { width: 90, align: 'right' });
+          
+          // Başlık altı çizgi
+          doc
+            .strokeColor('#e5e7eb')
+            .moveTo(50, y + 15)
+            .lineTo(545, y + 15)
+            .stroke();
+        };
+
         order.orderItems.forEach((item, index) => {
+          // Sayfa sonu kontrolü - yeni sayfada başlıkları tekrar çiz
+          if (currentY > 680) {
+            doc.addPage();
+            currentY = 50;
+            drawDeliveryTableHeaders(currentY);
+            currentY = 65; // Başlık altından başla
+          }
+
           const productName = item.variantName
             ? `${item.productName} - ${item.variantName}`
             : item.productName;
 
           const itemTotal = parseFloat(item.price) * item.quantity;
 
+          const rowStartY = currentY;
+
           // Sıra numarası
           doc.text(`${index + 1}.`, 50, currentY, { width: 25 });
           
-          // Uzun ürün isimlerini kes
+          // Ürün ismini çok satırlı göster (maksimum 3 satır)
           const maxWidth = 195;
-          doc.text(productName, 75, currentY, { width: maxWidth, lineBreak: false, ellipsis: true });
-          doc.text(`${item.quantity}x`, 280, currentY, { width: 60, align: 'right' });
-          doc.text(`€${parseFloat(item.price).toFixed(2)}`, 360, currentY, {
+          const productNameHeight = doc.heightOfString(productName, {
+            width: maxWidth,
+            lineBreak: true,
+          });
+          const maxProductHeight = 9 * 3; // Maksimum 3 satır (font size 9 * 3)
+          const actualProductHeight = Math.min(productNameHeight, maxProductHeight);
+          
+          doc.text(productName, 75, currentY, { 
+            width: maxWidth, 
+            lineBreak: true,
+            ellipsis: true
+          });
+          
+          // Diğer bilgileri ilk satırda göster
+          doc.text(`${item.quantity}x`, 280, rowStartY, { width: 60, align: 'right' });
+          doc.text(`€${parseFloat(item.price).toFixed(2)}`, 360, rowStartY, {
             width: 80,
             align: 'right',
           });
-          doc.text(`€${itemTotal.toFixed(2)}`, 460, currentY, {
+          doc.text(`€${itemTotal.toFixed(2)}`, 460, rowStartY, {
             width: 90,
             align: 'right',
           });
 
-          currentY += 20;
-
-          // Sayfa sonu kontrolü
-          if (currentY > 700) {
-            doc.addPage();
-            currentY = 50;
-          }
+          // Satır yüksekliğini dinamik olarak ayarla (minimum 18px, ürün ismi yüksekliği + 5px padding)
+          const rowHeight = Math.max(18, actualProductHeight + 5);
+          currentY += rowHeight;
         });
 
         // Alt çizgi
