@@ -160,20 +160,20 @@ class InvoiceService {
           .text(
             `${order.user.firstName} ${order.user.lastName}`,
             50,
-            customerY + 18
+            customerY + 16
           );
 
         // Fatura adresi varsa onu kullan, yoksa teslimat adresini kullan
         const invoiceAddress = order.billingAddress || order.address;
         if (invoiceAddress) {
           doc
-            .text(`${invoiceAddress.street} ${invoiceAddress.houseNumber}`, 50, customerY + 32)
-            .text(`${invoiceAddress.postalCode} ${invoiceAddress.city}`, 50, customerY + 46);
+            .text(`${invoiceAddress.street} ${invoiceAddress.houseNumber}`, 50, customerY + 28)
+            .text(`${invoiceAddress.postalCode} ${invoiceAddress.city}`, 50, customerY + 40);
         }
 
         doc
-          .text(order.user.email, 50, customerY + 60)
-          .text(order.user.phone || '', 50, customerY + 74);
+          .text(order.user.email, 50, customerY + 52)
+          .text(order.user.phone || '', 50, customerY + 64);
 
         // === SIPARIŞ BİLGİLERİ ===
         const orderInfoY = customerY;
@@ -190,13 +190,13 @@ class InvoiceService {
           .text(
             `Typ: ${order.type === 'delivery' ? 'Lieferung' : 'Abholung'}`,
             350,
-            orderInfoY + 18,
+            orderInfoY + 16,
             { align: 'right' }
           )
           .text(
             `Status: ${this.getStatusText(order.status)}`,
             350,
-            orderInfoY + 32,
+            orderInfoY + 28,
             { align: 'right' }
           );
 
@@ -206,20 +206,20 @@ class InvoiceService {
             : order.paymentType === 'card_on_delivery'
             ? 'Kartenzahlung'
             : 'Keine';
-        doc.text(`Zahlung: ${paymentText}`, 350, orderInfoY + 46, {
+        doc.text(`Zahlung: ${paymentText}`, 350, orderInfoY + 40, {
           align: 'right',
         });
 
         // Müşteri notu (varsa)
         if (order.note) {
-          doc.text(`Notiz: ${order.note}`, 350, orderInfoY + 60, {
+          doc.text(`Notiz: ${order.note}`, 350, orderInfoY + 52, {
             align: 'right',
             width: 195,
           });
         }
 
         // === ÜRÜN TABLOSU ===
-        const tableTop = 250; // Tabloyu yukarı aldık
+        const tableTop = 220; // Tabloyu daha yukarı aldık
         doc.strokeColor('#e5e7eb').lineWidth(1);
 
         // Tablo başlıkları
@@ -272,8 +272,8 @@ class InvoiceService {
 
         order.orderItems.forEach((item, index) => {
           // Sayfa sonu kontrolü - yeni sayfada başlıkları tekrar çiz
-          // Toplam hesaplamaları için yer bırakmak için 650'de kontrol ediyoruz
-          if (currentY > 650) {
+          // Toplam hesaplamaları için yer bırakmak için 600'de kontrol ediyoruz
+          if (currentY > 600) {
             doc.addPage();
             currentY = 50;
             drawTableHeaders(currentY);
@@ -389,7 +389,7 @@ class InvoiceService {
                                    (taxKeysCount > 0 ? 15 + (taxKeysCount * 20) : 0) + 8 + 12 + 12;
         
         // Eğer toplam hesaplamaları için yeterli yer yoksa yeni sayfaya geç
-        if (currentY + totalSummaryHeight > 750) {
+        if (currentY + totalSummaryHeight > 700) {
           doc.addPage();
           currentY = 50;
         } else {
@@ -407,7 +407,7 @@ class InvoiceService {
         currentY += 20;
         
         // Sayfa sonu kontrolü - her satırdan sonra kontrol et
-        if (currentY > 720) {
+        if (currentY > 700) {
           doc.addPage();
           currentY = 50;
         }
@@ -416,7 +416,7 @@ class InvoiceService {
         if (parseFloat(order.deliveryFee) > 0) {
           currentY += 10; // Üstten margin
           // Sayfa sonu kontrolü
-          if (currentY > 720) {
+          if (currentY > 700) {
             doc.addPage();
             currentY = 50;
           }
@@ -431,7 +431,7 @@ class InvoiceService {
         // İndirim
         if (order.discount && parseFloat(order.discount) > 0) {
           // Sayfa sonu kontrolü
-          if (currentY > 720) {
+          if (currentY > 700) {
             doc.addPage();
             currentY = 50;
           }
@@ -450,7 +450,7 @@ class InvoiceService {
         if (taxKeys.length > 0) {
           currentY += 15; // Üstten margin artırıldı
           // Sayfa sonu kontrolü
-          if (currentY > 720) {
+          if (currentY > 700) {
             doc.addPage();
             currentY = 50;
           }
@@ -462,7 +462,7 @@ class InvoiceService {
           // Başlık ve değerleri aynı satırda göster
           taxKeys.forEach((taxKey, index) => {
             // Her vergi satırı için sayfa sonu kontrolü
-            if (currentY > 720) {
+            if (currentY > 700) {
               doc.addPage();
               currentY = 50;
             }
@@ -488,7 +488,7 @@ class InvoiceService {
         currentY += 8;
         
         // "Gesamt (brutto):" ve fiyatının aynı sayfada kalması için kontrol
-        if (currentY + 30 > 750) {
+        if (currentY + 30 > 700) {
           doc.addPage();
           currentY = 50;
         }
