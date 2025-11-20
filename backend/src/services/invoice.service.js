@@ -219,7 +219,7 @@ class InvoiceService {
         }
 
         // === ÜRÜN TABLOSU ===
-        const tableTop = 280;
+        const tableTop = 250; // Tabloyu yukarı aldık
         doc.strokeColor('#e5e7eb').lineWidth(1);
 
         // Tablo başlıkları
@@ -272,7 +272,8 @@ class InvoiceService {
 
         order.orderItems.forEach((item, index) => {
           // Sayfa sonu kontrolü - yeni sayfada başlıkları tekrar çiz
-          if (currentY > 680) {
+          // Toplam hesaplamaları için yer bırakmak için 650'de kontrol ediyoruz
+          if (currentY > 650) {
             doc.addPage();
             currentY = 50;
             drawTableHeaders(currentY);
@@ -284,9 +285,9 @@ class InvoiceService {
             : item.productName;
           
           // Barkod bilgisini ekle (varsa)
-          if (item.product?.barcode) {
-            productName = `${productName} [${item.product.barcode}]`;
-          }
+          // if (item.product?.barcode) {
+          //   productName = `${productName} [${item.product.barcode}]`;
+          // }
 
           // Vergi oranını al (product'tan)
           const taxRate = item.product?.taxRate ? parseFloat(item.product.taxRate) : null;
@@ -378,7 +379,22 @@ class InvoiceService {
           .stroke();
 
         // === TOPLAM HESAPLAMALAR ===
-        currentY += 20;
+        // Toplam hesaplamaları için gereken minimum yüksekliği hesapla
+        // Zwischensumme: 20px + Liefergebühr (varsa): 20px + Rabatt (varsa): 20px
+        // + Mehrwertsteuer (her biri 20px) + çizgi (8px) + Gesamt (24px) = ~150px
+        const hasDeliveryFee = parseFloat(order.deliveryFee) > 0;
+        const hasDiscount = order.discount && parseFloat(order.discount) > 0;
+        const taxKeysCount = Object.keys(taxGroups).length;
+        const totalSummaryHeight = 20 + (hasDeliveryFee ? 20 : 0) + (hasDiscount ? 20 : 0) + 
+                                   (taxKeysCount > 0 ? 15 + (taxKeysCount * 20) : 0) + 8 + 12 + 12;
+        
+        // Eğer toplam hesaplamaları için yeterli yer yoksa yeni sayfaya geç
+        if (currentY + totalSummaryHeight > 750) {
+          doc.addPage();
+          currentY = 50;
+        } else {
+          currentY += 20;
+        }
         doc.fontSize(10).font('Helvetica').fillColor('#374151');
 
         // NET Ara toplam (ürünlerin NET toplamı - KDV hariç)
@@ -389,10 +405,21 @@ class InvoiceService {
           align: 'right',
         });
         currentY += 20;
+        
+        // Sayfa sonu kontrolü - her satırdan sonra kontrol et
+        if (currentY > 720) {
+          doc.addPage();
+          currentY = 50;
+        }
 
         // Kargo ücreti (vergi dahil değil, direkt göster)
         if (parseFloat(order.deliveryFee) > 0) {
           currentY += 10; // Üstten margin
+          // Sayfa sonu kontrolü
+          if (currentY > 720) {
+            doc.addPage();
+            currentY = 50;
+          }
           doc.text('Liefergebühr:', 350, currentY, { width: 100, align: 'right' });
           doc.text(`€${parseFloat(order.deliveryFee).toFixed(2)}`, 460, currentY, {
             width: 85,
@@ -403,6 +430,11 @@ class InvoiceService {
 
         // İndirim
         if (order.discount && parseFloat(order.discount) > 0) {
+          // Sayfa sonu kontrolü
+          if (currentY > 720) {
+            doc.addPage();
+            currentY = 50;
+          }
           doc.fillColor('#059669');
           doc.text('Rabatt:', 350, currentY, { width: 100, align: 'right' });
           doc.text(`-€${parseFloat(order.discount).toFixed(2)}`, 460, currentY, {
@@ -417,6 +449,11 @@ class InvoiceService {
         const taxKeys = Object.keys(taxGroups).sort((a, b) => parseFloat(b) - parseFloat(a));
         if (taxKeys.length > 0) {
           currentY += 15; // Üstten margin artırıldı
+          // Sayfa sonu kontrolü
+          if (currentY > 720) {
+            doc.addPage();
+            currentY = 50;
+          }
           doc
             .fontSize(10)
             .font('Helvetica')
@@ -424,6 +461,11 @@ class InvoiceService {
           
           // Başlık ve değerleri aynı satırda göster
           taxKeys.forEach((taxKey, index) => {
+            // Her vergi satırı için sayfa sonu kontrolü
+            if (currentY > 720) {
+              doc.addPage();
+              currentY = 50;
+            }
             const taxGroup = taxGroups[taxKey];
             // KDV = NET toplam * (KDV oranı / 100)
             const taxAmount = Math.round((taxGroup.netTotal * taxGroup.rate / 100) * 100) / 100;
@@ -444,6 +486,13 @@ class InvoiceService {
 
         // Toplam çizgi
         currentY += 8;
+        
+        // "Gesamt (brutto):" ve fiyatının aynı sayfada kalması için kontrol
+        if (currentY + 30 > 750) {
+          doc.addPage();
+          currentY = 50;
+        }
+        
         doc
           .strokeColor('#111827')
           .lineWidth(1.5)
@@ -453,15 +502,16 @@ class InvoiceService {
 
         currentY += 12;
 
-        // TOPLAM (Brüt - vergi dahil)
+        // TOPLAM (Brüt - vergi dahil) - aynı satırda yaz
+        const totalY = currentY;
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
           .fillColor('#111827')
-          .text('Gesamt (brutto):', 350, currentY, { width: 100, align: 'right' });
+          .text('Gesamt (brutto):', 350, totalY, { width: 100, align: 'right' });
         doc
           .fillColor('#059669')
-          .text(`€${parseFloat(order.total).toFixed(2)}`, 460, currentY, {
+          .text(`€${parseFloat(order.total).toFixed(2)}`, 460, totalY, {
             width: 85,
             align: 'right',
           });
