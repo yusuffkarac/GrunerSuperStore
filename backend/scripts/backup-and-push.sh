@@ -96,8 +96,17 @@ run_backup_for_env() {
 
   mkdir -p "$dump_dir"
 
-  log "Dump başlatılıyor → $id"
-  "$PG_DUMP_BIN" "$db" > "$dump_file"
+  local schema
+  if [[ "$db" == *"schema="* ]]; then
+    schema="${db##*schema=}"
+    schema="${schema%%&*}"
+    db="${db%%\?*}"
+  else
+    schema="public"
+  fi
+
+  log "Dump başlatılıyor → $id (schema=$schema)"
+  "$PG_DUMP_BIN" "$db" --schema="$schema" > "$dump_file"
   log "Dump tamamlandı: $dump_file"
 
   rotate_old_dumps "$dump_dir"
