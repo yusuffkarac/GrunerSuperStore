@@ -5,7 +5,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import rateLimit from 'express-rate-limit';
+// import rateLimit from 'express-rate-limit'; // Rate limiting deaktif edildi
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
@@ -229,32 +229,32 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan(':remote-addr - - :date-germany ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 }
 
-// Rate limiting - sadece API isteklerine (OPTIONS hariç - CORS preflight)
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 2 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100000,
-  message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Nginx proxy'si arkasında gerçek client IP'yi kullan
-  // X-Forwarded-For header'ından gerçek IP'yi al
-  keyGenerator: (req) => {
-    // Nginx'ten gelen gerçek client IP'yi al
-    const forwardedFor = req.headers['x-forwarded-for'];
-    if (forwardedFor) {
-      // X-Forwarded-For: client1, proxy1, proxy2 formatında olabilir
-      // İlk IP gerçek client IP'sidir
-      const clientIp = forwardedFor.split(',')[0].trim();
-      return clientIp || req.ip;
-    }
-    return req.ip;
-  },
-  // OPTIONS request'lerini skip et (CORS preflight)
-  skip: (req) => req.method === 'OPTIONS',
-});
+// Rate limiting - DEAKTİF EDİLDİ
+// const limiter = rateLimit({
+//   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 2 * 60 * 1000,
+//   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100000,
+//   message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   // Nginx proxy'si arkasında gerçek client IP'yi kullan
+//   // X-Forwarded-For header'ından gerçek IP'yi al
+//   keyGenerator: (req) => {
+//     // Nginx'ten gelen gerçek client IP'yi al
+//     const forwardedFor = req.headers['x-forwarded-for'];
+//     if (forwardedFor) {
+//       // X-Forwarded-For: client1, proxy1, proxy2 formatında olabilir
+//       // İlk IP gerçek client IP'sidir
+//       const clientIp = forwardedFor.split(',')[0].trim();
+//       return clientIp || req.ip;
+//     }
+//     return req.ip;
+//   },
+//   // OPTIONS request'lerini skip et (CORS preflight)
+//   skip: (req) => req.method === 'OPTIONS',
+// });
 
-// Rate limiting - sadece API isteklerine
-app.use('/api/', limiter);
+// Rate limiting - DEAKTİF EDİLDİ
+// app.use('/api/', limiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
