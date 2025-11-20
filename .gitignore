@@ -64,3 +64,4 @@ temp/
 
 # Uploads (if storing locally during development)
 uploads/
+backend/database-dumps/
