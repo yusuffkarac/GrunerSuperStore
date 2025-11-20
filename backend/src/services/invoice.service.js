@@ -104,7 +104,7 @@ class InvoiceService {
             doc.image(logoPath, 50, headerY, { width: 100, height: 40, fit: [100, 40] });
             // Logo sağında şirket adı
             doc
-              .fontSize(24)
+              .fontSize(20)
               .font('Helvetica-Bold')
               .fillColor('#059669')
               .text(companyInfo.name || 'Gruner SuperStore', 100, headerY + 8);
@@ -113,7 +113,7 @@ class InvoiceService {
             console.error('Logo yüklenirken hata:', error);
             // Logo yüklenemezse şirket adını göster
             doc
-              .fontSize(24)
+              .fontSize(20)
               .font('Helvetica-Bold')
               .fillColor('#059669')
               .text(companyInfo.name || 'Gruner SuperStore', 50, headerY);
@@ -131,7 +131,7 @@ class InvoiceService {
 
         // RECHNUNG başlığı
         doc
-          .fontSize(28)
+          .fontSize(22)
           .font('Helvetica-Bold')
           .fillColor('#111827')
           .text('RECHNUNG', 350, 50, { align: 'right' });
@@ -139,7 +139,7 @@ class InvoiceService {
         // Fatura numarası ve tarih
         const invoiceDate = new Date(order.createdAt).toLocaleDateString('de-DE');
         doc
-          .fontSize(10)
+          .fontSize(9)
           .font('Helvetica')
           .fillColor('#6b7280')
           .text(`Rechnungsnr.: ${order.orderNo}`, 350, 90, { align: 'right' })
@@ -148,13 +148,13 @@ class InvoiceService {
         // === MÜŞTERI BİLGİLERİ ===
         const customerY = 140;
         doc
-          .fontSize(11)
+          .fontSize(10)
           .font('Helvetica-Bold')
           .fillColor('#111827')
           .text('Rechnungsadresse:', 50, customerY);
 
         doc
-          .fontSize(10)
+          .fontSize(9)
           .font('Helvetica')
           .fillColor('#374151')
           .text(
@@ -178,13 +178,13 @@ class InvoiceService {
         // === SIPARIŞ BİLGİLERİ ===
         const orderInfoY = customerY;
         doc
-          .fontSize(11)
+          .fontSize(10)
           .font('Helvetica-Bold')
           .fillColor('#111827')
           .text('Bestellinformationen:', 350, orderInfoY, { align: 'right' });
 
         doc
-          .fontSize(10)
+          .fontSize(9)
           .font('Helvetica')
           .fillColor('#374151')
           .text(
@@ -224,7 +224,7 @@ class InvoiceService {
 
         // Tablo başlıkları
         doc
-          .fontSize(10)
+          .fontSize(9)
           .font('Helvetica-Bold')
           .fillColor('#111827')
           .text('Pos', 50, tableTop)
@@ -242,12 +242,12 @@ class InvoiceService {
 
         // Ürünler
         let currentY = tableTop + 30;
-        doc.fontSize(9).font('Helvetica').fillColor('#374151');
+        doc.fontSize(8).font('Helvetica').fillColor('#374151');
 
         // Tablo başlıklarını tekrar çizmek için fonksiyon
         const drawTableHeaders = (y) => {
           doc
-            .fontSize(10)
+            .fontSize(9)
             .font('Helvetica-Bold')
             .fillColor('#111827')
             .text('Pos', 50, y)
@@ -328,7 +328,7 @@ class InvoiceService {
             width: maxWidth,
             lineBreak: true,
           });
-          const maxProductHeight = 9 * 3; // Maksimum 3 satır (font size 9 * 3)
+          const maxProductHeight = 8 * 3; // Maksimum 3 satır (font size 8 * 3)
           const actualProductHeight = Math.min(productNameHeight, maxProductHeight);
           
           doc.text(productName, 75, currentY, { 
@@ -395,7 +395,7 @@ class InvoiceService {
         } else {
           currentY += 20;
         }
-        doc.fontSize(10).font('Helvetica').fillColor('#374151');
+        doc.fontSize(9).font('Helvetica').fillColor('#374151');
 
         // NET Ara toplam (ürünlerin NET toplamı - KDV hariç)
         const subtotalNet = Math.round(totalNet * 100) / 100;
@@ -455,7 +455,7 @@ class InvoiceService {
             currentY = 50;
           }
           doc
-            .fontSize(10)
+            .fontSize(9)
             .font('Helvetica')
             .fillColor('#374151');
           
@@ -505,7 +505,7 @@ class InvoiceService {
         // TOPLAM (Brüt - vergi dahil) - aynı satırda yaz
         const totalY = currentY;
         doc
-          .fontSize(12)
+          .fontSize(11)
           .font('Helvetica-Bold')
           .fillColor('#111827')
           .text('Gesamt (brutto):', 350, totalY, { width: 100, align: 'right' });
@@ -658,7 +658,7 @@ class InvoiceService {
             doc.image(logoPath, 50, headerY, { width: 100, height: 40, fit: [100, 40] });
             // Logo sağında şirket adı
             doc
-              .fontSize(24)
+              .fontSize(20)
               .font('Helvetica-Bold')
               .fillColor('#059669')
               .text(companyInfo.name || 'Gruner SuperStore', 100, headerY + 8);
@@ -667,7 +667,7 @@ class InvoiceService {
             console.error('Logo yüklenirken hata:', error);
             // Logo yüklenemezse şirket adını göster
             doc
-              .fontSize(24)
+              .fontSize(20)
               .font('Helvetica-Bold')
               .fillColor('#059669')
               .text(companyInfo.name || 'Gruner SuperStore', 50, headerY);
