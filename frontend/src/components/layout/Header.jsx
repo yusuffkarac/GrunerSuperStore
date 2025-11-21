@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FiSearch, FiShoppingCart, FiUser, FiArrowLeft, FiHome, FiGrid, FiHeart } from 'react-icons/fi';
 import { HiNewspaper } from 'react-icons/hi';
 import useCartStore from '../../store/cartStore';
@@ -17,6 +18,8 @@ function Header() {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const prevItemCount = useRef(itemCount);
+  const [cartAnimationKey, setCartAnimationKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -31,6 +34,14 @@ function Header() {
   const resultsRef = useRef(null);
   const magazineButtonRef = useRef(null);
   const magazineDropdownRef = useRef(null);
+
+  // Sepet animasyonu - itemCount değiştiğinde tetikle
+  useEffect(() => {
+    if (itemCount > prevItemCount.current) {
+      setCartAnimationKey(prev => prev + 1);
+    }
+    prevItemCount.current = itemCount;
+  }, [itemCount]);
 
   // Geri butonu gösterilecek sayfalar
   const showBackButton = !['/', '/produkte'].includes(location.pathname);
@@ -356,9 +367,20 @@ function Header() {
                              placeholder:text-gray-400 placeholder:font-light text-sm"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <FiSearch className={`text-gray-400 transition-all duration-300 ${
-                    searchTerm ? 'text-primary-500 scale-110' : 'group-hover:text-gray-500 group-hover:scale-105'
-                  }`} size={16} />
+                  <motion.div
+                    animate={isSearching ? {
+                      rotate: 360,
+                    } : {}}
+                    transition={{
+                      duration: 1,
+                      repeat: isSearching ? Infinity : 0,
+                      ease: 'linear',
+                    }}
+                  >
+                    <FiSearch className={`text-gray-400 transition-all duration-300 ${
+                      searchTerm ? 'text-primary-500 scale-110' : 'group-hover:text-gray-500 group-hover:scale-105'
+                    }`} size={16} />
+                  </motion.div>
                 </div>
                 {isSearching && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -470,11 +492,29 @@ function Header() {
               className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Warenkorb"
             >
-              <FiShoppingCart className="w-6 h-6" />
+              <motion.div
+                key={cartAnimationKey}
+                animate={cartAnimationKey > 0 ? {
+                  scale: [1, 1.3, 1],
+                  rotate: [0, -10, 10, 0],
+                } : { scale: 1, rotate: 0 }}
+                transition={{
+                  duration: 0.5,
+                  ease: 'easeOut',
+                }}
+              >
+                <FiShoppingCart className="w-6 h-6" />
+              </motion.div>
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                <motion.span 
+                  className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5"
+                  key={`badge-${cartAnimationKey}`}
+                  initial={false}
+                  animate={cartAnimationKey > 0 ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
                   {itemCount > 99 ? '99+' : itemCount}
-                </span>
+                </motion.span>
               )}
             </Link>
             <Link

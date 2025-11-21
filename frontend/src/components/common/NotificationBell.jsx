@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FiBell, FiCheck, FiX } from 'react-icons/fi';
 import { useNotification } from '../../contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,6 +11,16 @@ function NotificationBell({ alignLeft = false }) {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const prevUnreadCount = useRef(unreadCount);
+  const [bellAnimationKey, setBellAnimationKey] = useState(0);
+
+  // Yeni bildirim geldiğinde zil animasyonu
+  useEffect(() => {
+    if (unreadCount > prevUnreadCount.current) {
+      setBellAnimationKey(prev => prev + 1);
+    }
+    prevUnreadCount.current = unreadCount;
+  }, [unreadCount]);
 
   // Dışarı tıklandığında dropdown'u kapat
   useEffect(() => {
@@ -107,11 +118,29 @@ function NotificationBell({ alignLeft = false }) {
         className="relative p-1.5 md:p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         aria-label="Benachrichtigungen"
       >
-        <FiBell className="w-5 h-5 md:w-6 md:h-6" />
+        <motion.div
+          key={bellAnimationKey}
+          animate={bellAnimationKey > 0 ? {
+            rotate: [0, -15, 15, -15, 15, 0],
+            scale: [1, 1.15, 1],
+          } : { scale: 1, rotate: 0 }}
+          transition={{
+            duration: 0.6,
+            ease: 'easeOut',
+          }}
+        >
+          <FiBell className="w-5 h-5 md:w-6 md:h-6" />
+        </motion.div>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+          <motion.span 
+            className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5"
+            key={`badge-${bellAnimationKey}`}
+            initial={false}
+            animate={bellAnimationKey > 0 ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          </motion.span>
         )}
       </button>
 

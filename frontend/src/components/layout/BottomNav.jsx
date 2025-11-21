@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FiHome, FiGrid, FiShoppingCart, FiHeart, FiUser } from 'react-icons/fi';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect, useState } from 'react';
 import useCartStore from '../../store/cartStore';
 
 // Bottom Navigation - Nur auf Mobilgeräten sichtbar
@@ -8,6 +9,8 @@ function BottomNav() {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
   const navRef = useRef(null);
+  const prevItemCount = useRef(itemCount);
+  const [cartAnimationKey, setCartAnimationKey] = useState(0);
 
   const navItems = useMemo(() => [
     { path: '/', icon: FiHome, label: 'Startseite' },
@@ -28,6 +31,14 @@ function BottomNav() {
     });
     return currentIndex !== -1 ? currentIndex : 0;
   }, [location.pathname, navItems]);
+
+  // Sepet animasyonu - itemCount değiştiğinde tetikle
+  useEffect(() => {
+    if (itemCount > prevItemCount.current) {
+      setCartAnimationKey(prev => prev + 1);
+    }
+    prevItemCount.current = itemCount;
+  }, [itemCount]);
 
   const isActive = (path) => {
     if (path === '/') {
@@ -60,14 +71,54 @@ function BottomNav() {
             <div className="nav-item-ripple">
               <div className="nav-item-content">
                 <div className="relative mb-0.5">
-                  <Icon 
-                    className={`nav-icon ${active ? 'nav-icon-active' : ''}`}
-                  />
+                  {item.path === '/warenkorb' ? (
+                    <motion.div
+                      key={cartAnimationKey}
+                      animate={cartAnimationKey > 0 ? {
+                        scale: [1, 1.3, 1],
+                        rotate: [0, -10, 10, 0],
+                      } : { scale: 1, rotate: 0 }}
+                      transition={{
+                        duration: 0.5,
+                        ease: 'easeOut',
+                      }}
+                    >
+                      <Icon 
+                        className={`nav-icon ${active ? 'nav-icon-active' : ''}`}
+                      />
+                    </motion.div>
+                  ) : item.path === '/favoriten' ? (
+                    <motion.div
+                      animate={active ? {
+                        scale: [1, 1.15, 1],
+                      } : {}}
+                      transition={{
+                        duration: 0.6,
+                        repeat: active ? Infinity : 0,
+                        repeatType: 'reverse',
+                        ease: 'easeInOut',
+                      }}
+                    >
+                      <Icon 
+                        className={`nav-icon ${active ? 'nav-icon-active' : ''}`}
+                      />
+                    </motion.div>
+                  ) : (
+                    <Icon 
+                      className={`nav-icon ${active ? 'nav-icon-active' : ''}`}
+                    />
+                  )}
                   {/* Badge */}
                   {item.badge > 0 && (
-                    <span className={`nav-badge ${active ? 'nav-badge-active' : ''}`}>
+                    <motion.span 
+                      className={`nav-badge ${active ? 'nav-badge-active' : ''}`}
+                      key={`badge-${cartAnimationKey}`}
+                      initial={false}
+                      animate={cartAnimationKey > 0 ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       {item.badge}
-                    </span>
+                    </motion.span>
                   )}
                 </div>
                 <span className={`nav-label ${active ? 'nav-label-active' : ''}`}>

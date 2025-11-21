@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { FiChevronRight, FiChevronLeft, FiTag, FiPackage, FiTruck, FiClock, FiCheckCircle } from 'react-icons/fi';
 import { MdLocalShipping, MdCheckCircle, MdCreditCard, MdInventory } from 'react-icons/md';
 import productService from '../services/productService';
@@ -507,7 +508,19 @@ function AnaSayfa() {
                           </div>
                         ) : (
                           <div className="h-48 md:h-64 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                            <FiTag className="w-16 h-16 text-white opacity-50" />
+                            <motion.div
+                              animate={{
+                                scale: [1, 1.1, 1],
+                                opacity: [0.5, 0.7, 0.5],
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                              }}
+                            >
+                              <FiTag className="w-16 h-16 text-white" />
+                            </motion.div>
                           </div>
                         )}
                         <div className="absolute top-4 left-4 md:top-6 md:left-6 right-4 md:right-6 z-10">
@@ -673,20 +686,63 @@ function AnaSayfa() {
         >
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center gap-3">
-              {/* Durum ikonu */}
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                activeOrder.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
-                activeOrder.status === 'preparing' ? 'bg-purple-100 text-purple-600' :
-                activeOrder.status === 'shipped' ? 'bg-indigo-100 text-indigo-600' :
-                'bg-gray-100 text-gray-600'
-              }`}>
+              {/* Durum ikonu - Anlamlı animasyonlarla */}
+              <motion.div 
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  activeOrder.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                  activeOrder.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
+                  activeOrder.status === 'preparing' ? 'bg-purple-100 text-purple-600' :
+                  activeOrder.status === 'shipped' ? 'bg-indigo-100 text-indigo-600' :
+                  'bg-gray-100 text-gray-600'
+                }`}
+                animate={
+                  activeOrder.status === 'pending' 
+                    ? {
+                        // Saat gibi tik-tak animasyonu (sallanma)
+                        rotate: [0, -8, 8, -8, 8, 0],
+                        scale: [1, 1.08, 1, 1.08, 1],
+                      }
+                    : activeOrder.status === 'accepted'
+                    ? {
+                        // Onaylanma: Zıplama ve hafif dönme
+                        scale: [1, 1.25, 1],
+                        rotate: [0, 15, -15, 0],
+                        y: [0, -3, 0],
+                      }
+                    : activeOrder.status === 'preparing'
+                    ? {
+                        // Paketleniyor: Döndürme ve titreşim
+                        rotate: [0, 360],
+                        scale: [1, 1.15, 1],
+                        y: [0, -2, 0],
+                      }
+                    : activeOrder.status === 'shipped'
+                    ? {
+                        // Yolda: İleri geri hareket (kamyon gibi)
+                        x: [0, 10, -10, 0],
+                        rotate: [0, 8, -8, 0],
+                        y: [0, -2, 0],
+                      }
+                    : {}
+                }
+                transition={{
+                  duration: activeOrder.status === 'preparing' ? 2.5 : 
+                           activeOrder.status === 'pending' ? 1.2 :
+                           activeOrder.status === 'accepted' ? 1.8 :
+                           1.5,
+                  repeat: Infinity,
+                  repeatType: activeOrder.status === 'preparing' ? 'loop' : 'reverse',
+                  ease: activeOrder.status === 'pending' ? 'easeInOut' : 
+                        activeOrder.status === 'accepted' ? 'easeOut' :
+                        'easeInOut',
+                }}
+              >
                 {activeOrder.status === 'pending' ? <FiClock className="w-5 h-5" /> :
                  activeOrder.status === 'accepted' ? <FiCheckCircle className="w-5 h-5" /> :
                  activeOrder.status === 'preparing' ? <FiPackage className="w-5 h-5" /> :
                  activeOrder.status === 'shipped' ? (activeOrder.type === 'pickup' ? <FiCheckCircle className="w-5 h-5" /> : <FiTruck className="w-5 h-5" />) :
                  <FiPackage className="w-5 h-5" />}
-              </div>
+              </motion.div>
 
               {/* Sipariş bilgileri */}
               <div className="flex-1 min-w-0">

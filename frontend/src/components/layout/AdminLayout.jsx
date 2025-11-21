@@ -37,6 +37,7 @@ import { BARCODE_ONLY_MODE } from '../../config/appConfig';
 import adminService from '../../services/adminService';
 import settingsService from '../../services/settingsService';
 import NotificationBell from '../common/NotificationBell';
+import { getCookie, setCookie } from '../../utils/cookieUtils';
 
 function AdminLayout() {
   const navigate = useNavigate();
@@ -228,25 +229,93 @@ function AdminLayout() {
     };
   }, [loadAdminData]);
 
-  // Sunucu saatini yükle ve her saniye güncelle
+  // Sunucu saatini yükle - günde bir kez çek, cookie'de sakla
   useEffect(() => {
+    const COOKIE_KEY_SERVER_TIME = 'serverTime';
+    const COOKIE_KEY_FETCH_TIMESTAMP = 'serverTimeFetchTs';
+    const COOKIE_KEY_LAST_FETCH_DATE = 'serverTimeLastFetch';
+    
+    // Cookie'den son çekilme tarihini kontrol et
+    const getTodayString = () => {
+      const today = new Date();
+      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    };
+    
+    const parseServerTime = (timeString) => {
+      // Format: "DD.MM.YYYY HH:mm:ss"
+      const [datePart, timePart] = timeString.split(' ');
+      const [day, month, year] = datePart.split('.');
+      const [hours, minutes, seconds] = timePart.split(':');
+      return new Date(year, month - 1, day, hours, minutes, seconds);
+    };
+    
+    const formatServerTime = (date) => {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${day}.${month}.${year} ${hours}:${minutes}:${seconds}`;
+    };
+    
+    const updateDisplayTime = () => {
+      const cachedTime = getCookie(COOKIE_KEY_SERVER_TIME);
+      const fetchTimestamp = getCookie(COOKIE_KEY_FETCH_TIMESTAMP);
+      
+      if (cachedTime && fetchTimestamp) {
+        try {
+          const serverDate = parseServerTime(cachedTime);
+          const fetchTime = parseInt(fetchTimestamp, 10);
+          const now = new Date();
+          // Fetch zamanından geçen süreyi hesapla ve server time'a ekle
+          const diff = now.getTime() - fetchTime;
+          const updatedTime = new Date(serverDate.getTime() + diff);
+          setServerTime(formatServerTime(updatedTime));
+        } catch (error) {
+          console.error('Server time parse hatası:', error);
+        }
+      }
+    };
+    
     const fetchServerTime = async () => {
       try {
         const response = await adminService.getServerTime();
         if (response?.data?.time) {
+          const today = getTodayString();
+          const now = Date.now();
+          // Cookie'ye kaydet (1 gün geçerli)
+          setCookie(COOKIE_KEY_SERVER_TIME, response.data.time, 1);
+          setCookie(COOKIE_KEY_FETCH_TIMESTAMP, now.toString(), 1);
+          setCookie(COOKIE_KEY_LAST_FETCH_DATE, today, 1);
           setServerTime(response.data.time);
         }
       } catch (error) {
         console.error('Sunucu saati alınırken hata:', error);
+        // Hata durumunda cookie'den oku
+        const cachedTime = getCookie(COOKIE_KEY_SERVER_TIME);
+        if (cachedTime) {
+          updateDisplayTime();
+        }
       }
     };
-
-    // İlk yükleme
-    fetchServerTime();
-
-    // Her saniye güncelle
-    const interval = setInterval(fetchServerTime, 1000);
-
+    
+    // Bugün çekilmiş mi kontrol et
+    const lastFetchDate = getCookie(COOKIE_KEY_LAST_FETCH_DATE);
+    const today = getTodayString();
+    const cachedTime = getCookie(COOKIE_KEY_SERVER_TIME);
+    
+    if (lastFetchDate === today && cachedTime) {
+      // Bugün zaten çekilmiş, cookie'den kullan
+      updateDisplayTime();
+    } else {
+      // Bugün çekilmemiş, yeni çek
+      fetchServerTime();
+    }
+    
+    // Her saniye gösterimi güncelle (API çağrısı yapmadan)
+    const interval = setInterval(updateDisplayTime, 1000);
+    
     return () => clearInterval(interval);
   }, []);
 
