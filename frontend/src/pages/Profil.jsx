@@ -1004,7 +1004,7 @@ function Profil() {
                   </button>
                 </div>
 
-                {/* Straße - Autocomplete */}
+                {/* Straße - Autocomplete (devre dışı) */}
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Straße <span className="text-red-500">*</span>
@@ -1015,27 +1015,19 @@ function Profil() {
                       name="street"
                       value={formData.street}
                       onChange={handleInputChange}
-                      onFocus={() => {
-                        if (addressSuggestions.length > 0) {
-                          setShowSuggestions(true);
-                        }
-                      }}
-                      onBlur={() => {
-                        // Kurze Verzögerung, damit Dropdown geschlossen wird
-                        setTimeout(() => setShowSuggestions(false), 200);
-                      }}
                       placeholder="Straßenname eingeben..."
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
-                    {searchingAddress && (
+                    {/* Autocomplete spinner devre dışı */}
+                    {/* {searchingAddress && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                    )}
+                    )} */}
                   </div>
                   
-                  {/* Autocomplete Dropdown */}
-                  {showSuggestions && addressSuggestions.length > 0 && (
+                  {/* Autocomplete Dropdown - devre dışı */}
+                  {/* {showSuggestions && addressSuggestions.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {addressSuggestions.map((suggestion, index) => {
                         const isStreet = suggestion.address.street && suggestion.address.street.length > 0;
@@ -1062,7 +1054,7 @@ function Profil() {
                         );
                       })}
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Hausnummer und Adresszeile 2 */}

@@ -218,23 +218,23 @@ function Header() {
     <header className="sticky top-0 z-50 bg-white shadow-sm" style={{ zIndex: 99999999 }}>
       <div className="container-mobile">
         {/* Desktop Navigasyon Menüsü */}
-        <div className="hidden md:flex items-center justify-between py-3 border-b border-gray-200">
+        <div className="hidden md:flex items-center py-3 border-b border-gray-200 flex-nowrap gap-4">
           {/* Logo */}
           <Link
             to="/"
-            className="flex-shrink-0 flex items-center justify-center"
+            className="flex-shrink-0 flex items-center justify-center min-w-0"
             aria-label="Ana Sayfa"
           >
             <img
               src={logo}
               alt="Gruner SuperStore"
-              className="h-14 w-auto object-contain"
+              className="h-14 w-auto object-contain max-w-[120px]"
               onError={(e) => { e.target.src = '/logo.png'; }}
             />
           </Link>
 
           {/* Navigasyon Butonları */}
-          <nav className="flex items-center gap-1 relative">
+          <nav className="flex items-center gap-1 relative flex-shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -331,8 +331,139 @@ function Header() {
             )}
           </nav>
 
+          {/* Arama Çubuğu - Navigasyon butonlarının sağında */}
+          <div className="flex-1 max-w-md mx-4 relative z-50" ref={searchRef}>
+            <form onSubmit={handleSearch} className="relative">
+              <div className="relative group">
+                <input
+                  type="text"
+                  placeholder="Produkte suchen..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    if (searchResults.length > 0) {
+                      setShowResults(true);
+                    }
+                  }}
+                  className="w-full px-4 py-2 pl-10 pr-10 bg-gradient-to-r from-gray-50 to-white 
+                             text-gray-900 rounded-full 
+                             border border-gray-200 shadow-md
+                             transition-all duration-300 ease-in-out
+                             focus:outline-none focus:ring-2 focus:ring-primary-500/50 
+                             focus:border-primary-500 focus:shadow-lg focus:shadow-primary-500/20
+                             hover:border-gray-300 hover:shadow-lg hover:from-gray-100 hover:to-white
+                             placeholder:text-gray-400 placeholder:font-light text-sm"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <FiSearch className={`text-gray-400 transition-all duration-300 ${
+                    searchTerm ? 'text-primary-500 scale-110' : 'group-hover:text-gray-500 group-hover:scale-105'
+                  }`} size={16} />
+                </div>
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent"></div>
+                  </div>
+                )}
+                {searchTerm && !isSearching && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setShowResults(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Temizle"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Arama sonuçları dropdown */}
+            {showResults && (
+              <div
+                ref={resultsRef}
+                className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-[999999999] max-h-96 overflow-y-auto
+                           backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                style={{ position: 'absolute' }}
+              >
+                {isSearching ? (
+                  <div className="p-4 text-center text-gray-500 flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent"></div>
+                    <span>Suche...</span>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="py-2">
+                    {searchResults.map((product) => {
+                      const normalizedImages = normalizeImageUrls(product.imageUrls);
+                      return (
+                        <Link
+                          key={product.id}
+                          to={`/produkt/${product.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSearchTerm('');
+                            setShowResults(false);
+                          }}
+                          className="block px-4 py-3 hover:bg-gradient-to-r hover:from-primary-50 hover:to-transparent cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                              {normalizedImages && normalizedImages[0] ? (
+                                <img
+                                  src={normalizedImages[0]}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                  Kein Bild
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                                {product.name}
+                              </div>
+                              <div className="text-sm text-primary-600 font-semibold">
+                                €{parseFloat(product.price).toFixed(2)}
+                                {product.unit && (
+                                  <span className="text-gray-600 font-normal">
+                                    {' '}/ {product.unit}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                    {searchTerm.trim().length >= 2 && (
+                      <div
+                        onClick={handleSearch}
+                        className="px-4 py-3 bg-gradient-to-r from-primary-50 to-transparent hover:from-primary-100 hover:to-transparent cursor-pointer text-center text-primary-600 font-medium border-t border-gray-200 transition-all duration-200"
+                      >
+                        Alle Ergebnisse anzeigen ({searchTerm})
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    Keine Ergebnisse gefunden
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Sağ Taraf - Sepet ve Profil */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {isAuthenticated && <NotificationBell />}
             <Link
               to="/warenkorb"
@@ -586,138 +717,6 @@ function Header() {
                   </div>
                 </div>
               )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Desktop: Arama Çubuğu - şık tasarım */}
-        <div className="hidden md:block py-3">
-          <div className="relative" ref={searchRef}>
-            <form onSubmit={handleSearch} className="relative">
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Produkte suchen..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => {
-                    if (searchResults.length > 0) {
-                      setShowResults(true);
-                    }
-                  }}
-                  className="w-full px-5 py-3 pl-12 pr-12 bg-gradient-to-r from-gray-50 to-white 
-                             text-gray-900 rounded-full 
-                             border border-gray-200 shadow-lg
-                             transition-all duration-300 ease-in-out
-                             focus:outline-none focus:ring-2 focus:ring-primary-500/50 
-                             focus:border-primary-500 focus:shadow-xl focus:shadow-primary-500/25
-                             hover:border-gray-300 hover:shadow-xl hover:from-gray-100 hover:to-white
-                             placeholder:text-gray-400 placeholder:font-light"
-                />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <FiSearch className={`text-gray-400 transition-all duration-300 ${
-                    searchTerm ? 'text-primary-500 scale-110' : 'group-hover:text-gray-500 group-hover:scale-105'
-                  }`} size={18} />
-                </div>
-                {isSearching && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent"></div>
-                  </div>
-                )}
-                {searchTerm && !isSearching && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setShowResults(false);
-                    }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    aria-label="Temizle"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {/* Arama sonuçları dropdown */}
-            {showResults && (
-              <div
-                ref={resultsRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] max-h-96 overflow-y-auto
-                           backdrop-blur-sm"
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                {isSearching ? (
-                  <div className="p-4 text-center text-gray-500 flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent"></div>
-                    <span>Suche...</span>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="py-2">
-                    {searchResults.map((product) => {
-                      const normalizedImages = normalizeImageUrls(product.imageUrls);
-                      return (
-                        <Link
-                          key={product.id}
-                          to={`/produkt/${product.id}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSearchTerm('');
-                            setShowResults(false);
-                          }}
-                          className="block px-4 py-3 hover:bg-gradient-to-r hover:from-primary-50 hover:to-transparent cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
-                              {normalizedImages && normalizedImages[0] ? (
-                                <img
-                                  src={normalizedImages[0]}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                  Kein Bild
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                                {product.name}
-                              </div>
-                              <div className="text-sm text-primary-600 font-semibold">
-                                €{parseFloat(product.price).toFixed(2)}
-                                {product.unit && (
-                                  <span className="text-gray-600 font-normal">
-                                    {' '}/ {product.unit}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                    {searchTerm.trim().length >= 2 && (
-                      <div
-                        onClick={handleSearch}
-                        className="px-4 py-3 bg-gradient-to-r from-primary-50 to-transparent hover:from-primary-100 hover:to-transparent cursor-pointer text-center text-primary-600 font-medium border-t border-gray-200 transition-all duration-200"
-                      >
-                        Alle Ergebnisse anzeigen ({searchTerm})
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    Keine Ergebnisse gefunden
-                  </div>
-                )}
               </div>
             )}
           </div>
